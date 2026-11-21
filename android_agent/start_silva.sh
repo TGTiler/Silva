@@ -23,8 +23,13 @@ elif command -v llama-server >/dev/null 2>&1; then
     LLAMA_BIN=$(command -v llama-server)
 fi
 
-# Localiza arquivo de modelo GGUF
-MODEL_PATH=$(find ./models -maxdepth 1 -name "*.gguf" 2>/dev/null | head -n 1 || true)
+# Localiza arquivo de modelo GGUF (prioriza silva-135m.gguf)
+MODEL_PATH=""
+if [ -f "./models/silva-135m.gguf" ]; then
+    MODEL_PATH="./models/silva-135m.gguf"
+elif [ -d "./models" ]; then
+    MODEL_PATH=$(find ./models -maxdepth 1 -name "*.gguf" 2>/dev/null | head -n 1 || true)
+fi
 LLAMA_PID=""
 
 # Função para encerrar subprocessos ao sair
@@ -41,11 +46,13 @@ trap cleanup SIGINT SIGTERM EXIT
 
 # 1. Inicia o llama-server se disponível
 if [ -n "$LLAMA_BIN" ] && [ -n "$MODEL_PATH" ] && [ -f "$MODEL_PATH" ]; then
-    echo "[*] Modelo GGUF detectado: $MODEL_PATH"
+    MODEL_NAME=$(basename "$MODEL_PATH")
+    echo "[*] Modelo GGUF detectado e ativo: $MODEL_NAME"
+    echo "    -> Caminho completo: $MODEL_PATH"
     echo "[*] Subindo llama-server na porta 8080 (background)..."
     $LLAMA_BIN -m "$MODEL_PATH" --host 127.0.0.1 --port 8080 -c 2048 -t 4 --log-disable > /dev/null 2>&1 &
     LLAMA_PID=$!
-    echo "[*] llama-server em execução (PID: $LLAMA_PID)"
+    echo "[*] llama-server em execução (PID: $LLAMA_PID, Modelo: $MODEL_NAME)"
     sleep 1
 else
     echo "[AVISO] Binário llama-server ou modelo .gguf em ./models/ não encontrado."

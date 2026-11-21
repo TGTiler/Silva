@@ -247,8 +247,11 @@ def _run_termux_cmd(cmd: list[str], timeout: int = 10) -> subprocess.CompletedPr
     exec_cmd = list(cmd)
     binary = exec_cmd[0]
 
-    # Se o binário não estiver no PATH, procura nos caminhos conhecidos do Android/Termux
-    if not shutil.which(binary):
+    # Prioriza o wrapper nativo do Termux para o comando 'am' evitando o SecurityException no Android 14
+    if binary == "am" and os.path.exists("/data/data/com.termux/files/usr/bin/am"):
+        exec_cmd[0] = "/data/data/com.termux/files/usr/bin/am"
+    elif not shutil.which(binary):
+        # Se o binário não estiver no PATH, procura nos caminhos conhecidos do Android/Termux
         for candidate in [f"/data/data/com.termux/files/usr/bin/{binary}", f"/system/bin/{binary}", f"/system/xbin/{binary}"]:
             if os.path.exists(candidate):
                 exec_cmd[0] = candidate
@@ -1394,10 +1397,27 @@ def tell_joke() -> Dict[str, Any]:
     }
 
 
+MONTHS_PTBR = {
+    "janeiro": 1, "jan": 1,
+    "fevereiro": 2, "fev": 2,
+    "março": 3, "marco": 3, "mar": 3,
+    "abril": 4, "abr": 4,
+    "maio": 5, "mai": 5,
+    "junho": 6, "jun": 6,
+    "julho": 7, "jul": 7,
+    "agosto": 8, "ago": 8,
+    "setembro": 9, "set": 9,
+    "outubro": 10, "out": 10,
+    "novembro": 11, "nov": 11,
+    "dezembro": 12, "dez": 12,
+}
+
+
 def parse_ptbr_date(date_str: str) -> date:
     """
     Converte expressões de data em Português do Brasil para um objeto datetime.date real.
     Suporta: 'hoje', 'amanhã', 'depois de amanhã', dias da semana ('segunda', 'sexta-feira', etc.),
+    datas por extenso ('29 de novembro', 'dia 29 de novembro deste ano', '15 de janeiro de 2027')
     e formatos 'DD/MM', 'DD/MM/AAAA' e 'AAAA-MM-DD'.
     """
     raw = (date_str or "").strip().lower()
@@ -1427,6 +1447,26 @@ def parse_ptbr_date(date_str: str) -> date:
                 days_ahead = 7
             return today + timedelta(days=days_ahead)
 
+    # Data por extenso em português: "29 de novembro", "dia 29 de novembro deste ano", "15 de janeiro de 2027"
+    m_ext = re.search(r"(?:dia\s+)?(\d{1,2})\s+de\s+([a-zç]+)(?:\s+de\s+(\d{2,4})|\s+deste\s+ano)?", raw)
+    if m_ext:
+        day = int(m_ext.group(1))
+        month_name = m_ext.group(2)
+        month = MONTHS_PTBR.get(month_name)
+        if month:
+            year_str = m_ext.group(3)
+            year = int(year_str) if year_str else today.year
+            if year < 100:
+                year += 2000
+            try:
+                target_date = date(year, month, day)
+                # Se o ano não foi informado e nem veio "deste ano", caso a data já tenha passado usa o próximo ano
+                if not year_str and "deste ano" not in raw and target_date < today:
+                    target_date = date(year + 1, month, day)
+                return target_date
+            except ValueError:
+                return today
+
     # Padrão DD/MM ou DD/MM/AAAA
     match_br = re.match(r"^(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?$", raw)
     if match_br:
@@ -1437,7 +1477,10 @@ def parse_ptbr_date(date_str: str) -> date:
         if year < 100:
             year += 2000
         try:
-            return date(year, month, day)
+            target_date = date(year, month, day)
+            if not year_str and target_date < today:
+                target_date = date(year + 1, month, day)
+            return target_date
         except ValueError:
             return today
 

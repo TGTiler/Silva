@@ -138,8 +138,8 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         return "<call>get_clipboard()</call>"
 
     # 13. Alarme (set_alarm / cancel_alarm)
-    if "alarme" in cmd or "despertador" in cmd:
-        if any(w in cmd for w in ["cancela", "cancelar", "desativa", "desativar", "apaga", "remover"]):
+    if any(w in cmd for w in ["alarme", "despertador", "desperta", "despertar", "me acorda", "acordar"]):
+        if any(w in cmd for w in ["cancela", "cancelar", "desativa", "desativar", "apaga", "apagar", "remover", "remove", "desliga", "desligar"]):
             m_time = re.search(r"(\d{1,2}(?::\d{2})?)", cmd)
             t_str = m_time.group(1) if m_time else ""
             if t_str and ":" not in t_str:
@@ -152,11 +152,73 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 t_str = f"{int(t_str):02d}:00"
             return f'<call>set_alarm(time="{t_str}", label="Alarme", days=[])</call>'
 
-    # 14. Timer (set_timer)
-    if "timer" in cmd or "temporizador" in cmd:
+    # 14. Timer / Cronômetro (set_timer)
+    if any(w in cmd for w in ["timer", "temporizador", "cronometro", "cronômetro"]):
         m_min = re.search(r"(\d+)\s*(?:minutos?|min)?", cmd)
         minutes = int(m_min.group(1)) if m_min else 5
         return f'<call>set_timer(minutes={minutes}, label="Timer")</call>'
+
+    # 14.1 Agendamentos na Agenda / Calendário (schedule_event)
+    triggers_sched = ["agenda", "agende", "agendar", "marca", "marque", "marcar", "compromisso", "reuniao", "lembrete"]
+    if any(t in cmd for t in triggers_sched) and not (cmd.startswith(("abre", "abra", "abrir")) and any(a in cmd for a in ["agenda", "calendario"])):
+        # 1. Extrair Time
+        time_val = ""
+        time_match = re.search(r"\b(?:[aàá]s|para\s+[aàá]s|pras|pra\s+[aàá]s)?\s*(\d{1,2})(?:[:h](\d{2})?|h)\b", raw_cmd, re.IGNORECASE)
+        time_span = None
+        if time_match:
+            h = int(time_match.group(1))
+            m = int(time_match.group(2)) if time_match.group(2) else 0
+            if 0 <= h <= 23 and 0 <= m <= 59:
+                time_val = f"{h:02d}:{m:02d}"
+                time_span = time_match.span()
+
+        # 2. Extrair Date
+        date_val = ""
+        date_span = None
+        m_ext = re.search(r"\b(?:no\s+dia|dia)?\s*(\d{1,2}\s+de\s+[a-zçA-ZÀ-ÿ]+(?:\s+de\s+\d{2,4})?)(?:\s+deste\s+ano)?\b", raw_cmd, re.IGNORECASE)
+        if m_ext:
+            date_val = m_ext.group(1).strip()
+            date_span = m_ext.span()
+        else:
+            m_rel = re.search(r"\b(depois\s+de\s+amanh[aã]|amanh[aã]|hoje|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|sexta(?:-feira)?|s[aá]bado|domingo)\b", raw_cmd, re.IGNORECASE)
+            if m_rel:
+                date_val = m_rel.group(1).strip()
+                date_span = m_rel.span()
+            else:
+                m_num = re.search(r"\b(\d{1,2}/\d{1,2}(?:/\d{2,4})?|\d{4}-\d{1,2}-\d{1,2})\b", raw_cmd)
+                if m_num:
+                    date_val = m_num.group(1).strip()
+                    date_span = m_num.span()
+
+        # 3. Extrair Title
+        title_val = ""
+        m_quotes = re.search(r'["\']([^"\']+)["\']', raw_cmd)
+        if m_quotes:
+            title_val = m_quotes.group(1).strip()
+        else:
+            cleaned = raw_cmd
+            if time_span:
+                cleaned = cleaned[:time_span[0]] + " " + cleaned[time_span[1]:]
+            if date_span:
+                cleaned = cleaned[:date_span[0]] + " " + cleaned[date_span[1]:]
+
+            cleaned = re.sub(r"(?i)^(?:silva,?\s*)?", "", cleaned).strip()
+            m_chamado = re.search(r"(?i)\b(?:chamado|chamada|com\s+o\s+nome|com\s+o\s+t[ií]tulo)\s+(.+)", cleaned)
+            if m_chamado:
+                title_val = m_chamado.group(1).strip()
+            else:
+                cleaned = re.sub(
+                    r"(?i)^(?:agende|agenda|agendar|marque|marca|marcar|coloque|coloca|colocar|criar|cria|crie)\s+(?:um\s+compromisso(?:\s+de|\s+sobre|\s+para)?\s*|um\s+|uma\s+)?",
+                    "",
+                    cleaned
+                ).strip()
+                cleaned = re.sub(r"(?i)^(?:compromisso|lembrete)\s+(?:de\s+|sobre\s+|para\s+)?", "", cleaned).strip()
+                cleaned = re.sub(r"(?i)\s+(?:por\s+favor|pra\s+mim|agora)$", "", cleaned).strip()
+                cleaned = re.sub(r"(?i)\s+(?:na|no|em|de|para|pra)$", "", cleaned).strip()
+                cleaned = re.sub(r'[?!.,;:]+$', '', cleaned).strip()
+                title_val = cleaned or "Compromisso"
+
+        return f'<call>schedule_event(title="{title_val}", date="{date_val}", time="{time_val}")</call>'
 
     # 15. Memória (remember_note / recall_note)
     if any(w in cmd for w in ["lembra que", "lembrar que", "anota que", "salva que", "guarda que"]):

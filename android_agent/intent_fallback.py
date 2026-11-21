@@ -75,6 +75,45 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         camera_id = 1 if any(w in cmd for w in ["frontal", "selfie", "frente", "me film", "me grav", "minha cara"]) else 0
         return f"<call>record_video(duration={duration}, camera_id={camera_id})</call>"
 
+    # 6.2 Corrida / Transporte (request_ride)
+    if not (cmd.startswith(("abre ", "abra ", "abrir ")) and not any(p in cmd for p in ["para", "pra", "pro", "ate", "até"])):
+        ride_triggers = ["uber", "corrida", "chama um carro", "chamar um carro", "chama carro", "chamar carro", "pede um carro", "pedir um carro", "pede carro", "pedir carro", "chama corrida", "chamar corrida", "pede corrida", "pedir corrida"]
+        is_99_ride = ("99" in cmd and any(w in cmd for w in ["carro", "corrida", "chama", "pede", "pedir", "chamar", "motorista", "viagem", "taxi", "para", "pra", "pro"]) and not any(f in cmd for f in ["food", "comida", "lanche", "pizza", "almoco", "almoço"]))
+        if any(t in cmd for t in ride_triggers) or is_99_ride:
+            app = "99" if "99" in cmd else "uber"
+            m_dest = re.search(r"(?:para|pra|pro|ate|até)\s+(?:o\s+|a\s+|o\s+app\s+|a\s+)?([^\n\r,\.;]+)", raw_cmd, re.IGNORECASE)
+            dest = ""
+            if m_dest:
+                dest = m_dest.group(1).strip()
+                dest = re.sub(r"(?i)\s+(?:de\s+uber|de\s+99|na\s+99|no\s+uber|pela\s+99|pelo\s+uber|por\s+favor|pra\s+mim|agora)$", "", dest).strip()
+                dest = re.sub(r'[?!.,;:]+$', '', dest).strip()
+            if not dest:
+                m_alt = re.search(r"(?:uber|99|carro|corrida)\s+(.+)", raw_cmd, re.IGNORECASE)
+                if m_alt:
+                    dest = m_alt.group(1).strip()
+                    dest = re.sub(r"(?i)\s+(?:por\s+favor|pra\s+mim|agora)$", "", dest).strip()
+                    dest = re.sub(r'[?!.,;:]+$', '', dest).strip()
+            if not dest:
+                dest = "destino"
+            return f'<call>request_ride(destination="{dest}", app="{app}")</call>'
+
+    # 6.3 Delivery / Pedir Comida (order_food)
+    if not (cmd.startswith(("abre ", "abra ", "abrir ")) and not any(f in cmd for f in ["pizza", "lanche", "hamburguer", "hambúrguer", "comida", "sushi", "acai", "açaí", "pastel"])):
+        food_triggers = ["ifood", "99 food", "99food", "pedir comida", "pede comida", "pedir lanche", "pede lanche", "busca comida", "buscar comida", "delivery"]
+        is_pede = any(cmd.startswith(p) or f" {p}" in cmd for p in ["pede uma ", "pede um ", "pedir uma ", "pedir um ", "quero pedir ", "gostaria de pedir "])
+        food_items = ["pizza", "hamburguer", "hambúrguer", "lanche", "comida", "sushi", "acai", "açaí", "marmita", "almoco", "almoço", "jantar", "pastel", "salgado", "doce", "sobremesa", "refeicao", "refeição"]
+        is_food_query = is_pede and any(f in cmd for f in food_items)
+        if any(t in cmd for t in food_triggers) or is_food_query:
+            app = "99" if ("99" in cmd or "99 food" in cmd or "99food" in cmd) else "ifood"
+            cleaned = raw_cmd
+            cleaned = re.sub(r"(?i)^(?:silva,?\s*)?", "", cleaned).strip()
+            cleaned = re.sub(r"(?i)^(?:quero\s+|gostaria\s+de\s+)?(?:pedir|pede|busca|buscar|encontrar)\s+(?:uma\s+|um\s+|pelo\s+ifood\s+|no\s+ifood\s+)?", "", cleaned).strip()
+            cleaned = re.sub(r"(?i)^delivery\s+(?:de\s+)?", "", cleaned).strip()
+            cleaned = re.sub(r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99|pela\s+99|no\s+99\s*food|pelo\s+99\s*food|por\s+favor|pra\s+mim|agora)$", "", cleaned).strip()
+            cleaned = re.sub(r'[?!.,;:]+$', '', cleaned).strip()
+            query = cleaned or "comida"
+            return f'<call>order_food(query="{query}", app="{app}")</call>'
+
     # 7. Abrir Aplicativo (open_app)
     m_open = re.search(r"(?:abre|abra|abrir|inicia|inicie|iniciar|roda|rode|rodar|executa|execute|executar)\s+(?:o|a)?\s*([a-zA-Z0-9_\-\s]+)", cmd)
     if m_open and not any(w in cmd for w in ["lanterna", "camera", "foto", "timer", "alarme", "print", "screenshot", "tela"]):

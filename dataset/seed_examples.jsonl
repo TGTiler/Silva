@@ -102,3 +102,11 @@
 {"prompt": "Faz um vídeo rápido de 5 segundos", "completion": "<call>record_video(duration=5, camera_id=0)</call>"}
 {"prompt": "Tira uma foto selfie minha", "completion": "<call>take_photo(camera_id=1)</call>"}
 {"prompt": "Bate uma foto com a câmera frontal", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "Chama um Uber para o Shopping Recife", "completion": "<call>request_ride(destination=\"Shopping Recife\", app=\"uber\")</call>"}
+{"prompt": "Pede um carro para o aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um 99 para casa", "completion": "<call>request_ride(destination=\"casa\", app=\"99\")</call>"}
+{"prompt": "Pede uma corrida na 99 para o trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"99\")</call>"}
+{"prompt": "Pede uma pizza no iFood", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "Busca hambúrguer no iFood", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "Quero pedir comida japonesa", "completion": "<call>order_food(query=\"comida japonesa\", app=\"ifood\")</call>"}
+{"prompt": "Pede açaí no 99 food", "completion": "<call>order_food(query=\"açaí\", app=\"99\")</call>"}

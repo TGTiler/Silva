@@ -2113,6 +2113,135 @@ def none() -> Dict[str, Any]:
     }
 
 
+def request_ride(destination: str, app: str = "uber") -> Dict[str, Any]:
+    """Abre o aplicativo de transporte (Uber ou 99) com o destino configurado a partir da localização atual."""
+    clean_dest = str(destination).strip()
+    if not clean_dest:
+        return {"status": "error", "message": "Destino da corrida não informado."}
+
+    # 1. Integração com Memória Local: consulta se o destino corresponde a um local salvo
+    resolved_destination = clean_dest
+    mem = _load_memory()
+    if mem:
+        norm_dest = _normalize_text(clean_dest)
+        query_tokens = set(norm_dest.split())
+        best_match = None
+        best_score = 0
+        for k, v_data in mem.items():
+            val = v_data.get("value", "") if isinstance(v_data, dict) else str(v_data)
+            norm_k = _normalize_text(k)
+            score = 0
+            if norm_dest == norm_k:
+                score += 10
+            elif norm_dest in norm_k:
+                score += 6
+            elif norm_k in norm_dest:
+                score += 5
+
+            common = query_tokens.intersection(set(norm_k.split()))
+            if common:
+                score += len(common) * 2
+
+            if score > best_score and score >= 4:
+                best_score = score
+                best_match = val
+
+        if best_match:
+            resolved_destination = best_match
+
+    app_target = str(app).strip().lower() if app else "uber"
+
+    if app_target == "uber":
+        encoded_dest = urllib.parse.quote(resolved_destination)
+        url = f"https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]={encoded_dest}"
+        if SIMULATE_HARDWARE:
+            return {
+                "status": "ok",
+                "message": f"Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
+                "data": {"destination": resolved_destination, "app": "uber", "url": url}
+            }
+        _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+        return {
+            "status": "ok",
+            "message": f"Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
+            "data": {"destination": resolved_destination, "app": "uber", "url": url}
+        }
+
+    elif app_target in ("99", "99pop"):
+        if SIMULATE_HARDWARE:
+            return {
+                "status": "ok",
+                "message": f"Abrindo 99 com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
+                "data": {"destination": resolved_destination, "app": "99"}
+            }
+        set_clipboard(resolved_destination)
+        open_app("99")
+        return {
+            "status": "ok",
+            "message": f"Abrindo 99 com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
+            "data": {"destination": resolved_destination, "app": "99"}
+        }
+    else:
+        encoded_dest = urllib.parse.quote(resolved_destination)
+        url = f"https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]={encoded_dest}"
+        if not SIMULATE_HARDWARE:
+            _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+        return {
+            "status": "ok",
+            "message": f"Abrindo {app_target.upper()} com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
+            "data": {"destination": resolved_destination, "app": app_target, "url": url}
+        }
+
+
+def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
+    """Abre o aplicativo de delivery (iFood ou 99) buscando o prato, restaurante ou item pedido."""
+    clean_query = str(query).strip()
+    if not clean_query:
+        return {"status": "error", "message": "Item ou prato para busca de comida não informado."}
+
+    app_target = str(app).strip().lower() if app else "ifood"
+    encoded_query = urllib.parse.quote_plus(clean_query)
+
+    if app_target == "ifood":
+        url = f"https://www.ifood.com.br/busca?q={encoded_query}"
+        if SIMULATE_HARDWARE:
+            return {
+                "status": "ok",
+                "message": f"Buscando '{clean_query}' no Ifood. [Simulado]",
+                "data": {"query": clean_query, "app": "ifood", "url": url}
+            }
+        _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+        return {
+            "status": "ok",
+            "message": f"Buscando '{clean_query}' no Ifood.",
+            "data": {"query": clean_query, "app": "ifood", "url": url}
+        }
+
+    elif app_target in ("99", "99food", "99 food"):
+        if SIMULATE_HARDWARE:
+            return {
+                "status": "ok",
+                "message": f"Buscando '{clean_query}' no 99. [Simulado]",
+                "data": {"query": clean_query, "app": "99"}
+            }
+        set_clipboard(clean_query)
+        open_app("99")
+        return {
+            "status": "ok",
+            "message": f"Buscando '{clean_query}' no 99.",
+            "data": {"query": clean_query, "app": "99"}
+        }
+    else:
+        url = f"https://www.ifood.com.br/busca?q={encoded_query}"
+        if not SIMULATE_HARDWARE:
+            _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+        return {
+            "status": "ok",
+            "message": f"Buscando '{clean_query}' no {app_target.capitalize()}.",
+            "data": {"query": clean_query, "app": app_target, "url": url}
+        }
+
+
 # Dicionário de registro de funções disponíveis para o parser
 AVAILABLE_TOOLS = {
     "get_battery": get_battery,
@@ -2144,5 +2273,7 @@ AVAILABLE_TOOLS = {
     "set_brightness": set_brightness,
     "set_timer": set_timer,
     "calculate": calculate,
+    "request_ride": request_ride,
+    "order_food": order_food,
     "none": none,
 }

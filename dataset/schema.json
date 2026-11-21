@@ -329,6 +329,38 @@
         }
       }
     },
+    "request_ride": {
+      "description": "Abre o aplicativo de transporte (Uber ou 99) com o destino configurado a partir da localização atual.",
+      "parameters": {
+        "destination": {
+          "type": "string",
+          "required": true,
+          "description": "Endereço, local ou ponto de referência de destino da corrida."
+        },
+        "app": {
+          "type": "string",
+          "required": false,
+          "default": "uber",
+          "description": "Aplicativo de transporte a utilizar ('uber' ou '99')."
+        }
+      }
+    },
+    "order_food": {
+      "description": "Abre o aplicativo de delivery (iFood ou 99) buscando o prato, restaurante ou item pedido.",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Prato, item culinário ou nome de restaurante a buscar."
+        },
+        "app": {
+          "type": "string",
+          "required": false,
+          "default": "ifood",
+          "description": "Aplicativo de delivery a utilizar ('ifood' ou '99')."
+        }
+      }
+    },
     "none": {
       "description": "Chamada nula emitida quando o usuário faz uma pergunta geral, saudação ou comando sem ferramenta correspondente.",
       "parameters": {}

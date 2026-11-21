@@ -4886,3 +4886,27 @@
 {"prompt": "silva pede um café da manhã pra Miramar pfv", "completion": "<call>order_food(query=\"café da manhã\", app=\"ifood\")</call>"}
 {"prompt": "busca um combo pra Torre silva pfv", "completion": "<call>order_food(query=\"combo\", app=\"ifood\")</call>"}
 {"prompt": "Silva, pede uma promoção pra Centro", "completion": "<call>order_food(query=\"promoção\", app=\"ifood\")</call>"}
+{"prompt": "Chama um Uber para o Shopping Recife", "completion": "<call>request_ride(destination=\"Shopping Recife\", app=\"uber\")</call>"}
+{"prompt": "Pede um Uber para casa", "completion": "<call>request_ride(destination=\"casa\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um carro para o aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "Pede um 99 pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"99\")</call>"}
+{"prompt": "Chama uma corrida na 99 para o trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"99\")</call>"}
+{"prompt": "Preciso de um carro até a praia de Boa Viagem", "completion": "<call>request_ride(destination=\"praia de Boa Viagem\", app=\"uber\")</call>"}
+{"prompt": "Pede um táxi 99 para o centro", "completion": "<call>request_ride(destination=\"centro\", app=\"99\")</call>"}
+{"prompt": "Chama um Uber até a estação de metrô", "completion": "<call>request_ride(destination=\"estação de metrô\", app=\"uber\")</call>"}
+{"prompt": "Pede uma corrida para o consultório médico", "completion": "<call>request_ride(destination=\"consultório médico\", app=\"uber\")</call>"}
+{"prompt": "Chama um 99 para a faculdade", "completion": "<call>request_ride(destination=\"faculdade\", app=\"99\")</call>"}
+{"prompt": "Silva, pede um Uber para o supermercado", "completion": "<call>request_ride(destination=\"supermercado\", app=\"uber\")</call>"}
+{"prompt": "Chamar corrida para a rodoviária", "completion": "<call>request_ride(destination=\"rodoviária\", app=\"uber\")</call>"}
+{"prompt": "Pede uma pizza no iFood", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "Busca hambúrguer no iFood", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "Quero pedir comida japonesa", "completion": "<call>order_food(query=\"comida japonesa\", app=\"ifood\")</call>"}
+{"prompt": "Pede açaí no 99 food", "completion": "<call>order_food(query=\"açaí\", app=\"99\")</call>"}
+{"prompt": "Silva, pede comida chinesa pelo iFood", "completion": "<call>order_food(query=\"comida chinesa\", app=\"ifood\")</call>"}
+{"prompt": "Quero pedir uma marmita para o almoço", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "Delivery de sushi pelo iFood", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "Busca restaurante de massas no iFood", "completion": "<call>order_food(query=\"massas\", app=\"ifood\")</call>"}
+{"prompt": "Pede lanche no 99 food", "completion": "<call>order_food(query=\"lanche\", app=\"99\")</call>"}
+{"prompt": "Pedir pastel no iFood", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "Busca sobremesa pelo delivery", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "Pede churrasco no iFood", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}

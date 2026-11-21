@@ -62,6 +62,55 @@ def _clean_ride_destination(raw_dest: str) -> str:
     return text.strip()
 
 
+def _clean_food_query(raw_query: str) -> str:
+    """
+    Remove prefixos de comando e sufixos de aplicativo/cortesia de uma busca de comida.
+    Exemplos:
+      "peça um hamburguer no ifood" -> "hamburguer"
+      "silva quero pedir uma pizza de calabresa no ifood pfv" -> "pizza de calabresa"
+      "busca acai na 99" -> "acai"
+    """
+    if not raw_query:
+        return ""
+    text = str(raw_query).strip()
+
+    # 1. Sufixos de app e cortesia no final (repetidos até limpar)
+    suffix_pat = r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99|no\s+99|no\s+99\s*food|pelo\s+99|pelo\s+99\s*food|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
+    for _ in range(5):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r"[?!.,;:]+$", "", text).strip()
+        if text == prev:
+            break
+
+    # 2. Prefixos de comando no início da frase (repetidos até limpar)
+    prefix_patterns = [
+        r"(?i)^(?:silva|ei|oi)\b\s*",
+        r"(?i)^(?:abre\s+o\s+ifood\s+e\s+pede|abre\s+o\s+ifood\s+e\s+peça|abre\s+o\s+ifood\s+e\s+peca|abre\s+o\s+ifood\s+e\s+pedir)\b\s*",
+        r"(?i)^(?:abre\s+o\s+99\s+e\s+pede|abre\s+a\s+99\s+e\s+pede)\b\s*",
+        r"(?i)^(?:quero\s+pedir|quero|gostaria\s+de\s+pedir|gostaria\s+de|me\s+vê|me\s+ve)\b\s*",
+        r"(?i)^(?:peça|peca|pede|pedir|compra|comprar|compre|busca|busque|buscar|procura|procure|procurar|acha|achar|pesquisa|pesquisar)\b\s*",
+        r"(?i)^(?:delivery\s+de|delivery)\b\s*",
+        r"(?i)^(?:um|uma|uns|umas)\b\s*",
+        r"(?i)^(?:comida|lanche)\b\s*",
+        r"(?i)^(?:o|a|os|as)\b\s*",
+        r"(?i)^(?:de)\b\s*",
+    ]
+
+    for _ in range(10):
+        prev = text
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        for pat in prefix_patterns:
+            text = re.sub(pat, '', text).strip()
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        if text == prev:
+            break
+
+    text = re.sub(suffix_pat, "", text).strip()
+    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    return text.strip()
+
+
 def parse_single_intent(raw_cmd: str) -> Optional[str]:
     """Tenta identificar uma intenção específica e retornar uma tag <call>...</call>."""
     cmd = normalize_text(raw_cmd)
@@ -132,7 +181,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             "chamar corrida", "pede corrida", "pedir corrida", "solicita um carro", "solicitar um carro",
             "solicita carro", "solicitar carro"
         ]
-        is_99_ride = (is_99 and (any(w in cmd for w in ["carro", "corrida", "chama", "pede", "pedir", "peca", "solicita", "solicitar", "motorista", "viagem", "taxi", "para", "pra", "pro", "ate"]) or has_ride_verb) and not any(f in cmd for f in ["food", "comida", "lanche", "pizza", "almoco", "almoço"]))
+        is_99_ride = (is_99 and (any(w in cmd for w in ["carro", "corrida", "chama", "pede", "pedir", "peca", "solicita", "solicitar", "motorista", "viagem", "taxi", "para", "pra", "pro", "ate"]) or has_ride_verb) and not any(f in cmd for f in ["food", "comida", "lanche", "pizza", "almoco", "almoço", "acai", "açaí", "sushi", "hamburguer", "pastel"]))
         if any(t in cmd for t in ride_triggers) or is_99_ride or ((is_uber or is_99) and has_ride_verb):
             app = "99" if is_99 else "uber"
             dest = ""
@@ -152,19 +201,19 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
 
     # 6.3 Delivery / Pedir Comida (order_food)
     if not (cmd.startswith(("abre ", "abra ", "abrir ")) and not any(f in cmd for f in ["pizza", "lanche", "hamburguer", "hambúrguer", "comida", "sushi", "acai", "açaí", "pastel"])):
-        food_triggers = ["ifood", "99 food", "99food", "pedir comida", "pede comida", "pedir lanche", "pede lanche", "busca comida", "buscar comida", "delivery"]
-        is_pede = any(cmd.startswith(p) or f" {p}" in cmd for p in ["pede uma ", "pede um ", "pedir uma ", "pedir um ", "quero pedir ", "gostaria de pedir "])
-        food_items = ["pizza", "hamburguer", "hambúrguer", "lanche", "comida", "sushi", "acai", "açaí", "marmita", "almoco", "almoço", "jantar", "pastel", "salgado", "doce", "sobremesa", "refeicao", "refeição"]
-        is_food_query = is_pede and any(f in cmd for f in food_items)
-        if any(t in cmd for t in food_triggers) or is_food_query:
-            app = "99" if ("99" in cmd or "99 food" in cmd or "99food" in cmd) else "ifood"
-            cleaned = raw_cmd
-            cleaned = re.sub(r"(?i)^(?:silva,?\s*)?", "", cleaned).strip()
-            cleaned = re.sub(r"(?i)^(?:quero\s+|gostaria\s+de\s+)?(?:pedir|pede|busca|buscar|encontrar)\s+(?:uma\s+|um\s+|pelo\s+ifood\s+|no\s+ifood\s+)?", "", cleaned).strip()
-            cleaned = re.sub(r"(?i)^delivery\s+(?:de\s+)?", "", cleaned).strip()
-            cleaned = re.sub(r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99|pela\s+99|no\s+99\s*food|pelo\s+99\s*food|por\s+favor|pra\s+mim|agora)$", "", cleaned).strip()
-            cleaned = re.sub(r'[?!.,;:]+$', '', cleaned).strip()
-            query = cleaned or "comida"
+        food_triggers = ["ifood", "99 food", "99food", "pedir comida", "pede comida", "peca comida", "peça comida", "pedir lanche", "pede lanche", "peca lanche", "peça lanche", "busca comida", "buscar comida", "delivery"]
+        food_items = ["pizza", "hamburguer", "hambúrguer", "lanche", "comida", "sushi", "acai", "açaí", "marmita", "almoco", "almoço", "jantar", "pastel", "salgado", "doce", "sobremesa", "refeicao", "refeição", "churrasco", "poke", "tapioca"]
+        has_food_item = any(f in cmd for f in food_items)
+        food_verbs = ["pede", "pedir", "peca", "peça", "quero", "compra", "comprar", "compre", "busca", "buscar", "busque", "procura", "procurar", "procure", "acha", "achar", "me ve", "me vê"]
+        has_food_verb = any(v in cmd for v in food_verbs)
+        is_ifood_or_99food = "ifood" in cmd or "99 food" in cmd or "99food" in cmd
+        is_food_query = (has_food_item and has_food_verb) or (has_food_item and ("99" in cmd or "ifood" in cmd))
+
+        if any(t in cmd for t in food_triggers) or is_food_query or is_ifood_or_99food:
+            app = "99" if ("99" in cmd and "ifood" not in cmd) else "ifood"
+            query = _clean_food_query(raw_cmd)
+            if not query:
+                query = "comida"
             return f'<call>order_food(query="{query}", app="{app}")</call>'
 
     # 7. Abrir Aplicativo (open_app)

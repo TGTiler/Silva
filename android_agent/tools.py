@@ -2363,52 +2363,111 @@ def request_ride(destination: str, app: str = "uber") -> Dict[str, Any]:
         }
 
 
+def _clean_food_query(raw_query: str) -> str:
+    """
+    Remove prefixos de comando e sufixos de aplicativo/cortesia de uma busca de comida.
+    Exemplos:
+      "peça um hamburguer no ifood" -> "hamburguer"
+      "silva quero pedir uma pizza de calabresa no ifood pfv" -> "pizza de calabresa"
+      "busca acai na 99" -> "acai"
+    """
+    if not raw_query:
+        return ""
+    text = str(raw_query).strip()
+
+    # 1. Sufixos de app e cortesia no final (repetidos até limpar)
+    suffix_pat = r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99|no\s+99|no\s+99\s*food|pelo\s+99|pelo\s+99\s*food|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
+    for _ in range(5):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r"[?!.,;:]+$", "", text).strip()
+        if text == prev:
+            break
+
+    # 2. Prefixos de comando no início da frase (repetidos até limpar)
+    prefix_patterns = [
+        r"(?i)^(?:silva|ei|oi)\b\s*",
+        r"(?i)^(?:abre\s+o\s+ifood\s+e\s+pede|abre\s+o\s+ifood\s+e\s+peça|abre\s+o\s+ifood\s+e\s+peca|abre\s+o\s+ifood\s+e\s+pedir)\b\s*",
+        r"(?i)^(?:abre\s+o\s+99\s+e\s+pede|abre\s+a\s+99\s+e\s+pede)\b\s*",
+        r"(?i)^(?:quero\s+pedir|quero|gostaria\s+de\s+pedir|gostaria\s+de|me\s+vê|me\s+ve)\b\s*",
+        r"(?i)^(?:peça|peca|pede|pedir|compra|comprar|compre|busca|busque|buscar|procura|procure|procurar|acha|achar|pesquisa|pesquisar)\b\s*",
+        r"(?i)^(?:delivery\s+de|delivery)\b\s*",
+        r"(?i)^(?:um|uma|uns|umas)\b\s*",
+        r"(?i)^(?:comida|lanche)\b\s*",
+        r"(?i)^(?:o|a|os|as)\b\s*",
+        r"(?i)^(?:de)\b\s*",
+    ]
+
+    for _ in range(10):
+        prev = text
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        for pat in prefix_patterns:
+            text = re.sub(pat, '', text).strip()
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        if text == prev:
+            break
+
+    text = re.sub(suffix_pat, "", text).strip()
+    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    return text.strip()
+
+
 def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
     """Abre o aplicativo de delivery (iFood ou 99) buscando o prato, restaurante ou item pedido."""
-    clean_query = str(query).strip()
+    clean_query = _clean_food_query(query)
     if not clean_query:
         return {"status": "error", "message": "Item ou prato para busca de comida não informado."}
 
     app_target = str(app).strip().lower() if app else "ifood"
-    encoded_query = urllib.parse.quote_plus(clean_query)
+    encoded_query = urllib.parse.quote(clean_query)
 
     if app_target == "ifood":
-        url = f"https://www.ifood.com.br/busca?q={encoded_query}"
+        # 1. Copia para a área de transferência (garante colar em 1 toque na lupa)
+        set_clipboard(clean_query)
+        url_web = f"https://www.ifood.com.br/busca?q={encoded_query}&tab=0"
+        url_deep = f"ifood://search?term={encoded_query}"
+
         if SIMULATE_HARDWARE:
             return {
                 "status": "ok",
-                "message": f"Buscando '{clean_query}' no Ifood. [Simulado]",
-                "data": {"query": clean_query, "app": "ifood", "url": url}
+                "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência caso precise colar na lupa).\nhttps://www.ifood.com.br/busca?q={encoded_query}",
+                "data": {"query": clean_query, "app": "ifood", "url": url_web}
             }
-        _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+
+        # 2. Ordem de disparo no Android:
+        # Tentativa 1 (Deep Link interno do app)
+        cmd_app = f'am start -a android.intent.action.VIEW -d "{url_deep}" -p br.com.brainweb.ifood'
+        res1 = _exec_android_intent(cmd_app)
+
+        # Tentativa 2 (Fallback se Tentativa 1 falhou / pacote não encontrado / ActivityNotFound)
+        if res1.returncode != 0 or "Error:" in res1.stderr or "ActivityNotFound" in res1.stderr or "does not exist" in res1.stderr:
+            cmd_web = f'am start -a android.intent.action.VIEW -d "{url_web}"'
+            _exec_android_intent(cmd_web)
+
         return {
             "status": "ok",
-            "message": f"Buscando '{clean_query}' no Ifood.",
-            "data": {"query": clean_query, "app": "ifood", "url": url}
+            "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência caso precise colar na lupa).\nhttps://www.ifood.com.br/busca?q={encoded_query}",
+            "data": {"query": clean_query, "app": "ifood", "url": url_web}
         }
 
     elif app_target in ("99", "99food", "99 food"):
-        if SIMULATE_HARDWARE:
-            return {
-                "status": "ok",
-                "message": f"Buscando '{clean_query}' no 99. [Simulado]",
-                "data": {"query": clean_query, "app": "99"}
-            }
         set_clipboard(clean_query)
-        open_app("99")
+        if not SIMULATE_HARDWARE:
+            open_app("99")
         return {
             "status": "ok",
-            "message": f"Buscando '{clean_query}' no 99.",
+            "message": f"Buscando '{clean_query}' no 99 (termo copiado para a área de transferência).",
             "data": {"query": clean_query, "app": "99"}
         }
     else:
-        url = f"https://www.ifood.com.br/busca?q={encoded_query}"
+        set_clipboard(clean_query)
+        url_web = f"https://www.ifood.com.br/busca?q={encoded_query}&tab=0"
         if not SIMULATE_HARDWARE:
-            _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+            _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url_web}"')
         return {
             "status": "ok",
             "message": f"Buscando '{clean_query}' no {app_target.capitalize()}.",
-            "data": {"query": clean_query, "app": app_target, "url": url}
+            "data": {"query": clean_query, "app": app_target, "url": url_web}
         }
 
 

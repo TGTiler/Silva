@@ -4910,3 +4910,183 @@
 {"prompt": "Pedir pastel no iFood", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
 {"prompt": "Busca sobremesa pelo delivery", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
 {"prompt": "Pede churrasco no iFood", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "peça um uber para mim ir ao Shopping Recife", "completion": "<call>request_ride(destination=\"Shopping Recife\", app=\"uber\")</call>"}
+{"prompt": "silva chama um uber p/ eu ir pro aeroporto agr pfvr", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ mim ir na UPA hj", "completion": "<call>request_ride(destination=\"UPA\", app=\"99\")</call>"}
+{"prompt": "peça um hamburguer no ifood", "completion": "<call>order_food(query=\"hamburguer\", app=\"ifood\")</call>"}
+{"prompt": "mds silva pede uma pizza de calabresa no ifood agr pfv", "completion": "<call>order_food(query=\"pizza de calabresa\", app=\"ifood\")</call>"}
+{"prompt": "busca um acai c/ granola na 99 p/ mim blz", "completion": "<call>order_food(query=\"açaí com granola\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir no hospital agr", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir pro centro pfv", "completion": "<call>request_ride(destination=\"centro\", app=\"99\")</call>"}
+{"prompt": "silva me leva no shopping c/ um uber pfv", "completion": "<call>request_ride(destination=\"shopping\", app=\"uber\")</call>"}
+{"prompt": "quero pedir uma marmita no ifood silva", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "compra um sushi no ifood p/ mim agr", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "silva busca uma coca cola na 99 pfv", "completion": "<call>order_food(query=\"coca cola\", app=\"99\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o aeroporto silva", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na faculdade hj pfv", "completion": "<call>request_ride(destination=\"faculdade\", app=\"99\")</call>"}
+{"prompt": "ei silva peça um lanche no ifood agr blz", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "busca uma pizza no ifood p/ mim silva", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um remédio no ifood silva pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "silva chama um uber p/ eu ir pro trabalho agr", "completion": "<call>request_ride(destination=\"trabalho\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ mim ir na farmácia pfvr", "completion": "<call>request_ride(destination=\"farmácia\", app=\"99\")</call>"}
+{"prompt": "compra um sorvete no ifood p/ mim silva", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um café na 99 pfv agr", "completion": "<call>order_food(query=\"café\", app=\"99\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a escola silva", "completion": "<call>request_ride(destination=\"escola\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir pro mercado hj pfv", "completion": "<call>request_ride(destination=\"mercado\", app=\"99\")</call>"}
+{"prompt": "silva peça um sanduíche no ifood agr pfvr", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "busca uma água no ifood p/ mim silva pfv", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um pastel no ifood silva", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "silva chama um uber p/ mim ir pro shopping agr pfv", "completion": "<call>request_ride(destination=\"shopping\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no banco hj pfvr", "completion": "<call>request_ride(destination=\"banco\", app=\"99\")</call>"}
+{"prompt": "compra um churrasco no ifood p/ mim silva", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma salada na 99 pfv", "completion": "<call>order_food(query=\"salada\", app=\"99\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a praia silva pfv", "completion": "<call>request_ride(destination=\"praia\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir pro hotel agr", "completion": "<call>request_ride(destination=\"hotel\", app=\"99\")</call>"}
+{"prompt": "silva peça um suco no ifood agr pfvr", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "busca um dogão no ifood p/ mim silva pfv", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um almoço no ifood silva", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "silva chama um uber p/ mim ir pro cinema agr pfv", "completion": "<call>request_ride(destination=\"cinema\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na igreja hj pfvr", "completion": "<call>request_ride(destination=\"igreja\", app=\"99\")</call>"}
+{"prompt": "compra um jantar no ifood p/ mim silva", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma sobremesa na 99 pfv", "completion": "<call>order_food(query=\"sobremesa\", app=\"99\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o parque silva pfv", "completion": "<call>request_ride(destination=\"parque\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no consultório agr", "completion": "<call>request_ride(destination=\"consultório\", app=\"99\")</call>"}
+{"prompt": "silva peça um bolo no ifood agr pfvr", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
+{"prompt": "busca um salgado no ifood p/ mim silva pfv", "completion": "<call>order_food(query=\"salgado\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir uma coxinha no ifood silva", "completion": "<call>order_food(query=\"coxinha\", app=\"ifood\")</call>"}
+{"prompt": "silva chama um uber p/ mim ir pro clube agr pfv", "completion": "<call>request_ride(destination=\"clube\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na rodoviária hj pfvr", "completion": "<call>request_ride(destination=\"rodoviária\", app=\"99\")</call>"}
+{"prompt": "compra um hambúrguer artesanal no ifood p/ mim silva", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma pizza de frango na 99 pfv", "completion": "<call>order_food(query=\"pizza de frango\", app=\"99\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a estação silva pfv", "completion": "<call>request_ride(destination=\"estação\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no escritório agr", "completion": "<call>request_ride(destination=\"escritório\", app=\"99\")</call>"}
+{"prompt": "silva peça um açaí com granola no ifood agr pfvr", "completion": "<call>order_food(query=\"açaí com granola\", app=\"ifood\")</call>"}
+{"prompt": "busca uma marmita fitness no ifood p/ mim silva pfv", "completion": "<call>order_food(query=\"marmita fitness\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um sushi no ifood silva pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "silva chama um uber p/ mim ir pro supermercado agr pfv", "completion": "<call>request_ride(destination=\"supermercado\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no cabeleireiro hj pfvr", "completion": "<call>request_ride(destination=\"cabeleireiro\", app=\"99\")</call>"}
+{"prompt": "compra um temaki no ifood p/ mim silva", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um yakisoba na 99 pfv", "completion": "<call>order_food(query=\"yakisoba\", app=\"99\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o dentista silva pfv", "completion": "<call>request_ride(destination=\"dentista\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no teatro agr", "completion": "<call>request_ride(destination=\"teatro\", app=\"99\")</call>"}
+{"prompt": "silva peça um pad thai no ifood agr pfvr", "completion": "<call>order_food(query=\"pad thai\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir no mercado agr pfv", "completion": "<call>request_ride(destination=\"mercado\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir pro trabalho hj blz", "completion": "<call>request_ride(destination=\"trabalho\", app=\"99\")</call>"}
+{"prompt": "silva busca uma pizza de calabresa no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"pizza de calabresa\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um hamburguer no ifood agr silva", "completion": "<call>order_food(query=\"hamburguer\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a UPA silva pfv", "completion": "<call>request_ride(destination=\"UPA\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na escola agr pfvr", "completion": "<call>request_ride(destination=\"escola\", app=\"99\")</call>"}
+{"prompt": "silva peça um açaí no ifood agr blz", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "busca uma marmita no ifood p/ mim silva pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ eu ir pro shopping hj", "completion": "<call>request_ride(destination=\"shopping\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ mim ir no hospital agr pfvr", "completion": "<call>request_ride(destination=\"hospital\", app=\"99\")</call>"}
+{"prompt": "silva compra um sushi no ifood p/ mim pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir uma coca cola no ifood agr silva", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o aeroporto agr pfv", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no centro hj blz", "completion": "<call>request_ride(destination=\"centro\", app=\"99\")</call>"}
+{"prompt": "silva busca um lanche no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva peça uma pizza no ifood agr", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir pro banco silva pfv", "completion": "<call>request_ride(destination=\"banco\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na praia agr pfvr", "completion": "<call>request_ride(destination=\"praia\", app=\"99\")</call>"}
+{"prompt": "silva compra um remédio no ifood p/ mim blz", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um sorvete no ifood agr silva pfv", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro hotel agr", "completion": "<call>request_ride(destination=\"hotel\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no cinema hj pfvr", "completion": "<call>request_ride(destination=\"cinema\", app=\"99\")</call>"}
+{"prompt": "silva busca um café no ifood p/ mim pfv", "completion": "<call>order_food(query=\"café\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um sanduíche no ifood agr blz", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a igreja silva pfv", "completion": "<call>request_ride(destination=\"igreja\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no parque agr pfvr", "completion": "<call>request_ride(destination=\"parque\", app=\"99\")</call>"}
+{"prompt": "silva peça uma água no ifood agr pfv", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "busca um pastel no ifood p/ mim silva blz", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro consultório hj", "completion": "<call>request_ride(destination=\"consultório\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na farmácia agr pfvr", "completion": "<call>request_ride(destination=\"farmácia\", app=\"99\")</call>"}
+{"prompt": "silva compra um churrasco no ifood p/ mim pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir uma salada no ifood agr silva", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o clube agr pfv", "completion": "<call>request_ride(destination=\"clube\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na rodoviária hj blz", "completion": "<call>request_ride(destination=\"rodoviária\", app=\"99\")</call>"}
+{"prompt": "silva busca um suco no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "ei silva peça um dogão no ifood agr", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir pro estádio silva pfv", "completion": "<call>request_ride(destination=\"estádio\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no museu agr pfvr", "completion": "<call>request_ride(destination=\"museu\", app=\"99\")</call>"}
+{"prompt": "silva compra um almoço no ifood p/ mim blz", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um jantar no ifood agr silva pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro teatro agr", "completion": "<call>request_ride(destination=\"teatro\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no zoológico hj pfvr", "completion": "<call>request_ride(destination=\"zoológico\", app=\"99\")</call>"}
+{"prompt": "silva busca uma sobremesa no ifood p/ mim pfv", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um bolo no ifood agr blz", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o ponto de ônibus silva pfv", "completion": "<call>request_ride(destination=\"ponto de ônibus\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no supermercado agr pfvr", "completion": "<call>request_ride(destination=\"supermercado\", app=\"99\")</call>"}
+{"prompt": "silva peça um salgado no ifood agr pfv", "completion": "<call>order_food(query=\"salgado\", app=\"ifood\")</call>"}
+{"prompt": "busca uma coxinha no ifood p/ mim silva blz", "completion": "<call>order_food(query=\"coxinha\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro escritório hj", "completion": "<call>request_ride(destination=\"escritório\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no cabeleireiro agr pfvr", "completion": "<call>request_ride(destination=\"cabeleireiro\", app=\"99\")</call>"}
+{"prompt": "silva compra um hambúrguer artesanal no ifood p/ mim pfv", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir uma pizza de frango no ifood agr silva", "completion": "<call>order_food(query=\"pizza de frango\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a estação agr pfv", "completion": "<call>request_ride(destination=\"estação\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no dentista hj blz", "completion": "<call>request_ride(destination=\"dentista\", app=\"99\")</call>"}
+{"prompt": "silva busca um açaí com granola no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"açaí com granola\", app=\"ifood\")</call>"}
+{"prompt": "ei silva peça uma marmita fitness no ifood agr", "completion": "<call>order_food(query=\"marmita fitness\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir pro aeroporto silva pfv", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no shopping agr pfvr", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
+{"prompt": "silva compra um temaki no ifood p/ mim blz", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um yakisoba no ifood agr silva pfv", "completion": "<call>order_food(query=\"yakisoba\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir no trabalho agr pfv", "completion": "<call>request_ride(destination=\"trabalho\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na escola hj blz", "completion": "<call>request_ride(destination=\"escola\", app=\"99\")</call>"}
+{"prompt": "silva busca uma pizza de calabresa no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"pizza de calabresa\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um hamburguer no ifood agr silva", "completion": "<call>order_food(query=\"hamburguer\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o hospital silva pfv", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no mercado agr pfvr", "completion": "<call>request_ride(destination=\"mercado\", app=\"99\")</call>"}
+{"prompt": "silva peça um açaí no ifood agr blz", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "busca uma marmita no ifood p/ mim silva pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ eu ir pro centro hj", "completion": "<call>request_ride(destination=\"centro\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ mim ir no shopping agr pfvr", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
+{"prompt": "silva compra um sushi no ifood p/ mim pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir uma coca cola no ifood agr silva", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o aeroporto agr pfv", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na faculdade hj blz", "completion": "<call>request_ride(destination=\"faculdade\", app=\"99\")</call>"}
+{"prompt": "silva busca um lanche no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva peça uma pizza no ifood agr", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir pro banco silva pfv", "completion": "<call>request_ride(destination=\"banco\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na farmácia agr pfvr", "completion": "<call>request_ride(destination=\"farmácia\", app=\"99\")</call>"}
+{"prompt": "silva compra um remédio no ifood p/ mim blz", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um sorvete no ifood agr silva pfv", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro hotel agr", "completion": "<call>request_ride(destination=\"hotel\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no cinema hj pfvr", "completion": "<call>request_ride(destination=\"cinema\", app=\"99\")</call>"}
+{"prompt": "silva busca um café no ifood p/ mim pfv", "completion": "<call>order_food(query=\"café\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um sanduíche no ifood agr blz", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a igreja silva pfv", "completion": "<call>request_ride(destination=\"igreja\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no parque agr pfvr", "completion": "<call>request_ride(destination=\"parque\", app=\"99\")</call>"}
+{"prompt": "silva peça uma água no ifood agr pfv", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "busca um pastel no ifood p/ mim silva blz", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro consultório hj", "completion": "<call>request_ride(destination=\"consultório\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na padaria agr pfvr", "completion": "<call>request_ride(destination=\"padaria\", app=\"99\")</call>"}
+{"prompt": "silva compra um churrasco no ifood p/ mim pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir uma salada no ifood agr silva", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o clube agr pfv", "completion": "<call>request_ride(destination=\"clube\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir na rodoviária hj blz", "completion": "<call>request_ride(destination=\"rodoviária\", app=\"99\")</call>"}
+{"prompt": "silva busca um suco no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "ei silva peça um dogão no ifood agr", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir pro estádio silva pfv", "completion": "<call>request_ride(destination=\"estádio\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no museu agr pfvr", "completion": "<call>request_ride(destination=\"museu\", app=\"99\")</call>"}
+{"prompt": "silva compra um almoço no ifood p/ mim blz", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um jantar no ifood agr silva pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro teatro agr", "completion": "<call>request_ride(destination=\"teatro\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no zoológico hj pfvr", "completion": "<call>request_ride(destination=\"zoológico\", app=\"99\")</call>"}
+{"prompt": "silva busca uma sobremesa no ifood p/ mim pfv", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um bolo no ifood agr blz", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até o ponto de ônibus silva pfv", "completion": "<call>request_ride(destination=\"ponto de ônibus\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no supermercado agr pfvr", "completion": "<call>request_ride(destination=\"supermercado\", app=\"99\")</call>"}
+{"prompt": "silva peça um salgado no ifood agr pfv", "completion": "<call>order_food(query=\"salgado\", app=\"ifood\")</call>"}
+{"prompt": "busca uma coxinha no ifood p/ mim silva blz", "completion": "<call>order_food(query=\"coxinha\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir pro escritório hj", "completion": "<call>request_ride(destination=\"escritório\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no cabeleireiro agr pfvr", "completion": "<call>request_ride(destination=\"cabeleireiro\", app=\"99\")</call>"}
+{"prompt": "silva compra um hambúrguer artesanal no ifood p/ mim pfv", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir uma pizza de frango no ifood agr silva", "completion": "<call>order_food(query=\"pizza de frango\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir até a estação agr pfv", "completion": "<call>request_ride(destination=\"estação\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no dentista hj blz", "completion": "<call>request_ride(destination=\"dentista\", app=\"99\")</call>"}
+{"prompt": "silva busca um açaí com granola no ifood p/ mim pfvr", "completion": "<call>order_food(query=\"açaí com granola\", app=\"ifood\")</call>"}
+{"prompt": "ei silva peça uma marmita fitness no ifood agr", "completion": "<call>order_food(query=\"marmita fitness\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber p/ mim ir pro aeroporto silva pfv", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 p/ eu ir no shopping agr pfvr", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
+{"prompt": "silva compra um temaki no ifood p/ mim blz", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um yakisoba no ifood agr silva pfv", "completion": "<call>order_food(query=\"yakisoba\", app=\"ifood\")</call>"}

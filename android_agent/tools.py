@@ -29,21 +29,175 @@ LAST_LOCATION_FILE = DATA_DIR / "last_location.json"
 
 # Mapeamento de nomes amigáveis para pacotes Android conhecidos
 APP_PACKAGES = {
+    "hltv": "org.hltv.android",
+    "bitget wallet": "com.bgwapp.official",
+    "bitget": "com.bgwapp.official",
+    "yt studio": "com.google.android.apps.youtube.creator",
+    "youtube studio": "com.google.android.apps.youtube.creator",
+    "duckduckgo": "com.duckduckgo.mobile.android",
+    "duckduck": "com.duckduckgo.mobile.android",
+    "instagram": "com.instagram.android",
+    "insta": "com.instagram.android",
+    "vlc": "org.videolan.vlc",
+    "99": "com.taxis99",
+    "99pop": "com.taxis99",
+    "caixa tem": "br.gov.caixa.tem",
+    "caixatem": "br.gov.caixa.tem",
+    "termux": "com.termux",
+    "metamask": "io.metamask",
+    "zarchiver": "ru.zdevs.zarchiver",
+    "carteira do google": "com.google.android.apps.walletnfcrel",
+    "google wallet": "com.google.android.apps.walletnfcrel",
+    "carteira": "com.google.android.apps.walletnfcrel",
+    "em 3": "com.oxiwyle.modernage3",
+    "simulador do presidente": "com.oxiwyle.modernage3",
+    "aqua": "io.aquawallet.android",
+    "aqua wallet": "io.aquawallet.android",
+    "mercado bitcoin": "br.com.mercadobitcoin.android",
+    "x": "com.twitter.android",
+    "twitter": "com.twitter.android",
+    "jornada do estudante": "br.gov.mec.jornada.estudante",
+    "sideshift": "ai.sideshift.app",
+    "github": "com.github.android",
+    "shein": "com.zzkko",
+    "gemini": "com.google.android.apps.bard",
+    "lobstr": "com.lobstr.client",
+    "trust wallet": "com.wallet.crypto.trustapp",
+    "chatgpt": "com.openai.chatgpt",
+    "yoosee": "com.yoosee",
+    "calculadora": "com.sec.android.app.popupcalculator",
+    "discord": "com.discord",
+    "tradingview": "com.tradingview.tradingviewapp",
+    "bomber friends": "com.hyperkani.bomberfriends",
+    "sideswap": "io.sideswap",
+    "userland": "tech.ula",
+    "cittamobi": "br.com.cittabus",
+    "gamemarket": "br.com.gamemarket.app",
+    "tiktok": "com.zhiliaoapp.musically",
+    "pichau": "com.pichaumobile",
+    "shopee": "com.shopee.br",
+    "pinterest": "com.pinterest",
+    "nubank": "com.nu.production",
+    "telegram": "org.telegram.messenger",
+    "ifood": "br.com.brainweb.ifood",
     "whatsapp": "com.whatsapp",
+    "duolingo": "com.duolingo",
+    "proton mail": "ch.protonmail.android",
+    "protonmail": "ch.protonmail.android",
+    "twitch": "tv.twitch.android.app",
+    "adguard": "com.adguard.android",
+    "snaptube": "com.snaptube.premium",
+    "steam": "com.valvesoftware.android.steam.community",
+    "amazon shopping": "com.amazon.mShop.android.shopping",
+    "amazon": "com.amazon.mShop.android.shopping",
+    "calendario": "com.samsung.android.calendar",
+    "calendário": "com.samsung.android.calendar",
+    "chat maritaca": "com.maritaca.app",
+    "maritaca": "com.maritaca.app",
+    "bluewallet": "io.bluewallet.bluewallet",
+    "celular seguro": "com.celularlegal",
+    "wallet of satoshi": "com.livingroomofsatoshi.wallet",
+    "minecraft": "com.mojang.minecraftpe",
+    "kick": "com.kick.mobile",
+    "authenticator": "com.google.android.apps.authenticator2",
+    "cartao vem": "vem.posto.virtual",
+    "cartão vem": "vem.posto.virtual",
+    "vem": "vem.posto.virtual",
+    "deepseek": "com.deepseek.chat",
+    # Aplicativos essenciais do sistema
     "youtube": "com.google.android.youtube",
     "chrome": "com.android.chrome",
-    "camera": "com.android.camera",
+    "camera": "com.sec.android.app.camera",
+    "câmera": "com.sec.android.app.camera",
     "configuracoes": "com.android.settings",
+    "configurações": "com.android.settings",
     "settings": "com.android.settings",
     "spotify": "com.spotify.music",
     "gmail": "com.google.android.gm",
     "maps": "com.google.android.apps.maps",
-    "calculadora": "com.google.android.calculator",
-    "galeria": "com.google.android.apps.photos",
-    "fotos": "com.google.android.apps.photos",
-    "telegram": "org.telegram.messenger",
-    "tiktok": "com.zhiliaoapp.musically",
+    "google maps": "com.google.android.apps.maps",
+    "galeria": "com.sec.android.gallery3d",
+    "fotos": "com.sec.android.gallery3d",
+    "relogio": "com.sec.android.app.clockpackage",
+    "relógio": "com.sec.android.app.clockpackage",
+    "alarme": "com.sec.android.app.clockpackage",
+    "gov.br": "br.gov.meugovbr",
+    "govbr": "br.gov.meugovbr",
+    "meu gov": "br.gov.meugovbr",
+    "roblox": "com.roblox.client",
+    "outlook": "com.microsoft.office.outlook"
 }
+
+RESOLVED_APP_ACTIVITIES = {   'ai.sideshift.app': 'ai.sideshift.app/.MainActivity',
+    'br.com.brainweb.ifood': 'br.com.brainweb.ifood/.AppIcon',
+    'br.com.cittabus': 'br.com.cittabus/br.com.cittati.cittamobi_flutter.MainActivity',
+    'br.com.gamemarket.app': 'br.com.gamemarket.app/.LauncherActivity',
+    'br.com.mercadobitcoin.android': 'br.com.mercadobitcoin.android/br.com.mercadobitcoin.welcome.view.WelcomeActivity',
+    'br.gov.caixa.tem': 'br.gov.caixa.tem/.ui.activities.SplashScreenAnimation',
+    'br.gov.mec.jornada.estudante': 'br.gov.mec.jornada.estudante/.MainActivity',
+    'br.gov.meugovbr': 'br.gov.meugovbr/.MainActivity',
+    'ch.protonmail.android': 'ch.protonmail.android/.RoutingActivity',
+    'com.adguard.android': 'com.adguard.android/.ui.activity.SplashActivity',
+    'com.amazon.mShop.android.shopping': 'com.amazon.mShop.android.shopping/com.amazon.mShop.home.HomeActivity',
+    'com.android.chrome': 'com.android.chrome/com.google.android.apps.chrome.Main',
+    'com.android.settings': 'com.android.settings/.Settings',
+    'com.bgwapp.official': 'com.bgwapp.official/.MainActivity',
+    'com.celularlegal': 'com.celularlegal/.MainActivity',
+    'com.deepseek.chat': 'com.deepseek.chat/.MainActivity',
+    'com.discord': 'com.discord/.main.MainDefault',
+    'com.duckduckgo.mobile.android': 'com.duckduckgo.mobile.android/com.duckduckgo.app.launch.Launcher',
+    'com.duolingo': 'com.duolingo/.app.LoginActivity',
+    'com.github.android': 'com.github.android/.main.MainActivity',
+    'com.google.android.apps.authenticator2': 'com.google.android.apps.authenticator2/.main.MainActivity',
+    'com.google.android.apps.bard': 'com.google.android.apps.bard/.shellapp.BardEntryPointActivity',
+    'com.google.android.apps.maps': 'com.google.android.apps.maps/com.google.android.maps.MapsActivity',
+    'com.google.android.apps.walletnfcrel': 'com.google.android.apps.walletnfcrel/com.google.commerce.tapandpay.android.wallet.WalletActivity',
+    'com.google.android.apps.youtube.creator': 'com.google.android.apps.youtube.creator/.main.MainActivity',
+    'com.google.android.gm': 'com.google.android.gm/.ConversationListActivityGmail',
+    'com.google.android.youtube': 'com.google.android.youtube/.app.honeycomb.Shell$HomeActivity',
+    'com.hyperkani.bomberfriends': 'com.hyperkani.bomberfriends/.BomberFriends',
+    'com.instagram.android': 'com.instagram.android/.activity.MainTabActivity',
+    'com.kick.mobile': 'com.kick.mobile/.MainActivity',
+    'com.livingroomofsatoshi.wallet': 'com.livingroomofsatoshi.wallet/.MainActivity',
+    'com.lobstr.client': 'com.lobstr.client/app_icon_alias.InitialAlias',
+    'com.maritaca.app': 'com.maritaca.app/.MainActivity',
+    'com.microsoft.office.outlook': 'com.microsoft.office.outlook/.MainActivity',
+    'com.mojang.minecraftpe': 'com.mojang.minecraftpe/.MainActivity',
+    'com.nu.production': 'com.nu.production/br.com.nubank.app.LegacySplashActivity',
+    'com.openai.chatgpt': 'com.openai.chatgpt/.MainActivity',
+    'com.oxiwyle.modernage3': 'com.oxiwyle.modernage3/com.oxiwyle.modernage2.activities.StartActivity',
+    'com.pichaumobile': 'com.pichaumobile/.MainActivity',
+    'com.pinterest': 'com.pinterest/.activity.PinterestActivity',
+    'com.roblox.client': 'com.roblox.client/.startup.LauncherAliasMain',
+    'com.samsung.android.calendar': 'com.samsung.android.calendar/com.samsung.android.app.calendar.activity.MainActivity',
+    'com.sec.android.app.camera': 'com.sec.android.app.camera/.Camera',
+    'com.sec.android.app.clockpackage': 'com.sec.android.app.clockpackage/.ClockPackage',
+    'com.sec.android.app.popupcalculator': 'com.sec.android.app.popupcalculator/.Calculator',
+    'com.sec.android.gallery3d': 'com.sec.android.gallery3d/com.samsung.android.gallery.app.activity.GalleryActivity',
+    'com.shopee.br': 'com.shopee.br/com.shopee.app.ui.home.HomeActivity_',
+    'com.snaptube.premium': 'com.snaptube.premium/.activity.ExploreActivity',
+    'com.spotify.music': None,
+    'com.taxis99': 'com.taxis99/com.didi.sdk.splash.SplashActivity',
+    'com.termux': 'com.termux/.app.TermuxActivity',
+    'com.tradingview.tradingviewapp': 'com.tradingview.tradingviewapp/.root.view.RootActivity',
+    'com.twitter.android': 'com.twitter.android/com.x.android.main.MainActivity',
+    'com.valvesoftware.android.steam.community': 'com.valvesoftware.android.steam.community/.MainActivity',
+    'com.wallet.crypto.trustapp': 'com.wallet.crypto.trustapp/.ui.app.AppActivity.default',
+    'com.whatsapp': 'com.whatsapp/.Main',
+    'com.yoosee': 'com.yoosee/com.jwkj.activity.LogoActivity',
+    'com.zhiliaoapp.musically': 'com.zhiliaoapp.musically/com.ss.android.ugc.aweme.splash.SplashActivity',
+    'com.zzkko': 'com.zzkko/com.shein.welcome.WelcomeActivity',
+    'io.aquawallet.android': 'io.aquawallet.android/io.aquawallet.MainActivity',
+    'io.bluewallet.bluewallet': 'io.bluewallet.bluewallet/.MainActivity',
+    'io.metamask': 'io.metamask/.MainActivity',
+    'io.sideswap': 'io.sideswap/.MainActivity',
+    'org.hltv.android': 'org.hltv.android/org.hltv.mobileapp.MainActivity',
+    'org.telegram.messenger': 'org.telegram.messenger/.DefaultIcon',
+    'org.videolan.vlc': 'org.videolan.vlc/.StartActivity',
+    'ru.zdevs.zarchiver': 'ru.zdevs.zarchiver/.ZArchiver',
+    'tech.ula': 'tech.ula/.MainActivity',
+    'tv.twitch.android.app': 'tv.twitch.android.app/.core.LandingActivity',
+    'vem.posto.virtual': 'vem.posto.virtual/.MainActivity'}
 
 
 def sanitize_phone_number(number: str) -> str:
@@ -95,7 +249,7 @@ def _run_termux_cmd(cmd: list[str], timeout: int = 10) -> subprocess.CompletedPr
 
     # Se o binário não estiver no PATH, procura nos caminhos conhecidos do Android/Termux
     if not shutil.which(binary):
-        for candidate in [f"/system/bin/{binary}", f"/system/xbin/{binary}", f"/data/data/com.termux/files/usr/bin/{binary}"]:
+        for candidate in [f"/data/data/com.termux/files/usr/bin/{binary}", f"/system/bin/{binary}", f"/system/xbin/{binary}"]:
             if os.path.exists(candidate):
                 exec_cmd[0] = candidate
                 break
@@ -108,22 +262,46 @@ def _run_termux_cmd(cmd: list[str], timeout: int = 10) -> subprocess.CompletedPr
             timeout=timeout,
             check=False
         )
-    except OSError as e:
-        # Se deu Exec format error (comum em wrappers shell do Android como monkey), invoca com /system/bin/sh
-        if exec_cmd[0].startswith("/system/bin/"):
-            try:
-                return subprocess.run(
-                    ["/system/bin/sh"] + exec_cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout,
-                    check=False
-                )
-            except Exception as e2:
-                return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr=str(e2))
-        return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr=str(e))
+    except OSError:
+        # Fallback para invocação via shell do Termux/Android caso ocorra Exec format error
+        sh_bin = "/data/data/com.termux/files/usr/bin/sh" if os.path.exists("/data/data/com.termux/files/usr/bin/sh") else "/system/bin/sh"
+        try:
+            return subprocess.run(
+                [sh_bin] + exec_cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                check=False
+            )
+        except Exception as e2:
+            return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr=str(e2))
     except Exception as e:
         return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr=str(e))
+
+
+def _exec_android_intent(cmd_str: str, timeout: int = 6) -> subprocess.CompletedProcess:
+    """Executa comando de intent/app priorizando o am do Termux ou shell Android para máxima compatibilidade."""
+    termux_bin = "/data/data/com.termux/files/usr/bin"
+    sh_bin = f"{termux_bin}/sh" if os.path.exists(f"{termux_bin}/sh") else "/system/bin/sh"
+
+    # Se o comando chama 'am', preferir o binário wrapper do Termux se existir (evita Permission Denial no Android 14)
+    am_bin = f"{termux_bin}/am" if os.path.exists(f"{termux_bin}/am") else "am"
+    if cmd_str.startswith("am "):
+        exec_str = f"{am_bin} {cmd_str[3:]}"
+    else:
+        exec_str = cmd_str
+
+    full_cmd = f"export PATH={termux_bin}:$PATH:/system/bin:/system/xbin; {exec_str}"
+    try:
+        return subprocess.run(
+            [sh_bin, "-c", full_cmd],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False
+        )
+    except Exception as e:
+        return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr=str(e))
 
 
 def get_battery() -> Dict[str, Any]:
@@ -437,7 +615,9 @@ def record_video(duration: int = 10, camera_id: int = 0) -> Dict[str, Any]:
 def open_app(app_name: str) -> Dict[str, Any]:
     """Abre um aplicativo pelo nome ou pacote Android."""
     key = str(app_name).strip().lower()
-    package = APP_PACKAGES.get(key, key)
+    # Normaliza removendo acentos para casar 'calendário' com 'calendario', etc.
+    key_unaccent = unicodedata.normalize("NFKD", key).encode("ASCII", "ignore").decode("utf-8")
+    package = APP_PACKAGES.get(key) or APP_PACKAGES.get(key_unaccent) or key
 
     packages_to_try = [package]
     if key == "tiktok" or package in ("com.zhiliaoapp.musically", "com.ss.android.ugc.trill"):
@@ -453,40 +633,34 @@ def open_app(app_name: str) -> Dict[str, Any]:
     try:
         opened_pkg = None
         for pkg in packages_to_try:
-            # 1. Resolve dinamicamente a Activity de Launcher oficial do app via cmd package
-            res_resolve = _run_termux_cmd(["cmd", "package", "resolve-activity", "--brief", pkg], timeout=4)
-            if res_resolve.returncode == 0 and res_resolve.stdout:
-                matches = [l.strip() for l in res_resolve.stdout.splitlines() if "/" in l and not l.strip().startswith("priority")]
-                if matches and not any(err in matches[0].lower() for err in ["error", "unknown", "failed"]):
-                    act = matches[0]
-                    res_act = _run_termux_cmd(["am", "start", "-n", act], timeout=6)
-                    if res_act.returncode == 0:
-                        opened_pkg = pkg
-                        break
-
-            # 2. Atividade Splash conhecida para TikTok
-            if pkg in ("com.zhiliaoapp.musically", "com.ss.android.ugc.trill"):
-                res_tt = _run_termux_cmd(["am", "start", "-n", f"{pkg}/com.ss.android.ugc.aweme.splash.SplashActivity"], timeout=6)
-                if res_tt.returncode == 0:
+            # 1. Componente explícito se fornecido (ex: pkg/activity)
+            if "/" in pkg:
+                res_c = _exec_android_intent(f"am start -n {pkg}")
+                if res_c.returncode == 0 and "Error:" not in res_c.stdout:
                     opened_pkg = pkg
                     break
 
-            # 3. Tenta via monkey (método estável para abrir pelo pacote no Termux)
-            res = _run_termux_cmd(["monkey", "-p", pkg, "-c", "android.intent.category.LAUNCHER", "1"], timeout=6)
-            if res.returncode == 0:
+            # 2. Resolução exata via mapa de Activities verificadas no dispositivo
+            if pkg in RESOLVED_APP_ACTIVITIES and RESOLVED_APP_ACTIVITIES[pkg]:
+                act_comp = RESOLVED_APP_ACTIVITIES[pkg]
+                res_act = _exec_android_intent(f"am start -n {act_comp}")
+                if res_act.returncode == 0 and "Error:" not in res_act.stdout:
+                    opened_pkg = pkg
+                    break
+
+            # 3. Fallback am start com categoria LAUNCHER
+            res_am = _exec_android_intent(f"am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p {pkg}")
+            if res_am.returncode == 0 and "Error:" not in res_am.stdout:
                 opened_pkg = pkg
                 break
 
-            # 4. Fallback para am start com categoria LAUNCHER
-            res_am = _run_termux_cmd(["am", "start", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER", "-p", pkg], timeout=6)
-            if res_am.returncode == 0:
-                opened_pkg = pkg
-                break
-
-            # 5. Fallback para am start direto
-            res_am_direct = _run_termux_cmd(["am", "start", "-n", f"{pkg}/.MainActivity"], timeout=6)
-            if res_am_direct.returncode == 0:
-                opened_pkg = pkg
+            # 4. Fallback am start direto em Activities comuns
+            for act in [".MainActivity", ".Main", ".Calculator", ".HomeActivity", ".SplashActivity"]:
+                res_act = _exec_android_intent(f"am start -n {pkg}/{act}")
+                if res_act.returncode == 0 and "Error:" not in res_act.stdout:
+                    opened_pkg = pkg
+                    break
+            if opened_pkg:
                 break
 
         if not opened_pkg:

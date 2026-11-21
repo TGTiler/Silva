@@ -4190,3 +4190,699 @@
 {"prompt": "Como tá o clima em João Pessoa agora?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"João Pessoa\")</call>"}
 {"prompt": "Qual a temperatura prevista para as 12:00?", "completion": "<call>get_weather(day=\"hoje\", time=\"12:00\", location=\"\")</call>"}
 {"prompt": "Silva, vai chover amanhã de tarde?", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "Silva, abre o HLTV", "completion": "<call>open_app(app_name=\"org.hltv.android\")</call>"}
+{"prompt": "abre a Bitget Wallet", "completion": "<call>open_app(app_name=\"com.bgwapp.official\")</call>"}
+{"prompt": "ei silva abre o Bitget", "completion": "<call>open_app(app_name=\"com.bgwapp.official\")</call>"}
+{"prompt": "silva abre o YouTube Studio pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.youtube.creator\")</call>"}
+{"prompt": "abre o DuckDuckGo silva", "completion": "<call>open_app(app_name=\"com.duckduckgo.mobile.android\")</call>"}
+{"prompt": "Silva, abre o Instagram", "completion": "<call>open_app(app_name=\"com.instagram.android\")</call>"}
+{"prompt": "silva abre o VLC pfv", "completion": "<call>open_app(app_name=\"org.videolan.vlc\")</call>"}
+{"prompt": "ei silva abre o 99", "completion": "<call>open_app(app_name=\"com.taxis99\")</call>"}
+{"prompt": "abre o Caixa Tem silva", "completion": "<call>open_app(app_name=\"br.gov.caixa.tem\")</call>"}
+{"prompt": "Silva, abre o Termux", "completion": "<call>open_app(app_name=\"com.termux\")</call>"}
+{"prompt": "silva abre o MetaMask pfv", "completion": "<call>open_app(app_name=\"io.metamask\")</call>"}
+{"prompt": "ei silva abre o ZArchiver", "completion": "<call>open_app(app_name=\"ru.zdevs.zarchiver\")</call>"}
+{"prompt": "abre a Carteira do Google silva", "completion": "<call>open_app(app_name=\"com.google.android.apps.walletnfcrel\")</call>"}
+{"prompt": "Silva, abre o Google Wallet", "completion": "<call>open_app(app_name=\"com.google.android.apps.walletnfcrel\")</call>"}
+{"prompt": "silva abre o Em 3 pfv", "completion": "<call>open_app(app_name=\"com.oxiwyle.modernage3\")</call>"}
+{"prompt": "ei silva abre o Simulador do Presidente", "completion": "<call>open_app(app_name=\"com.oxiwyle.modernage3\")</call>"}
+{"prompt": "abre o Aqua silva", "completion": "<call>open_app(app_name=\"io.aquawallet.android\")</call>"}
+{"prompt": "Silva, abre o Aqua Wallet", "completion": "<call>open_app(app_name=\"io.aquawallet.android\")</call>"}
+{"prompt": "silva abre o Mercado Bitcoin pfv", "completion": "<call>open_app(app_name=\"br.com.mercadobitcoin.android\")</call>"}
+{"prompt": "ei silva abre o X", "completion": "<call>open_app(app_name=\"com.twitter.android\")</call>"}
+{"prompt": "abre o Twitter silva", "completion": "<call>open_app(app_name=\"com.twitter.android\")</call>"}
+{"prompt": "Silva, abre a Jornada do Estudante", "completion": "<call>open_app(app_name=\"br.gov.mec.jornada.estudante\")</call>"}
+{"prompt": "silva abre o SideShift pfv", "completion": "<call>open_app(app_name=\"ai.sideshift.app\")</call>"}
+{"prompt": "ei silva abre o GitHub", "completion": "<call>open_app(app_name=\"com.github.android\")</call>"}
+{"prompt": "abre a Shein silva", "completion": "<call>open_app(app_name=\"com.zzkko\")</call>"}
+{"prompt": "Silva, abre o Gemini", "completion": "<call>open_app(app_name=\"com.google.android.apps.bard\")</call>"}
+{"prompt": "silva abre o Lobstr pfv", "completion": "<call>open_app(app_name=\"com.lobstr.client\")</call>"}
+{"prompt": "ei silva abre a Trust Wallet", "completion": "<call>open_app(app_name=\"com.wallet.crypto.trustapp\")</call>"}
+{"prompt": "abre o ChatGPT silva", "completion": "<call>open_app(app_name=\"com.openai.chatgpt\")</call>"}
+{"prompt": "Silva, abre o Yoosee", "completion": "<call>open_app(app_name=\"com.yoosee\")</call>"}
+{"prompt": "silva abre a Calculadora pfv", "completion": "<call>open_app(app_name=\"com.sec.android.app.popupcalculator\")</call>"}
+{"prompt": "ei silva abre o Discord", "completion": "<call>open_app(app_name=\"com.discord\")</call>"}
+{"prompt": "abre o TradingView silva", "completion": "<call>open_app(app_name=\"com.tradingview.tradingviewapp\")</call>"}
+{"prompt": "Silva, abre o Bomber Friends", "completion": "<call>open_app(app_name=\"com.hyperkani.bomberfriends\")</call>"}
+{"prompt": "silva abre o SideSwap pfv", "completion": "<call>open_app(app_name=\"io.sideswap\")</call>"}
+{"prompt": "ei silva abre o UserLAnd", "completion": "<call>open_app(app_name=\"tech.ula\")</call>"}
+{"prompt": "abre o Cittamobi silva", "completion": "<call>open_app(app_name=\"br.com.cittabus\")</call>"}
+{"prompt": "Silva, abre o GameMarket", "completion": "<call>open_app(app_name=\"br.com.gamemarket.app\")</call>"}
+{"prompt": "silva abre o TikTok pfv", "completion": "<call>open_app(app_name=\"com.zhiliaoapp.musically\")</call>"}
+{"prompt": "ei silva abre a Pichau", "completion": "<call>open_app(app_name=\"com.pichaumobile\")</call>"}
+{"prompt": "abre a Shopee silva", "completion": "<call>open_app(app_name=\"com.shopee.br\")</call>"}
+{"prompt": "Silva, abre o Pinterest", "completion": "<call>open_app(app_name=\"com.pinterest\")</call>"}
+{"prompt": "silva abre o Nubank pfv", "completion": "<call>open_app(app_name=\"com.nu.production\")</call>"}
+{"prompt": "ei silva abre o Telegram", "completion": "<call>open_app(app_name=\"org.telegram.messenger\")</call>"}
+{"prompt": "abre o iFood silva", "completion": "<call>open_app(app_name=\"br.com.brainweb.ifood\")</call>"}
+{"prompt": "Silva, abre o WhatsApp", "completion": "<call>open_app(app_name=\"com.whatsapp\")</call>"}
+{"prompt": "silva abre o Duolingo pfv", "completion": "<call>open_app(app_name=\"com.duolingo\")</call>"}
+{"prompt": "ei silva abre o Proton Mail", "completion": "<call>open_app(app_name=\"ch.protonmail.android\")</call>"}
+{"prompt": "abre o ProtonMail silva", "completion": "<call>open_app(app_name=\"ch.protonmail.android\")</call>"}
+{"prompt": "Silva, abre a Twitch", "completion": "<call>open_app(app_name=\"tv.twitch.android.app\")</call>"}
+{"prompt": "silva abre o AdGuard pfv", "completion": "<call>open_app(app_name=\"com.adguard.android\")</call>"}
+{"prompt": "ei silva abre o Snaptube", "completion": "<call>open_app(app_name=\"com.snaptube.premium\")</call>"}
+{"prompt": "abre a Steam silva", "completion": "<call>open_app(app_name=\"com.valvesoftware.android.steam.community\")</call>"}
+{"prompt": "Silva, abre o Amazon Shopping", "completion": "<call>open_app(app_name=\"com.amazon.mShop.android.shopping\")</call>"}
+{"prompt": "silva abre a Amazon pfv", "completion": "<call>open_app(app_name=\"com.amazon.mShop.android.shopping\")</call>"}
+{"prompt": "ei silva abre o Calendário", "completion": "<call>open_app(app_name=\"com.samsung.android.calendar\")</call>"}
+{"prompt": "abre o Chat Maritaca silva", "completion": "<call>open_app(app_name=\"com.maritaca.app\")</call>"}
+{"prompt": "Silva, abre o Maritaca", "completion": "<call>open_app(app_name=\"com.maritaca.app\")</call>"}
+{"prompt": "silva abre a BlueWallet pfv", "completion": "<call>open_app(app_name=\"io.bluewallet.bluewallet\")</call>"}
+{"prompt": "ei silva abre o Celular Seguro", "completion": "<call>open_app(app_name=\"com.celularlegal\")</call>"}
+{"prompt": "Silva, abre o HLTV aí", "completion": "<call>open_app(app_name=\"org.hltv.android\")</call>"}
+{"prompt": "abre a carteira da bitget pfv", "completion": "<call>open_app(app_name=\"com.bgwapp.official\")</call>"}
+{"prompt": "ei silva abre o app da bitget", "completion": "<call>open_app(app_name=\"com.bgwapp.official\")</call>"}
+{"prompt": "silva abre o studio do youtube", "completion": "<call>open_app(app_name=\"com.google.android.apps.youtube.creator\")</call>"}
+{"prompt": "abre o duck duck go silva pfv", "completion": "<call>open_app(app_name=\"com.duckduckgo.mobile.android\")</call>"}
+{"prompt": "Silva, abre o insta", "completion": "<call>open_app(app_name=\"com.instagram.android\")</call>"}
+{"prompt": "abre o vlc player silva", "completion": "<call>open_app(app_name=\"org.videolan.vlc\")</call>"}
+{"prompt": "ei silva abre o app do 99", "completion": "<call>open_app(app_name=\"com.taxis99\")</call>"}
+{"prompt": "silva abre o caixa tem pfv", "completion": "<call>open_app(app_name=\"br.gov.caixa.tem\")</call>"}
+{"prompt": "abre o terminal termux silva", "completion": "<call>open_app(app_name=\"com.termux\")</call>"}
+{"prompt": "Silva, abre a metamask aí", "completion": "<call>open_app(app_name=\"io.metamask\")</call>"}
+{"prompt": "silva abre o zarchiver pfv", "completion": "<call>open_app(app_name=\"ru.zdevs.zarchiver\")</call>"}
+{"prompt": "ei silva abre a carteira do google", "completion": "<call>open_app(app_name=\"com.google.android.apps.walletnfcrel\")</call>"}
+{"prompt": "abre o google wallet silva pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.walletnfcrel\")</call>"}
+{"prompt": "Silva, abre o em 3", "completion": "<call>open_app(app_name=\"com.oxiwyle.modernage3\")</call>"}
+{"prompt": "silva abre o simulador do presidente pfv", "completion": "<call>open_app(app_name=\"com.oxiwyle.modernage3\")</call>"}
+{"prompt": "ei silva abre o aqua wallet", "completion": "<call>open_app(app_name=\"io.aquawallet.android\")</call>"}
+{"prompt": "abre o aqua silva pfv", "completion": "<call>open_app(app_name=\"io.aquawallet.android\")</call>"}
+{"prompt": "Silva, abre o mercado bitcoin", "completion": "<call>open_app(app_name=\"br.com.mercadobitcoin.android\")</call>"}
+{"prompt": "silva abre o twitter pfv", "completion": "<call>open_app(app_name=\"com.twitter.android\")</call>"}
+{"prompt": "ei silva abre o x aí", "completion": "<call>open_app(app_name=\"com.twitter.android\")</call>"}
+{"prompt": "abre a jornada do estudante silva", "completion": "<call>open_app(app_name=\"br.gov.mec.jornada.estudante\")</call>"}
+{"prompt": "Silva, abre o sideshift pfv", "completion": "<call>open_app(app_name=\"ai.sideshift.app\")</call>"}
+{"prompt": "silva abre o github aí", "completion": "<call>open_app(app_name=\"com.github.android\")</call>"}
+{"prompt": "ei silva abre a shein", "completion": "<call>open_app(app_name=\"com.zzkko\")</call>"}
+{"prompt": "abre o gemini silva pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.bard\")</call>"}
+{"prompt": "Silva, abre o lobstr", "completion": "<call>open_app(app_name=\"com.lobstr.client\")</call>"}
+{"prompt": "silva abre a trust wallet pfv", "completion": "<call>open_app(app_name=\"com.wallet.crypto.trustapp\")</call>"}
+{"prompt": "ei silva abre o chatgpt", "completion": "<call>open_app(app_name=\"com.openai.chatgpt\")</call>"}
+{"prompt": "abre o yoosee silva", "completion": "<call>open_app(app_name=\"com.yoosee\")</call>"}
+{"prompt": "Silva, abre a calculadora aí", "completion": "<call>open_app(app_name=\"com.sec.android.app.popupcalculator\")</call>"}
+{"prompt": "silva abre o discord pfv", "completion": "<call>open_app(app_name=\"com.discord\")</call>"}
+{"prompt": "ei silva abre o tradingview", "completion": "<call>open_app(app_name=\"com.tradingview.tradingviewapp\")</call>"}
+{"prompt": "abre o bomber friends silva pfv", "completion": "<call>open_app(app_name=\"com.hyperkani.bomberfriends\")</call>"}
+{"prompt": "Silva, abre o sideswap", "completion": "<call>open_app(app_name=\"io.sideswap\")</call>"}
+{"prompt": "silva abre o userland pfv", "completion": "<call>open_app(app_name=\"tech.ula\")</call>"}
+{"prompt": "ei silva abre o cittamobi", "completion": "<call>open_app(app_name=\"br.com.cittabus\")</call>"}
+{"prompt": "abre o gamemarket silva", "completion": "<call>open_app(app_name=\"br.com.gamemarket.app\")</call>"}
+{"prompt": "Silva, abre o tiktok aí", "completion": "<call>open_app(app_name=\"com.zhiliaoapp.musically\")</call>"}
+{"prompt": "silva abre a pichau pfv", "completion": "<call>open_app(app_name=\"com.pichaumobile\")</call>"}
+{"prompt": "ei silva abre a shopee", "completion": "<call>open_app(app_name=\"com.shopee.br\")</call>"}
+{"prompt": "abre o pinterest silva pfv", "completion": "<call>open_app(app_name=\"com.pinterest\")</call>"}
+{"prompt": "Silva, abre o nubank aí", "completion": "<call>open_app(app_name=\"com.nu.production\")</call>"}
+{"prompt": "silva abre o telegram pfv", "completion": "<call>open_app(app_name=\"org.telegram.messenger\")</call>"}
+{"prompt": "ei silva abre o ifood", "completion": "<call>open_app(app_name=\"br.com.brainweb.ifood\")</call>"}
+{"prompt": "abre o zap silva pfv", "completion": "<call>open_app(app_name=\"com.whatsapp\")</call>"}
+{"prompt": "Silva, abre o duolingo", "completion": "<call>open_app(app_name=\"com.duolingo\")</call>"}
+{"prompt": "silva abre o proton mail pfv", "completion": "<call>open_app(app_name=\"ch.protonmail.android\")</call>"}
+{"prompt": "ei silva abre o twitch", "completion": "<call>open_app(app_name=\"tv.twitch.android.app\")</call>"}
+{"prompt": "abre o adguard silva pfv", "completion": "<call>open_app(app_name=\"com.adguard.android\")</call>"}
+{"prompt": "Silva, abre o snaptube", "completion": "<call>open_app(app_name=\"com.snaptube.premium\")</call>"}
+{"prompt": "silva abre a steam pfv", "completion": "<call>open_app(app_name=\"com.valvesoftware.android.steam.community\")</call>"}
+{"prompt": "ei silva abre a amazon", "completion": "<call>open_app(app_name=\"com.amazon.mShop.android.shopping\")</call>"}
+{"prompt": "abre o calendário silva pfv", "completion": "<call>open_app(app_name=\"com.samsung.android.calendar\")</call>"}
+{"prompt": "Silva, abre o chat maritaca", "completion": "<call>open_app(app_name=\"com.maritaca.app\")</call>"}
+{"prompt": "silva abre a bluewallet pfv", "completion": "<call>open_app(app_name=\"io.bluewallet.bluewallet\")</call>"}
+{"prompt": "ei silva abre o celular seguro", "completion": "<call>open_app(app_name=\"com.celularlegal\")</call>"}
+{"prompt": "abre a wallet of satoshi silva pfv", "completion": "<call>open_app(app_name=\"com.livingroomofsatoshi.wallet\")</call>"}
+{"prompt": "Silva, abre o minecraft aí", "completion": "<call>open_app(app_name=\"com.mojang.minecraftpe\")</call>"}
+{"prompt": "silva abre o kick pfv", "completion": "<call>open_app(app_name=\"com.kick.mobile\")</call>"}
+{"prompt": "ei silva abre o authenticator", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o autenticador do google aí", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o google authenticator", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o app de autenticação", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador do google silva pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o authenticator agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o autenticador aí pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o autenticador do google agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o google authenticator silva", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o app autenticador pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o autenticador do google pfv agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador aí silva pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o autenticador do google aí pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o authenticator do google", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador do google silva agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o google autenticador", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o app do autenticador pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o autenticador do google agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador silva pfv agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o authenticator pfv agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o autenticador do google aí agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o google authenticator aí silva pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o app de autenticação do google", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o autenticador do google pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador do google agora silva pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o autenticador aí pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o authenticator agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o autenticador do google pfv agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o google authenticator agora silva", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o app autenticador agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o autenticador do google aí pfv agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador pfv silva agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o autenticador do google agora pfv agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o authenticator do google agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o app de autenticação silva agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o autenticador do google agora pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o google autenticador agora pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "ei silva abre o autenticador aí agora pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "abre o autenticador do google agora silva pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva abre o authenticator agora pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "Silva, abre o autenticador do google agora pfv pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva, tira uma ft frontal agr pfv", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "tira um print da tela agr pfv", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "ei silva, grava um video de 15s na traseira", "completion": "<call>record_video(duration=15, camera_id=0)</call>"}
+{"prompt": "qto ta a temperatura hj no recife?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Recife\")</call>"}
+{"prompt": "silva, pede um ifood p/ mim pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um 99 agr pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pesquisa no google como fazer miojo gourmet", "completion": "<call>search_google(query=\"como fazer miojo gourmet\")</call>"}
+{"prompt": "vc pode tirar uma ft traseira pra mim?", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "silva, tira um print ae pfv", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "grava 30s de video na frontal pfv", "completion": "<call>record_video(duration=30, camera_id=1)</call>"}
+{"prompt": "como ta o clima amn em sao paulo?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"São Paulo\")</call>"}
+{"prompt": "silva, chama um uber p/ mim agr", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pede uma pizza no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "busca no google a cotacao do dolar hj", "completion": "<call>search_google(query=\"cotação do dólar hoje\")</call>"}
+{"prompt": "vc consegue tirar uma selfie agr?", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "silva, printa a tela ae pfv", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "filma 20s na camera de tras pfv", "completion": "<call>record_video(duration=20, camera_id=0)</call>"}
+{"prompt": "qnd vai chover em curitiba hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Curitiba\")</call>"}
+{"prompt": "ei silva, pede um lanche no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um taxi agr pfv silva", "completion": "<call>request_ride()</call>"}
+{"prompt": "pesquisa no google receita de bolo de cenoura", "completion": "<call>search_google(query=\"receita de bolo de cenoura\")</call>"}
+{"prompt": "silva, tira uma ft frontal pfv agr", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "tira um print da tela pfv silva", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "grava um video de 1 min na frontal", "completion": "<call>record_video(duration=60, camera_id=1)</call>"}
+{"prompt": "como ta o tempo hj no rio de janeiro?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Rio de Janeiro\")</call>"}
+{"prompt": "silva, pede um hamburguer no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um carro p/ mim agr pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, busca no google oq e blockchain", "completion": "<call>search_google(query=\"o que é blockchain\")</call>"}
+{"prompt": "vc pode tirar uma ft traseira agr?", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "silva, tira um print ae pfv agora", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "filma 10s na frontal pfv silva", "completion": "<call>record_video(duration=10, camera_id=1)</call>"}
+{"prompt": "qto ta o clima amn em salvador?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Salvador\")</call>"}
+{"prompt": "ei silva, pede um acai no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um 99 agr silva pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "pesquisa no google como aprender ingles", "completion": "<call>search_google(query=\"como aprender inglês\")</call>"}
+{"prompt": "silva, tira uma selfie agora pfv", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "printa a tela ae silva pfv", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "grava 45s na camera traseira pfv", "completion": "<call>record_video(duration=45, camera_id=0)</call>"}
+{"prompt": "como vai ta o tempo amn em fortaleza?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Fortaleza\")</call>"}
+{"prompt": "silva, pede um almoco no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um uber agr pfv silva", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pesquisa no google previsao do tempo fds", "completion": "<call>search_google(query=\"previsão do tempo fim de semana\")</call>"}
+{"prompt": "vc tira uma ft frontal p/ mim?", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "silva, tira print da tela agora pfv", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "filma 25s na frontal pfv silva", "completion": "<call>record_video(duration=25, camera_id=1)</call>"}
+{"prompt": "qto ta a temperatura agr em bh?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Belo Horizonte\")</call>"}
+{"prompt": "ei silva, pede um sushi no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um taxi p/ mim silva pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "busca no google oq e machine learning", "completion": "<call>search_google(query=\"o que é machine learning\")</call>"}
+{"prompt": "silva, tira uma ft traseira pfv agr", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "tira um print agr pfv silva", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "grava um video de 40s na traseira", "completion": "<call>record_video(duration=40, camera_id=0)</call>"}
+{"prompt": "como ta o clima hj em porto alegre?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Porto Alegre\")</call>"}
+{"prompt": "silva, pede um lanche no ifood agr pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um carro agr silva pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pesquisa no google melhor celular 2026", "completion": "<call>search_google(query=\"melhor celular 2026\")</call>"}
+{"prompt": "vc pode tirar uma selfie agr pfv?", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "silva, tira print da tela ae pfv", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "filma 35s na frontal agora pfv", "completion": "<call>record_video(duration=35, camera_id=1)</call>"}
+{"prompt": "qto ta o tempo amn em recife?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Recife\")</call>"}
+{"prompt": "ei silva, pede um jantar no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "chama um 99 p/ mim agr silva", "completion": "<call>request_ride()</call>"}
+{"prompt": "Silva, chama um uber pra mim ir pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pro shopping pfv", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
+{"prompt": "busca pizza de calabresa no ifood", "completion": "<call>order_food(query=\"pizza de calabresa\", app=\"ifood\")</call>"}
+{"prompt": "silva quero pedir um acai no ifood", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber pra casa", "completion": "<call>request_ride(destination=\"casa\", app=\"uber\")</call>"}
+{"prompt": "chama um 99 pro aeroporto pfv", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"99\")</call>"}
+{"prompt": "silva pede um hamburguer no ifood", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "busca uma marmita no ifood silva pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "Silva, chama um uber pra rua das flores 200", "completion": "<call>request_ride(destination=\"Rua das Flores 200\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra clinica pfv", "completion": "<call>request_ride(destination=\"clínica\", app=\"99\")</call>"}
+{"prompt": "ei silva busca sushi no ifood", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma coca cola no ifood pfv", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber pro centro silva", "completion": "<call>request_ride(destination=\"centro\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra escola pfv silva", "completion": "<call>request_ride(destination=\"escola\", app=\"99\")</call>"}
+{"prompt": "busca um lanche no ifood silva", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma pizza no ifood pfv", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber pra farmacia pfv", "completion": "<call>request_ride(destination=\"farmácia\", app=\"uber\")</call>"}
+{"prompt": "ei silva pede um 99 pro trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"99\")</call>"}
+{"prompt": "silva busca um acai no ifood pfv", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "pede um remedio no ifood silva pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "Silva, chama um uber pra rodoviaria", "completion": "<call>request_ride(destination=\"rodoviária\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra casa da minha mae pfv", "completion": "<call>request_ride(destination=\"casa da minha mãe\", app=\"99\")</call>"}
+{"prompt": "silva pede um hamburguer no ifood agr", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "busca uma marmita no ifood pfv silva", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber pro mercado", "completion": "<call>request_ride(destination=\"mercado\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pro hotel pfv", "completion": "<call>request_ride(destination=\"hotel\", app=\"99\")</call>"}
+{"prompt": "busca pizza de frango no ifood silva", "completion": "<call>order_food(query=\"pizza de frango\", app=\"ifood\")</call>"}
+{"prompt": "pede um sorvete no ifood pfv", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "Silva, chama um uber pra academia", "completion": "<call>request_ride(destination=\"academia\", app=\"uber\")</call>"}
+{"prompt": "chama um 99 pro banco pfv silva", "completion": "<call>request_ride(destination=\"banco\", app=\"99\")</call>"}
+{"prompt": "silva pede um cafe no ifood pfv", "completion": "<call>order_food(query=\"café\", app=\"ifood\")</call>"}
+{"prompt": "busca um sanduiche no ifood silva pfv", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "Silva, chama um uber pra igreja", "completion": "<call>request_ride(destination=\"igreja\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pro parque pfv silva", "completion": "<call>request_ride(destination=\"parque\", app=\"99\")</call>"}
+{"prompt": "silva pede uma agua no ifood pfv", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "busca um pastel no ifood silva", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber pro cinema", "completion": "<call>request_ride(destination=\"cinema\", app=\"uber\")</call>"}
+{"prompt": "chama um 99 pra praia pfv silva", "completion": "<call>request_ride(destination=\"praia\", app=\"99\")</call>"}
+{"prompt": "silva pede um churrasco no ifood pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "busca uma salada no ifood silva pfv", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
+{"prompt": "Silva, chama um uber pra estacao", "completion": "<call>request_ride(destination=\"estação\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pro restaurante pfv", "completion": "<call>request_ride(destination=\"restaurante\", app=\"99\")</call>"}
+{"prompt": "silva pede um suco no ifood pfv", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "busca um dogao no ifood silva", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "ei silva chama um uber pra casa do amigo", "completion": "<call>request_ride(destination=\"casa do amigo\", app=\"uber\")</call>"}
+{"prompt": "chama um 99 pro clube pfv silva", "completion": "<call>request_ride(destination=\"clube\", app=\"99\")</call>"}
+{"prompt": "silva pede um almoco no ifood pfv agora", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "busca um jantar no ifood silva pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "Silva, chama um uber pro ponto de onibus", "completion": "<call>request_ride(destination=\"ponto de ônibus\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pro consultorio pfv silva", "completion": "<call>request_ride(destination=\"consultório\", app=\"99\")</call>"}
+{"prompt": "Silva, pede uma pizza de calabresa no ifood", "completion": "<call>order_food(query=\"pizza de calabresa\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer no ifood pfv", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "ei silva pede um açaí no ifood", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma marmita no ifood pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "busca um sushi no ifood silva", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma coca cola no ifood", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "pede um lanche no ifood pfv silva", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma pizza no ifood", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um remédio no ifood pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "busca um sorvete no ifood silva pfv", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um café no ifood", "completion": "<call>order_food(query=\"café\", app=\"ifood\")</call>"}
+{"prompt": "pede um sanduíche no ifood pfv", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma água no ifood", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um pastel no ifood pfv", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco no ifood silva", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma salada no ifood", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
+{"prompt": "pede um suco no ifood pfv silva", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um dogão no ifood", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um almoço no ifood pfv", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "busca um jantar no ifood silva pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma sobremesa no ifood", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "pede um bolo no ifood pfv", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um salgado no ifood", "completion": "<call>order_food(query=\"salgado\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma coxinha no ifood pfv", "completion": "<call>order_food(query=\"coxinha\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer artesanal no ifood silva", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma pizza de frango no ifood", "completion": "<call>order_food(query=\"pizza de frango\", app=\"ifood\")</call>"}
+{"prompt": "pede um açaí com granola no ifood pfv", "completion": "<call>order_food(query=\"açaí com granola\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma marmita fitness no ifood", "completion": "<call>order_food(query=\"marmita fitness\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um sushi no ifood pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "busca um temaki no ifood silva pfv", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um yakisoba no ifood", "completion": "<call>order_food(query=\"yakisoba\", app=\"ifood\")</call>"}
+{"prompt": "pede um pad thai no ifood pfv", "completion": "<call>order_food(query=\"pad thai\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um kebab no ifood", "completion": "<call>order_food(query=\"kebab\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um esfiha no ifood pfv", "completion": "<call>order_food(query=\"esfiha\", app=\"ifood\")</call>"}
+{"prompt": "busca um quibe no ifood silva", "completion": "<call>order_food(query=\"quibe\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um macarrão no ifood", "completion": "<call>order_food(query=\"macarrão\", app=\"ifood\")</call>"}
+{"prompt": "pede uma lasanha no ifood pfv", "completion": "<call>order_food(query=\"lasanha\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um risoto no ifood", "completion": "<call>order_food(query=\"risoto\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma feijoada no ifood pfv", "completion": "<call>order_food(query=\"feijoada\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco no ifood silva pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma picanha no ifood", "completion": "<call>order_food(query=\"picanha\", app=\"ifood\")</call>"}
+{"prompt": "pede um frango assado no ifood pfv", "completion": "<call>order_food(query=\"frango assado\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um peixe no ifood", "completion": "<call>order_food(query=\"peixe\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um camarão no ifood pfv", "completion": "<call>order_food(query=\"camarão\", app=\"ifood\")</call>"}
+{"prompt": "busca uma moqueca no ifood silva", "completion": "<call>order_food(query=\"moqueca\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma tapioca no ifood", "completion": "<call>order_food(query=\"tapioca\", app=\"ifood\")</call>"}
+{"prompt": "pede um cuscuz no ifood pfv", "completion": "<call>order_food(query=\"cuscuz\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um pão de queijo no ifood", "completion": "<call>order_food(query=\"pão de queijo\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma vitamina no ifood pfv", "completion": "<call>order_food(query=\"vitamina\", app=\"ifood\")</call>"}
+{"prompt": "busca um milk shake no ifood silva", "completion": "<call>order_food(query=\"milk shake\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma cerveja no ifood", "completion": "<call>order_food(query=\"cerveja\", app=\"ifood\")</call>"}
+{"prompt": "pede um vinho no ifood pfv", "completion": "<call>order_food(query=\"vinho\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma caipirinha no ifood", "completion": "<call>order_food(query=\"caipirinha\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um energético no ifood pfv", "completion": "<call>order_food(query=\"energético\", app=\"ifood\")</call>"}
+{"prompt": "busca um chocolate no ifood silva", "completion": "<call>order_food(query=\"chocolate\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um brigadeiro no ifood", "completion": "<call>order_food(query=\"brigadeiro\", app=\"ifood\")</call>"}
+{"prompt": "pede um pudim no ifood pfv", "completion": "<call>order_food(query=\"pudim\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um gelato no ifood", "completion": "<call>order_food(query=\"gelato\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um café da manhã no ifood pfv", "completion": "<call>order_food(query=\"café da manhã\", app=\"ifood\")</call>"}
+{"prompt": "busca um combo no ifood silva pfv", "completion": "<call>order_food(query=\"combo\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma promoção no ifood", "completion": "<call>order_food(query=\"promoção\", app=\"ifood\")</call>"}
+{"prompt": "Silva, chama um uber pra mim ir de casa pro trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pro shopping pfv", "completion": "<call>request_ride(destination=\"shopping\", app=\"uber\")</call>"}
+{"prompt": "ei silva chama um uber pra ir pro aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "silva pede um uber da minha casa pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra me levar pro centro silva", "completion": "<call>request_ride(destination=\"centro\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um uber daqui pra rodoviária", "completion": "<call>request_ride(destination=\"rodoviária\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra ir da escola pra casa pfv", "completion": "<call>request_ride(destination=\"casa\", app=\"uber\")</call>"}
+{"prompt": "ei silva pede um uber daqui pro mercado", "completion": "<call>request_ride(destination=\"mercado\", app=\"uber\")</call>"}
+{"prompt": "silva chama um uber pra me levar pra farmácia", "completion": "<call>request_ride(destination=\"farmácia\", app=\"uber\")</call>"}
+{"prompt": "pede um uber da minha casa pra academia silva", "completion": "<call>request_ride(destination=\"academia\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um uber pra ir pro cinema", "completion": "<call>request_ride(destination=\"cinema\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pro restaurante pfv", "completion": "<call>request_ride(destination=\"restaurante\", app=\"uber\")</call>"}
+{"prompt": "ei silva chama um uber pra me levar pro hotel", "completion": "<call>request_ride(destination=\"hotel\", app=\"uber\")</call>"}
+{"prompt": "silva pede um uber daqui pra praia", "completion": "<call>request_ride(destination=\"praia\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra ir pro banco silva pfv", "completion": "<call>request_ride(destination=\"banco\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um uber da minha casa pro clube", "completion": "<call>request_ride(destination=\"clube\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra me levar pro parque pfv", "completion": "<call>request_ride(destination=\"parque\", app=\"uber\")</call>"}
+{"prompt": "ei silva pede um uber daqui pra igreja", "completion": "<call>request_ride(destination=\"igreja\", app=\"uber\")</call>"}
+{"prompt": "silva chama um uber pra ir pro consultório", "completion": "<call>request_ride(destination=\"consultório\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pra estação silva pfv", "completion": "<call>request_ride(destination=\"estação\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um uber pra me levar pro ponto de ônibus", "completion": "<call>request_ride(destination=\"ponto de ônibus\", app=\"uber\")</call>"}
+{"prompt": "pede um uber da minha casa pro escritório pfv", "completion": "<call>request_ride(destination=\"escritório\", app=\"uber\")</call>"}
+{"prompt": "ei silva chama um uber pra ir pro supermercado", "completion": "<call>request_ride(destination=\"supermercado\", app=\"uber\")</call>"}
+{"prompt": "silva pede um uber daqui pro cabeleireiro", "completion": "<call>request_ride(destination=\"cabeleireiro\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra me levar pro dentista silva pfv", "completion": "<call>request_ride(destination=\"dentista\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um uber daqui pra faculdade", "completion": "<call>request_ride(destination=\"faculdade\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra ir pro estádio pfv", "completion": "<call>request_ride(destination=\"estádio\", app=\"uber\")</call>"}
+{"prompt": "ei silva pede um uber da minha casa pro museu", "completion": "<call>request_ride(destination=\"museu\", app=\"uber\")</call>"}
+{"prompt": "silva chama um uber pra me levar pro teatro", "completion": "<call>request_ride(destination=\"teatro\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pro shopping silva pfv", "completion": "<call>request_ride(destination=\"shopping\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um uber pra ir pra casa da minha mãe", "completion": "<call>request_ride(destination=\"casa da minha mãe\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pra casa do meu amigo pfv", "completion": "<call>request_ride(destination=\"casa do meu amigo\", app=\"uber\")</call>"}
+{"prompt": "ei silva chama um uber pra me levar pro zoológico", "completion": "<call>request_ride(destination=\"zoológico\", app=\"uber\")</call>"}
+{"prompt": "silva pede um uber da minha casa pro aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra ir pro hospital silva pfv", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um uber daqui pro centro da cidade", "completion": "<call>request_ride(destination=\"centro da cidade\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra me levar pro trabalho pfv", "completion": "<call>request_ride(destination=\"trabalho\", app=\"uber\")</call>"}
+{"prompt": "ei silva pede um uber da minha casa pra escola", "completion": "<call>request_ride(destination=\"escola\", app=\"uber\")</call>"}
+{"prompt": "silva chama um uber pra ir pra praia", "completion": "<call>request_ride(destination=\"praia\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pro hotel silva pfv", "completion": "<call>request_ride(destination=\"hotel\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um uber pra me levar pro mercado", "completion": "<call>request_ride(destination=\"mercado\", app=\"uber\")</call>"}
+{"prompt": "pede um uber da minha casa pro restaurante pfv", "completion": "<call>request_ride(destination=\"restaurante\", app=\"uber\")</call>"}
+{"prompt": "ei silva chama um uber pra ir pra academia", "completion": "<call>request_ride(destination=\"academia\", app=\"uber\")</call>"}
+{"prompt": "silva pede um uber daqui pra farmácia pfv", "completion": "<call>request_ride(destination=\"farmácia\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra me levar pro clube silva", "completion": "<call>request_ride(destination=\"clube\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um uber da minha casa pro cinema", "completion": "<call>request_ride(destination=\"cinema\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra ir pro banco pfv silva", "completion": "<call>request_ride(destination=\"banco\", app=\"uber\")</call>"}
+{"prompt": "ei silva pede um uber daqui pra igreja pfv", "completion": "<call>request_ride(destination=\"igreja\", app=\"uber\")</call>"}
+{"prompt": "silva chama um uber pra me levar pro parque", "completion": "<call>request_ride(destination=\"parque\", app=\"uber\")</call>"}
+{"prompt": "pede um uber da minha casa pro consultório silva pfv", "completion": "<call>request_ride(destination=\"consultório\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um uber pra ir pra estação", "completion": "<call>request_ride(destination=\"estação\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pro ponto de ônibus pfv", "completion": "<call>request_ride(destination=\"ponto de ônibus\", app=\"uber\")</call>"}
+{"prompt": "ei silva chama um uber pra me levar pro escritório", "completion": "<call>request_ride(destination=\"escritório\", app=\"uber\")</call>"}
+{"prompt": "silva pede um uber da minha casa pro supermercado pfv", "completion": "<call>request_ride(destination=\"supermercado\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra ir pro cabeleireiro silva", "completion": "<call>request_ride(destination=\"cabeleireiro\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um uber daqui pro dentista pfv", "completion": "<call>request_ride(destination=\"dentista\", app=\"uber\")</call>"}
+{"prompt": "chama um uber pra me levar pra faculdade silva pfv", "completion": "<call>request_ride(destination=\"faculdade\", app=\"uber\")</call>"}
+{"prompt": "ei silva pede um uber da minha casa pro estádio", "completion": "<call>request_ride(destination=\"estádio\", app=\"uber\")</call>"}
+{"prompt": "silva chama um uber pra ir pro museu pfv", "completion": "<call>request_ride(destination=\"museu\", app=\"uber\")</call>"}
+{"prompt": "pede um uber daqui pro teatro silva pfv", "completion": "<call>request_ride(destination=\"teatro\", app=\"uber\")</call>"}
+{"prompt": "Silva, chama um uber pra Arena Castelão", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena de Pernambuco pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Barradão silva pfv", "completion": "<call>request_ride(destination=\"Barradão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Pituaçu", "completion": "<call>request_ride(destination=\"Pituaçu\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão agora silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena de Pernambuco agora pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova agora", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas agora", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pro Castelão silva pfv agora", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena Pernambuco agora pfv", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Itaipava Arena Fonte Nova silva", "completion": "<call>request_ride(destination=\"Itaipava Arena Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas em natal pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pro estádio Castelão", "completion": "<call>request_ride(destination=\"Estádio Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pro estádio da Fonte Nova", "completion": "<call>request_ride(destination=\"Estádio da Fonte Nova\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena de Pernambuco silva pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pro Castelão agora", "completion": "<call>request_ride(destination=\"Castelão\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova agora pfv silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas agora silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena Castelão pfv agora", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena de Pernambuco pfv agora", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova pfv agora silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena das Dunas pfv agora", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pro Castelão agora silva pfv", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena Pernambuco agora silva pfv", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena Fonte Nova agora pfv", "completion": "<call>request_ride(destination=\"Arena Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas agora pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão em fortaleza silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena de Pernambuco em recife", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova em salvador pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas em natal pfv silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pro Castelão em fortaleza pfv", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena Pernambuco em recife pfv", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova em salvador agora silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena das Dunas em natal agora", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão agora pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena de Pernambuco agora pfv silva", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova agora pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas agora pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pro estádio Castelão agora silva pfv", "completion": "<call>request_ride(destination=\"Estádio Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pro estádio da Fonte Nova agora pfv", "completion": "<call>request_ride(destination=\"Estádio da Fonte Nova\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena de Pernambuco agora silva pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas em natal agora silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena Castelão agora pfv pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Fonte Nova agora pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena de Pernambuco agora pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena Castelão agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova em salvador agora pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas agora pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena de Pernambuco agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena Castelão agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova agora pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena das Dunas agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena de Pernambuco agora pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena Castelão agora pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "Silva, chama um uber pra Arena Castelão de casa", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 daqui pra Arena de Pernambuco pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova agora", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas de casa", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pro Castelão daqui silva pfv", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena Pernambuco da minha casa", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Fonte Nova silva pfv agora", "completion": "<call>request_ride(destination=\"Arena Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas agora silva pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pro estádio Castelão agora", "completion": "<call>request_ride(destination=\"Estádio Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pro estádio da Fonte Nova agora", "completion": "<call>request_ride(destination=\"Estádio da Fonte Nova\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena de Pernambuco agora pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena das Dunas em natal pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova em salvador silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena Castelão em fortaleza pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena de Pernambuco em recife", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Fonte Nova em salvador pfv agora", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena das Dunas em natal silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pro Castelão em fortaleza agora", "completion": "<call>request_ride(destination=\"Castelão\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão agora pfv silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena de Pernambuco agora pfv silva", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova agora pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas agora pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pro Castelão agora pfv pfv silva", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena Pernambuco agora pfv pfv", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas agora pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena Castelão agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena de Pernambuco agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova agora pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena das Dunas agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pro Castelão agora pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena Pernambuco agora pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão agora pfv pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena de Pernambuco agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova agora pfv pfv pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas agora pfv pfv pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena Castelão de casa agora pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena de Pernambuco daqui agora pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova de casa agora silva pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena das Dunas da minha casa agora", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pro Castelão daqui agora pfv silva", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena Pernambuco da minha casa agora pfv", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova daqui agora pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas da minha casa agora pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão da minha casa agora pfv pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena de Pernambuco da minha casa agora pfv pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova da minha casa agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena das Dunas da minha casa agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Arena Castelão da minha casa agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena de Pernambuco da minha casa agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova da minha casa agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena das Dunas da minha casa agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão da minha casa agora pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "pede um 99 pra Arena de Pernambuco da minha casa agora pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova da minha casa agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas da minha casa agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão da minha casa agora pfv pfv pfv pfv pfv silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena de Pernambuco da minha casa agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "Silva, pede uma pizza pra minha casa", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer pra minha casa pfv", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "ei silva pede um açaí pra minha casa", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma marmita pra minha casa pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "busca um sushi pra minha casa silva", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma coca cola pra minha casa", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "pede um lanche pra minha casa pfv silva", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma pizza pra minha casa", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um remédio pra minha casa pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "busca um sorvete pra minha casa silva pfv", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um café pra minha casa", "completion": "<call>order_food(query=\"café\", app=\"ifood\")</call>"}
+{"prompt": "pede um sanduíche pra minha casa pfv", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma água pra minha casa", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um pastel pra minha casa pfv", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco pra minha casa silva", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma salada pra minha casa", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
+{"prompt": "pede um suco pra minha casa pfv silva", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um dogão pra minha casa", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um almoço pra minha casa pfv", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "busca um jantar pra minha casa silva pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma sobremesa pra minha casa", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "pede um bolo pra minha casa pfv", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um salgado pra minha casa", "completion": "<call>order_food(query=\"salgado\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma coxinha pra minha casa pfv", "completion": "<call>order_food(query=\"coxinha\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer artesanal pra minha casa silva", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma pizza de frango pra minha casa", "completion": "<call>order_food(query=\"pizza de frango\", app=\"ifood\")</call>"}
+{"prompt": "pede um açaí com granola pra minha casa pfv", "completion": "<call>order_food(query=\"açaí com granola\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma marmita fitness pra minha casa", "completion": "<call>order_food(query=\"marmita fitness\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um sushi pra minha casa pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "busca um temaki pra minha casa silva pfv", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um yakisoba pra minha casa", "completion": "<call>order_food(query=\"yakisoba\", app=\"ifood\")</call>"}
+{"prompt": "pede um pad thai pra minha casa pfv", "completion": "<call>order_food(query=\"pad thai\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um kebab pra minha casa", "completion": "<call>order_food(query=\"kebab\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um esfiha pra minha casa pfv", "completion": "<call>order_food(query=\"esfiha\", app=\"ifood\")</call>"}
+{"prompt": "busca um quibe pra minha casa silva", "completion": "<call>order_food(query=\"quibe\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um macarrão pra minha casa", "completion": "<call>order_food(query=\"macarrão\", app=\"ifood\")</call>"}
+{"prompt": "pede uma lasanha pra minha casa pfv", "completion": "<call>order_food(query=\"lasanha\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um risoto pra minha casa", "completion": "<call>order_food(query=\"risoto\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma feijoada pra minha casa pfv", "completion": "<call>order_food(query=\"feijoada\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco pra minha casa silva pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma picanha pra minha casa", "completion": "<call>order_food(query=\"picanha\", app=\"ifood\")</call>"}
+{"prompt": "pede um frango assado pra minha casa pfv", "completion": "<call>order_food(query=\"frango assado\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um peixe pra minha casa", "completion": "<call>order_food(query=\"peixe\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um camarão pra minha casa pfv", "completion": "<call>order_food(query=\"camarão\", app=\"ifood\")</call>"}
+{"prompt": "busca uma moqueca pra minha casa silva", "completion": "<call>order_food(query=\"moqueca\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma tapioca pra minha casa", "completion": "<call>order_food(query=\"tapioca\", app=\"ifood\")</call>"}
+{"prompt": "pede um cuscuz pra minha casa pfv", "completion": "<call>order_food(query=\"cuscuz\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um pão de queijo pra minha casa", "completion": "<call>order_food(query=\"pão de queijo\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma vitamina pra minha casa pfv", "completion": "<call>order_food(query=\"vitamina\", app=\"ifood\")</call>"}
+{"prompt": "busca um milk shake pra minha casa silva", "completion": "<call>order_food(query=\"milk shake\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma cerveja pra minha casa", "completion": "<call>order_food(query=\"cerveja\", app=\"ifood\")</call>"}
+{"prompt": "pede um vinho pra minha casa pfv", "completion": "<call>order_food(query=\"vinho\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma caipirinha pra minha casa", "completion": "<call>order_food(query=\"caipirinha\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um energético pra minha casa pfv", "completion": "<call>order_food(query=\"energético\", app=\"ifood\")</call>"}
+{"prompt": "busca um chocolate pra minha casa silva", "completion": "<call>order_food(query=\"chocolate\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um brigadeiro pra minha casa", "completion": "<call>order_food(query=\"brigadeiro\", app=\"ifood\")</call>"}
+{"prompt": "pede um pudim pra minha casa pfv", "completion": "<call>order_food(query=\"pudim\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um gelato pra minha casa", "completion": "<call>order_food(query=\"gelato\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um café da manhã pra minha casa pfv", "completion": "<call>order_food(query=\"café da manhã\", app=\"ifood\")</call>"}
+{"prompt": "busca um combo pra minha casa silva pfv", "completion": "<call>order_food(query=\"combo\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma promoção pra minha casa", "completion": "<call>order_food(query=\"promoção\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma pizza pra Boa Viagem", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer pra Casa Forte pfv", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "ei silva pede um açaí pra Graças", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma marmita pra Madalena pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "busca um sushi pra Pina silva", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma coca cola pra Setúbal", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "pede um lanche pra Boa Vista pfv silva", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma pizza pra Encruzilhada", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um remédio pra Espinheiro pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "busca um sorvete pra Aflitos silva pfv", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um café pra Rosarinho", "completion": "<call>order_food(query=\"café\", app=\"ifood\")</call>"}
+{"prompt": "pede um sanduíche pra Jaqueira pfv", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma água pra Santana", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um pastel pra Poço da Panela pfv", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco pra Monteiro silva", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma salada pra Cordeiro", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
+{"prompt": "pede um suco pra Ilha do Retiro pfv silva", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um dogão pra Afogados", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um almoço pra Mustardinha pfv", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "busca um jantar pra Mangueira silva pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma sobremesa pra San Martin", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "pede um bolo pra Bongi pfv", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um salgado pra Zumbi", "completion": "<call>order_food(query=\"salgado\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma coxinha pra Ipsep pfv", "completion": "<call>order_food(query=\"coxinha\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer artesanal pra Imbiribeira silva", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma pizza de frango pra Piedade", "completion": "<call>order_food(query=\"pizza de frango\", app=\"ifood\")</call>"}
+{"prompt": "pede um açaí com granola pra Caxangá pfv", "completion": "<call>order_food(query=\"açaí com granola\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma marmita fitness pra Várzea", "completion": "<call>order_food(query=\"marmita fitness\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um sushi pra Benfica pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "busca um temaki pra Joana Bezerra silva pfv", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um yakisoba pra Cabanga", "completion": "<call>order_food(query=\"yakisoba\", app=\"ifood\")</call>"}
+{"prompt": "pede um pad thai pra São José pfv", "completion": "<call>order_food(query=\"pad thai\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um kebab pra Santo Antônio", "completion": "<call>order_food(query=\"kebab\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um esfiha pra Recife Antigo pfv", "completion": "<call>order_food(query=\"esfiha\", app=\"ifood\")</call>"}
+{"prompt": "busca um quibe pra Paissandu silva", "completion": "<call>order_food(query=\"quibe\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um macarrão pra Soledade", "completion": "<call>order_food(query=\"macarrão\", app=\"ifood\")</call>"}
+{"prompt": "pede uma lasanha pra Hipódromo pfv", "completion": "<call>order_food(query=\"lasanha\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um risoto pra Casa Amarela", "completion": "<call>order_food(query=\"risoto\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma feijoada pra Alto José do Pinho pfv", "completion": "<call>order_food(query=\"feijoada\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco pra Nova Descoberta silva pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma picanha pra Brejo da Guabiraba", "completion": "<call>order_food(query=\"picanha\", app=\"ifood\")</call>"}
+{"prompt": "pede um frango assado pra Guabiraba pfv", "completion": "<call>order_food(query=\"frango assado\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um peixe pra Dois Irmãos", "completion": "<call>order_food(query=\"peixe\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um camarão pra Arruda pfv", "completion": "<call>order_food(query=\"camarão\", app=\"ifood\")</call>"}
+{"prompt": "busca uma moqueca pra Água Fria silva", "completion": "<call>order_food(query=\"moqueca\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma tapioca pra Fundão", "completion": "<call>order_food(query=\"tapioca\", app=\"ifood\")</call>"}
+{"prompt": "pede um cuscuz pra Boa Viagem pfv", "completion": "<call>order_food(query=\"cuscuz\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um pão de queijo pra Casa Forte", "completion": "<call>order_food(query=\"pão de queijo\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma vitamina pra Graças pfv", "completion": "<call>order_food(query=\"vitamina\", app=\"ifood\")</call>"}
+{"prompt": "busca um milk shake pra Madalena silva", "completion": "<call>order_food(query=\"milk shake\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma cerveja pra Pina", "completion": "<call>order_food(query=\"cerveja\", app=\"ifood\")</call>"}
+{"prompt": "pede um vinho pra Setúbal pfv", "completion": "<call>order_food(query=\"vinho\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma caipirinha pra Boa Vista", "completion": "<call>order_food(query=\"caipirinha\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um energético pra Encruzilhada pfv", "completion": "<call>order_food(query=\"energético\", app=\"ifood\")</call>"}
+{"prompt": "busca um chocolate pra Espinheiro silva", "completion": "<call>order_food(query=\"chocolate\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um brigadeiro pra Aflitos", "completion": "<call>order_food(query=\"brigadeiro\", app=\"ifood\")</call>"}
+{"prompt": "pede um pudim pra Rosarinho pfv", "completion": "<call>order_food(query=\"pudim\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um gelato pra Jaqueira", "completion": "<call>order_food(query=\"gelato\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um café da manhã pra Santana pfv", "completion": "<call>order_food(query=\"café da manhã\", app=\"ifood\")</call>"}
+{"prompt": "busca um combo pra Poço da Panela silva pfv", "completion": "<call>order_food(query=\"combo\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma promoção pra Monteiro", "completion": "<call>order_food(query=\"promoção\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma pizza pra Tambaú", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer pra Cabo Branco pfv", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
+{"prompt": "ei silva pede um açaí pra Manaíra", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma marmita pra Bessa pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "busca um sushi pra Altiplano silva", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma coca cola pra Bancários", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "pede um lanche pra Mangabeira pfv silva", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma pizza pra Valentina", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um remédio pra Cristo Redentor pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "busca um sorvete pra Água Fria silva pfv", "completion": "<call>order_food(query=\"sorvete\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um café pra Jaguaribe", "completion": "<call>order_food(query=\"café\", app=\"ifood\")</call>"}
+{"prompt": "pede um sanduíche pra Miramar pfv", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma água pra Torre", "completion": "<call>order_food(query=\"água\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um pastel pra Centro pfv", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco pra Mandacaru silva", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma salada pra Aeroclube", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
+{"prompt": "pede um suco pra Cruz das Armas pfv silva", "completion": "<call>order_food(query=\"suco\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um dogão pra José Américo", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um almoço pra Geisel pfv", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "busca um jantar pra Cuiá silva pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma sobremesa pra Gramame", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "pede um bolo pra Portal do Sol pfv", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um salgado pra Paratibe", "completion": "<call>order_food(query=\"salgado\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma coxinha pra Grotão pfv", "completion": "<call>order_food(query=\"coxinha\", app=\"ifood\")</call>"}
+{"prompt": "busca um hambúrguer artesanal pra Funcionários silva", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma pizza de frango pra Estados", "completion": "<call>order_food(query=\"pizza de frango\", app=\"ifood\")</call>"}
+{"prompt": "pede um açaí com granola pra Brisamar pfv", "completion": "<call>order_food(query=\"açaí com granola\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma marmita fitness pra Penha", "completion": "<call>order_food(query=\"marmita fitness\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um sushi pra Alto do Mateus pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "busca um temaki pra Rangel silva pfv", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um yakisoba pra Ilha do Bispo", "completion": "<call>order_food(query=\"yakisoba\", app=\"ifood\")</call>"}
+{"prompt": "pede um pad thai pra Varadouro pfv", "completion": "<call>order_food(query=\"pad thai\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um kebab pra Tambiá", "completion": "<call>order_food(query=\"kebab\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um esfiha pra Trincheiras pfv", "completion": "<call>order_food(query=\"esfiha\", app=\"ifood\")</call>"}
+{"prompt": "busca um quibe pra Roger silva", "completion": "<call>order_food(query=\"quibe\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um macarrão pra Pedro Gondim", "completion": "<call>order_food(query=\"macarrão\", app=\"ifood\")</call>"}
+{"prompt": "pede uma lasanha pra Expedicionários pfv", "completion": "<call>order_food(query=\"lasanha\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um risoto pra 13 de Maio", "completion": "<call>order_food(query=\"risoto\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma feijoada pra Tambauzinho pfv", "completion": "<call>order_food(query=\"feijoada\", app=\"ifood\")</call>"}
+{"prompt": "busca um churrasco pra Jardim Luna silva pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma picanha pra Bairro dos Estados", "completion": "<call>order_food(query=\"picanha\", app=\"ifood\")</call>"}
+{"prompt": "pede um frango assado pra Alto Castelo Branco pfv", "completion": "<call>order_food(query=\"frango assado\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um peixe pra Ernani Sátiro", "completion": "<call>order_food(query=\"peixe\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um camarão pra Muçumagro pfv", "completion": "<call>order_food(query=\"camarão\", app=\"ifood\")</call>"}
+{"prompt": "busca uma moqueca pra Colinas do Sul silva", "completion": "<call>order_food(query=\"moqueca\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma tapioca pra Distrito Industrial", "completion": "<call>order_food(query=\"tapioca\", app=\"ifood\")</call>"}
+{"prompt": "pede um cuscuz pra Santa Rita pfv", "completion": "<call>order_food(query=\"cuscuz\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um pão de queijo pra Tambaú", "completion": "<call>order_food(query=\"pão de queijo\", app=\"ifood\")</call>"}
+{"prompt": "silva pede uma vitamina pra Cabo Branco pfv", "completion": "<call>order_food(query=\"vitamina\", app=\"ifood\")</call>"}
+{"prompt": "busca um milk shake pra Manaíra silva", "completion": "<call>order_food(query=\"milk shake\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma cerveja pra Bessa", "completion": "<call>order_food(query=\"cerveja\", app=\"ifood\")</call>"}
+{"prompt": "pede um vinho pra Altiplano pfv", "completion": "<call>order_food(query=\"vinho\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca uma caipirinha pra Bancários", "completion": "<call>order_food(query=\"caipirinha\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um energético pra Mangabeira pfv", "completion": "<call>order_food(query=\"energético\", app=\"ifood\")</call>"}
+{"prompt": "busca um chocolate pra Valentina silva", "completion": "<call>order_food(query=\"chocolate\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede um brigadeiro pra Cristo Redentor", "completion": "<call>order_food(query=\"brigadeiro\", app=\"ifood\")</call>"}
+{"prompt": "pede um pudim pra Água Fria pfv", "completion": "<call>order_food(query=\"pudim\", app=\"ifood\")</call>"}
+{"prompt": "ei silva busca um gelato pra Jaguaribe", "completion": "<call>order_food(query=\"gelato\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um café da manhã pra Miramar pfv", "completion": "<call>order_food(query=\"café da manhã\", app=\"ifood\")</call>"}
+{"prompt": "busca um combo pra Torre silva pfv", "completion": "<call>order_food(query=\"combo\", app=\"ifood\")</call>"}
+{"prompt": "Silva, pede uma promoção pra Centro", "completion": "<call>order_food(query=\"promoção\", app=\"ifood\")</call>"}

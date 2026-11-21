@@ -17,6 +17,7 @@ import time
 import unicodedata
 import urllib.parse
 import urllib.request
+import uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -26,6 +27,23 @@ from config import CAPTURES_DIR, SIMULATE_HARDWARE
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 LAST_LOCATION_FILE = DATA_DIR / "last_location.json"
+EVENTS_FILE = DATA_DIR / "events.json"
+
+
+def _load_events() -> list:
+    if not EVENTS_FILE.is_file():
+        return []
+    try:
+        with open(EVENTS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def _save_events(events: list):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    with open(EVENTS_FILE, "w", encoding="utf-8") as f:
+        json.dump(events, f, ensure_ascii=False, indent=2)
 
 # Mapeamento de nomes amigáveis para pacotes Android conhecidos
 APP_PACKAGES = {
@@ -1615,7 +1633,7 @@ def cancel_alarm(time: str = "", day: str = "", label: str = "") -> Dict[str, An
 
 
 def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]:
-    """Cria um compromisso na agenda nativa do Android via Intent."""
+    """Cria um compromisso na agenda local do Silva e abre diretamente no Calendário Samsung sem diálogo de escolha."""
     title_clean = str(title).strip()
     if not title_clean:
         return {"status": "error", "message": "Título do compromisso não informado."}
@@ -1625,15 +1643,31 @@ def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]
     dt_event = datetime(target_date.year, target_date.month, target_date.day, hour, minute)
     begin_ms = int(dt_event.timestamp() * 1000)
     end_ms = begin_ms + (3600 * 1000)  # +1 hora
+    event_ts = int(dt_event.timestamp())
 
     formatted_date = target_date.strftime("%d/%m/%Y")
     formatted_time = f"{hour:02d}:{minute:02d}"
+    event_id = str(uuid.uuid4())[:8]
+
+    # 1. Persistência real na Agenda Local (android_agent/data/events.json)
+    event_record = {
+        "id": event_id,
+        "title": title_clean,
+        "date": target_date.strftime("%Y-%m-%d"),
+        "time": formatted_time,
+        "timestamp": event_ts,
+        "notified": False
+    }
+    events = _load_events()
+    events.append(event_record)
+    _save_events(events)
 
     if SIMULATE_HARDWARE:
         return {
             "status": "ok",
-            "message": f"Silva: Compromisso '{title_clean}' agendado para {formatted_date} às {formatted_time}. [Simulado]",
+            "message": f"Silva: Compromisso '{title_clean}' salvo na agenda do Silva para {formatted_date} às {formatted_time} (e aberto no Calendário Samsung para confirmar, se desejar). [Simulado]",
             "data": {
+                "id": event_id,
                 "title": title_clean,
                 "date": target_date.strftime("%Y-%m-%d"),
                 "time": formatted_time,
@@ -1642,10 +1676,13 @@ def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]
             }
         }
 
+    # 2. Intent direta para o Calendário Samsung (evitando pop-up do Outlook)
     cmd = [
         "am", "start",
         "-a", "android.intent.action.INSERT",
+        "-t", "vnd.android.cursor.item/event",
         "-d", "content://com.android.calendar/events",
+        "-p", "com.samsung.android.calendar",
         "--es", "title", title_clean,
         "--el", "beginTime", str(begin_ms),
         "--el", "endTime", str(end_ms)
@@ -1654,20 +1691,32 @@ def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]
     try:
         res = _run_termux_cmd(cmd, timeout=6)
         if res.returncode != 0:
-            return {"status": "error", "message": f"Falha ao agendar evento: {res.stderr.strip()}"}
-        return {
-            "status": "ok",
-            "message": f"Silva: Compromisso '{title_clean}' agendado para {formatted_date} às {formatted_time}.",
-            "data": {
-                "title": title_clean,
-                "date": target_date.strftime("%Y-%m-%d"),
-                "time": formatted_time,
-                "begin_ms": begin_ms,
-                "end_ms": end_ms
-            }
+            # Fallback sem a flag -p caso o Calendário Samsung não esteja presente
+            fallback_cmd = [
+                "am", "start",
+                "-a", "android.intent.action.INSERT",
+                "-t", "vnd.android.cursor.item/event",
+                "-d", "content://com.android.calendar/events",
+                "--es", "title", title_clean,
+                "--el", "beginTime", str(begin_ms),
+                "--el", "endTime", str(end_ms)
+            ]
+            _run_termux_cmd(fallback_cmd, timeout=6)
+    except Exception:
+        pass
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Compromisso '{title_clean}' salvo na agenda do Silva para {formatted_date} às {formatted_time} (e aberto no Calendário Samsung para confirmar, se desejar).",
+        "data": {
+            "id": event_id,
+            "title": title_clean,
+            "date": target_date.strftime("%Y-%m-%d"),
+            "time": formatted_time,
+            "begin_ms": begin_ms,
+            "end_ms": end_ms
         }
-    except Exception as e:
-        return {"status": "error", "message": f"Erro ao agendar compromisso: {str(e)}"}
+    }
 
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -1718,64 +1767,83 @@ def remember_note(key: str, value: str) -> Dict[str, Any]:
 
 
 def recall_note(query: str) -> Dict[str, Any]:
-    """Busca anotações salvas na memória local por similaridade semântica e palavras-chave."""
+    """Busca anotações e compromissos salvos na memória/agenda local por similaridade semântica e palavras-chave."""
     clean_query = str(query).strip()
     if not clean_query:
         return {"status": "error", "message": "Termo de busca não informado."}
 
-    mem = _load_memory()
-    if not mem:
-        return {
-            "status": "ok",
-            "message": "Silva: Nenhuma anotação salva na memória.",
-            "data": {"found": False}
-        }
-
     norm_query = _normalize_text(clean_query)
     query_tokens = set(norm_query.split())
 
+    # 1. Busca em memória (memory.json)
+    mem = _load_memory()
     matches = []
-    for k, v_data in mem.items():
-        val = v_data.get("value", "") if isinstance(v_data, dict) else str(v_data)
-        norm_k = _normalize_text(k)
-        norm_v = _normalize_text(val)
+    if mem:
+        for k, v_data in mem.items():
+            val = v_data.get("value", "") if isinstance(v_data, dict) else str(v_data)
+            norm_k = _normalize_text(k)
+            norm_v = _normalize_text(val)
 
-        score = 0
-        if norm_query == norm_k:
-            score += 10
-        elif norm_query in norm_k:
-            score += 6
-        elif norm_k in norm_query:
-            score += 5
+            score = 0
+            if norm_query == norm_k:
+                score += 10
+            elif norm_query in norm_k:
+                score += 6
+            elif norm_k in norm_query:
+                score += 5
 
-        # Intersecção de palavras-chave
-        k_tokens = set(norm_k.split())
-        common = query_tokens.intersection(k_tokens)
-        if common:
-            score += len(common) * 2
+            # Intersecção de palavras-chave
+            k_tokens = set(norm_k.split())
+            common = query_tokens.intersection(k_tokens)
+            if common:
+                score += len(common) * 2
 
-        if norm_query in norm_v:
-            score += 3
+            if norm_query in norm_v:
+                score += 3
 
-        if score > 0:
-            matches.append((score, k, val))
+            if score > 0:
+                matches.append((score, k, val))
 
-    if not matches:
+    # 2. Busca em compromissos da agenda (events.json)
+    events = _load_events()
+    event_matches = []
+    if events:
+        is_agenda_query = any(w in norm_query for w in ["agenda", "compromisso", "compromissos", "evento", "eventos", "reuniao", "lembrete", "lembretes"])
+        for ev in events:
+            ev_title = ev.get("title", "")
+            ev_date = ev.get("date", "")
+            ev_time = ev.get("time", "")
+            norm_title = _normalize_text(ev_title)
+            if is_agenda_query or norm_query in norm_title or norm_title in norm_query or query_tokens.intersection(set(norm_title.split())):
+                event_matches.append(f"'{ev_title}' em {ev_date} às {ev_time}")
+
+    if not matches and not event_matches:
         return {
             "status": "ok",
-            "message": f"Silva: Não encontrei nenhuma anotação sobre '{clean_query}'.",
+            "message": f"Silva: Nenhuma anotação ou compromisso encontrado sobre '{clean_query}'.",
             "data": {"found": False, "query": clean_query}
         }
 
-    matches.sort(key=lambda x: x[0], reverse=True)
-    best_matches = matches[:3]
-    parts = [f"{k}: {val}" for _, k, val in best_matches]
-    msg = "Silva: Encontrei na memória: " + "; ".join(parts) + "."
+    parts = []
+    if matches:
+        matches.sort(key=lambda x: x[0], reverse=True)
+        best_matches = matches[:3]
+        notes_str = "; ".join(f"{k}: {val}" for _, k, val in best_matches)
+        parts.append(f"Memória: {notes_str}")
+    if event_matches:
+        ev_str = "; ".join(event_matches[:4])
+        parts.append(f"Agenda: {ev_str}")
+
+    msg = "Silva: " + " | ".join(parts) + "."
 
     return {
         "status": "ok",
         "message": msg,
-        "data": {"found": True, "notes": [{"key": k, "value": v} for _, k, v in best_matches]}
+        "data": {
+            "found": True,
+            "notes": [{"key": k, "value": v} for _, k, v in matches[:3]] if matches else [],
+            "events": event_matches
+        }
     }
 
 

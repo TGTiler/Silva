@@ -17,6 +17,7 @@ from urllib.parse import unquote, urlparse
 from config import ACCESS_PIN, CAPTURES_DIR, WEB_HOST, WEB_PORT
 from llm_client import SilvaLLMClient
 from parser import execute_call
+from scheduler import start_events_scheduler
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 llm_client = SilvaLLMClient()
@@ -151,6 +152,11 @@ def start_server(host: str = WEB_HOST, port: int = WEB_PORT):
     server_address = (host, port)
     httpd = ThreadingHTTPServer(server_address, SilvaHTTPRequestHandler)
     print(f"[*] Silva Web Server ativo em http://{host}:{port}")
+    try:
+        start_events_scheduler(interval_sec=30)
+        print("[*] Agendador de lembretes ativo em background (verificação a cada 30s)")
+    except Exception as e:
+        print(f"[AVISO] Falha ao iniciar agendador de lembretes: {e}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

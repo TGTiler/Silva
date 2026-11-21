@@ -4356,64 +4356,64 @@
 {"prompt": "tira um print da tela agr pfv", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "ei silva, grava um video de 15s na traseira", "completion": "<call>record_video(duration=15, camera_id=0)</call>"}
 {"prompt": "qto ta a temperatura hj no recife?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Recife\")</call>"}
-{"prompt": "silva, pede um ifood p/ mim pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um 99 agr pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "silva, pede um ifood p/ mim pfv", "completion": "<call>order_food(query=\"comida\", app=\"ifood\")</call>"}
+{"prompt": "chama um 99 agr pfv", "completion": "<call>request_ride(destination=\"destino\", app=\"99\")</call>"}
 {"prompt": "ei silva, pesquisa no google como fazer miojo gourmet", "completion": "<call>search_google(query=\"como fazer miojo gourmet\")</call>"}
 {"prompt": "vc pode tirar uma ft traseira pra mim?", "completion": "<call>take_photo(camera_id=0)</call>"}
 {"prompt": "silva, tira um print ae pfv", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "grava 30s de video na frontal pfv", "completion": "<call>record_video(duration=30, camera_id=1)</call>"}
 {"prompt": "como ta o clima amn em sao paulo?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"São Paulo\")</call>"}
-{"prompt": "silva, chama um uber p/ mim agr", "completion": "<call>request_ride()</call>"}
-{"prompt": "ei silva, pede uma pizza no ifood pfv", "completion": "<call>order_food()</call>"}
+{"prompt": "silva, chama um uber p/ mim agr", "completion": "<call>request_ride(destination=\"destino\", app=\"uber\")</call>"}
+{"prompt": "ei silva, pede uma pizza no ifood pfv", "completion": "<call>order_food(query=\"pizza\", app=\"ifood\")</call>"}
 {"prompt": "busca no google a cotacao do dolar hj", "completion": "<call>search_google(query=\"cotação do dólar hoje\")</call>"}
 {"prompt": "vc consegue tirar uma selfie agr?", "completion": "<call>take_photo(camera_id=1)</call>"}
 {"prompt": "silva, printa a tela ae pfv", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "filma 20s na camera de tras pfv", "completion": "<call>record_video(duration=20, camera_id=0)</call>"}
 {"prompt": "qnd vai chover em curitiba hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Curitiba\")</call>"}
-{"prompt": "ei silva, pede um lanche no ifood pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um taxi agr pfv silva", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pede um lanche no ifood pfv", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "chama um taxi agr pfv silva", "completion": "<call>request_ride(destination=\"destino\", app=\"uber\")</call>"}
 {"prompt": "pesquisa no google receita de bolo de cenoura", "completion": "<call>search_google(query=\"receita de bolo de cenoura\")</call>"}
 {"prompt": "silva, tira uma ft frontal pfv agr", "completion": "<call>take_photo(camera_id=1)</call>"}
 {"prompt": "tira um print da tela pfv silva", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "grava um video de 1 min na frontal", "completion": "<call>record_video(duration=60, camera_id=1)</call>"}
 {"prompt": "como ta o tempo hj no rio de janeiro?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Rio de Janeiro\")</call>"}
-{"prompt": "silva, pede um hamburguer no ifood pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um carro p/ mim agr pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "silva, pede um hamburguer no ifood pfv", "completion": "<call>order_food(query=\"hamburguer\", app=\"ifood\")</call>"}
+{"prompt": "chama um carro p/ mim agr pfv", "completion": "<call>request_ride(destination=\"destino\", app=\"uber\")</call>"}
 {"prompt": "ei silva, busca no google oq e blockchain", "completion": "<call>search_google(query=\"o que é blockchain\")</call>"}
 {"prompt": "vc pode tirar uma ft traseira agr?", "completion": "<call>take_photo(camera_id=0)</call>"}
 {"prompt": "silva, tira um print ae pfv agora", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "filma 10s na frontal pfv silva", "completion": "<call>record_video(duration=10, camera_id=1)</call>"}
 {"prompt": "qto ta o clima amn em salvador?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Salvador\")</call>"}
-{"prompt": "ei silva, pede um acai no ifood pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um 99 agr silva pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pede um acai no ifood pfv", "completion": "<call>order_food(query=\"açaí\", app=\"ifood\")</call>"}
+{"prompt": "chama um 99 agr silva pfv", "completion": "<call>request_ride(destination=\"destino\", app=\"99\")</call>"}
 {"prompt": "pesquisa no google como aprender ingles", "completion": "<call>search_google(query=\"como aprender inglês\")</call>"}
 {"prompt": "silva, tira uma selfie agora pfv", "completion": "<call>take_photo(camera_id=1)</call>"}
 {"prompt": "printa a tela ae silva pfv", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "grava 45s na camera traseira pfv", "completion": "<call>record_video(duration=45, camera_id=0)</call>"}
 {"prompt": "como vai ta o tempo amn em fortaleza?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Fortaleza\")</call>"}
-{"prompt": "silva, pede um almoco no ifood pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um uber agr pfv silva", "completion": "<call>request_ride()</call>"}
+{"prompt": "silva, pede um almoco no ifood pfv", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber agr pfv silva", "completion": "<call>request_ride(destination=\"destino\", app=\"uber\")</call>"}
 {"prompt": "ei silva, pesquisa no google previsao do tempo fds", "completion": "<call>search_google(query=\"previsão do tempo fim de semana\")</call>"}
 {"prompt": "vc tira uma ft frontal p/ mim?", "completion": "<call>take_photo(camera_id=1)</call>"}
 {"prompt": "silva, tira print da tela agora pfv", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "filma 25s na frontal pfv silva", "completion": "<call>record_video(duration=25, camera_id=1)</call>"}
 {"prompt": "qto ta a temperatura agr em bh?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Belo Horizonte\")</call>"}
-{"prompt": "ei silva, pede um sushi no ifood pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um taxi p/ mim silva pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pede um sushi no ifood pfv", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "chama um taxi p/ mim silva pfv", "completion": "<call>request_ride(destination=\"destino\", app=\"uber\")</call>"}
 {"prompt": "busca no google oq e machine learning", "completion": "<call>search_google(query=\"o que é machine learning\")</call>"}
 {"prompt": "silva, tira uma ft traseira pfv agr", "completion": "<call>take_photo(camera_id=0)</call>"}
 {"prompt": "tira um print agr pfv silva", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "grava um video de 40s na traseira", "completion": "<call>record_video(duration=40, camera_id=0)</call>"}
 {"prompt": "como ta o clima hj em porto alegre?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Porto Alegre\")</call>"}
-{"prompt": "silva, pede um lanche no ifood agr pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um carro agr silva pfv", "completion": "<call>request_ride()</call>"}
+{"prompt": "silva, pede um lanche no ifood agr pfv", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "chama um carro agr silva pfv", "completion": "<call>request_ride(destination=\"destino\", app=\"uber\")</call>"}
 {"prompt": "ei silva, pesquisa no google melhor celular 2026", "completion": "<call>search_google(query=\"melhor celular 2026\")</call>"}
 {"prompt": "vc pode tirar uma selfie agr pfv?", "completion": "<call>take_photo(camera_id=1)</call>"}
 {"prompt": "silva, tira print da tela ae pfv", "completion": "<call>take_screenshot()</call>"}
 {"prompt": "filma 35s na frontal agora pfv", "completion": "<call>record_video(duration=35, camera_id=1)</call>"}
 {"prompt": "qto ta o tempo amn em recife?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Recife\")</call>"}
-{"prompt": "ei silva, pede um jantar no ifood pfv", "completion": "<call>order_food()</call>"}
-{"prompt": "chama um 99 p/ mim agr silva", "completion": "<call>request_ride()</call>"}
+{"prompt": "ei silva, pede um jantar no ifood pfv", "completion": "<call>order_food(query=\"jantar\", app=\"ifood\")</call>"}
+{"prompt": "chama um 99 p/ mim agr silva", "completion": "<call>request_ride(destination=\"destino\", app=\"99\")</call>"}
 {"prompt": "Silva, chama um uber pra mim ir pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
 {"prompt": "pede um 99 pro shopping pfv", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
 {"prompt": "busca pizza de calabresa no ifood", "completion": "<call>order_food(query=\"pizza de calabresa\", app=\"ifood\")</call>"}

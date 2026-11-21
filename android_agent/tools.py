@@ -464,6 +464,18 @@ def take_photo(camera_id: int = 0) -> Dict[str, Any]:
         return {"status": "error", "message": f"Erro na captura de imagem: {str(e)}"}
 
 
+def _is_valid_png(path: Path) -> bool:
+    """Verifica se o arquivo existe, tem tamanho superior a 10 KB e inicia com cabeçalho PNG válido."""
+    try:
+        if path.is_file() and path.stat().st_size > 10 * 1024:
+            with open(path, "rb") as f:
+                header = f.read(4)
+                return header == b"\x89PNG"
+    except Exception:
+        pass
+    return False
+
+
 def take_screenshot() -> Dict[str, Any]:
     """Captura um print da tela do smartphone e salva no dispositivo."""
     ts = int(time.time())
@@ -494,68 +506,113 @@ def take_screenshot() -> Dict[str, Any]:
         }
 
     try:
-        # Tentativa 1: screencap nativo
-        temp_sdcard = Path("/sdcard/Download") / f"temp_{filename}"
-        _run_termux_cmd(["screencap", "-p", str(output_path)], timeout=8)
-        if not (output_path.is_file() and output_path.stat().st_size > 10 * 1024):
-            # Tenta via /sdcard/Download caso diretório privado de dados tenha restrição no screencap
-            _run_termux_cmd(["screencap", "-p", str(temp_sdcard)], timeout=8)
-            if temp_sdcard.is_file() and temp_sdcard.stat().st_size > 10 * 1024:
-                shutil.move(str(temp_sdcard), str(output_path))
+        # Método 1 — ADB Local (adb exec-out screencap -p)
+        adb_bin = shutil.which("adb")
+        if adb_bin:
+            try:
+                proc_devices = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=3)
+                device_lines = [l.strip() for l in proc_devices.stdout.splitlines() if "\tdevice" in l]
+                if device_lines:
+                    proc_cap = subprocess.run([adb_bin, "exec-out", "screencap", "-p"], capture_output=True, timeout=8)
+                    if proc_cap.stdout and len(proc_cap.stdout) > 10 * 1024 and proc_cap.stdout[:4] == b"\x89PNG":
+                        output_path.write_bytes(proc_cap.stdout)
+                        if _is_valid_png(output_path):
+                            return {
+                                "status": "ok",
+                                "message": "Silva: Print da tela capturado.",
+                                "image_url": rel_url,
+                                "data": {"file_path": str(output_path), "method": "adb_local"}
+                            }
+            except Exception:
+                pass
 
-        if output_path.is_file() and output_path.stat().st_size > 10 * 1024:
-            return {
-                "status": "ok",
-                "message": "Silva: Print da tela capturado.",
-                "image_url": rel_url,
-                "data": {"file_path": str(output_path), "method": "screencap"}
-            }
+        # Método 2 — Shizuku (rish -c "screencap -p")
+        rish_bin = shutil.which("rish")
+        if rish_bin:
+            try:
+                proc_rish = subprocess.run([rish_bin, "-c", "screencap -p"], capture_output=True, timeout=8)
+                if proc_rish.stdout and len(proc_rish.stdout) > 10 * 1024 and proc_rish.stdout[:4] == b"\x89PNG":
+                    output_path.write_bytes(proc_rish.stdout)
+                    if _is_valid_png(output_path):
+                        return {
+                            "status": "ok",
+                            "message": "Silva: Print da tela capturado.",
+                            "image_url": rel_url,
+                            "data": {"file_path": str(output_path), "method": "rish"}
+                        }
+            except Exception:
+                pass
 
-        # Tentativa 2: Fallback via input keyevent 120 (captura de tela nativa do sistema Android)
-        _run_termux_cmd(["input", "keyevent", "120"], timeout=4)
-        time.sleep(1.8)
+        # Método 3 — Fallback direto (screencap -p e input keyevent 120)
+        try:
+            temp_sdcard = Path("/sdcard/Download") / f"temp_{filename}"
+            _run_termux_cmd(["screencap", "-p", str(output_path)], timeout=8)
+            if not _is_valid_png(output_path):
+                _run_termux_cmd(["screencap", "-p", str(temp_sdcard)], timeout=8)
+                if _is_valid_png(temp_sdcard):
+                    shutil.move(str(temp_sdcard), str(output_path))
 
-        # Procura screenshot recente (últimos 15s) nos diretórios padrão do Android
-        screenshot_dirs = [
-            Path("/sdcard/DCIM/Screenshots"),
-            Path("/sdcard/Pictures/Screenshots"),
-            Path("/storage/emulated/0/DCIM/Screenshots"),
-            Path("/storage/emulated/0/Pictures/Screenshots"),
-            Path("/sdcard/DCIM"),
-            Path("/sdcard/Pictures")
-        ]
+            if _is_valid_png(output_path):
+                return {
+                    "status": "ok",
+                    "message": "Silva: Print da tela capturado.",
+                    "image_url": rel_url,
+                    "data": {"file_path": str(output_path), "method": "screencap"}
+                }
+        except Exception:
+            pass
 
-        now = time.time()
-        newest_file = None
-        newest_mtime = 0
+        try:
+            _run_termux_cmd(["input", "keyevent", "120"], timeout=4)
+            time.sleep(1.8)
 
-        for d in screenshot_dirs:
-            if d.is_dir():
-                try:
-                    for f in d.iterdir():
-                        if f.is_file() and f.suffix.lower() in (".png", ".jpg", ".jpeg"):
-                            mtime = f.stat().st_mtime
-                            if (now - mtime) < 20 and mtime > newest_mtime:
-                                newest_mtime = mtime
-                                newest_file = f
-                except Exception:
-                    pass
+            screenshot_dirs = [
+                Path("/sdcard/DCIM/Screenshots"),
+                Path("/sdcard/Pictures/Screenshots"),
+                Path("/storage/emulated/0/DCIM/Screenshots"),
+                Path("/storage/emulated/0/Pictures/Screenshots"),
+                Path("/sdcard/DCIM"),
+                Path("/sdcard/Pictures")
+            ]
 
-        if newest_file and newest_file.is_file():
-            shutil.copy2(newest_file, output_path)
-            return {
-                "status": "ok",
-                "message": "Silva: Print da tela capturado.",
-                "image_url": rel_url,
-                "data": {"file_path": str(output_path), "method": "keyevent_120", "source": str(newest_file)}
-            }
+            now = time.time()
+            newest_file = None
+            newest_mtime = 0
 
+            for d in screenshot_dirs:
+                if d.is_dir():
+                    try:
+                        for f in d.iterdir():
+                            if f.is_file() and f.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                                mtime = f.stat().st_mtime
+                                if (now - mtime) < 20 and mtime > newest_mtime:
+                                    newest_mtime = mtime
+                                    newest_file = f
+                    except Exception:
+                        pass
+
+            if newest_file and newest_file.is_file():
+                shutil.copy2(newest_file, output_path)
+                if _is_valid_png(output_path):
+                    return {
+                        "status": "ok",
+                        "message": "Silva: Print da tela capturado.",
+                        "image_url": rel_url,
+                        "data": {"file_path": str(output_path), "method": "keyevent_120", "source": str(newest_file)}
+                    }
+        except Exception:
+            pass
+
+        # 4. Mensagem de erro orientativa se todos falharem
         return {
             "status": "error",
-            "message": "Não foi possível capturar o print da tela. Verifique as permissões de gravação de tela."
+            "message": "Não foi possível capturar a tela sem permissão de shell. Para liberar prints no Android sem root, instale 'pkg install android-tools' no Termux e conecte a Depuração por Wi-Fi local (adb connect 127.0.0.1:PORTA)."
         }
     except Exception as e:
-        return {"status": "error", "message": f"Erro ao capturar print da tela: {str(e)}"}
+        return {
+            "status": "error",
+            "message": "Não foi possível capturar a tela sem permissão de shell. Para liberar prints no Android sem root, instale 'pkg install android-tools' no Termux e conecte a Depuração por Wi-Fi local (adb connect 127.0.0.1:PORTA)."
+        }
 
 
 def record_video(duration: int = 10, camera_id: int = 0) -> Dict[str, Any]:
@@ -2181,9 +2238,54 @@ def none() -> Dict[str, Any]:
     }
 
 
+def _clean_ride_destination(raw_dest: str) -> str:
+    """
+    Remove prefixos conversacionais e sufixos de cortesia de um destino de corrida.
+    Exemplos:
+      "mim ir ao Shopping Recife" -> "Shopping Recife"
+      "eu ir pro aeroporto pfv" -> "aeroporto"
+      "ir na casa da minha tia" -> "casa da minha tia"
+    """
+    if not raw_dest:
+        return ""
+    text = str(raw_dest).strip()
+
+    # 1. Sufixos de cortesia e ruídos no final
+    suffix_pat = r"(?i)\s+(?:por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|de\s+uber|de\s+99|no\s+uber|na\s+99|pelo\s+uber|pela\s+99|obrigad[oa]|vlw|valeu)$"
+    for _ in range(5):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r"[?!.,;:]+$", "", text).strip()
+        if text == prev:
+            break
+
+    # 2. Prefixos conversacionais no início (repetidos até limpar completamente)
+    prefix_patterns = [
+        r"(?i)^(?:me\s+levar|me\s+leva|me\s+leve|levar|leva|leve|chegar|voltar|ir)\b\s*",
+        r"(?i)^(?:para|pra|pro|pras|pros)\b\s*",
+        r"(?i)^p/\s*",
+        r"(?i)^(?:mim|eu|gente|nós|nos)\b\s*",
+        r"(?i)^(?:ao|aos|à|às|no|na|nos|nas|em|até|ate)\b\s*",
+        r"(?i)^(?:o|a|os|as)\b\s*",
+    ]
+
+    for _ in range(10):
+        prev = text
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        for pat in prefix_patterns:
+            text = re.sub(pat, '', text).strip()
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        if text == prev:
+            break
+
+    text = re.sub(suffix_pat, "", text).strip()
+    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    return text.strip()
+
+
 def request_ride(destination: str, app: str = "uber") -> Dict[str, Any]:
     """Abre o aplicativo de transporte (Uber ou 99) com o destino configurado a partir da localização atual."""
-    clean_dest = str(destination).strip()
+    clean_dest = _clean_ride_destination(destination)
     if not clean_dest:
         return {"status": "error", "message": "Destino da corrida não informado."}
 

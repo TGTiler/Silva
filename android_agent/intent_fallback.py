@@ -17,6 +17,51 @@ def normalize_text(text: str) -> str:
     return text_clean.strip()
 
 
+def _clean_ride_destination(raw_dest: str) -> str:
+    """
+    Remove prefixos conversacionais e sufixos de cortesia de um destino de corrida.
+    Exemplos:
+      "mim ir ao Shopping Recife" -> "Shopping Recife"
+      "eu ir pro aeroporto pfv" -> "aeroporto"
+      "ir na casa da minha tia" -> "casa da minha tia"
+    """
+    if not raw_dest:
+        return ""
+    text = str(raw_dest).strip()
+
+    # 1. Sufixos de cortesia e ruídos no final
+    suffix_pat = r"(?i)\s+(?:por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|de\s+uber|de\s+99|no\s+uber|na\s+99|pelo\s+uber|pela\s+99|obrigad[oa]|vlw|valeu)$"
+    for _ in range(5):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r"[?!.,;:]+$", "", text).strip()
+        if text == prev:
+            break
+
+    # 2. Prefixos conversacionais no início (repetidos até limpar completamente)
+    prefix_patterns = [
+        r"(?i)^(?:me\s+levar|me\s+leva|me\s+leve|levar|leva|leve|chegar|voltar|ir)\b\s*",
+        r"(?i)^(?:para|pra|pro|pras|pros)\b\s*",
+        r"(?i)^p/\s*",
+        r"(?i)^(?:mim|eu|gente|nós|nos)\b\s*",
+        r"(?i)^(?:ao|aos|à|às|no|na|nos|nas|em|até|ate)\b\s*",
+        r"(?i)^(?:o|a|os|as)\b\s*",
+    ]
+
+    for _ in range(10):
+        prev = text
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        for pat in prefix_patterns:
+            text = re.sub(pat, '', text).strip()
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        if text == prev:
+            break
+
+    text = re.sub(suffix_pat, "", text).strip()
+    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    return text.strip()
+
+
 def parse_single_intent(raw_cmd: str) -> Optional[str]:
     """Tenta identificar uma intenção específica e retornar uma tag <call>...</call>."""
     cmd = normalize_text(raw_cmd)
@@ -76,23 +121,31 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         return f"<call>record_video(duration={duration}, camera_id={camera_id})</call>"
 
     # 6.2 Corrida / Transporte (request_ride)
-    if not (cmd.startswith(("abre ", "abra ", "abrir ")) and not any(p in cmd for p in ["para", "pra", "pro", "ate", "até"])):
-        ride_triggers = ["uber", "corrida", "chama um carro", "chamar um carro", "chama carro", "chamar carro", "pede um carro", "pedir um carro", "pede carro", "pedir carro", "chama corrida", "chamar corrida", "pede corrida", "pedir corrida"]
-        is_99_ride = ("99" in cmd and any(w in cmd for w in ["carro", "corrida", "chama", "pede", "pedir", "chamar", "motorista", "viagem", "taxi", "para", "pra", "pro"]) and not any(f in cmd for f in ["food", "comida", "lanche", "pizza", "almoco", "almoço"]))
-        if any(t in cmd for t in ride_triggers) or is_99_ride:
-            app = "99" if "99" in cmd else "uber"
-            m_dest = re.search(r"(?:para|pra|pro|ate|até)\s+(?:o\s+|a\s+|o\s+app\s+|a\s+)?([^\n\r,\.;]+)", raw_cmd, re.IGNORECASE)
+    if not (cmd.startswith(("abre ", "abra ", "abrir ")) and not any(p in cmd for p in ["para", "pra", "pro", "ate", "até", "p/"])):
+        ride_verbs = ["peca", "pede", "pedir", "chama", "chamar", "solicita", "solicitar", "solicite", "peco", "quero", "preciso", "consegue"]
+        has_ride_verb = any(v in cmd for v in ride_verbs)
+        is_uber = "uber" in cmd
+        is_99 = "99" in cmd
+        ride_triggers = [
+            "uber", "corrida", "chama um carro", "chamar um carro", "chama carro", "chamar carro",
+            "pede um carro", "pedir um carro", "pede carro", "pedir carro", "chama corrida",
+            "chamar corrida", "pede corrida", "pedir corrida", "solicita um carro", "solicitar um carro",
+            "solicita carro", "solicitar carro"
+        ]
+        is_99_ride = (is_99 and (any(w in cmd for w in ["carro", "corrida", "chama", "pede", "pedir", "peca", "solicita", "solicitar", "motorista", "viagem", "taxi", "para", "pra", "pro", "ate"]) or has_ride_verb) and not any(f in cmd for f in ["food", "comida", "lanche", "pizza", "almoco", "almoço"]))
+        if any(t in cmd for t in ride_triggers) or is_99_ride or ((is_uber or is_99) and has_ride_verb):
+            app = "99" if is_99 else "uber"
             dest = ""
+            m_dest = re.search(r"(?:para|pra|pro|ate|até|p/)\s+([^\n\r,\.;]+)", raw_cmd, re.IGNORECASE)
             if m_dest:
-                dest = m_dest.group(1).strip()
-                dest = re.sub(r"(?i)\s+(?:de\s+uber|de\s+99|na\s+99|no\s+uber|pela\s+99|pelo\s+uber|por\s+favor|pra\s+mim|agora)$", "", dest).strip()
-                dest = re.sub(r'[?!.,;:]+$', '', dest).strip()
+                dest = _clean_ride_destination(m_dest.group(1))
             if not dest:
-                m_alt = re.search(r"(?:uber|99|carro|corrida)\s+(.+)", raw_cmd, re.IGNORECASE)
+                m_alt = re.search(r"(?:uber|99|carro|corrida|taxi)\s+([^\n\r,\.;]+)", raw_cmd, re.IGNORECASE)
                 if m_alt:
-                    dest = m_alt.group(1).strip()
-                    dest = re.sub(r"(?i)\s+(?:por\s+favor|pra\s+mim|agora)$", "", dest).strip()
-                    dest = re.sub(r'[?!.,;:]+$', '', dest).strip()
+                    dest = _clean_ride_destination(m_alt.group(1))
+            if not dest:
+                cleaned = re.sub(r"(?i)^(?:silva,?\s*)?(?:peça|peca|pede|pedir|chama|chamar|solicita|solicitar|quero|preciso\s+de)?\s*(?:um\s+|uma\s+)?(?:uber|99|carro|corrida|motorista|taxi)?\s*", "", raw_cmd)
+                dest = _clean_ride_destination(cleaned)
             if not dest:
                 dest = "destino"
             return f'<call>request_ride(destination="{dest}", app="{app}")</call>'

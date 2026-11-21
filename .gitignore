@@ -1,0 +1,41 @@
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.bak
+
+# Ambientes Virtuais
+venv/
+env/
+.venv/
+
+# Configurações sensíveis e dados dinâmicos
+.env
+android_agent/data/*.json
+!android_agent/data/.gitkeep
+
+# Modelos Pesados (>100MB não permitidos no GitHub direto)
+*.gguf
+*.bin
+android_agent/models/*.gguf
+android_agent/models/old/
+silva_checkpoints/
+merged_model/
+!android_agent/models/.gitkeep
+
+# Mídias e Capturas geradas em tempo de execução
+android_agent/captures/*.jpg
+android_agent/captures/*.png
+android_agent/captures/*.mp4
+!android_agent/captures/.gitkeep
+
+# Arquivos temporários, pacotes e ferramentas
+*.tar.gz
+*.apk
+*.log
+screen*.png
+platform-tools/
+
+# Build local do llama.cpp no dispositivo
+android_agent/llama.cpp/
+android_agent/llama-server

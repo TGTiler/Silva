@@ -1,0 +1,337 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SilvaToolSchema",
+  "description": "Especificação formal das ferramentas do micro-agente Silva para Termux e Android",
+  "type": "object",
+  "tools": {
+    "get_battery": {
+      "description": "Obtém o estado atual da bateria: porcentagem, status de carregamento, saúde e temperatura.",
+      "parameters": {}
+    },
+    "get_last_sms": {
+      "description": "Lê as últimas mensagens SMS recebidas no dispositivo.",
+      "parameters": {
+        "limit": {
+          "type": "integer",
+          "default": 5,
+          "description": "Quantidade máxima de mensagens a retornar."
+        }
+      }
+    },
+    "send_sms": {
+      "description": "Envia uma mensagem SMS para um número de telefone especificado.",
+      "parameters": {
+        "number": {
+          "type": "string",
+          "required": true,
+          "description": "Número do destinatário com DDD (apenas dígitos ou formato E.164)."
+        },
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "Texto da mensagem a ser enviada."
+        }
+      }
+    },
+    "take_photo": {
+      "description": "Captura uma foto usando a câmera do smartphone e salva no dispositivo.",
+      "parameters": {
+        "camera_id": {
+          "type": "integer",
+          "default": 0,
+          "description": "ID da câmera (0 para traseira, 1 para frontal)."
+        }
+      }
+    },
+    "take_screenshot": {
+      "description": "Captura um print da tela do smartphone e salva no dispositivo.",
+      "parameters": {}
+    },
+    "search_google": {
+      "description": "Pesquisa um termo ou pergunta no Google e abre os resultados no navegador do dispositivo.",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Termo de busca ou pergunta a ser pesquisada no Google."
+        }
+      }
+    },
+    "open_app": {
+      "description": "Abre um aplicativo instalado no smartphone pelo nome popular ou pacote.",
+      "parameters": {
+        "app_name": {
+          "type": "string",
+          "required": true,
+          "description": "Nome comum do aplicativo (ex: 'whatsapp', 'youtube', 'chrome', 'camera', 'configuracoes', 'spotify')."
+        }
+      }
+    },
+    "make_call": {
+      "description": "Inicia uma chamada telefônica para o número informado.",
+      "parameters": {
+        "number": {
+          "type": "string",
+          "required": true,
+          "description": "Número de telefone para discar."
+        }
+      }
+    },
+    "get_location": {
+      "description": "Obtém as coordenadas geográficas atuais (GPS/Network) e link para o mapa.",
+      "parameters": {}
+    },
+    "set_torch": {
+      "description": "Liga ou desliga a lanterna traseira do dispositivo.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "true para ligar a lanterna, false para desligar."
+        }
+      }
+    },
+    "set_dnd": {
+      "description": "Ativa ou desativa o modo Não Perturbe ou silencioso no smartphone.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "true para ativar o modo Não Perturbe, false para desativar."
+        }
+      }
+    },
+    "vibrate": {
+      "description": "Aciona o motor de vibração do smartphone por uma duração especificada.",
+      "parameters": {
+        "duration_ms": {
+          "type": "integer",
+          "default": 500,
+          "description": "Duração da vibração em milissegundos."
+        }
+      }
+    },
+    "get_clipboard": {
+      "description": "Lê o conteúdo textual atualmente armazenado na área de transferência.",
+      "parameters": {}
+    },
+    "set_clipboard": {
+      "description": "Copia um texto especificado para a área de transferência do dispositivo.",
+      "parameters": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "Texto a ser inserido na área de transferência."
+        }
+      }
+    },
+    "tell_joke": {
+      "description": "Conta uma piada curta aleatória e divertida em Português do Brasil do banco offline.",
+      "parameters": {}
+    },
+    "set_alarm": {
+      "description": "Define um novo alarme no relógio nativo do Android para o horário especificado.",
+      "parameters": {
+        "time": {
+          "type": "string",
+          "required": true,
+          "description": "Horário do alarme no formato HH:MM (ex: '07:30')."
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Rótulo ou descrição opcional do alarme."
+        },
+        "days": {
+          "type": "string",
+          "required": false,
+          "description": "Dias da semana opcionais para repetição."
+        }
+      }
+    },
+    "cancel_alarm": {
+      "description": "Cancela ou descarta um alarme existente por horário, dia ou rótulo.",
+      "parameters": {
+        "time": {
+          "type": "string",
+          "required": false,
+          "description": "Horário do alarme a ser cancelado no formato HH:MM."
+        },
+        "day": {
+          "type": "string",
+          "required": false,
+          "description": "Dia da semana do alarme a ser cancelado."
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Rótulo ou nome do alarme a ser cancelado."
+        }
+      }
+    },
+    "schedule_event": {
+      "description": "Cria um novo evento ou compromisso no calendário/agenda nativa do Android.",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Título ou descrição do compromisso."
+        },
+        "date": {
+          "type": "string",
+          "required": false,
+          "description": "Data do compromisso em linguagem natural ou DD/MM (ex: 'hoje', 'amanhã', 'segunda', '15/12')."
+        },
+        "time": {
+          "type": "string",
+          "required": false,
+          "description": "Horário de início do compromisso no formato HH:MM (padrão '09:00')."
+        }
+      }
+    },
+    "remember_note": {
+      "description": "Salva uma nota ou informação pessoal na memória persistente do dispositivo.",
+      "parameters": {
+        "key": {
+          "type": "string",
+          "required": true,
+          "description": "Chave, assunto ou identificador da anotação."
+        },
+        "value": {
+          "type": "string",
+          "required": true,
+          "description": "Conteúdo ou valor da anotação a ser lembrada."
+        }
+      }
+    },
+    "recall_note": {
+      "description": "Consulta a memória persistente por anotações salvas anteriormente.",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Termo de busca, assunto ou pergunta sobre a anotação."
+        }
+      }
+    },
+    "get_notifications": {
+      "description": "Lê as notificações recentes recebidas na barra de status do Android.",
+      "parameters": {
+        "app": {
+          "type": "string",
+          "required": false,
+          "description": "Nome ou pacote opcional do aplicativo para filtrar as notificações."
+        }
+      }
+    },
+    "set_volume": {
+      "description": "Ajusta o volume do áudio do dispositivo por canal em porcentagem de 0 a 100%.",
+      "parameters": {
+        "stream": {
+          "type": "string",
+          "required": false,
+          "default": "media",
+          "description": "Canal de áudio: 'media' (mídia/música), 'ring' (toque), 'notification' (notificação) ou 'alarm' (alarme)."
+        },
+        "level": {
+          "type": "integer",
+          "required": true,
+          "description": "Nível de volume desejado em porcentagem (0 a 100)."
+        }
+      }
+    },
+    "set_brightness": {
+      "description": "Ajusta o nível de brilho da tela do smartphone de 0 a 100%.",
+      "parameters": {
+        "level": {
+          "type": "integer",
+          "required": true,
+          "description": "Porcentagem de brilho desejada (0 a 100)."
+        }
+      }
+    },
+    "set_timer": {
+      "description": "Inicia um timer ou cronômetro com duração em minutos no relógio do Android.",
+      "parameters": {
+        "minutes": {
+          "type": "integer",
+          "required": true,
+          "description": "Duração do timer em minutos."
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Rótulo ou descrição opcional do timer."
+        }
+      }
+    },
+    "calculate": {
+      "description": "Resolve cálculos matemáticos offline de forma segura com suporte a operadores aritméticos.",
+      "parameters": {
+        "expression": {
+          "type": "string",
+          "required": true,
+          "description": "Expressão matemática a ser calculada (ex: '25 * 4', '150 / 3 + 12')."
+        }
+      }
+    },
+    "set_location_state": {
+      "description": "Ativa ou desativa o serviço de GPS e localização do smartphone.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "true para ativar a localização/GPS, false para desativar."
+        }
+      }
+    },
+    "get_last_location": {
+      "description": "Consulta a última localização registrada offline no smartphone com link e imagem de mapa.",
+      "parameters": {}
+    },
+    "get_weather": {
+      "description": "Consulta a previsão do tempo e clima por dia, horário e cidade via Open-Meteo.",
+      "parameters": {
+        "day": {
+          "type": "string",
+          "required": false,
+          "default": "hoje",
+          "description": "Dia da previsão: 'hoje', 'amanhã', ou dia da semana (ex: 'sábado')."
+        },
+        "time": {
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Horário específico para a previsão (ex: '18:00', 'manhã', 'tarde', 'noite')."
+        },
+        "location": {
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Cidade ou município para a previsão (opcional, usa localização atual se vazio)."
+        }
+      }
+    },
+    "record_video": {
+      "description": "Grava um vídeo usando a câmera traseira ou frontal do smartphone por uma duração determinada.",
+      "parameters": {
+        "duration": {
+          "type": "integer",
+          "required": false,
+          "default": 10,
+          "description": "Duração da gravação em segundos (entre 3 e 120 segundos)."
+        },
+        "camera_id": {
+          "type": "integer",
+          "required": false,
+          "default": 0,
+          "description": "ID da câmera: 0 para traseira, 1 para frontal."
+        }
+      }
+    },
+    "none": {
+      "description": "Chamada nula emitida quando o usuário faz uma pergunta geral, saudação ou comando sem ferramenta correspondente.",
+      "parameters": {}
+    }
+  }
+}

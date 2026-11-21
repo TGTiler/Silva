@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Silva — Edge Agent</title>
+  <style>
+    :root {
+      --bg-dark: #0f0d15;
+      --bg-card: #181524;
+      --bg-message-user: #7b1fa2;
+      --bg-message-agent: #252038;
+      --purple-primary: #7b1fa2;
+      --purple-dark: #5a189a;
+      --purple-light: #9d4edd;
+      --purple-accent: #c77dff;
+      --text-main: #f1f1f5;
+      --text-muted: #9b98ab;
+      --border-color: #2e2844;
+      --success: #10b981;
+      --danger: #ef4444;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--purple-dark), var(--purple-light));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(123, 31, 162, 0.4);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .header-title h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .header-title p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+      transition: background-color 0.3s ease;
+    }
+    .status-dot.online { background-color: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.offline { background-color: var(--danger); }
+
+    .pin-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 5px 8px;
+      font-size: 0.75rem;
+      width: 65px;
+      text-align: center;
+      outline: none;
+    }
+    .pin-input:focus {
+      border-color: var(--purple-light);
+    }
+
+    /* Quick Shortcuts Bar */
+    .shortcuts-container {
+      background: rgba(24, 21, 36, 0.6);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .shortcuts-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .shortcut-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 5px 12px;
+      border-radius: 16px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .shortcut-chip:hover, .shortcut-chip:active {
+      background: var(--purple-dark);
+      border-color: var(--purple-light);
+      transform: translateY(-1px);
+    }
+
+    /* Messages Area */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 85%;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+    }
+
+    .message-row.silva {
+      align-self: flex-start;
+    }
+
+    .message-bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .message-row.user .message-bubble {
+      background: linear-gradient(135deg, var(--purple-primary), var(--purple-dark));
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+
+    .message-row.silva .message-bubble {
+      background-color: var(--bg-message-agent);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-bottom-left-radius: 3px;
+    }
+
+    .message-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    .debug-tag {
+      font-family: monospace;
+      background: rgba(123, 31, 162, 0.15);
+      border: 1px solid rgba(157, 78, 221, 0.25);
+      color: var(--purple-accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+    }
+
+    .latency-tag {
+      font-family: monospace;
+      color: var(--text-muted);
+    }
+
+    .capture-preview {
+      margin-top: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      max-width: 100%;
+    }
+
+    .capture-preview img {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      display: block;
+      cursor: pointer;
+    }
+
+    /* WhatsApp-style Location Card */
+    .location-card {
+      margin-top: 10px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      max-width: 320px;
+    }
+    .location-card-preview {
+      position: relative;
+      width: 100%;
+      height: 175px;
+      overflow: hidden;
+      cursor: pointer;
+      background: #1e1b2e;
+    }
+    .location-card-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.25s ease;
+    }
+    .location-card-preview:hover img {
+      transform: scale(1.04);
+    }
+    .location-card-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(18, 15, 28, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .maps-link-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--purple-primary), var(--purple-light));
+      color: #fff;
+      text-decoration: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-top: 8px;
+      box-shadow: 0 2px 8px rgba(123, 31, 162, 0.3);
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .maps-link-btn:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+    .search-link-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #1a73e8, #4285f4);
+      color: #fff;
+      text-decoration: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-top: 8px;
+      box-shadow: 0 2px 8px rgba(26, 115, 232, 0.35);
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .search-link-btn:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    /* Input Footer */
+    footer {
+      background-color: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      padding: 12px 14px;
+      flex-shrink: 0;
+    }
+
+    .input-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 4px 6px 4px 16px;
+      transition: border-color 0.2s;
+    }
+    .input-bar:focus-within {
+      border-color: var(--purple-light);
+    }
+
+    .input-bar input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 0.92rem;
+      font-family: inherit;
+    }
+    .input-bar input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple-primary), var(--purple-light));
+      border: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.2s;
+      flex-shrink: 0;
+    }
+    .send-btn:active {
+      transform: scale(0.92);
+    }
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Offline Notice Banner */
+    .offline-notice {
+      display: none;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      font-size: 0.76rem;
+      padding: 6px 14px;
+      text-align: center;
+    }
+
+    /* Modal de Imagem */
+    .image-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .image-modal img {
+      max-width: 95vw;
+      max-height: 90vh;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="avatar-icon">S</div>
+      <div class="header-title">
+        <h1>Silva</h1>
+        <p>Micro-Agente Offline • Android</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-badge" title="Status do micro-modelo local">
+        <span id="statusDot" class="status-dot"></span>
+        <span id="statusText">Verificando...</span>
+      </div>
+      <input type="password" id="pinInput" class="pin-input" placeholder="PIN" maxlength="12" title="PIN de autorização LAN" />
+    </div>
+  </header>
+
+  <!-- Banner de aviso caso llama-server esteja offline -->
+  <div id="offlineBanner" class="offline-notice">
+    llama-server local não detectado em 127.0.0.1:8080. Inicie com <code>./start_silva.sh</code> no Termux.
+  </div>
+
+  <!-- Barra de atalhos rápidos -->
+  <div class="shortcuts-container">
+    <button class="shortcut-chip" onclick="sendQuick('Silva, quanta bateria ainda tenho?')">🔋 Bateria</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, me conta uma piada')">😂 Piada</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, coloca um alarme para amanhã às 07:00')">⏰ Alarme 07:00</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, agenda uma reunião com cliente amanhã às 14:00')">📅 Agendar Reunião</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, ative o modo não perturbe')">🔕 Não Perturbe</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, desative o não perturbe')">🔔 Desativar DND</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, onde eu estou agora?')">📍 Localização</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, qual foi minha última localização?')">📍 Última Localização</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, qual a previsão do tempo para hoje?')">⛅ Previsão do Tempo</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, tire uma foto agora')">📸 Tirar Foto</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, tira uma selfie')">🤳 Selfie</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, grava um vídeo de 10 segundos')">🎥 Gravar Vídeo</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, tira um print da tela')">📱 Print</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, acenda a lanterna')">🔦 Lanterna ON</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, desliga a lanterna')">💡 Lanterna OFF</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, pesquisa no google previsão do tempo')">🔍 Pesquisar Google</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, o que está copiado no clipboard?')">📋 Clipboard</button>
+    <button class="shortcut-chip" onclick="sendQuick('Silva, faça o celular vibrar')">📳 Vibrar</button>
+  </div>
+
+  <!-- Área de mensagens do chat -->
+  <main class="chat-messages" id="chatArea">
+    <div class="message-row silva">
+      <div class="message-bubble">
+        Olá! Sou o <strong>Silva</strong>, seu micro-agente offline para controle deste dispositivo. Envie um comando por voz/texto ou clique nos atalhos acima.
+      </div>
+      <div class="message-meta">
+        <span>Sistema pronto</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer com input de envio -->
+  <footer>
+    <form id="chatForm" onsubmit="handleSend(event)" class="input-bar">
+      <input type="text" id="userInput" placeholder="Ex: 'Silva, quanta bateria ainda tenho?'" autocomplete="off" />
+      <button type="submit" id="sendBtn" class="send-btn" title="Enviar comando">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </form>
+  </footer>
+
+  <!-- Modal para visualização ampliada de fotos -->
+  <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+    <img id="modalImg" src="" alt="Captura ampliada">
+  </div>
+
+  <script>
+    // Recupera PIN persistido no navegador
+    const pinInput = document.getElementById("pinInput");
+    pinInput.value = localStorage.getItem("silva_pin") || "1234";
+    pinInput.addEventListener("input", () => {
+      localStorage.setItem("silva_pin", pinInput.value.trim());
+    });
+
+    const chatArea = document.getElementById("chatArea");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const offlineBanner = document.getElementById("offlineBanner");
+
+    // Checagem periódica do status do LLM local
+    async function checkHealth() {
+      try {
+        const res = await fetch("/api/health");
+        const data = await res.json();
+        if (data.llm && data.llm.online) {
+          statusDot.className = "status-dot online";
+          statusText.textContent = "Online";
+          offlineBanner.style.display = "none";
+        } else {
+          statusDot.className = "status-dot offline";
+          statusText.textContent = "LLM Offline";
+          offlineBanner.style.display = "block";
+        }
+      } catch (e) {
+        statusDot.className = "status-dot offline";
+        statusText.textContent = "Desconectado";
+        offlineBanner.style.display = "block";
+      }
+    }
+
+    checkHealth();
+    setInterval(checkHealth, 10000);
+
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function sendQuick(text) {
+      userInput.value = text;
+      handleSend(new Event("submit"));
+    }
+
+    function appendUserMessage(text) {
+      const row = document.createElement("div");
+      row.className = "message-row user";
+      row.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+      chatArea.appendChild(row);
+      scrollToBottom();
+    }
+
+    function formatMessageText(text) {
+      if (!text) return "";
+      let safe = escapeHtml(text);
+      // Converte links do Google Maps em botões clicáveis target="_blank"
+      safe = safe.replace(/https:\/\/maps\.google\.com\/\?q=[^\s&<>"']+/g, (url) => {
+        return `<br><a href="${url}" target="_blank" rel="noopener noreferrer" class="maps-link-btn">🗺️ Abrir no Google Maps</a>`;
+      });
+      // Converte links de pesquisa do Google em botões clicáveis target="_blank"
+      safe = safe.replace(/https:\/\/(?:www\.)?google\.com\/search\?[^\s&<>"']+/g, (url) => {
+        return `<br><a href="${url}" target="_blank" rel="noopener noreferrer" class="search-link-btn">🔍 Ver Resultados no Google</a>`;
+      });
+      safe = safe.replace(/\n/g, "<br>");
+      return safe;
+    }
+
+    function appendSilvaMessage(msg, rawCall, latencyMs, imageUrl, videoUrl) {
+      const row = document.createElement("div");
+      row.className = "message-row silva";
+
+      let mediaHtml = "";
+      if (imageUrl) {
+        if (imageUrl.includes("loc_")) {
+          // Card de mapa estilo WhatsApp
+          mediaHtml = `
+            <div class="location-card">
+              <div class="location-card-preview" onclick="openImageModal('${imageUrl}')" title="Clique para ampliar o mapa">
+                <img src="${imageUrl}" alt="Mapa de localização" />
+                <span class="location-card-badge">📍 Localização Atual</span>
+              </div>
+            </div>
+          `;
+        } else {
+          // Print de tela ou foto de câmera
+          mediaHtml = `
+            <div class="capture-preview">
+              <img src="${imageUrl}" alt="Captura visual" onclick="openImageModal('${imageUrl}')" title="Clique para ampliar" />
+            </div>
+          `;
+        }
+      }
+
+      if (videoUrl) {
+        mediaHtml += `
+          <div class="video-preview" style="margin-top: 8px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); background: #000;">
+            <video controls playsinline preload="metadata" src="${videoUrl}" style="width: 100%; display: block; max-height: 280px;"></video>
+          </div>
+        `;
+      }
+
+      let metaHtml = "";
+      if (rawCall || latencyMs !== undefined) {
+        metaHtml = `
+          <div class="message-meta">
+            ${rawCall ? `<span class="debug-tag">${escapeHtml(rawCall)}</span>` : ""}
+            ${latencyMs !== undefined ? `<span class="latency-tag">${latencyMs}ms</span>` : ""}
+          </div>
+        `;
+      }
+
+      row.innerHTML = `
+        <div class="message-bubble">
+          ${formatMessageText(msg)}
+          ${mediaHtml}
+        </div>
+        ${metaHtml}
+      `;
+      chatArea.appendChild(row);
+      scrollToBottom();
+    }
+
+    async function handleSend(e) {
+      if (e) e.preventDefault();
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      appendUserMessage(message);
+      userInput.value = "";
+      userInput.focus();
+      sendBtn.disabled = true;
+
+      const pin = pinInput.value.trim();
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Access-Pin": pin
+          },
+          body: JSON.stringify({ message: message })
+        });
+
+        const data = await response.json();
+
+        if (response.status === 403) {
+          appendSilvaMessage("Acesso bloqueado: PIN de segurança inválido. Verifique o campo PIN no topo.", null, undefined, null, null);
+        } else if (data.status === "ok") {
+          appendSilvaMessage(data.message, data.raw_call, data.latency_ms, data.image_url, data.video_url);
+        } else {
+          appendSilvaMessage(data.message || "Erro no processamento da solicitação.", data.raw_call, data.latency_ms, null, null);
+        }
+      } catch (err) {
+        appendSilvaMessage("Erro de conexão ao servidor local do Silva: " + err.message, null, undefined, null, null);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function openImageModal(src) {
+      const modal = document.getElementById("imageModal");
+      const img = document.getElementById("modalImg");
+      img.src = src;
+      modal.style.display = "flex";
+    }
+
+    function closeImageModal() {
+      document.getElementById("imageModal").style.display = "none";
+    }
+  </script>
+</body>
+</html>

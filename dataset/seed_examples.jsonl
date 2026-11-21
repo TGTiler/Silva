@@ -1,0 +1,104 @@
+{"prompt": "Silva, quanta bateria ainda tenho?", "completion": "<call>get_battery()</call>"}
+{"prompt": "Verifica o nível de bateria do celular", "completion": "<call>get_battery()</call>"}
+{"prompt": "O telefone está carregando agora?", "completion": "<call>get_battery()</call>"}
+{"prompt": "Silva, leia meus últimos SMS", "completion": "<call>get_last_sms(limit=5)</call>"}
+{"prompt": "Chegou alguma mensagem de texto nova?", "completion": "<call>get_last_sms(limit=3)</call>"}
+{"prompt": "Mostre as últimas 10 mensagens recebidas", "completion": "<call>get_last_sms(limit=10)</call>"}
+{"prompt": "Silva, manda um SMS para 11987654321 dizendo que estou a caminho", "completion": "<call>send_sms(number=\"11987654321\", message=\"estou a caminho\")</call>"}
+{"prompt": "Envia mensagem de texto pro 21999998888 avisando que a reunião começou", "completion": "<call>send_sms(number=\"21999998888\", message=\"a reunião começou\")</call>"}
+{"prompt": "Mande um sms para 31988887777 com o texto Ok, combinado!", "completion": "<call>send_sms(number=\"31988887777\", message=\"Ok, combinado!\")</call>"}
+{"prompt": "Silva, tire uma foto agora", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "Tira uma selfie com a câmera frontal", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "Bata uma foto com a câmera traseira", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "Silva, abre o WhatsApp por favor", "completion": "<call>open_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "Inicia o YouTube", "completion": "<call>open_app(app_name=\"youtube\")</call>"}
+{"prompt": "Abre o aplicativo do Spotify", "completion": "<call>open_app(app_name=\"spotify\")</call>"}
+{"prompt": "Silva, ligue para o número 11987654321", "completion": "<call>make_call(number=\"11987654321\")</call>"}
+{"prompt": "Faz uma ligação pro 21988776655", "completion": "<call>make_call(number=\"21988776655\")</call>"}
+{"prompt": "Disque para 08007771234", "completion": "<call>make_call(number=\"08007771234\")</call>"}
+{"prompt": "Silva, onde eu estou agora?", "completion": "<call>get_location()</call>"}
+{"prompt": "Qual é a minha localização atual?", "completion": "<call>get_location()</call>"}
+{"prompt": "Pega as coordenadas do GPS do celular", "completion": "<call>get_location()</call>"}
+{"prompt": "Silva, acenda a lanterna", "completion": "<call>set_torch(state=True)</call>"}
+{"prompt": "Desliga a lanterna do celular", "completion": "<call>set_torch(state=False)</call>"}
+{"prompt": "Ligue o flash da câmera traseira", "completion": "<call>set_torch(state=True)</call>"}
+{"prompt": "Silva, ative o modo não perturbe", "completion": "<call>set_dnd(state=True)</call>"}
+{"prompt": "Coloca o celular no silencioso", "completion": "<call>set_dnd(state=True)</call>"}
+{"prompt": "Silva, desative o não perturbe", "completion": "<call>set_dnd(state=False)</call>"}
+{"prompt": "Pode sair do modo silencioso", "completion": "<call>set_dnd(state=False)</call>"}
+{"prompt": "Silva, faça o celular vibrar por um segundo", "completion": "<call>vibrate(duration_ms=1000)</call>"}
+{"prompt": "Dá uma vibrada no telefone", "completion": "<call>vibrate(duration_ms=500)</call>"}
+{"prompt": "Vibre o aparelho durante 300 milissegundos", "completion": "<call>vibrate(duration_ms=300)</call>"}
+{"prompt": "Silva, o que está copiado na minha área de transferência?", "completion": "<call>get_clipboard()</call>"}
+{"prompt": "Lê o texto que eu copiei", "completion": "<call>get_clipboard()</call>"}
+{"prompt": "Mostre o conteúdo do clipboard", "completion": "<call>get_clipboard()</call>"}
+{"prompt": "Silva, copie a palavra chave secreto123 para o clipboard", "completion": "<call>set_clipboard(text=\"secreto123\")</call>"}
+{"prompt": "Coloca o texto reuniao@empresa.com na área de transferência", "completion": "<call>set_clipboard(text=\"reuniao@empresa.com\")</call>"}
+{"prompt": "Copie este endereço: Rua das Flores, 100", "completion": "<call>set_clipboard(text=\"Rua das Flores, 100\")</call>"}
+{"prompt": "Silva, me conta uma piada", "completion": "<call>tell_joke()</call>"}
+{"prompt": "fala algo engraçado", "completion": "<call>tell_joke()</call>"}
+{"prompt": "manda uma piada aí", "completion": "<call>tell_joke()</call>"}
+{"prompt": "me faz rir silva", "completion": "<call>tell_joke()</call>"}
+{"prompt": "Silva, coloca um alarme para amanhã às 07:00", "completion": "<call>set_alarm(time=\"07:00\", label=\"Acordar\")</call>"}
+{"prompt": "Define despertador para 06:30", "completion": "<call>set_alarm(time=\"06:30\")</call>"}
+{"prompt": "Silva, desative o alarme das 07:00", "completion": "<call>cancel_alarm(time=\"07:00\")</call>"}
+{"prompt": "Cancela meu alarme de amanhã", "completion": "<call>cancel_alarm(day=\"amanhã\")</call>"}
+{"prompt": "Silva, agenda uma reunião com cliente amanhã às 14:00", "completion": "<call>schedule_event(title=\"Reunião com cliente\", date=\"amanhã\", time=\"14:00\")</call>"}
+{"prompt": "Marca dentista na sexta-feira às 10:30", "completion": "<call>schedule_event(title=\"Dentista\", date=\"sexta-feira\", time=\"10:30\")</call>"}
+{"prompt": "Silva, anote que a senha do portão é 4321", "completion": "<call>remember_note(key=\"senha do portão\", value=\"4321\")</call>"}
+{"prompt": "Lembra que o aniversário da minha mãe é 14 de setembro", "completion": "<call>remember_note(key=\"aniversário da mãe\", value=\"14 de setembro\")</call>"}
+{"prompt": "Guarda na memória que estacionei no setor B3", "completion": "<call>remember_note(key=\"estacionamento\", value=\"setor B3\")</call>"}
+{"prompt": "Silva, qual é a senha do portão?", "completion": "<call>recall_note(query=\"senha do portão\")</call>"}
+{"prompt": "Onde eu estacionei o carro?", "completion": "<call>recall_note(query=\"estacionamento\")</call>"}
+{"prompt": "O que você tem anotado sobre o aniversário da minha mãe?", "completion": "<call>recall_note(query=\"aniversário da mãe\")</call>"}
+{"prompt": "Silva, leia minhas notificações recentes", "completion": "<call>get_notifications()</call>"}
+{"prompt": "Chegou alguma notificação do WhatsApp?", "completion": "<call>get_notifications(app=\"whatsapp\")</call>"}
+{"prompt": "Verifique se o Nubank mandou aviso", "completion": "<call>get_notifications(app=\"nubank\")</call>"}
+{"prompt": "Silva, coloca o volume de mídia em 70%", "completion": "<call>set_volume(stream=\"media\", level=70)</call>"}
+{"prompt": "Aumenta o volume do toque para 80%", "completion": "<call>set_volume(stream=\"ring\", level=80)</call>"}
+{"prompt": "Abaixa o volume da música para 20%", "completion": "<call>set_volume(stream=\"media\", level=20)</call>"}
+{"prompt": "Silva, ajuste o brilho da tela para 50%", "completion": "<call>set_brightness(level=50)</call>"}
+{"prompt": "Diminua o brilho do celular para 10%", "completion": "<call>set_brightness(level=10)</call>"}
+{"prompt": "Coloca o brilho da tela no máximo", "completion": "<call>set_brightness(level=100)</call>"}
+{"prompt": "Silva, coloca um timer de 15 minutos para o bolo", "completion": "<call>set_timer(minutes=15, label=\"bolo\")</call>"}
+{"prompt": "Inicia cronômetro de 5 minutos", "completion": "<call>set_timer(minutes=5)</call>"}
+{"prompt": "Conta 30 minutos no timer", "completion": "<call>set_timer(minutes=30)</call>"}
+{"prompt": "Silva, quanto é 150 dividido por 3?", "completion": "<call>calculate(expression=\"150 / 3\")</call>"}
+{"prompt": "Calcula 25 vezes 14 mais 80", "completion": "<call>calculate(expression=\"25 * 14 + 80\")</call>"}
+{"prompt": "Quanto dá 2 elevado a 10?", "completion": "<call>calculate(expression=\"2 ** 10\")</call>"}
+{"prompt": "Silva, ativa o não perturbe e baixa o brilho pra 15%", "completion": "<call>set_dnd(state=True)</call><call>set_brightness(level=15)</call>"}
+{"prompt": "liga a lanterna e tira uma foto", "completion": "<call>set_torch(state=True)</call><call>take_photo(camera_id=0)</call>"}
+{"prompt": "silencia o celular e coloca o volume de mídia em 0", "completion": "<call>set_dnd(state=True)</call><call>set_volume(stream=\"media\", level=0)</call>"}
+{"prompt": "Silva, define um alarme pras 06:00 e anota que tenho prova", "completion": "<call>set_alarm(time=\"06:00\", label=\"Prova\")</call><call>remember_note(key=\"prova\", value=\"tenho prova amanhã às 06:00\")</call>"}
+{"prompt": "Silva, tira um print da tela", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "faz uma captura de tela", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "manda um print aí", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "tira screenshot", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "silva tira print dessa tela por favor", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "Silva, pesquisa no google previsão do tempo em Paulista", "completion": "<call>search_google(query=\"previsão do tempo em Paulista\")</call>"}
+{"prompt": "busca receitas de bolo de chocolate", "completion": "<call>search_google(query=\"receitas de bolo de chocolate\")</call>"}
+{"prompt": "procura no google preço da RX 580", "completion": "<call>search_google(query=\"preço da RX 580\")</call>"}
+{"prompt": "pesquise sobre o lançamento do Android 15", "completion": "<call>search_google(query=\"lançamento do Android 15\")</call>"}
+{"prompt": "faz uma busca no google por cotação do dólar hoje", "completion": "<call>search_google(query=\"cotação do dólar hoje\")</call>"}
+{"prompt": "Olá Silva, bom dia! Como você está?", "completion": "<call>none()</call>"}
+{"prompt": "Qual é a capital da França?", "completion": "<call>none()</call>"}
+{"prompt": "Qual é a distância da Terra até a Lua?", "completion": "<call>none()</call>"}
+{"prompt": "Como funciona a teoria da gravidade?", "completion": "<call>none()</call>"}
+{"prompt": "Silva, ativa a localização do celular", "completion": "<call>set_location_state(state=True)</call>"}
+{"prompt": "Liga o GPS", "completion": "<call>set_location_state(state=True)</call>"}
+{"prompt": "Silva, desativa a localização por favor", "completion": "<call>set_location_state(state=False)</call>"}
+{"prompt": "Desliga o GPS do aparelho", "completion": "<call>set_location_state(state=False)</call>"}
+{"prompt": "Silva, qual foi minha última localização?", "completion": "<call>get_last_location()</call>"}
+{"prompt": "Onde eu estive pela última vez?", "completion": "<call>get_last_location()</call>"}
+{"prompt": "Mostra a última localização registrada", "completion": "<call>get_last_location()</call>"}
+{"prompt": "Silva, como tá o tempo hoje?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "Qual é a previsão do tempo para amanhã em Paulista?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Paulista\")</call>"}
+{"prompt": "Vai chover às 18:00 em Recife?", "completion": "<call>get_weather(day=\"hoje\", time=\"18:00\", location=\"Recife\")</call>"}
+{"prompt": "Como vai estar o clima no sábado à tarde?", "completion": "<call>get_weather(day=\"sábado\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "Qual a temperatura atual?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "Silva, grava um vídeo de 10 segundos", "completion": "<call>record_video(duration=10, camera_id=0)</call>"}
+{"prompt": "Filma com a câmera frontal por 15 segundos", "completion": "<call>record_video(duration=15, camera_id=1)</call>"}
+{"prompt": "Grava um vídeo de 30 segundos com a câmera traseira", "completion": "<call>record_video(duration=30, camera_id=0)</call>"}
+{"prompt": "Faz um vídeo rápido de 5 segundos", "completion": "<call>record_video(duration=5, camera_id=0)</call>"}
+{"prompt": "Tira uma foto selfie minha", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "Bate uma foto com a câmera frontal", "completion": "<call>take_photo(camera_id=1)</call>"}

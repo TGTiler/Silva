@@ -1,0 +1,21 @@
+# Requisitos de treino e conversão para PC Desktop (Windows 10 / Linux)
+# Compatível com Intel Xeon E3-1270 v2 (Ivy Bridge - AVX, sem AVX2)
+# Compatível com CPU FP32 e GPU AMD Radeon RX 580 (via torch-directml opcional)
+
+# PyTorch (versão estável para CPU/DirectML)
+torch>=2.1.0
+
+# Bibliotecas Hugging Face para Fine-Tuning
+transformers>=4.40.0
+datasets>=2.18.0
+trl>=0.8.0
+peft>=0.10.0
+accelerate>=0.28.0
+
+# Utilitários de quantização e exportação GGUF
+gguf>=0.6.0
+sentencepiece>=0.2.0
+protobuf>=3.20.0
+
+# Suporte opcional a DirectML para AMD RX 580 no Windows (descomente se for utilizar no Windows):
+# torch-directml>=0.2.0

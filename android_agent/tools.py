@@ -2649,6 +2649,59 @@ def media_control(action: str) -> Dict[str, Any]:
     }
 
 
+def list_capabilities() -> Dict[str, Any]:
+    """Retorna um guia completo e organizado de todas as funções e comandos do Silva."""
+    text = (
+        "🤖 **Comandos e Funções do Silva**\n\n"
+        "📱 **Sistema & Tela:**\n"
+        "• Bateria: \"quanto tenho de bateria?\"\n"
+        "• Lanterna: \"liga a lanterna\" ou \"desliga o flash\"\n"
+        "• Não Perturbe: \"ativa o modo silencioso\"\n"
+        "• Volume: \"coloca o volume em 70%\"\n"
+        "• Brilho: \"ajusta o brilho para 50%\"\n"
+        "• Vibração: \"vibra por 2 segundos\"\n"
+        "• Print da Tela: \"tira um print da tela\"\n"
+        "• Área de Transferência: \"copia o código 1234\" ou \"o que copiei?\"\n\n"
+        "📸 **Câmera & Mídia:**\n"
+        "• Foto: \"tira uma foto\" ou \"tira uma selfie\"\n"
+        "• Vídeo: \"grava um vídeo de 15 segundos\"\n"
+        "• Mídia: \"pausa a música\", \"continua\", \"próxima música\" ou \"música anterior\"\n\n"
+        "📞 **Chamadas & Mensagens:**\n"
+        "• Chamadas: \"liga para Mãe\" ou \"disca 11987654321\"\n"
+        "• SMS: \"manda um sms para João dizendo que estou chegando\" ou \"ler últimos sms\"\n"
+        "• Notificações: \"ler notificações do WhatsApp\" ou \"quais as notificações?\"\n\n"
+        "🚀 **Apps & Busca:**\n"
+        "• Abrir Apps: \"abre o YouTube\" ou \"inicia o WhatsApp\"\n"
+        "• Instalar Apps: \"baixa o Spotify na Play Store\" ou \"instala o Nubank\"\n"
+        "• Google: \"pesquisa no Google receita de bolo de cenoura\"\n\n"
+        "⏰ **Agenda, Alarmes & Tempo:**\n"
+        "• Alarmes: \"coloca um alarme para 07:00\" ou \"cancela o alarme das 07:00\"\n"
+        "• Compromissos: \"agenda reunião amanhã às 14:00\"\n"
+        "• Timer: \"inicia um timer de 10 minutos\"\n\n"
+        "📍 **Localização & Clima:**\n"
+        "• Localização: \"onde eu estou?\" ou \"última localização registrada\"\n"
+        "• GPS: \"ativa o GPS\" ou \"desliga a localização\"\n"
+        "• Clima: \"previsão do tempo hoje em Recife\" ou \"vai chover no sábado?\"\n\n"
+        "🚗 **Mobilidade & Delivery:**\n"
+        "• Transporte: \"pede um Uber para o Shopping Recife\" ou \"chama um 99\"\n"
+        "• Comida: \"peça uma pizza no iFood\" ou \"busca açaí no 99 food\"\n\n"
+        "🧠 **Memória & Utilidades:**\n"
+        "• Memória Offline: \"lembra que guardei a chave na gaveta\" ou \"onde guardei a chave?\"\n"
+        "• Calculadora: \"quanto é 350 * 12?\"\n"
+        "• Humor: \"conta uma piada\"\n"
+        "• Multi-Ações: \"liga a lanterna e ajusta o volume em 80%\""
+    )
+    return {
+        "status": "ok",
+        "message": text,
+        "data": {
+            "categories": [
+                "system", "media", "telephony", "apps", "time", "location", "transport", "utilities"
+            ]
+        }
+    }
+
+
 # Dicionário de registro de funções disponíveis para o parser
 AVAILABLE_TOOLS = {
     "get_battery": get_battery,
@@ -2684,5 +2737,6 @@ AVAILABLE_TOOLS = {
     "order_food": order_food,
     "install_app": install_app,
     "media_control": media_control,
+    "list_capabilities": list_capabilities,
     "none": none,
 }

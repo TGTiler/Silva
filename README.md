@@ -16,9 +16,9 @@ O sistema conta com um **servidor web nativo** com interface moderna *dark mode*
 | **Quantização Móvel** | **Q5_K_M (Medium)** | ~105 MB de tamanho em disco, ideal para dispositivos ARM64 |
 | **Janela de Contexto** | **2.048 tokens** | Espaço amplo para System Prompt completo + histórico de ações |
 | **Vocabulário** | **49.152 tokens** | Tokenizador ChatML nativo |
-| **Ferramentas Nativas (Tools)** | **34 ferramentas** | Controle de hardware, utilitários, sensores, mobilidade, delivery, mídia e apps |
+| **Ferramentas Nativas (Tools)** | **35 ferramentas** | Controle de hardware, utilitários, sensores, mobilidade, delivery, mídia, apps e ajuda |
 | **Parâmetros de Ferramentas** | **40 parâmetros formais** | Catalogados e tipados estritamente no `dataset/schema.json` |
-| **Base de Dados de Treino** | **5.424 amostras limpas** | 100% validadas por analisador sintático AST em PT-BR |
+| **Base de Dados de Treino** | **5.686 amostras limpas** | 100% validadas por analisador sintático AST em PT-BR |
 
 ---
 
@@ -58,9 +58,9 @@ O sistema conta com um **servidor web nativo** com interface moderna *dark mode*
 
 ## 🛠️ Catálogo Completo das 32 Ferramentas
 
-O Silva possui 34 ferramentas implementadas em `android_agent/tools.py` e catalogadas formalmente em `dataset/schema.json`:
+O Silva possui 35 ferramentas implementadas em `android_agent/tools.py` e catalogadas formalmente em `dataset/schema.json`:
 
-| # | Ferramenta | Parâmetros (42 no total) | Descrição do Hardware / Função |
+| # | Ferramenta | Parâmetros (40 no total) | Descrição do Hardware / Função |
 | :-: | :--- | :--- | :--- |
 | **1** | `get_battery()` | *Nenhum* | Consulta status, porcentagem, temperatura e saúde da bateria. |
 | **2** | `get_last_sms(limit)` | `limit` (int, padrão: 5) | Lê as últimas mensagens SMS recebidas na caixa de entrada. |
@@ -95,7 +95,8 @@ O Silva possui 34 ferramentas implementadas em `android_agent/tools.py` e catalo
 | **31** | `order_food(query, app)` | `query` (str, obrigatório), `app` (str, padrão: "ifood") | Abre app de delivery (iFood ou 99) buscando o prato, restaurante ou item pedido. |
 | **32** | `install_app(app_name)` | `app_name` (str, obrigatório) | Abre a Google Play Store diretamente na página de instalação ou pesquisa do app. |
 | **33** | `media_control(action)` | `action` (str, obrigatório: play/pause/next/previous) | Controla a reprodução de mídia nativamente (`cmd media_session` e KeyEvents). |
-| **34** | `none()` | *Nenhum* | Emissão neutra para saudações e conversas gerais. |
+| **34** | `list_capabilities()` | *Nenhum* | Retorna guia organizado de todas as funções e comandos do Silva com exemplos práticos. |
+| **35** | `none()` | *Nenhum* | Emissão neutra para saudações e conversas gerais. |
 
 ---
 
@@ -116,7 +117,7 @@ silva-agent/
 │   ├── llm_client.py              # Cliente HTTP para o llama-server local com fallback
 │   ├── intent_fallback.py         # Roteador determinístico de ultra-baixa latência (<2ms)
 │   ├── parser.py                  # Analisador sintático AST seguro e validador de whitelist
-│   ├── tools.py                   # Implementação real das 34 ferramentas de hardware/apps
+│   ├── tools.py                   # Implementação real das 35 ferramentas de hardware/apps
 │   ├── config.py                  # Configurações globais, portas, PIN e System Prompt
 │   ├── setup_termux.sh            # Instalação automática de dependências e build do llama.cpp
 │   ├── start_silva.sh             # Script de inicialização (llama-server + web_server)
@@ -127,12 +128,12 @@ silva-agent/
 │       └── index.html             # Interface web responsiva (Desktop/Mobile, dark mode, zero CDNs)
 │
 ├── dataset/                       # ENGENHARIA DE DADOS E VALIDAÇÃO
-│   ├── schema.json                # Especificação JSON Schema formal das 34 ferramentas
-│   ├── seed_examples.jsonl        # 120 exemplos canônicos de referência em PT-BR
+│   ├── schema.json                # Especificação JSON Schema formal das 35 ferramentas
+│   ├── seed_examples.jsonl        # 125 exemplos canônicos de referência em PT-BR
 │   ├── train.jsonl                # Dataset completo com 5.342 amostras validadas
-│   ├── train_clean.jsonl          # 95% do dataset limpo para fine-tuning supervisionado (5.397)
+│   ├── train_clean.jsonl          # 95% do dataset limpo para fine-tuning supervisionado (5.402)
 │   ├── eval_clean.jsonl           # 5% do dataset para avaliação e validação de perda (284)
-│   ├── silva_colab_dataset.jsonl  # 5.681 amostras consolidadas para treino no Google Colab
+│   ├── silva_colab_dataset.jsonl  # 5.686 amostras consolidadas para treino no Google Colab
 │   ├── validate_dataset.py        # Validador sintático AST e verificador de schema
 │   ├── prepare_final_dataset.py   # Gerador de contatos sintéticos, balanceador e divisor
 │   └── repair_train_dataset.py    # Corretor automático de inconsistências e desbalanceamento
@@ -158,10 +159,10 @@ silva-agent/
 - **`static/index.html`**: Chat moderno com estética Dark Purple & Liquid Glass, sidebar desktop de 2 colunas com telemetria em tempo real, ribbon mobile horizontal, zero `innerHTML` (100% seguro contra XSS) e zero dependências externas.
 
 #### 2. Módulo `dataset/` (Dados de Treinamento)
-- **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 34 ferramentas.
+- **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 35 ferramentas.
 - **`validate_dataset.py`**: Analisa arquivos `.jsonl` linha por linha, extrai chamadas via regex, compila os argumentos via AST e emite relatórios de conformidade e proporção percentual de classes.
 - **`prepare_final_dataset.py`**: Enriquece a base com variações naturais de contatos humanos (ex: *"Mãe"*, *"Amor"*, *"Doutor Carlos"*), remove duplicatas e gera a divisão treino (95%) e validação (5%).
-- **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 5.681 exemplos prontos para upload e treino no Colab.
+- **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 5.686 exemplos prontos para upload e treino no Colab.
 
 #### 3. Módulo `pc_training/` (Treino e Conversão)
 - **`colab_train_silva.py`**: Pipeline tudo-em-um para o Google Colab: desinstala pacotes conflitantes, atualiza Hugging Face, clona e compila ferramentas do `llama.cpp`, realiza o fine-tuning LoRA com `TRL/SFTTrainer`, funde os pesos no modelo base SmolLM2-135M, quantiza em `Q5_K_M` e dispara o download automático de `silva-135m.gguf`.

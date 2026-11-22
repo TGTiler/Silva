@@ -381,6 +381,10 @@
         }
       }
     },
+    "list_capabilities": {
+      "description": "Lista todas as capacidades, ferramentas e comandos suportados pelo Silva de forma organizada e com exemplos práticos.",
+      "parameters": {}
+    },
     "none": {
       "description": "Chamada nula emitida quando o usuário faz uma pergunta geral, saudação ou comando sem ferramenta correspondente.",
       "parameters": {}

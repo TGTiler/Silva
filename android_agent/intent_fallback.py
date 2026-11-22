@@ -156,6 +156,20 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
     if not cmd:
         return None
 
+    # 0. Pedido de Ajuda / Lista de Capacidades (list_capabilities)
+    cmd_clean = re.sub(r"(?i)^(?:silva,?\s*|ei,?\s*|oi,?\s*|ola,?\s*)?", "", cmd).strip().rstrip("?!.,;:")
+    cmd_clean = re.sub(r"(?i)\s+(?:por\s+favor|pra\s+mim|pfv|pfvr|agora|agr|aí|ai)$", "", cmd_clean).strip()
+
+    help_phrases = [
+        "o que voce faz", "o que vc faz", "o que voce pode fazer", "o que vc pode fazer",
+        "o que voce sabe fazer", "o que vc sabe fazer", "quais suas funcoes", "quais suas capacidades",
+        "suas funcoes", "suas capacidades", "lista de comandos", "seus comandos", "quais comandos",
+        "o que posso pedir", "o que você pode fazer", "quais são suas funções", "quais sao suas funcoes",
+        "o que você faz", "quais suas funções", "suas funções", "o que você sabe fazer"
+    ]
+    if any(p in cmd_clean for p in help_phrases) or cmd_clean in ["ajuda", "help", "menu", "comandos", "funcoes", "funções"]:
+        return "<call>list_capabilities()</call>"
+
     # 1. Lanterna (set_torch)
     if "lanterna" in cmd or "torch" in cmd or "flash" in cmd:
         if any(neg in cmd for neg in ["deslig", "desativ", "apag", "off", "fecha", "cort", "tir"]):

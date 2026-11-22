@@ -118,3 +118,8 @@
 {"prompt": "Despausa e continua a reprodução", "completion": "<call>media_control(action=\"play\")</call>"}
 {"prompt": "Pula para a próxima música", "completion": "<call>media_control(action=\"next\")</call>"}
 {"prompt": "Volta para a música anterior", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "O que você pode fazer?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "Silva, quais são suas funções?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "Me mostra a lista de comandos que você sabe executar", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "Quais são as suas capacidades?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "Silva, ajuda", "completion": "<call>list_capabilities()</call>"}

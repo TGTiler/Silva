@@ -5270,73 +5270,73 @@
 {"prompt": "ei silva volta p/ faixa anterior pfv", "completion": "<call>media_control(action=\"previous\")</call>"}
 {"prompt": "silva pausa o audio agr blz", "completion": "<call>media_control(action=\"pause\")</call>"}
 {"prompt": "retoma a faixa pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
-{"prompt": "silva oq vc pode fazer?", "completion": "<call>none()</call>"}
-{"prompt": "quais são suas funções?", "completion": "<call>none()</call>"}
-{"prompt": "me mostra seus comandos pfv", "completion": "<call>none()</call>"}
-{"prompt": "ei silva preciso de ajuda", "completion": "<call>none()</call>"}
-{"prompt": "oq vc consegue fazer no meu celular?", "completion": "<call>none()</call>"}
-{"prompt": "pra q vc serve silva?", "completion": "<call>none()</call>"}
-{"prompt": "lista td q vc faz pfvr", "completion": "<call>none()</call>"}
-{"prompt": "ei silva me mostra oq vc sabe fazer", "completion": "<call>none()</call>"}
-{"prompt": "quais são seus comandos agr?", "completion": "<call>none()</call>"}
-{"prompt": "silva oq eu posso pedir p/ vc?", "completion": "<call>none()</call>"}
-{"prompt": "me ajuda ai oq vc faz?", "completion": "<call>none()</call>"}
-{"prompt": "silva quais suas capacidades?", "completion": "<call>none()</call>"}
-{"prompt": "oq vc sabe fazer no cel pfv", "completion": "<call>none()</call>"}
-{"prompt": "ei silva lista suas funcoes pfvr", "completion": "<call>none()</call>"}
-{"prompt": "me mostra td q vc consegue fazer", "completion": "<call>none()</call>"}
-{"prompt": "silva pra q vc serve?", "completion": "<call>none()</call>"}
-{"prompt": "quais comandos vc tem hj?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva oq vc pode fazer p/ mim?", "completion": "<call>none()</call>"}
-{"prompt": "me explica suas funcoes pfv", "completion": "<call>none()</call>"}
-{"prompt": "silva quais são suas habilidades?", "completion": "<call>none()</call>"}
-{"prompt": "oq vc faz exatamente?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva me mostra os comandos blz", "completion": "<call>none()</call>"}
-{"prompt": "lista td q vc sabe fazer pfvr", "completion": "<call>none()</call>"}
-{"prompt": "silva oq vc consegue fazer agr?", "completion": "<call>none()</call>"}
-{"prompt": "quais suas funcoes no cel?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva preciso saber oq vc faz", "completion": "<call>none()</call>"}
-{"prompt": "me mostra suas capacidades pfv", "completion": "<call>none()</call>"}
-{"prompt": "silva lista td q vc faz vlw", "completion": "<call>none()</call>"}
-{"prompt": "oq eu posso pedir p/ vc?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva quais são seus comandos?", "completion": "<call>none()</call>"}
-{"prompt": "me ajuda a saber oq vc faz pfvr", "completion": "<call>none()</call>"}
-{"prompt": "silva oq vc sabe fazer no meu cel?", "completion": "<call>none()</call>"}
-{"prompt": "quais são suas opcoes de comando?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva me lista suas funcoes pfv", "completion": "<call>none()</call>"}
-{"prompt": "oq vc pode fazer p/ mim hj?", "completion": "<call>none()</call>"}
-{"prompt": "silva me mostra td q vc consegue pfvr", "completion": "<call>none()</call>"}
-{"prompt": "quais comandos vc aceita?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva pra q serve vc?", "completion": "<call>none()</call>"}
-{"prompt": "me fala suas funcoes pfv silva", "completion": "<call>none()</call>"}
-{"prompt": "oq vc consegue fazer blz", "completion": "<call>none()</call>"}
-{"prompt": "silva quais são suas funcoes no celular?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva lista td q vc sabe pfvr", "completion": "<call>none()</call>"}
-{"prompt": "me mostra oq vc faz pfv", "completion": "<call>none()</call>"}
-{"prompt": "silva oq vc pode fazer no cel?", "completion": "<call>none()</call>"}
-{"prompt": "quais são td as suas funcoes?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva me ajuda c/ os comandos pfv", "completion": "<call>none()</call>"}
-{"prompt": "oq vc sabe fazer msm?", "completion": "<call>none()</call>"}
-{"prompt": "silva lista suas capacidades vlw", "completion": "<call>none()</call>"}
-{"prompt": "me mostra tds os comandos pfvr", "completion": "<call>none()</call>"}
-{"prompt": "ei silva quais suas funcoes agr?", "completion": "<call>none()</call>"}
-{"prompt": "silva me diz oq vc faz pfv", "completion": "<call>none()</call>"}
-{"prompt": "quais as funcoes q vc tem?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva mostra td q vc sabe fazer blz", "completion": "<call>none()</call>"}
-{"prompt": "oq vc consegue fazer p/ mim agr?", "completion": "<call>none()</call>"}
-{"prompt": "silva lista os comandos pfvr", "completion": "<call>none()</call>"}
-{"prompt": "me mostra suas funcoes vlw", "completion": "<call>none()</call>"}
-{"prompt": "ei silva oq da p/ pedir p/ vc?", "completion": "<call>none()</call>"}
-{"prompt": "quais recursos vc tem no cel?", "completion": "<call>none()</call>"}
-{"prompt": "silva me fala td q vc faz pfv", "completion": "<call>none()</call>"}
-{"prompt": "oq vc sabe fazer no meu celular?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva quais são suas funcoes blz", "completion": "<call>none()</call>"}
-{"prompt": "me lista suas capacidades pfvr", "completion": "<call>none()</call>"}
-{"prompt": "silva oq vc consegue fazer no cel?", "completion": "<call>none()</call>"}
-{"prompt": "quais comandos vc reconhece?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva me mostra oq vc pode fazer", "completion": "<call>none()</call>"}
-{"prompt": "pra q vc serve no celular?", "completion": "<call>none()</call>"}
-{"prompt": "silva lista td q vc consegue fazer pfv", "completion": "<call>none()</call>"}
-{"prompt": "quais são suas funcoes hj?", "completion": "<call>none()</call>"}
-{"prompt": "ei silva oq vc sabe fazer msm?", "completion": "<call>none()</call>"}
-{"prompt": "me mostra td q vc faz pfvr silva", "completion": "<call>none()</call>"}
+{"prompt": "silva oq vc pode fazer?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais são suas funções?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me mostra seus comandos pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva preciso de ajuda", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc consegue fazer no meu celular?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "pra q vc serve silva?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "lista td q vc faz pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva me mostra oq vc sabe fazer", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais são seus comandos agr?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva oq eu posso pedir p/ vc?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me ajuda ai oq vc faz?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva quais suas capacidades?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc sabe fazer no cel pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva lista suas funcoes pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me mostra td q vc consegue fazer", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva pra q vc serve?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais comandos vc tem hj?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva oq vc pode fazer p/ mim?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me explica suas funcoes pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva quais são suas habilidades?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc faz exatamente?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva me mostra os comandos blz", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "lista td q vc sabe fazer pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva oq vc consegue fazer agr?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais suas funcoes no cel?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva preciso saber oq vc faz", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me mostra suas capacidades pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva lista td q vc faz vlw", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq eu posso pedir p/ vc?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva quais são seus comandos?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me ajuda a saber oq vc faz pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva oq vc sabe fazer no meu cel?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais são suas opcoes de comando?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva me lista suas funcoes pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc pode fazer p/ mim hj?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva me mostra td q vc consegue pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais comandos vc aceita?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva pra q serve vc?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me fala suas funcoes pfv silva", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc consegue fazer blz", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva quais são suas funcoes no celular?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva lista td q vc sabe pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me mostra oq vc faz pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva oq vc pode fazer no cel?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais são td as suas funcoes?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva me ajuda c/ os comandos pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc sabe fazer msm?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva lista suas capacidades vlw", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me mostra tds os comandos pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva quais suas funcoes agr?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva me diz oq vc faz pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais as funcoes q vc tem?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva mostra td q vc sabe fazer blz", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc consegue fazer p/ mim agr?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva lista os comandos pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me mostra suas funcoes vlw", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva oq da p/ pedir p/ vc?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais recursos vc tem no cel?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva me fala td q vc faz pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "oq vc sabe fazer no meu celular?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva quais são suas funcoes blz", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me lista suas capacidades pfvr", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva oq vc consegue fazer no cel?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais comandos vc reconhece?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva me mostra oq vc pode fazer", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "pra q vc serve no celular?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva lista td q vc consegue fazer pfv", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "quais são suas funcoes hj?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "ei silva oq vc sabe fazer msm?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "me mostra td q vc faz pfvr silva", "completion": "<call>list_capabilities()</call>"}

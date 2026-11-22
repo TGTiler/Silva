@@ -495,15 +495,13 @@ Pipeline autônomo completo para Google Colab (GPU T4):
 
 1. **Instalação e Compilação:** Remove `torchao` conflitante, instala stack Hugging Face (`transformers`, `peft`, `trl`, `accelerate`, `gguf`) e compila `llama-quantize` no `llama.cpp` (`silva-agent/pc_training/colab_train_silva.py:9-52`).
 2. **Carregamento e Split Determinístico:** Carrega arquivos separados (`train_clean.jsonl` e `eval_clean.jsonl`) ou dataset consolidado (`silva_colab_dataset.jsonl`) com split determinístico `seed=42` em 95% treino (~5.790) e 5% avaliação (~304) (`silva-agent/pc_training/colab_train_silva.py:54-150`).
-3. **Auditoria de Tokens e SFT/LoRA com Loss Masking (Completion-Only):**
-   - Formatação conversacional padrão Hugging Face (`{"messages": [{"role": "system", ...}, {"role": "user", ...}, {"role": "assistant", ...}]}`).
-   - `SILVA_SYSTEM_PROMPT` sincronizado sem placeholders abstratos (`<call>get_battery()</call>`, `<call>set_torch(state=True)</call>`).
-   - Auditoria pré-treino com média, P99 e detecção de truncamento na janela `max_length=512` via ChatML template.
-   - `completion_only_loss=True` (com fallback para `DataCollatorForCompletionOnlyLM`) garantindo que apenas a resposta `<call>...</call>` do assistente receba cálculo de loss (tokens do sistema e usuário mascarados com `-100`).
-   - Auditoria explícita pré-treino de labels inspecionando tokens mascarados vs. tokens sob cálculo de gradiente.
-   - `LoraConfig` (r=16, alpha=32, dropout=0.08) em todos os módulos de atenção e MLP.
-   - Treinamento calibrado por 4 épocas (`learning_rate=3e-4`, cosine scheduler, `packing=False`, `load_best_model_at_end=True`, `metric_for_best_model="eval_loss"`), auditoria do melhor checkpoint e fusão `merge_and_unload()` (`silva-agent/pc_training/colab_train_silva.py:152-450`).
-4. **Bateria de Inferência Pós-Merge:** Validação via `apply_chat_template(..., add_generation_prompt=True)` com `temperature=0.0` / `do_sample=False` em 10 cenários essenciais (hardware, Wi-Fi, transporte, delivery, mídia, apps, clima, matemática, memória e neutro `none()`) (`silva-agent/pc_training/colab_train_silva.py:452-510`).
+3. **Auditoria de Tokens e SFT/LoRA com Mascaramento Manual de Labels:**
+   - Separação estrita de `eos_token_id` (`<|im_end|>`) e `pad_token_id` (`<|endoftext|>`), impedindo que o collator mascare o token de parada.
+   - Tokenização manual via `tokenize_chatml_example(item)` em duas partes: Prompt mascarado com `labels = -100` e Resposta treinável com token de parada explícito `<|im_end|>`.
+   - `DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=-100)` com `Trainer`.
+   - Auditoria visual obrigatória pré-treino com assertions rigorosas garantindo início com `<call>`, término com `<|im_end|>` e ausência de vazamento do prompt nas labels ativas.
+   - Treinamento calibrado por 4 épocas (`learning_rate=3e-4`, cosine scheduler, `load_best_model_at_end=True`, `metric_for_best_model="eval_loss"`), auditoria do melhor checkpoint e fusão `merge_and_unload()` (`silva-agent/pc_training/colab_train_silva.py:152-450`).
+4. **Bateria de Inferência Pós-Merge:** Validação via `apply_chat_template(..., add_generation_prompt=True)` com `eos_token_id=eos_id`, `pad_token_id=tokenizer.pad_token_id`, `temperature=0.0` / `do_sample=False` e corte limpo no primeiro `<|im_end|>` ou `</call>` em 10 cenários essenciais (`silva-agent/pc_training/colab_train_silva.py:452-510`).
 5. **Conversão e Quantização GGUF:** Conversão para FP16, quantização `Q5_K_M` (~105MB) e download automático no navegador (`silva-agent/pc_training/colab_train_silva.py:512-545`).
 
 ### 3.14 Scripts operacionais autorais
@@ -799,11 +797,12 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - *Pilar B (Normalizador de Gírias e Typos)*: `normalize_colloquial_ptbr()` converte expressões de nível (`no talo` → `100%`, `no mudo` → `0%`), gírias de apps (`zap` → `whatsapp`, `insta` → `instagram`) e corrige erros de digitação via `difflib.get_close_matches(cutoff=0.82)`.
     - *Pilar C (Roteador por Pontuação)*: `ScoredIntentRouter` com extratores por domínio ponderados, resolução explícita de ambiguidades (Wi-Fi senha vs scan vs abrir) e bloqueio de perguntas conceituais.
     - *Pilar D (Splitter Inteligente)*: Divisão de cláusulas encadeadas após a normalização numérica, evitando divisões errôneas de números no conector `" e "`. Suíte expandida para 22 testes com 100% de aprovação.
-15. **Loss Masking e Remoção de Placeholders Abstratos (`pc_training/colab_train_silva.py`)**:
-    - Remoção dos placeholders conceituais (`nome_da_funcao`, `arg1=valor1`, `valor2`, `acao1()`) do `SILVA_SYSTEM_PROMPT` em `android_agent/config.py` e `pc_training/colab_train_silva.py`, substituídos por exemplos literais concretos (`<call>get_battery()</call>`, `<call>set_torch(state=True)</call>`).
-    - Adoção do formato conversacional `{"messages": [...]}` com `completion_only_loss=True` e `DataCollatorForCompletionOnlyLM(response_template="<|im_start|>assistant\n")`, garantindo labels `-100` para system prompt, user prompt e padding. O cálculo da perda e ajuste de pesos concentra-se exclusivamente nos tokens da resposta do assistente (`<call>...</call>`).
-    - Auditoria ativa pré-treino inspecionando tokens com cálculo de loss vs. tokens mascarados antes de `trainer.train()`.
-    - Alinhamento da bateria de inferência pós-merge com `tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)`.
+15. **Mascaramento Manual de Labels e Token de Parada Explícito (`pc_training/colab_train_silva.py`)**:
+    - Separação estrita entre `eos_token_id` (`<|im_end|>`) e `pad_token_id` (`<|endoftext|>`, token ID 0), prevenindo que o collator mascare o token de parada com `-100`.
+    - Tokenização determinística em duas partes via `tokenize_chatml_example`: prompt com `labels = -100` e completion com paragem explícita `+ [eos_id]`.
+    - Uso de `DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=-100)` com `Trainer`, eliminando qualquer dependência de Jinja `{% generation %}` do TRL.
+    - Auditoria pré-treino com validação formal via `assert` garantindo que as labels ativas comecem com `<call>`, terminem com `<|im_end|>` e não contenham vazamentos do prompt.
+    - Inferência pós-merge `[4/5]` atualizada com `eos_token_id=eos_id`, `pad_token_id=tokenizer.pad_token_id` e corte limpo no primeiro `<|im_end|>` ou `</call>`.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

@@ -142,23 +142,9 @@ SILVA_SYSTEM_PROMPT = (
 )
 
 
-def format_conversational(item):
-    """Formata amostra no padrão de conversação oficial suportado pelo TRL."""
-    return {
-        "messages": [
-            {"role": "system", "content": SILVA_SYSTEM_PROMPT},
-            {"role": "user", "content": item["prompt"]},
-            {"role": "assistant", "content": item["completion"]}
-        ]
-    }
-
-
-train_samples = [format_conversational(x) for x in train_raw]
-eval_samples = [format_conversational(x) for x in eval_raw]
-
-# %% [3] FINE-TUNING SFT COM LOSS MASKING EXCLUSIVO NA RESPOSTA (COMPLETION ONLY)
+# %% [3] FINE-TUNING COM MASCARAMENTO MANUAL DE LABELS E TOKEN DE PARADA EXPLÍCITO
 print("\n" + "=" * 65)
-print(" [3/5] INICIANDO FINE-TUNING SFT (SmolLM2-135M) ")
+print(" [3/5] INICIANDO FINE-TUNING COM MASCARAMENTO MANUAL DE LABELS ")
 print("=" * 65)
 
 import torch
@@ -166,42 +152,88 @@ from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
-    TrainingArguments
+    TrainingArguments,
+    Trainer,
+    DataCollatorForSeq2Seq
 )
 from peft import LoraConfig, get_peft_model, TaskType
 
-# Suporte compatível tanto para versões novas de TRL (SFTConfig) quanto legadas
-try:
-    from trl import SFTTrainer, SFTConfig
-    HAS_SFT_CONFIG = True
-except ImportError:
-    from trl import SFTTrainer
-    HAS_SFT_CONFIG = False
+# Modelo base SmolLM2-135M
+MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct"
+print(f"[*] Baixando tokenizer do modelo base: {MODEL_ID}...")
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+
+# ==============================================================================
+# 1. SEPARAR pad_token_id DE eos_token_id (CRÍTICO)
+# SmolLM2 / Llama usa <|im_end|> como fim de turno no ChatML.
+# O pad_token DEVE ser <|endoftext|> (id 0) para que o collator nunca mascare <|im_end|>.
+# ==============================================================================
+eos_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
+if eos_id is None or eos_id < 0:
+    eos_id = tokenizer.eos_token_id
+
+tokenizer.eos_token = "<|im_end|>"
+tokenizer.eos_token_id = eos_id
+
+tokenizer.pad_token = "<|endoftext|>"
+pad_id = tokenizer.convert_tokens_to_ids("<|endoftext|>")
+if pad_id is None or pad_id < 0:
+    pad_id = 0
+tokenizer.pad_token_id = pad_id
+
+print(f"[*] Configuração dos tokens especiais:")
+print(f"  - eos_token: '{tokenizer.eos_token}' (ID: {tokenizer.eos_token_id})")
+print(f"  - pad_token: '{tokenizer.pad_token}' (ID: {tokenizer.pad_token_id})")
+assert tokenizer.eos_token_id != tokenizer.pad_token_id, "pad_token_id e eos_token_id devem ser estritamente distintos!"
+
+# ==============================================================================
+# 2. TOKENIZAÇÃO MANUAL COM labels = -100 NO PROMPT (SEM DEPENDER DE completion_only_loss)
+# ==============================================================================
+print("\n[*] Construindo datasets com mascaramento manual de labels (-100 no prompt)...")
+MAX_TRAIN_LENGTH = 512
+
+def tokenize_chatml_example(item):
+    """
+    Constrói cada exemplo manualmente em duas partes:
+    - Parte 1 (Prompt mascarado): System Prompt + Pergunta do usuário com generation prompt (labels = -100)
+    - Parte 2 (Resposta treinável): Resposta <call>...</call> com token de parada explícito <|im_end|>
+    """
+    prompt_str = tokenizer.apply_chat_template(
+        [
+            {"role": "system", "content": SILVA_SYSTEM_PROMPT},
+            {"role": "user", "content": item["prompt"]},
+        ],
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+    prompt_ids = tokenizer.encode(prompt_str, add_special_tokens=False)
+    completion_ids = tokenizer.encode(item["completion"].strip(), add_special_tokens=False) + [eos_id]
+
+    input_ids = (prompt_ids + completion_ids)[:MAX_TRAIN_LENGTH]
+    labels = ([-100] * len(prompt_ids) + completion_ids)[:MAX_TRAIN_LENGTH]
+    attention_mask = [1] * len(input_ids)
+
+    return {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels
+    }
+
+train_samples = [tokenize_chatml_example(x) for x in train_raw]
+eval_samples = [tokenize_chatml_example(x) for x in eval_raw]
 
 train_dataset = Dataset.from_list(train_samples)
 eval_dataset = Dataset.from_list(eval_samples)
-print(f"[*] Total de exemplos formatados para treino: {len(train_dataset)}")
-print(f"[*] Total de exemplos formatados para avaliação: {len(eval_dataset)}")
-
-# Modelo base SmolLM2-135M
-MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct"
-print(f"[*] Baixando modelo base: {MODEL_ID}...")
-
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
+print(f"[*] Total de exemplos tokenizados para treino: {len(train_dataset)}")
+print(f"[*] Total de exemplos tokenizados para avaliação: {len(eval_dataset)}")
 
 # ==============================================================================
 # AUDITORIA PRÉ-TREINO DE COMPRIMENTO DE TOKENS (JANELA: 512 TOKENS)
 # ==============================================================================
-print("\n[*] Executando auditoria pré-treino de tokens via ChatML template...")
-MAX_TRAIN_LENGTH = 512
-
+print("\n[*] Executando auditoria pré-treino de comprimento de tokens...")
 all_formatted_samples = train_samples + eval_samples
-token_lengths = [
-    len(tokenizer.apply_chat_template(s["messages"], tokenize=True))
-    for s in all_formatted_samples
-]
+token_lengths = [len(s["input_ids"]) for s in all_formatted_samples]
 
 total_count = len(token_lengths)
 mean_len = sum(token_lengths) / total_count if total_count > 0 else 0
@@ -209,25 +241,23 @@ sorted_lens = sorted(token_lengths)
 p99_idx = min(int(0.99 * total_count), total_count - 1)
 p99_len = sorted_lens[p99_idx]
 max_tokens_found = max(token_lengths) if token_lengths else 0
-truncated_samples = [(i, l) for i, l in enumerate(token_lengths) if l > MAX_TRAIN_LENGTH]
+truncated_samples = [(i, l) for i, l in enumerate(token_lengths) if l >= MAX_TRAIN_LENGTH]
 
-print(f"[*] Estatísticas de Comprimento de Tokens (ChatML):")
+print(f"[*] Estatísticas de Comprimento de Tokens:")
 print(f"  - Total de amostras auditadas: {total_count}")
 print(f"  - Média de tokens por amostra: {mean_len:.1f}")
 print(f"  - Percentil 99 (P99): {p99_len} tokens")
-print(f"  - Tamanho máximo encontrado (max_tokens): {max_tokens_found} tokens (janela: {MAX_TRAIN_LENGTH})")
+print(f"  - Tamanho máximo encontrado: {max_tokens_found} tokens (janela: {MAX_TRAIN_LENGTH})")
 
 if truncated_samples:
-    print(f"\n[ALERTA DE TRUNCAMENTO] {len(truncated_samples)} amostra(s) ({len(truncated_samples) / total_count * 100:.2f}%) ultrapassam o limite de {MAX_TRAIN_LENGTH} tokens e serão truncadas pelo SFTTrainer!")
-    for idx, tok_len in truncated_samples[:5]:
-        sample_preview = str(all_formatted_samples[idx]["messages"])[:120]
-        print(f"    - Amostra #{idx}: {tok_len} tokens -> {sample_preview}...")
+    print(f"\n[ALERTA DE TRUNCAMENTO] {len(truncated_samples)} amostra(s) ({len(truncated_samples) / total_count * 100:.2f}%) atingiram a janela de {MAX_TRAIN_LENGTH} tokens!")
 else:
     print(f"[OK] 100% das {total_count} amostras cabem com folga dentro da janela de {MAX_TRAIN_LENGTH} tokens! Zero truncamento.\n")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
+print(f"[*] Carregando pesos do modelo base ({device})...")
 try:
     base_model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
@@ -255,176 +285,109 @@ peft_config = LoraConfig(
 model = get_peft_model(base_model, peft_config)
 model.print_trainable_parameters()
 
+# ==============================================================================
+# CONFIGURAÇÃO DO TRAINER COM DataCollatorForSeq2Seq
+# ==============================================================================
 import inspect
 
-if HAS_SFT_CONFIG:
-    sft_sig = inspect.signature(SFTConfig.__init__).parameters
+t_sig = inspect.signature(TrainingArguments.__init__).parameters
+t_kwargs = {
+    "output_dir": "./silva_checkpoints",
+    "num_train_epochs": 4,
+    "per_device_train_batch_size": 16,
+    "per_device_eval_batch_size": 16,
+    "gradient_accumulation_steps": 2,
+    "learning_rate": 3e-4,
+    "lr_scheduler_type": "cosine",
+    "weight_decay": 0.01,
+    "logging_steps": 25,
+    "save_strategy": "epoch",
+    "save_total_limit": 2,
+    "metric_for_best_model": "eval_loss",
+    "greater_is_better": False,
+    "load_best_model_at_end": True,
+    "fp16": (device == "cuda"),
+    "bf16": False,
+    "optim": "adamw_torch",
+    "report_to": "none"
+}
 
-    sft_kwargs = {
-        "output_dir": "./silva_checkpoints",
-        "num_train_epochs": 4,
-        "per_device_train_batch_size": 16,
-        "per_device_eval_batch_size": 16,
-        "gradient_accumulation_steps": 2,
-        "learning_rate": 3e-4,
-        "lr_scheduler_type": "cosine",
-        "weight_decay": 0.01,
-        "logging_steps": 25,
-        "save_strategy": "epoch",
-        "save_total_limit": 2,
-        "metric_for_best_model": "eval_loss",
-        "greater_is_better": False,
-        "load_best_model_at_end": True,
-        "completion_only_loss": True,
-        "packing": False,
-        "fp16": (device == "cuda"),
-        "bf16": False,
-        "optim": "adamw_torch",
-        "report_to": "none",
-    }
+if "eval_strategy" in t_sig:
+    t_kwargs["eval_strategy"] = "epoch"
+elif "evaluation_strategy" in t_sig:
+    t_kwargs["evaluation_strategy"] = "epoch"
 
-    # Compatibilidade eval_strategy vs evaluation_strategy
-    if "eval_strategy" in sft_sig:
-        sft_kwargs["eval_strategy"] = "epoch"
-    elif "evaluation_strategy" in sft_sig:
-        sft_kwargs["evaluation_strategy"] = "epoch"
-
-    # Compatibilidade warmup_ratio vs warmup_steps
-    if "warmup_ratio" in sft_sig:
-        sft_kwargs["warmup_ratio"] = 0.05
-    else:
-        sft_kwargs["warmup_steps"] = 25
-
-    # TRL >= 0.20 usa 'max_length'; versões anteriores usavam 'max_seq_length'
-    if "max_length" in sft_sig:
-        sft_kwargs["max_length"] = 512
-    elif "max_seq_length" in sft_sig:
-        sft_kwargs["max_seq_length"] = 512
-
-    # Filtra apenas parâmetros suportados pela assinatura instalada do SFTConfig
-    sft_kwargs = {k: v for k, v in sft_kwargs.items() if k in sft_sig}
-
-    training_args = SFTConfig(**sft_kwargs)
-
-    trainer_kwargs = {
-        "model": model,
-        "train_dataset": train_dataset,
-        "eval_dataset": eval_dataset,
-        "args": training_args
-    }
-    trainer_sig = inspect.signature(SFTTrainer.__init__).parameters
-    if "processing_class" in trainer_sig:
-        trainer_kwargs["processing_class"] = tokenizer
-    else:
-        trainer_kwargs["tokenizer"] = tokenizer
-
-    # Fallback se completion_only_loss não for aceito no SFTConfig diretamente
-    if "completion_only_loss" not in sft_sig:
-        try:
-            from trl import DataCollatorForCompletionOnlyLM
-            response_template = "<|im_start|>assistant\n"
-            trainer_kwargs["data_collator"] = DataCollatorForCompletionOnlyLM(
-                response_template=response_template,
-                tokenizer=tokenizer
-            )
-        except Exception:
-            pass
-
-    trainer = SFTTrainer(**trainer_kwargs)
+if "warmup_ratio" in t_sig:
+    t_kwargs["warmup_ratio"] = 0.05
 else:
-    t_sig = inspect.signature(TrainingArguments.__init__).parameters
-    t_kwargs = {
-        "output_dir": "./silva_checkpoints",
-        "num_train_epochs": 4,
-        "per_device_train_batch_size": 16,
-        "per_device_eval_batch_size": 16,
-        "gradient_accumulation_steps": 2,
-        "learning_rate": 3e-4,
-        "lr_scheduler_type": "cosine",
-        "weight_decay": 0.01,
-        "logging_steps": 25,
-        "save_strategy": "epoch",
-        "save_total_limit": 2,
-        "metric_for_best_model": "eval_loss",
-        "greater_is_better": False,
-        "load_best_model_at_end": True,
-        "fp16": (device == "cuda"),
-        "bf16": False,
-        "optim": "adamw_torch",
-        "report_to": "none"
-    }
-    if "eval_strategy" in t_sig:
-        t_kwargs["eval_strategy"] = "epoch"
-    elif "evaluation_strategy" in t_sig:
-        t_kwargs["evaluation_strategy"] = "epoch"
+    t_kwargs["warmup_steps"] = 25
 
-    if "warmup_ratio" in t_sig:
-        t_kwargs["warmup_ratio"] = 0.05
-    else:
-        t_kwargs["warmup_steps"] = 25
+training_args = TrainingArguments(**t_kwargs)
 
-    training_args = TrainingArguments(**t_kwargs)
+data_collator = DataCollatorForSeq2Seq(
+    tokenizer=tokenizer,
+    padding=True,
+    label_pad_token_id=-100
+)
 
-    try:
-        from trl import DataCollatorForCompletionOnlyLM
-        response_template = "<|im_start|>assistant\n"
-        collator = DataCollatorForCompletionOnlyLM(response_template=response_template, tokenizer=tokenizer)
-    except Exception:
-        collator = None
+trainer_kwargs = {
+    "model": model,
+    "args": training_args,
+    "train_dataset": train_dataset,
+    "eval_dataset": eval_dataset,
+    "data_collator": data_collator,
+}
+trainer_sig = inspect.signature(Trainer.__init__).parameters
+if "processing_class" in trainer_sig:
+    trainer_kwargs["processing_class"] = tokenizer
+else:
+    trainer_kwargs["tokenizer"] = tokenizer
 
-    trainer = SFTTrainer(
-        model=model,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        max_seq_length=512,
-        tokenizer=tokenizer,
-        data_collator=collator,
-        args=training_args
-    )
+trainer = Trainer(**trainer_kwargs)
 
 # ==============================================================================
-# AUDITORIA DE LOSS MASKING (LABELS -100 vs COMPLETION)
+# 3. AUDITORIA VISUAL OBRIGATÓRIA ANTES DE INICIAR O TREINO
 # ==============================================================================
 print("\n" + "=" * 65)
-print(" AUDITORIA DE LOSS MASKING (LABELS -100 vs COMPLETION) ")
+print(" AUDITORIA VISUAL OBRIGATÓRIA DE LABELS (LABELS -100 vs COMPLETION) ")
 print("=" * 65)
 
-sample_checked = False
-try:
-    first_item = trainer.train_dataset[0]
-    if isinstance(first_item, dict) and "labels" in first_item:
-        lbls = first_item["labels"]
-        in_ids = first_item["input_ids"]
-        masked = sum(1 for x in lbls if x == -100)
-        unmasked = sum(1 for x in lbls if x != -100)
-        unmasked_ids = [in_ids[i] for i, x in enumerate(lbls) if x != -100]
-        unmasked_text = tokenizer.decode(unmasked_ids, skip_special_tokens=False)
-        print(f"[*] Total de tokens: {len(lbls)}")
-        print(f"[*] Tokens mascarados (-100, sem loss): {masked}")
-        print(f"[*] Tokens com cálculo de loss: {unmasked}")
-        print(f"[*] Trecho sob cálculo de gradiente: {repr(unmasked_text)}")
-        sample_checked = True
-    elif hasattr(trainer, "data_collator") and trainer.data_collator is not None:
-        batch = trainer.data_collator([first_item])
-        if "labels" in batch:
-            lbls = batch["labels"][0].tolist()
-            in_ids = batch["input_ids"][0].tolist()
-            masked = sum(1 for x in lbls if x == -100)
-            unmasked = sum(1 for x in lbls if x != -100)
-            unmasked_ids = [in_ids[i] for i, x in enumerate(lbls) if x != -100]
-            unmasked_text = tokenizer.decode(unmasked_ids, skip_special_tokens=False)
-            print(f"[*] Total de tokens: {len(lbls)}")
-            print(f"[*] Tokens mascarados (-100, sem loss): {masked}")
-            print(f"[*] Tokens com cálculo de loss: {unmasked}")
-            print(f"[*] Trecho sob cálculo de gradiente: {repr(unmasked_text)}")
-            sample_checked = True
-except Exception as e:
-    print(f"[!] Não foi possível inspecionar labels diretamente antes do train: {e}")
+first_item = train_dataset[0]
+lbls = first_item["labels"]
+in_ids = first_item["input_ids"]
 
-if sample_checked:
-    print("[OK] Confirmação: Loss masking ativo! Apenas o turno do assistant (<call>...</call>) gerará gradientes.")
-else:
-    print("[*] SFTTrainer configurado com completion_only_loss=True.")
+masked_count = sum(1 for x in lbls if x == -100)
+unmasked_count = sum(1 for x in lbls if x != -100)
+active_tokens = [tid for tid in lbls if tid != -100]
+
+decoded_target = tokenizer.decode(active_tokens, skip_special_tokens=False).strip()
+
+print(f"[*] Total de tokens do primeiro exemplo: {len(lbls)}")
+print(f"[*] Tokens mascarados (-100, prompt de sistema + usuário): {masked_count}")
+print(f"[*] Tokens sob cálculo de perda (completion + eos): {unmasked_count}")
+print(f"[*] Trecho sob cálculo de gradiente decodificado:\n    {repr(decoded_target)}")
+
+# Validações estritas por assertion antes de iniciar o treinamento
+assert decoded_target.startswith("<call>"), (
+    f"ERRO CRÍTICO: Labels ativas devem começar exatamente com '<call>', mas obtido: {repr(decoded_target[:30])}"
+)
+assert decoded_target.endswith("<|im_end|>"), (
+    f"ERRO CRÍTICO: Labels ativas devem terminar com o token de parada '<|im_end|>', mas obtido: {repr(decoded_target[-20:])}"
+)
+assert "Você é o Silva" not in decoded_target, (
+    "ERRO CRÍTICO: Vazamento de tokens do System Prompt para as labels ativas de treino!"
+)
+assert train_raw[0]["prompt"] not in decoded_target, (
+    "ERRO CRÍTICO: Pergunta do usuário vazou para as labels ativas de treino!"
+)
+assert tokenizer.pad_token_id != tokenizer.eos_token_id, (
+    "ERRO CRÍTICO: pad_token_id deve ser estritamente diferente de eos_token_id!"
+)
+
+print("\n[ASSERTION PASS] Auditoria confirmada com sucesso!")
+print(" -> Perda será calculada EXCLUSIVAMENTE nos tokens da resposta <call>...</call><|im_end|>.")
+print(" -> System prompt e pergunta do usuário 100% mascarados (-100).")
+print(" -> Token de parada <|im_end|> devidamente incluído para evitar geração infinita.")
 print("=" * 65 + "\n")
 
 print("[*] Iniciando treinamento calibrado por 4 épocas com avaliação e checkpoint seguro...")
@@ -489,13 +452,20 @@ for prompt, expected in test_scenarios:
             max_new_tokens=48,
             temperature=0.0,
             do_sample=False,
-            eos_token_id=tokenizer.eos_token_id,
+            eos_token_id=eos_id,
             pad_token_id=tokenizer.pad_token_id
         )
-    gen_text = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
-    full_call = f"<call>{gen_text}" if not gen_text.startswith("<call>") else gen_text
-    if "</call>" in full_call:
-        full_call = full_call[:full_call.rfind("</call>") + 7]
+    raw_gen = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1]:], skip_special_tokens=False).strip()
+
+    # Corta a saída gerada no primeiro <|im_end|> ou </call>
+    gen_clean = raw_gen
+    if "<|im_end|>" in gen_clean:
+        gen_clean = gen_clean[:gen_clean.find("<|im_end|>")].strip()
+    if "</call>" in gen_clean:
+        gen_clean = gen_clean[:gen_clean.find("</call>") + 7].strip()
+
+    gen_clean = gen_clean.replace("<|endoftext|>", "").strip()
+    full_call = f"<call>{gen_clean}" if not gen_clean.startswith("<call>") else gen_clean
     print(f"{prompt:<50} | {full_call:<45} | {expected}")
 
 print("=" * 125)

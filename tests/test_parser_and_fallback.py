@@ -196,6 +196,16 @@ class TestParserAndFallback(unittest.TestCase):
         c4 = match_intent_fallback("qual wifi estou conectado")
         self.assertEqual(c4, "<call>get_wifi_info()</call>")
 
+        c4b = match_intent_fallback("qual meu wifi")
+        self.assertEqual(c4b, "<call>get_wifi_info()</call>")
+
+        c4c = match_intent_fallback("qual o meu wifi")
+        self.assertEqual(c4c, "<call>get_wifi_info()</call>")
+
+        # Desambiguação com senha de Wi-Fi -> recall_note
+        c_pwd_meu = match_intent_fallback("qual a senha do meu wifi")
+        self.assertEqual(c_pwd_meu, "<call>recall_note(query='senha do wifi')</call>")
+
         # 4. set_wifi_state
         c5 = match_intent_fallback("desativa o wi-fi pfv")
         self.assertEqual(c5, "<call>set_wifi_state(state=False)</call>")

@@ -577,6 +577,23 @@ def connect_wifi(ssid: str, password: str = "") -> Dict[str, Any]:
         }
 
 
+def _get_local_ip_fallback() -> str:
+    """
+    Obtém o IP local da interface de rede ativa via socket UDP conectando a um IP público.
+    Não envia pacotes reais pela rede. Retorna o IPv4 pontuado ou string vazia.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.settimeout(0.5)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            if ip and ip != "127.0.0.1":
+                return ip
+    except Exception:
+        pass
+    return ""
+
+
 def get_wifi_info() -> Dict[str, Any]:
     """Mostra informações detalhadas da rede Wi-Fi conectada, sinal, velocidade e IP local."""
     web_port = os.getenv("WEB_PORT", "5000")
@@ -598,35 +615,51 @@ def get_wifi_info() -> Dict[str, Any]:
         }
 
     try:
+        info: Dict[str, Any] = {}
         res = _run_termux_cmd(["termux-wifi-connectioninfo"], timeout=5)
-        if res.returncode != 0:
-            return {
-                "status": "error",
-                "message": f"Silva: Falha ao obter dados de Wi-Fi: {res.stderr.strip()}",
-                "data": {"connected": False}
-            }
+        if res.returncode == 0 and res.stdout.strip():
+            try:
+                info = json.loads(res.stdout)
+            except Exception:
+                info = {}
 
-        info = json.loads(res.stdout) if res.stdout.strip() else {}
-        ssid = str(info.get("ssid", "")).strip().strip('"')
-        if not ssid or ssid.lower() == "<unknown ssid>":
-            return {
-                "status": "ok",
-                "message": "Silva: O aparelho está desconectado do Wi-Fi no momento.",
-                "data": {"connected": False, "ssid": None}
-            }
+        raw_ssid = str(info.get("ssid", "")).strip().strip('"')
+        supplicant_state = str(info.get("supplicant_state", "")).strip().upper()
 
         # Tratamento de IP (string ou inteiro little-endian de 32 bits)
         ip_raw = info.get("ip")
         ip_str = ""
         if isinstance(ip_raw, int) and ip_raw != 0:
-            import socket
-            import struct
             try:
                 ip_str = socket.inet_ntoa(struct.pack("<I", ip_raw))
             except Exception:
                 ip_str = str(ip_raw)
         elif isinstance(ip_raw, str):
             ip_str = ip_raw.strip()
+
+        # Fallback via socket UDP caso o comando retorne IP vazio ou 0.0.0.0
+        if not ip_str or ip_str == "0.0.0.0":
+            fallback_ip = _get_local_ip_fallback()
+            if fallback_ip:
+                ip_str = fallback_ip
+
+        is_completed = (supplicant_state == "COMPLETED")
+        has_valid_ip = bool(ip_str and ip_str != "0.0.0.0" and ip_str != "127.0.0.1")
+        is_unknown_ssid = (not raw_ssid or raw_ssid.lower() == "<unknown ssid>")
+
+        # Só trata como desconectado se não tiver SSID conhecido, NÃO estiver COMPLETED e NÃO tiver IP válido
+        if is_unknown_ssid and not is_completed and not has_valid_ip:
+            return {
+                "status": "ok",
+                "message": "Silva: O aparelho está desconectado do Wi-Fi no momento.",
+                "data": {"connected": False, "ssid": None, "ip": None}
+            }
+
+        # Quando o Android oculta o SSID por causa do GPS desligado, mas o aparelho está conectado
+        if is_unknown_ssid:
+            display_ssid = "SSID oculto (ative o GPS para exibir o nome)"
+        else:
+            display_ssid = raw_ssid
 
         try:
             rssi = int(info.get("rssi", -100))
@@ -639,12 +672,13 @@ def get_wifi_info() -> Dict[str, Any]:
         except (ValueError, TypeError):
             link_speed = 0
 
-        web_url = f"http://{ip_str}:{web_port}" if ip_str and ip_str != "0.0.0.0" else ""
+        web_url = f"http://{ip_str}:{web_port}" if has_valid_ip else ""
 
-        msg_parts = [f"Silva: Conectado ao Wi-Fi '{ssid}'"]
-        if ip_str and ip_str != "0.0.0.0":
+        msg_parts = [f"Silva: Conectado ao Wi-Fi '{display_ssid}'"]
+        if has_valid_ip:
             msg_parts.append(f"IP: {ip_str}")
-        msg_parts.append(f"Sinal: {quality_pct}% ({rssi} dBm)")
+        if rssi > -100:
+            msg_parts.append(f"Sinal: {quality_pct}% ({rssi} dBm)")
         if link_speed > 0:
             msg_parts.append(f"Velocidade: {link_speed} Mbps")
         if web_url:
@@ -655,17 +689,35 @@ def get_wifi_info() -> Dict[str, Any]:
             "message": " | ".join(msg_parts),
             "data": {
                 "connected": True,
-                "ssid": ssid,
+                "ssid": display_ssid,
+                "raw_ssid": raw_ssid,
                 "bssid": info.get("bssid", ""),
-                "ip": ip_str,
+                "ip": ip_str if has_valid_ip else None,
                 "rssi": rssi,
                 "quality_pct": quality_pct,
                 "link_speed_mbps": link_speed,
                 "frequency_mhz": info.get("frequency_mhz", 0),
+                "supplicant_state": supplicant_state,
                 "web_url": web_url
             }
         }
     except Exception as e:
+        # Fallback de emergência caso haja erro no comando:
+        # tenta socket UDP para ver se o aparelho tem IP na rede local
+        fallback_ip = _get_local_ip_fallback()
+        if fallback_ip:
+            web_url = f"http://{fallback_ip}:{web_port}"
+            display_ssid = "SSID oculto (ative o GPS para exibir o nome)"
+            return {
+                "status": "ok",
+                "message": f"Silva: Conectado ao Wi-Fi '{display_ssid}' | IP: {fallback_ip} | Acesso web: {web_url}",
+                "data": {
+                    "connected": True,
+                    "ssid": display_ssid,
+                    "ip": fallback_ip,
+                    "web_url": web_url
+                }
+            }
         return {
             "status": "error",
             "message": f"Silva: Erro ao obter dados do Wi-Fi: {str(e)}",

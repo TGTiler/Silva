@@ -462,6 +462,9 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     if not is_wifi:
         return 0.0, None
 
+    # Verificação prévia de menção a senha
+    has_pwd = any(w in norm for w in ["senha", "password", "pass", "codigo", "chave", "passe"])
+
     # Verbos imperativos de conexão
     connect_patterns = [
         r"\bconecte-se\b", r"\bconectar-se\b", r"\bconecta\b", r"\bconecte\b",
@@ -478,9 +481,12 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         "qual conexao", "qual meu ip", "meu ip", "qual o ip", "qual e o ip",
         "ip do celular", "ip do telefone", "ip do aparelho", "ip da rede", "ip local",
         "status do wifi", "status da rede", "status da conexao", "info do wifi", "informacoes do wifi",
-        "dados da rede wifi", "dados do wifi", "detalhes do wifi", "estou conectado", "to conectado"
+        "dados da rede wifi", "dados do wifi", "detalhes do wifi", "estou conectado", "to conectado",
+        "qual meu wifi", "qual o meu wifi", "qual e o meu wifi", "qual e meu wifi",
+        "qual meu wi-fi", "qual o meu wi-fi", "qual e o meu wi-fi", "qual e meu wi-fi",
+        "meu wifi", "o meu wifi", "meu wi-fi", "o meu wi-fi"
     ]
-    if any(t in norm for t in info_triggers) and not has_connect_verbs:
+    if any(t in norm for t in info_triggers) and not has_connect_verbs and not has_pwd:
         return 0.96, _format_call("get_wifi_info")
 
     # Caso 2: set_wifi_state (liga / desliga wifi)
@@ -522,10 +528,11 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
             return 0.96, _format_call("connect_wifi", ssid=ssid, password=pwd)
 
     # Caso 4: Senha de Wi-Fi salva -> recall_note
-    has_pwd = any(w in norm for w in ["senha", "password", "pass", "codigo", "chave", "passe"])
     if has_pwd:
         m_q = re.search(r"(?:senha|password|chave|codigo|passe)(?:\s+d[oa]|\s+de)?\s*(?:wi-?fi|wifi)?\s*(.*)", norm)
         target = m_q.group(1).strip() if m_q else ""
+        target = re.sub(r"^(?:d[oa]\s+|de\s+)?(?:meu\s+|minha\s+)?(?:wi-?fi|wifi|rede)\s*", "", target).strip()
+        target = re.sub(r"\b(?:meu|minha)\s+(?:wi-?fi|wifi|rede)\b", "", target).strip()
         target = re.sub(r"^(?:wi-?fi|wifi|rede)\s*", "", target).strip().rstrip("?!.,;:")
         query = f"senha do wifi {target}".strip() if target else "senha do wifi"
         return 0.95, _format_call("recall_note", query=query)
@@ -935,6 +942,10 @@ def extract_memory(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         "por cento", "%"
     ]
     if any(term in norm for term in blocking_terms):
+        return 0.0, None
+
+    # Bloqueio explícito de perguntas sobre wifi/rede que não sejam sobre senha
+    if any(w in norm for w in ["wifi", "wi-fi", "rede sem fio"]) and not any(k in norm for k in ["senha", "password", "chave", "codigo", "passe"]):
         return 0.0, None
 
     # Marcadores obrigatórios de memória pessoal para recall_note

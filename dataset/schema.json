@@ -361,6 +361,26 @@
         }
       }
     },
+    "install_app": {
+      "description": "Abre a Google Play Store diretamente na página de instalação ou na pesquisa do aplicativo.",
+      "parameters": {
+        "app_name": {
+          "type": "string",
+          "required": true,
+          "description": "Nome popular do aplicativo para buscar ou instalar na Google Play Store."
+        }
+      }
+    },
+    "media_control": {
+      "description": "Controla a reprodução global de mídia no Android (play, pause, next, previous).",
+      "parameters": {
+        "action": {
+          "type": "string",
+          "required": true,
+          "description": "Ação de controle de mídia: 'play', 'pause', 'next' ou 'previous'."
+        }
+      }
+    },
     "none": {
       "description": "Chamada nula emitida quando o usuário faz uma pergunta geral, saudação ou comando sem ferramenta correspondente.",
       "parameters": {}

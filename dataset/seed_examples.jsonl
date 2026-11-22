@@ -110,3 +110,11 @@
 {"prompt": "Busca hambúrguer no iFood", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
 {"prompt": "Quero pedir comida japonesa", "completion": "<call>order_food(query=\"comida japonesa\", app=\"ifood\")</call>"}
 {"prompt": "Pede açaí no 99 food", "completion": "<call>order_food(query=\"açaí\", app=\"99\")</call>"}
+{"prompt": "Baixa o WhatsApp na Play Store", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "Instala o aplicativo Spotify", "completion": "<call>install_app(app_name=\"spotify\")</call>"}
+{"prompt": "Baixa o aplicativo do Nubank no Google Play", "completion": "<call>install_app(app_name=\"nubank\")</call>"}
+{"prompt": "Pesquisa Duolingo na Play Store", "completion": "<call>install_app(app_name=\"duolingo\")</call>"}
+{"prompt": "Pausa a música", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "Despausa e continua a reprodução", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "Pula para a próxima música", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "Volta para a música anterior", "completion": "<call>media_control(action=\"previous\")</call>"}

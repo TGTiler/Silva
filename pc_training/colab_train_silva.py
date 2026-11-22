@@ -105,7 +105,7 @@ SILVA_SYSTEM_PROMPT = (
     "get_clipboard(), set_clipboard(text), tell_joke(), set_alarm(time, label, days), cancel_alarm(time, day, label), "
     "schedule_event(title, date, time), remember_note(key, value), recall_note(query), get_notifications(app), "
     "set_volume(stream, level), set_brightness(level), set_timer(minutes, label), calculate(expression), "
-    "search_google(query), request_ride(destination, app), order_food(query, app), none().\n"
+    "search_google(query), request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), none().\n"
     "Responda EXCLUSIVAMENTE com uma ou mais tags de chamada no formato:\n"
     "<call>nome_da_funcao(arg1=valor1, arg2=valor2)</call>\n"
     "Quando o usuário solicitar mais de uma ação na mesma frase, emita múltiplas tags em sequência (ex: <call>acao1()</call><call>acao2()</call>).\n"
@@ -269,6 +269,9 @@ test_prompts = [
     "peça um uber para mim ir ao Shopping Recife",
     "silva pede uma pizza de calabresa no ifood pfv",
     "busca acai na 99",
+    "baixa o aplicativo do whatsapp",
+    "pausa a música agora",
+    "pula para a próxima música",
     "Qual é a capital da França?",
     "Silva, ativa o não perturbe e coloca o brilho da tela em 20%"
 ]

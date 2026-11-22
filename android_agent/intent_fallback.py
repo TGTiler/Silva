@@ -111,6 +111,45 @@ def _clean_food_query(raw_query: str) -> str:
     return text.strip()
 
 
+def _clean_install_app_name(raw_name: str) -> str:
+    """Limpa o nome do aplicativo removendo artigos, pronomes e termos de loja/cortesia."""
+    if not raw_name:
+        return ""
+    text = str(raw_name).strip()
+
+    suffix_pat = r"(?i)\s+(?:no\s+google\s+play|na\s+google\s+play|no\s+play\s*store|na\s+play\s*store|no\s+playstore|na\s+playstore|pelo\s+google\s+play|pela\s+play\s*store|pelo\s+play\s*store|google\s+play|play\s*store|playstore|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
+    for _ in range(5):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r"[?!.,;:]+$", "", text).strip()
+        if text == prev:
+            break
+
+    prefix_patterns = [
+        r"(?i)^(?:silva|ei|oi)\b\s*",
+        r"(?i)^(?:abre\s+a\s+play\s*store\s+e\s+(?:baixa|instala|procura|pesquisa|busca))\b\s*",
+        r"(?i)^(?:abre\s+o\s+google\s+play\s+e\s+(?:baixa|instala|procura|pesquisa|busca))\b\s*",
+        r"(?i)^(?:instalar|instala|instale|baixar|baixa|baixe|download\s+do|download\s+de|download)\b\s*",
+        r"(?i)^(?:pesquisar|pesquisa|pesquise|buscar|busca|busque|procurar|procura|procure)\b\s*",
+        r"(?i)^(?:o\s+aplicativo|aplicativo|o\s+app|app|o\s+jogo|jogo)\b\s*",
+        r"(?i)^(?:o|a|os|as)\b\s*",
+        r"(?i)^(?:do|da|dos|das|de)\b\s*",
+    ]
+
+    for _ in range(10):
+        prev = text
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        for pat in prefix_patterns:
+            text = re.sub(pat, '', text).strip()
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        if text == prev:
+            break
+
+    text = re.sub(suffix_pat, "", text).strip()
+    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    return text.strip()
+
+
 def parse_single_intent(raw_cmd: str) -> Optional[str]:
     """Tenta identificar uma intenção específica e retornar uma tag <call>...</call>."""
     cmd = normalize_text(raw_cmd)
@@ -155,8 +194,47 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             return "<call>take_photo(camera_id=1)</call>"
         return "<call>take_photo(camera_id=0)</call>"
 
+    # 6.0 Controle de Mídia (media_control)
+    # Não conflitar com volume, brilho, alarme ou timer
+    if not any(w in cmd for w in ["volume", "brilho", "alarme", "timer"]):
+        clean_media_cmd = re.sub(r"(?i)^(?:silva,?\s*)?", "", cmd).strip()
+        clean_media_cmd = re.sub(r"(?i)\s+(?:por\s+favor|pra\s+mim|agora|aí|ai)$", "", clean_media_cmd).strip()
+
+        # A) Next / Próxima
+        if any(w in clean_media_cmd for w in [
+            "proxima musica", "proxima faixa", "pula a musica", "pula essa musica",
+            "pular musica", "pula musica", "passa a musica", "passar musica", "proxima cancao",
+            "avancar musica", "avanca a musica", "next track", "next song"
+        ]) or clean_media_cmd in ["proxima", "proximo", "next", "pula", "passa"]:
+            return '<call>media_control(action="next")</call>'
+
+        # B) Previous / Anterior
+        if any(w in clean_media_cmd for w in [
+            "volta a musica", "voltar a musica", "voltar musica", "volta musica",
+            "musica anterior", "faixa anterior", "cancao anterior", "retrocede a musica",
+            "previous track", "previous song"
+        ]) or clean_media_cmd in ["anterior", "volta", "voltar", "previous"]:
+            return '<call>media_control(action="previous")</call>'
+
+        # C) Play / Despausa / Continuar
+        if any(w in clean_media_cmd for w in [
+            "despausa", "despausar", "continua a musica", "continuar a musica",
+            "retoma a musica", "retomar a musica", "retoma o video", "retomar o video",
+            "toca a musica", "tocar a musica", "reproduz a musica", "reproduzir a musica",
+            "da o play", "dar o play", "dar play", "da play"
+        ]) or clean_media_cmd in ["play", "despausa", "despausar", "tocar", "continuar", "retomar"]:
+            return '<call>media_control(action="play")</call>'
+
+        # D) Pause / Parar
+        if any(w in clean_media_cmd for w in [
+            "pausa a musica", "pausar a musica", "pausa o video", "pausar o video",
+            "para a musica", "parar a musica", "interrompe a musica", "pausa reproducao",
+            "pausar reproducao"
+        ]) or clean_media_cmd in ["pause", "pausa", "pausar", "stop"]:
+            return '<call>media_control(action="pause")</call>'
+
     # 6.1 Gravação de Vídeo (record_video)
-    if any(w in cmd for w in ["video", "gravar", "grave", "grava", "filmar", "filma", "filme"]) and not any(w in cmd for w in ["youtube", "tiktok"]):
+    if any(w in cmd for w in ["video", "gravar", "grave", "grava", "filmar", "filma", "filme"]) and not any(w in cmd for w in ["youtube", "tiktok", "pausa", "pausar", "retoma", "retomar", "continua", "continuar", "toca", "tocar", "play"]):
         m_dur = re.search(r"(\d+)\s*(?:segundos?|s|minutos?|min)?", cmd)
         duration = 10
         if m_dur:
@@ -215,6 +293,22 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             if not query:
                 query = "comida"
             return f'<call>order_food(query="{query}", app="{app}")</call>'
+
+    # 6.5 Instalação de Aplicativos / Play Store (install_app)
+    # Não conflitar com volume, brilho, alarme ou lanterna
+    if not any(w in cmd for w in ["volume", "brilho", "alarme", "timer", "lanterna", "camera", "foto"]):
+        has_store_kw = any(k in cmd for k in ["play store", "playstore", "google play"])
+        has_install_verb = any(v in cmd for v in ["baixa", "baixar", "baixe", "instala", "instalar", "instale", "download"])
+        is_only_open_store = cmd in [
+            "abre a play store", "abre o play store", "abre a playstore", "abre o google play",
+            "abrir play store", "abrir playstore", "abrir google play", "inicia a play store",
+            "inicia o play store", "inicia a playstore", "inicia o google play"
+        ]
+
+        if (has_store_kw or has_install_verb) and not is_only_open_store:
+            clean_app = _clean_install_app_name(raw_cmd)
+            if clean_app:
+                return f'<call>install_app(app_name="{clean_app}")</call>'
 
     # 7. Abrir Aplicativo (open_app)
     m_open = re.search(r"(?:abre|abra|abrir|inicia|inicie|iniciar|roda|rode|rodar|executa|execute|executar)\s+(?:o|a)?\s*([a-zA-Z0-9_\-\s]+)", cmd)
@@ -476,6 +570,12 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
     clean_prompt = user_prompt.strip()
     if not clean_prompt:
         return None
+
+    # Se a frase completa corresponder a uma busca/instalação composta na Play Store
+    if re.search(r"(?i)\babre\s+(?:a|o)?\s*(?:play\s*store|playstore|google\s+play)\s+e\s+(?:baixa|instala|procura|pesquisa|busca)\b", clean_prompt):
+        single = parse_single_intent(clean_prompt)
+        if single:
+            return single
 
     # Tenta quebrar em cláusulas sequenciais para multi-call
     # Divide por " e ", " e também ", " depois ", ou ";"

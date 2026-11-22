@@ -5090,3 +5090,253 @@
 {"prompt": "pede um 99 p/ eu ir no shopping agr pfvr", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
 {"prompt": "silva compra um temaki no ifood p/ mim blz", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
 {"prompt": "quero pedir um yakisoba no ifood agr silva pfv", "completion": "<call>order_food(query=\"yakisoba\", app=\"ifood\")</call>"}
+{"prompt": "silva baixa o tiktok p/ mim pfv", "completion": "<call>install_app(app_name=\"tiktok\")</call>"}
+{"prompt": "instala o telegram agr", "completion": "<call>install_app(app_name=\"telegram\")</call>"}
+{"prompt": "ei silva, baixa o spotify na play store blz", "completion": "<call>install_app(app_name=\"spotify\")</call>"}
+{"prompt": "baixa o jogo de xadrez p/ mim", "completion": "<call>install_app(app_name=\"jogo de xadrez\")</call>"}
+{"prompt": "silva instala o whatsapp q eu preciso", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "baixa o instagram pfvr", "completion": "<call>install_app(app_name=\"instagram\")</call>"}
+{"prompt": "silva baixa o nubank na play store", "completion": "<call>install_app(app_name=\"nubank\")</call>"}
+{"prompt": "instala o tiktok p/ mim agr pfv", "completion": "<call>install_app(app_name=\"tiktok\")</call>"}
+{"prompt": "ei silva baixa o telegram vlw", "completion": "<call>install_app(app_name=\"telegram\")</call>"}
+{"prompt": "baixa o spotify na play store p/ mim", "completion": "<call>install_app(app_name=\"spotify\")</call>"}
+{"prompt": "silva instala o jogo de xadrez p/ mim", "completion": "<call>install_app(app_name=\"jogo de xadrez\")</call>"}
+{"prompt": "baixa o whatsapp agr pfvr", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "silva baixa o instagram na play store blz", "completion": "<call>install_app(app_name=\"instagram\")</call>"}
+{"prompt": "instala o nubank p/ mim pfv", "completion": "<call>install_app(app_name=\"nubank\")</call>"}
+{"prompt": "ei silva baixa o tiktok agr", "completion": "<call>install_app(app_name=\"tiktok\")</call>"}
+{"prompt": "baixa o telegram p/ mim pfvr", "completion": "<call>install_app(app_name=\"telegram\")</call>"}
+{"prompt": "silva instala o spotify na play store", "completion": "<call>install_app(app_name=\"spotify\")</call>"}
+{"prompt": "baixa o jogo de xadrez agr pfv", "completion": "<call>install_app(app_name=\"jogo de xadrez\")</call>"}
+{"prompt": "silva baixa o whatsapp p/ mim vlw", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "instala o instagram na play store pfv", "completion": "<call>install_app(app_name=\"instagram\")</call>"}
+{"prompt": "ei silva baixa o nubank p/ mim", "completion": "<call>install_app(app_name=\"nubank\")</call>"}
+{"prompt": "baixa o tiktok na play store blz", "completion": "<call>install_app(app_name=\"tiktok\")</call>"}
+{"prompt": "silva instala o telegram agr pfv", "completion": "<call>install_app(app_name=\"telegram\")</call>"}
+{"prompt": "baixa o spotify p/ mim pfvr", "completion": "<call>install_app(app_name=\"spotify\")</call>"}
+{"prompt": "silva baixa o jogo de xadrez na play store", "completion": "<call>install_app(app_name=\"jogo de xadrez\")</call>"}
+{"prompt": "instala o whatsapp p/ mim agr", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "ei silva baixa o instagram pfv", "completion": "<call>install_app(app_name=\"instagram\")</call>"}
+{"prompt": "baixa o nubank na play store p/ mim", "completion": "<call>install_app(app_name=\"nubank\")</call>"}
+{"prompt": "silva instala o tiktok na play store vlw", "completion": "<call>install_app(app_name=\"tiktok\")</call>"}
+{"prompt": "baixa o telegram agr pfvr", "completion": "<call>install_app(app_name=\"telegram\")</call>"}
+{"prompt": "pausa a musica agr pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "silva pausa esse video q ta tocando", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "da play na musica pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "ei silva continua o video q tava", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "pula p/ proxima musica pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "silva passa p/ proxima faixa agr", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta p/ musica anterior pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "ei silva volta p/ anterior vlw", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "pausa o podcast pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "silva pausa a musica q ta tocando blz", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "continua a musica pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva da play no video agr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "proxima musica pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "ei silva pula p/ proxima faixa", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta a musica pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva volta p/ faixa anterior pfv", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "pausa isso agr pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "silva pausa o video pfvr", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "da play na musica q tava pfv", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "ei silva continua o podcast agr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "passa p/ proxima pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "silva proxima musica vlw", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta p/ anterior pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "ei silva volta p/ musica anterior blz", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva pausa a musica pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "play na musica pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva pula essa musica pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta a faixa pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva instala o app do whatsapp p/ mim pfv", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "baixa o spotify na play store agr blz", "completion": "<call>install_app(app_name=\"spotify\")</call>"}
+{"prompt": "silva baixa o facebook p/ mim pfv", "completion": "<call>install_app(app_name=\"facebook\")</call>"}
+{"prompt": "instala o youtube agr pfvr", "completion": "<call>install_app(app_name=\"youtube\")</call>"}
+{"prompt": "ei silva baixa o uber na play store blz", "completion": "<call>install_app(app_name=\"uber\")</call>"}
+{"prompt": "baixa o ifood p/ mim pfv", "completion": "<call>install_app(app_name=\"ifood\")</call>"}
+{"prompt": "silva instala o netflix q eu quero ver", "completion": "<call>install_app(app_name=\"netflix\")</call>"}
+{"prompt": "baixa o mercado livre pfvr", "completion": "<call>install_app(app_name=\"mercado livre\")</call>"}
+{"prompt": "silva baixa o twitter na play store", "completion": "<call>install_app(app_name=\"twitter\")</call>"}
+{"prompt": "instala o kwai p/ mim agr pfv", "completion": "<call>install_app(app_name=\"kwai\")</call>"}
+{"prompt": "ei silva baixa o picpay vlw", "completion": "<call>install_app(app_name=\"picpay\")</call>"}
+{"prompt": "baixa o waze na play store p/ mim", "completion": "<call>install_app(app_name=\"waze\")</call>"}
+{"prompt": "silva instala o canva p/ mim", "completion": "<call>install_app(app_name=\"canva\")</call>"}
+{"prompt": "baixa o duolingo agr pfvr", "completion": "<call>install_app(app_name=\"duolingo\")</call>"}
+{"prompt": "silva baixa o shopee na play store blz", "completion": "<call>install_app(app_name=\"shopee\")</call>"}
+{"prompt": "instala o discord p/ mim pfv", "completion": "<call>install_app(app_name=\"discord\")</call>"}
+{"prompt": "ei silva baixa o gmail agr", "completion": "<call>install_app(app_name=\"gmail\")</call>"}
+{"prompt": "baixa o google maps p/ mim pfvr", "completion": "<call>install_app(app_name=\"google maps\")</call>"}
+{"prompt": "silva instala o capcut na play store", "completion": "<call>install_app(app_name=\"capcut\")</call>"}
+{"prompt": "baixa o twitch agr pfv", "completion": "<call>install_app(app_name=\"twitch\")</call>"}
+{"prompt": "silva baixa o pix p/ mim vlw", "completion": "<call>install_app(app_name=\"pix\")</call>"}
+{"prompt": "instala o kawaii jogo de fazenda na play store pfv", "completion": "<call>install_app(app_name=\"jogo de fazenda\")</call>"}
+{"prompt": "ei silva baixa o free fire p/ mim", "completion": "<call>install_app(app_name=\"free fire\")</call>"}
+{"prompt": "baixa o app do banco inter na play store blz", "completion": "<call>install_app(app_name=\"banco inter\")</call>"}
+{"prompt": "silva instala o linkedin agr pfv", "completion": "<call>install_app(app_name=\"linkedin\")</call>"}
+{"prompt": "baixa o pinterest p/ mim pfvr", "completion": "<call>install_app(app_name=\"pinterest\")</call>"}
+{"prompt": "silva baixa o gov ponto br na play store", "completion": "<call>install_app(app_name=\"gov ponto br\")</call>"}
+{"prompt": "instala o meutudo p/ mim agr", "completion": "<call>install_app(app_name=\"meutudo\")</call>"}
+{"prompt": "ei silva baixa o telegram x pfv", "completion": "<call>install_app(app_name=\"telegram x\")</call>"}
+{"prompt": "baixa o jogo do dinossauro na play store p/ mim", "completion": "<call>install_app(app_name=\"jogo do dinossauro\")</call>"}
+{"prompt": "silva instala o calculadora na play store vlw", "completion": "<call>install_app(app_name=\"calculadora\")</call>"}
+{"prompt": "baixa o zap zap agr pfvr", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "silva da play nessa musica pfv", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "pausa o som agr blz", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "ei silva avança p/ proxima faixa pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta uma musica pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva para a musica q ta tocando", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "retoma o video pfv", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "ei silva passa essa faixa vlw", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta p/ anterior agr pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva pausa tudo pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "despausa a musica pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva proxima pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "ei silva volta p/ faixa anterior blz", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "para o podcast pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "silva continua o som agr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "skipa p/ proxima musica pfvr", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "silva rebobina p/ anterior pfv", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "pausa a faixa pfvr", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "ei silva retoma o podcast vlw", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva pula a faixa pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta a musica anterior agr pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva pausa o som pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "da play no podcast pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "ei silva proxima faixa blz", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "silva volta p/ musica anterior vlw", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "pausa o video pfvr", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "silva continua a faixa pfv", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "passa p/ proxima musica pfvr", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "ei silva volta p/ anterior pfv", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva pausa o audio agr blz", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "retoma a musica pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva baixa o amazon prime video p/ mim pfv", "completion": "<call>install_app(app_name=\"amazon prime video\")</call>"}
+{"prompt": "instala o globoplay agr pfvr", "completion": "<call>install_app(app_name=\"globoplay\")</call>"}
+{"prompt": "ei silva baixa o deezer na play store blz", "completion": "<call>install_app(app_name=\"deezer\")</call>"}
+{"prompt": "baixa o app da caixa p/ mim pfv", "completion": "<call>install_app(app_name=\"caixa\")</call>"}
+{"prompt": "silva instala o itau q eu preciso", "completion": "<call>install_app(app_name=\"itau\")</call>"}
+{"prompt": "baixa o bradesco pfvr", "completion": "<call>install_app(app_name=\"bradesco\")</call>"}
+{"prompt": "silva baixa o santander na play store", "completion": "<call>install_app(app_name=\"santander\")</call>"}
+{"prompt": "instala o jogo de corrida p/ mim agr pfv", "completion": "<call>install_app(app_name=\"jogo de corrida\")</call>"}
+{"prompt": "ei silva baixa o minecraft vlw", "completion": "<call>install_app(app_name=\"minecraft\")</call>"}
+{"prompt": "baixa o jogo de cartas na play store p/ mim", "completion": "<call>install_app(app_name=\"jogo de cartas\")</call>"}
+{"prompt": "silva instala o roblox p/ mim", "completion": "<call>install_app(app_name=\"roblox\")</call>"}
+{"prompt": "baixa o among us agr pfvr", "completion": "<call>install_app(app_name=\"among us\")</call>"}
+{"prompt": "silva baixa o jogo de quebra cabeca na play store blz", "completion": "<call>install_app(app_name=\"jogo de quebra cabeca\")</call>"}
+{"prompt": "instala o subway surfers p/ mim pfv", "completion": "<call>install_app(app_name=\"subway surfers\")</call>"}
+{"prompt": "ei silva baixa o jogo de dama agr", "completion": "<call>install_app(app_name=\"jogo de dama\")</call>"}
+{"prompt": "baixa o clonador de apps p/ mim pfvr", "completion": "<call>install_app(app_name=\"clonador de apps\")</call>"}
+{"prompt": "silva instala o limpador de cache na play store", "completion": "<call>install_app(app_name=\"limpador de cache\")</call>"}
+{"prompt": "baixa o tradutor agr pfv", "completion": "<call>install_app(app_name=\"tradutor\")</call>"}
+{"prompt": "silva baixa o app da americanas p/ mim vlw", "completion": "<call>install_app(app_name=\"americanas\")</call>"}
+{"prompt": "instala o aliexpress na play store pfv", "completion": "<call>install_app(app_name=\"aliexpress\")</call>"}
+{"prompt": "ei silva baixa o shein p/ mim", "completion": "<call>install_app(app_name=\"shein\")</call>"}
+{"prompt": "baixa o app do correio na play store blz", "completion": "<call>install_app(app_name=\"correios\")</call>"}
+{"prompt": "silva instala o gov br agr pfv", "completion": "<call>install_app(app_name=\"gov br\")</call>"}
+{"prompt": "baixa o cnh digital p/ mim pfvr", "completion": "<call>install_app(app_name=\"cnh digital\")</call>"}
+{"prompt": "silva baixa o cartao sus na play store", "completion": "<call>install_app(app_name=\"cartao sus\")</call>"}
+{"prompt": "instala o app do inss p/ mim agr", "completion": "<call>install_app(app_name=\"inss\")</call>"}
+{"prompt": "ei silva baixa o detran pfv", "completion": "<call>install_app(app_name=\"detran\")</call>"}
+{"prompt": "baixa o caderninho de receitas na play store p/ mim", "completion": "<call>install_app(app_name=\"caderninho de receitas\")</call>"}
+{"prompt": "silva instala o jogo de pesca na play store vlw", "completion": "<call>install_app(app_name=\"jogo de pesca\")</call>"}
+{"prompt": "baixa o app de previsao do tempo agr pfvr", "completion": "<call>install_app(app_name=\"previsao do tempo\")</call>"}
+{"prompt": "silva pausa a musica q ta rolando pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "da play no video agr blz", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "ei silva avança p/ proxima pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta p/ a faixa anterior pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva segura a musica pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "retoma o som pfv", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "ei silva passa p/ proxima musica vlw", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta uma faixa agr pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva para o video pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "despausa o podcast pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva proxima faixa pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "ei silva volta p/ anterior blz", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "pausa o audio pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "silva continua a musica agr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "skipa a faixa pfvr", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "silva rebobina p/ musica anterior pfv", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "pausa a musica pfvr", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "ei silva retoma a faixa vlw", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva pula p/ proxima pfv", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "volta p/ faixa anterior agr pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva pausa a faixa pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "da play na faixa pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "ei silva proxima pfv blz", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "silva volta p/ anterior vlw", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "pausa o som pfvr", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "silva continua o video pfv", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "passa p/ proxima faixa pfvr", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "ei silva volta p/ faixa anterior pfv", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "silva pausa o audio agr blz", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "retoma a faixa pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "silva oq vc pode fazer?", "completion": "<call>none()</call>"}
+{"prompt": "quais são suas funções?", "completion": "<call>none()</call>"}
+{"prompt": "me mostra seus comandos pfv", "completion": "<call>none()</call>"}
+{"prompt": "ei silva preciso de ajuda", "completion": "<call>none()</call>"}
+{"prompt": "oq vc consegue fazer no meu celular?", "completion": "<call>none()</call>"}
+{"prompt": "pra q vc serve silva?", "completion": "<call>none()</call>"}
+{"prompt": "lista td q vc faz pfvr", "completion": "<call>none()</call>"}
+{"prompt": "ei silva me mostra oq vc sabe fazer", "completion": "<call>none()</call>"}
+{"prompt": "quais são seus comandos agr?", "completion": "<call>none()</call>"}
+{"prompt": "silva oq eu posso pedir p/ vc?", "completion": "<call>none()</call>"}
+{"prompt": "me ajuda ai oq vc faz?", "completion": "<call>none()</call>"}
+{"prompt": "silva quais suas capacidades?", "completion": "<call>none()</call>"}
+{"prompt": "oq vc sabe fazer no cel pfv", "completion": "<call>none()</call>"}
+{"prompt": "ei silva lista suas funcoes pfvr", "completion": "<call>none()</call>"}
+{"prompt": "me mostra td q vc consegue fazer", "completion": "<call>none()</call>"}
+{"prompt": "silva pra q vc serve?", "completion": "<call>none()</call>"}
+{"prompt": "quais comandos vc tem hj?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva oq vc pode fazer p/ mim?", "completion": "<call>none()</call>"}
+{"prompt": "me explica suas funcoes pfv", "completion": "<call>none()</call>"}
+{"prompt": "silva quais são suas habilidades?", "completion": "<call>none()</call>"}
+{"prompt": "oq vc faz exatamente?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva me mostra os comandos blz", "completion": "<call>none()</call>"}
+{"prompt": "lista td q vc sabe fazer pfvr", "completion": "<call>none()</call>"}
+{"prompt": "silva oq vc consegue fazer agr?", "completion": "<call>none()</call>"}
+{"prompt": "quais suas funcoes no cel?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva preciso saber oq vc faz", "completion": "<call>none()</call>"}
+{"prompt": "me mostra suas capacidades pfv", "completion": "<call>none()</call>"}
+{"prompt": "silva lista td q vc faz vlw", "completion": "<call>none()</call>"}
+{"prompt": "oq eu posso pedir p/ vc?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva quais são seus comandos?", "completion": "<call>none()</call>"}
+{"prompt": "me ajuda a saber oq vc faz pfvr", "completion": "<call>none()</call>"}
+{"prompt": "silva oq vc sabe fazer no meu cel?", "completion": "<call>none()</call>"}
+{"prompt": "quais são suas opcoes de comando?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva me lista suas funcoes pfv", "completion": "<call>none()</call>"}
+{"prompt": "oq vc pode fazer p/ mim hj?", "completion": "<call>none()</call>"}
+{"prompt": "silva me mostra td q vc consegue pfvr", "completion": "<call>none()</call>"}
+{"prompt": "quais comandos vc aceita?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva pra q serve vc?", "completion": "<call>none()</call>"}
+{"prompt": "me fala suas funcoes pfv silva", "completion": "<call>none()</call>"}
+{"prompt": "oq vc consegue fazer blz", "completion": "<call>none()</call>"}
+{"prompt": "silva quais são suas funcoes no celular?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva lista td q vc sabe pfvr", "completion": "<call>none()</call>"}
+{"prompt": "me mostra oq vc faz pfv", "completion": "<call>none()</call>"}
+{"prompt": "silva oq vc pode fazer no cel?", "completion": "<call>none()</call>"}
+{"prompt": "quais são td as suas funcoes?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva me ajuda c/ os comandos pfv", "completion": "<call>none()</call>"}
+{"prompt": "oq vc sabe fazer msm?", "completion": "<call>none()</call>"}
+{"prompt": "silva lista suas capacidades vlw", "completion": "<call>none()</call>"}
+{"prompt": "me mostra tds os comandos pfvr", "completion": "<call>none()</call>"}
+{"prompt": "ei silva quais suas funcoes agr?", "completion": "<call>none()</call>"}
+{"prompt": "silva me diz oq vc faz pfv", "completion": "<call>none()</call>"}
+{"prompt": "quais as funcoes q vc tem?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva mostra td q vc sabe fazer blz", "completion": "<call>none()</call>"}
+{"prompt": "oq vc consegue fazer p/ mim agr?", "completion": "<call>none()</call>"}
+{"prompt": "silva lista os comandos pfvr", "completion": "<call>none()</call>"}
+{"prompt": "me mostra suas funcoes vlw", "completion": "<call>none()</call>"}
+{"prompt": "ei silva oq da p/ pedir p/ vc?", "completion": "<call>none()</call>"}
+{"prompt": "quais recursos vc tem no cel?", "completion": "<call>none()</call>"}
+{"prompt": "silva me fala td q vc faz pfv", "completion": "<call>none()</call>"}
+{"prompt": "oq vc sabe fazer no meu celular?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva quais são suas funcoes blz", "completion": "<call>none()</call>"}
+{"prompt": "me lista suas capacidades pfvr", "completion": "<call>none()</call>"}
+{"prompt": "silva oq vc consegue fazer no cel?", "completion": "<call>none()</call>"}
+{"prompt": "quais comandos vc reconhece?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva me mostra oq vc pode fazer", "completion": "<call>none()</call>"}
+{"prompt": "pra q vc serve no celular?", "completion": "<call>none()</call>"}
+{"prompt": "silva lista td q vc consegue fazer pfv", "completion": "<call>none()</call>"}
+{"prompt": "quais são suas funcoes hj?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva oq vc sabe fazer msm?", "completion": "<call>none()</call>"}
+{"prompt": "me mostra td q vc faz pfvr silva", "completion": "<call>none()</call>"}

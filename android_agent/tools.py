@@ -143,7 +143,14 @@ APP_PACKAGES = {
     "govbr": "br.gov.meugovbr",
     "meu gov": "br.gov.meugovbr",
     "roblox": "com.roblox.client",
-    "outlook": "com.microsoft.office.outlook"
+    "outlook": "com.microsoft.office.outlook",
+    "uber": "com.ubercab",
+    "facebook": "com.facebook.katana",
+    "face": "com.facebook.katana",
+    "netflix": "com.netflix.mediaclient",
+    "play store": "com.android.vending",
+    "playstore": "com.android.vending",
+    "google play": "com.android.vending"
 }
 
 RESOLVED_APP_ACTIVITIES = {   'ai.sideshift.app': 'ai.sideshift.app/.MainActivity',
@@ -2471,6 +2478,177 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
         }
 
 
+def _clean_install_app_name(raw_name: str) -> str:
+    """Limpa o nome do aplicativo removendo artigos, pronomes e termos de loja/cortesia."""
+    if not raw_name:
+        return ""
+    text = str(raw_name).strip()
+
+    suffix_pat = r"(?i)\s+(?:no\s+google\s+play|na\s+google\s+play|no\s+play\s*store|na\s+play\s*store|no\s+playstore|na\s+playstore|pelo\s+google\s+play|pela\s+play\s*store|pelo\s+play\s*store|google\s+play|play\s*store|playstore|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
+    for _ in range(5):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r"[?!.,;:]+$", "", text).strip()
+        if text == prev:
+            break
+
+    prefix_patterns = [
+        r"(?i)^(?:silva|ei|oi)\b\s*",
+        r"(?i)^(?:abre\s+a\s+play\s*store\s+e\s+(?:baixa|instala|procura|pesquisa|busca))\b\s*",
+        r"(?i)^(?:abre\s+o\s+google\s+play\s+e\s+(?:baixa|instala|procura|pesquisa|busca))\b\s*",
+        r"(?i)^(?:instalar|instala|instale|baixar|baixa|baixe|download\s+do|download\s+de|download)\b\s*",
+        r"(?i)^(?:pesquisar|pesquisa|pesquise|buscar|busca|busque|procurar|procura|procure)\b\s*",
+        r"(?i)^(?:o\s+aplicativo|aplicativo|o\s+app|app|o\s+jogo|jogo)\b\s*",
+        r"(?i)^(?:o|a|os|as)\b\s*",
+        r"(?i)^(?:do|da|dos|das|de)\b\s*",
+    ]
+
+    for _ in range(10):
+        prev = text
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        for pat in prefix_patterns:
+            text = re.sub(pat, '', text).strip()
+        text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
+        if text == prev:
+            break
+
+    text = re.sub(suffix_pat, "", text).strip()
+    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    return text.strip()
+
+
+def install_app(app_name: str) -> Dict[str, Any]:
+    """Abre a Google Play Store diretamente na página de instalação ou na pesquisa do aplicativo."""
+    clean_name = _clean_install_app_name(app_name)
+    if not clean_name:
+        return {"status": "error", "message": "Nome do aplicativo não informado para instalação."}
+
+    lookup_key = clean_name.lower().strip()
+    pkg = APP_PACKAGES.get(lookup_key)
+
+    if pkg:
+        url = f"market://details?id={pkg}"
+        cmd = f'am start -a android.intent.action.VIEW -d "{url}" -p com.android.vending'
+        if not SIMULATE_HARDWARE:
+            res = _exec_android_intent(cmd)
+            if res.returncode != 0 or "ActivityNotFound" in res.stderr:
+                _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+        return {
+            "status": "ok",
+            "message": f"Abrindo a página de instalação de '{clean_name}' na Play Store.",
+            "data": {"app_name": clean_name, "package": pkg, "url": url}
+        }
+    else:
+        encoded_name = urllib.parse.quote_plus(clean_name)
+        url = f"market://search?q={encoded_name}"
+        cmd = f'am start -a android.intent.action.VIEW -d "{url}" -p com.android.vending'
+        if not SIMULATE_HARDWARE:
+            res = _exec_android_intent(cmd)
+            if res.returncode != 0 or "ActivityNotFound" in res.stderr:
+                _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+        return {
+            "status": "ok",
+            "message": f"Pesquisando '{clean_name}' na Play Store.",
+            "data": {"app_name": clean_name, "query": clean_name, "url": url}
+        }
+
+
+MEDIA_ACTION_SYNONYMS = {
+    # pause
+    "pause": "pause",
+    "pausa": "pause",
+    "pausar": "pause",
+    "parar": "pause",
+    "para": "pause",
+    "pare": "pause",
+    "interromper": "pause",
+    "stop": "pause",
+    # play
+    "play": "play",
+    "tocar": "play",
+    "toca": "play",
+    "toque": "play",
+    "reproduzir": "play",
+    "reproduz": "play",
+    "continuar": "play",
+    "continua": "play",
+    "retomar": "play",
+    "retoma": "play",
+    "despausar": "play",
+    "despausa": "play",
+    # next
+    "next": "next",
+    "proxima": "next",
+    "próxima": "next",
+    "proximo": "next",
+    "próximo": "next",
+    "avancar": "next",
+    "avançar": "next",
+    "avanca": "next",
+    "avança": "next",
+    "pular": "next",
+    "pula": "next",
+    "pule": "next",
+    "passar": "next",
+    "passa": "next",
+    "passe": "next",
+    # previous
+    "previous": "previous",
+    "anterior": "previous",
+    "voltar": "previous",
+    "volta": "previous",
+    "retroceder": "previous",
+    "retrocede": "previous",
+}
+
+MEDIA_KEYEVENTS = {
+    "play": 126,
+    "pause": 127,
+    "next": 87,
+    "previous": 88,
+}
+
+MEDIA_CONFIRMATIONS = {
+    "pause": "Mídia pausada.",
+    "play": "Reprodução retomada.",
+    "next": "Avançando para a próxima faixa.",
+    "previous": "Voltando para a mídia anterior.",
+}
+
+
+def media_control(action: str) -> Dict[str, Any]:
+    """Controla a reprodução global de música ou vídeo no Android (play, pause, next, previous)."""
+    raw_action = str(action or "").strip().lower()
+    normalized_action = MEDIA_ACTION_SYNONYMS.get(raw_action)
+    if not normalized_action:
+        for syn, target in MEDIA_ACTION_SYNONYMS.items():
+            if syn in raw_action:
+                normalized_action = target
+                break
+
+    if not normalized_action or normalized_action not in MEDIA_KEYEVENTS:
+        return {
+            "status": "error",
+            "message": f"Ação de mídia '{action}' inválida. Use 'pause', 'play', 'next' ou 'previous'."
+        }
+
+    msg = MEDIA_CONFIRMATIONS[normalized_action]
+
+    if not SIMULATE_HARDWARE:
+        # Tentativa 1 (Nativo Android 10+): cmd media_session dispatch {normalized_action}
+        res1 = _exec_android_intent(f"cmd media_session dispatch {normalized_action}")
+        # Tentativa 2 (Fallback via KeyEvent caso cmd media_session falhe)
+        if res1.returncode != 0 or "Error" in res1.stderr:
+            key_code = MEDIA_KEYEVENTS[normalized_action]
+            _exec_android_intent(f"input keyevent {key_code}")
+
+    return {
+        "status": "ok",
+        "message": msg,
+        "data": {"action": normalized_action}
+    }
+
+
 # Dicionário de registro de funções disponíveis para o parser
 AVAILABLE_TOOLS = {
     "get_battery": get_battery,
@@ -2504,5 +2682,7 @@ AVAILABLE_TOOLS = {
     "calculate": calculate,
     "request_ride": request_ride,
     "order_food": order_food,
+    "install_app": install_app,
+    "media_control": media_control,
     "none": none,
 }

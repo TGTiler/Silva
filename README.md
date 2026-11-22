@@ -171,7 +171,7 @@ silva-agent/
 - **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 6.094 exemplos prontos para upload e treino no Colab (100% válidos contra o schema das 36 ferramentas).
 
 #### 3. Módulo `pc_training/` (Treino e Conversão)
-- **`colab_train_silva.py`**: Pipeline tudo-em-um para o Google Colab: desinstala pacotes conflitantes, atualiza Hugging Face, clona e compila `llama-quantize` no `llama.cpp`, realiza fine-tuning LoRA calibrado (4 épocas, janela 1024 tokens, `learning_rate=3e-4`, split determinístico 95/5, mascaramento manual de prompt `labels=-100`, separação estrita `pad_token != eos_token`, preservação de completion, `DataCollatorForSeq2Seq` e `load_best_model_at_end=True`), valida 10 cenários de inferência via ChatML, funde pesos no modelo SmolLM2-135M, quantiza em `Q5_K_M` e dispara o download automático de `silva-135m.gguf`.
+- **`colab_train_silva.py`**: Pipeline tudo-em-um para o Google Colab: desinstala pacotes conflitantes, atualiza Hugging Face, clona e compila `llama-quantize` no `llama.cpp`, realiza fine-tuning LoRA calibrado (4 épocas, janela 1024 tokens, batch micro 4 com 8 acumulações = 32 efetivo, `gradient_checkpointing=True`, `learning_rate=3e-4`, split determinístico 95/5, mascaramento manual de prompt `labels=-100`, separação estrita `pad_token != eos_token`, `DataCollatorForSeq2Seq` e `load_best_model_at_end=True`), valida 10 cenários de inferência via ChatML, funde pesos no modelo SmolLM2-135M, quantiza em `Q5_K_M` e dispara o download automático de `silva-135m.gguf`.
 
 ---
 

@@ -12,6 +12,9 @@ import subprocess
 import sys
 import time
 
+# Otimização anti-fragmentação de VRAM recomendada pelo PyTorch
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 print("=" * 65)
 print(" [1/5] INSTALANDO BIBLIOTECAS E COMPILANDO FERRAMENTAS ")
 print("=" * 65)
@@ -264,6 +267,11 @@ else:
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
+import gc
+gc.collect()
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+
 print(f"[*] Carregando pesos do modelo base ({device})...")
 try:
     base_model = AutoModelForCausalLM.from_pretrained(
@@ -280,6 +288,10 @@ except TypeError:
         trust_remote_code=True
     )
 
+# Desativa use_cache para compatibilidade com gradient checkpointing
+if hasattr(base_model.config, "use_cache"):
+    base_model.config.use_cache = False
+
 # Configuração LoRA calibrada para micro-modelos com 4 épocas (dropout 0.08)
 peft_config = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
@@ -293,7 +305,7 @@ model = get_peft_model(base_model, peft_config)
 model.print_trainable_parameters()
 
 # ==============================================================================
-# CONFIGURAÇÃO DO TRAINER COM DataCollatorForSeq2Seq
+# CONFIGURAÇÃO DO TRAINER COM DataCollatorForSeq2Seq E CONTROLE ESTREITO DE VRAM
 # ==============================================================================
 import inspect
 
@@ -301,9 +313,9 @@ t_sig = inspect.signature(TrainingArguments.__init__).parameters
 t_kwargs = {
     "output_dir": "./silva_checkpoints",
     "num_train_epochs": 4,
-    "per_device_train_batch_size": 16,
-    "per_device_eval_batch_size": 16,
-    "gradient_accumulation_steps": 2,
+    "per_device_train_batch_size": 4,
+    "per_device_eval_batch_size": 4,
+    "gradient_accumulation_steps": 8,
     "learning_rate": 3e-4,
     "lr_scheduler_type": "cosine",
     "weight_decay": 0.01,
@@ -316,8 +328,18 @@ t_kwargs = {
     "fp16": (device == "cuda"),
     "bf16": False,
     "optim": "adamw_torch",
-    "report_to": "none"
+    "report_to": "none",
+    "dataloader_pin_memory": False
 }
+
+# Ativa Gradient Checkpointing para reduzir drasticamente o consumo de VRAM
+if "gradient_checkpointing" in t_sig:
+    t_kwargs["gradient_checkpointing"] = True
+if "gradient_checkpointing_kwargs" in t_sig:
+    t_kwargs["gradient_checkpointing_kwargs"] = {"use_reentrant": False}
+
+if "eval_accumulation_steps" in t_sig:
+    t_kwargs["eval_accumulation_steps"] = 2
 
 if "eval_strategy" in t_sig:
     t_kwargs["eval_strategy"] = "epoch"
@@ -401,6 +423,11 @@ print(" -> System prompt e pergunta do usuário 100% mascarados (-100).")
 print(" -> Token de parada <|im_end|> devidamente incluído para evitar geração infinita.")
 print("=" * 65 + "\n")
 
+# Libera cache CUDA antes de iniciar o loop de treino
+gc.collect()
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+
 print("[*] Iniciando treinamento calibrado por 4 épocas com avaliação e checkpoint seguro...")
 start_time = time.time()
 trainer.train()
@@ -419,6 +446,14 @@ print("=" * 65 + "\n")
 # Fusão dos pesos LoRA no modelo base
 print("[*] Mesclando pesos LoRA (merge_and_unload)...")
 merged_model = model.merge_and_unload()
+
+# Libera memória dos modelos intermediários para a inferência e conversão
+del model
+del base_model
+gc.collect()
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+
 merged_dir = "./silva_merged_hf"
 merged_model.save_pretrained(merged_dir)
 tokenizer.save_pretrained(merged_dir)

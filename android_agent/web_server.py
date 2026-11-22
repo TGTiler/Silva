@@ -5,6 +5,7 @@ garantindo zero dependências externas e alta estabilidade no Android.
 """
 
 import errno
+import hmac
 import json
 import mimetypes
 import os
@@ -15,7 +16,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Optional
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from config import ACCESS_PIN, CAPTURES_DIR, WEB_HOST, WEB_PORT
 from llm_client import SilvaLLMClient
@@ -80,14 +81,44 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
 
         # 2. Rota de capturas -> /captures/<filename>
         if path.startswith("/captures/"):
+            # Validação do ACCESS_PIN se configurado (via query param ?pin= ou header X-Access-Pin)
+            if ACCESS_PIN:
+                query_params = parse_qs(parsed.query)
+                pin_from_query = query_params.get("pin", [""])[0].strip()
+                pin_from_header = self.headers.get("X-Access-Pin", "").strip()
+
+                pin_valid = (
+                    (pin_from_query and hmac.compare_digest(pin_from_query, ACCESS_PIN)) or
+                    (pin_from_header and hmac.compare_digest(pin_from_header, ACCESS_PIN))
+                )
+                if not pin_valid:
+                    return self._send_json(
+                        {"status": "error", "message": "PIN de acesso inválido ou ausente para acessar mídia."},
+                        status=HTTPStatus.FORBIDDEN
+                    )
+
             filename = unquote(path.replace("/captures/", "")).strip("/")
-            # Impede Path Traversal
-            safe_path = (CAPTURES_DIR / filename).resolve()
-            if not str(safe_path).startswith(str(CAPTURES_DIR.resolve())):
-                self.send_error(HTTPStatus.FORBIDDEN, "Acesso negado.")
+            # Impede Path Traversal de forma estrita via is_relative_to
+            target_path = (CAPTURES_DIR / filename).resolve()
+            try:
+                if not target_path.is_relative_to(CAPTURES_DIR.resolve()):
+                    return self._send_json(
+                        {"status": "error", "message": "Acesso negado: tentativa de path traversal."},
+                        status=HTTPStatus.FORBIDDEN
+                    )
+            except AttributeError:
+                if not str(target_path).startswith(str(CAPTURES_DIR.resolve())):
+                    return self._send_json(
+                        {"status": "error", "message": "Acesso negado: tentativa de path traversal."},
+                        status=HTTPStatus.FORBIDDEN
+                    )
+
+            if not target_path.is_file():
+                self.send_error(HTTPStatus.NOT_FOUND, "Arquivo de mídia não encontrado.")
                 return
-            mime, _ = mimetypes.guess_type(str(safe_path))
-            return self._send_file(safe_path, mime or "image/jpeg")
+
+            mime, _ = mimetypes.guess_type(str(target_path))
+            return self._send_file(target_path, mime or "application/octet-stream")
 
         # 3. Health check -> /api/health
         if path == "/api/health":
@@ -108,7 +139,7 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
             # Validação de segurança via X-Access-Pin (se configurado)
             if ACCESS_PIN:
                 client_pin = self.headers.get("X-Access-Pin", "").strip()
-                if client_pin != ACCESS_PIN:
+                if not hmac.compare_digest(client_pin, ACCESS_PIN):
                     return self._send_json(
                         {"status": "error", "message": "PIN de acesso inválido ou ausente."},
                         status=HTTPStatus.FORBIDDEN

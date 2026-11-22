@@ -58,7 +58,7 @@ O sistema conta com um **servidor web nativo** com interface moderna inspirada e
 
 ## 🛠️ Catálogo Completo das 36 Ferramentas
 
-O Silva possui 36 ferramentas implementadas em `android_agent/tools.py` e catalogadas formalmente em `dataset/schema.json`:
+O Silva possui 36 ferramentas implementadas no pacote modular `android_agent/tools/` e catalogadas formalmente em `dataset/schema.json`:
 
 | # | Ferramenta | Parâmetros (41 no total) | Descrição do Hardware / Função |
 | :-: | :--- | :--- | :--- |
@@ -118,7 +118,7 @@ silva-agent/
 │   ├── llm_client.py              # Cliente HTTP para o llama-server local com fallback
 │   ├── intent_fallback.py         # Roteador determinístico de ultra-baixa latência (<2ms)
 │   ├── parser.py                  # Analisador sintático AST seguro, validador de whitelist e propagação de status
-│   ├── tools.py                   # Implementação real das 36 ferramentas (hardware, apps, wifi, sqlite fts5)
+│   ├── tools/                     # Pacote modular das 36 ferramentas (core, hardware, media, comms, etc)
 │   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 36 tools
 │   ├── setup_termux.sh            # Instalação automática de dependências e build do llama.cpp
 │   ├── start_silva.sh             # Script de inicialização (llama-server + web_server)
@@ -156,7 +156,7 @@ silva-agent/
 - **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
 - **`intent_fallback.py`**: Motor determinístico de alta velocidade (<2ms) para controle de hardware crítico, previsão do tempo inteligente, normalizador matemático e científico com tradução de funções trigonométricas, raízes, fatoriais e porcentagens em PT-BR, escaneamento de Wi-Fi próximo (sem colidir com senhas salvas), corridas Uber/99 e delivery iFood.
 - **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código, checa a whitelist de permissões (`AVAILABLE_TOOLS`) e propaga o status real das chamadas (`ok`, `partial_error`, `error`).
-- **`tools.py`**: Conector entre a inteligência e o Android. Executa 36 ferramentas nativas incluindo: varredura de Wi-Fi (`scan_wifi`), memória persistente com SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
+- **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 36 ferramentas nativas divididas em domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`), incluindo: varredura de Wi-Fi (`scan_wifi`), memória persistente com SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
 - **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), e o `SILVA_SYSTEM_PROMPT` sincronizado para as 36 ferramentas.
 - **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, sidebar retrátil com histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
 

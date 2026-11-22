@@ -17,6 +17,7 @@ CALL_FIND_REGEX = re.compile(r"<call>\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*<
 
 
 def load_schema(schema_path: Path) -> dict:
+    schema_path = Path(schema_path)
     if not schema_path.is_file():
         raise FileNotFoundError(f"Schema não encontrado em: {schema_path}")
     with open(schema_path, "r", encoding="utf-8") as f:
@@ -74,6 +75,8 @@ def validate_args_against_schema(tool_name: str, args: dict, tool_def: dict) -> 
 
 
 def validate_dataset(jsonl_path: Path, schema_path: Path) -> bool:
+    jsonl_path = Path(jsonl_path)
+    schema_path = Path(schema_path)
     print(f"[*] Validando dataset: {jsonl_path}")
     print(f"[*] Usando schema: {schema_path}")
     

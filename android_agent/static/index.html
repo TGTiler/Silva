@@ -1138,12 +1138,25 @@
     (function () {
       "use strict";
 
-      // 1. PIN de Acesso
+      // 1. PIN de Acesso e Helper de Mídia Segura
       const pinInput = document.getElementById("pinInput");
       pinInput.value = localStorage.getItem("silva_pin") || "1234";
       pinInput.addEventListener("input", function () {
         localStorage.setItem("silva_pin", pinInput.value.trim());
       });
+
+      function getPin() {
+        return (pinInput && pinInput.value ? pinInput.value.trim() : (localStorage.getItem("silva_pin") || "1234")).trim();
+      }
+
+      function withPin(url) {
+        if (!url || typeof url !== "string") return url;
+        if (!url.startsWith("/captures/")) return url;
+        const pin = getPin();
+        if (!pin) return url;
+        const sep = url.includes("?") ? "&" : "?";
+        return url + sep + "pin=" + encodeURIComponent(pin);
+      }
 
       // 2. Elementos DOM
       const sidebar = document.getElementById("sidebar");
@@ -1241,7 +1254,7 @@
             if (m.role === "user") {
               appendUserMessageDOM(m.text);
             } else {
-              appendSilvaMessageDOM(m.text, m.raw_call, m.latency_ms, m.image_url, m.video_url, m.data);
+              appendSilvaMessageDOM(m.text, m.raw_call, m.latency_ms, m.image_url, m.video_url, m.data, m.media_items);
             }
           });
           scrollToBottom();
@@ -1456,8 +1469,8 @@
         scrollToBottom();
       }
 
-      // 10. Renderização de Mensagem do Silva
-      function appendSilvaMessageDOM(msg, rawCall, latencyMs, imageUrl, videoUrl, data) {
+      // 10. Renderização de Mensagem do Silva (com suporte a Multi-Mídia e PIN)
+      function appendSilvaMessageDOM(msg, rawCall, latencyMs, imageUrl, videoUrl, data, mediaItems) {
         const row = document.createElement("div");
         row.className = "msg-row silva";
 
@@ -1539,38 +1552,49 @@
           bubble.appendChild(smsContainer);
         }
 
-        // Preview Seguro de Imagem
-        if (imageUrl && typeof imageUrl === "string" && imageUrl.startsWith("/captures/")) {
-          const mediaCard = document.createElement("div");
-          mediaCard.className = "media-card";
+        // Consolidação de Mídias (Multi-Mídia com fallback para imageUrl/videoUrl)
+        const allMedia = (Array.isArray(mediaItems) && mediaItems.length > 0)
+          ? mediaItems
+          : [
+              ...(imageUrl ? [{ type: "image", url: imageUrl }] : []),
+              ...(videoUrl ? [{ type: "video", url: videoUrl }] : [])
+            ];
 
-          const img = document.createElement("img");
-          img.className = "media-thumb";
-          img.src = imageUrl;
-          img.alt = "Captura visual";
-          img.loading = "lazy";
-          img.addEventListener("click", function () {
-            openImageModal(imageUrl);
-          });
+        allMedia.forEach(function (item) {
+          if (!item || !item.url || typeof item.url !== "string" || !item.url.startsWith("/captures/")) {
+            return;
+          }
+          const securedUrl = withPin(item.url);
 
-          mediaCard.appendChild(img);
-          bubble.appendChild(mediaCard);
-        }
+          if (item.type === "image") {
+            const mediaCard = document.createElement("div");
+            mediaCard.className = "media-card";
 
-        // Preview Seguro de Vídeo
-        if (videoUrl && typeof videoUrl === "string" && videoUrl.startsWith("/captures/")) {
-          const videoCard = document.createElement("div");
-          videoCard.className = "media-card video-card";
+            const img = document.createElement("img");
+            img.className = "media-thumb";
+            img.src = securedUrl;
+            img.alt = "Captura visual";
+            img.loading = "lazy";
+            img.addEventListener("click", function () {
+              openImageModal(item.url);
+            });
 
-          const video = document.createElement("video");
-          video.controls = true;
-          video.playsInline = true;
-          video.preload = "metadata";
-          video.src = videoUrl;
+            mediaCard.appendChild(img);
+            bubble.appendChild(mediaCard);
+          } else if (item.type === "video") {
+            const videoCard = document.createElement("div");
+            videoCard.className = "media-card video-card";
 
-          videoCard.appendChild(video);
-          bubble.appendChild(videoCard);
-        }
+            const video = document.createElement("video");
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+            video.src = securedUrl;
+
+            videoCard.appendChild(video);
+            bubble.appendChild(videoCard);
+          }
+        });
 
         wrap.appendChild(bubble);
 
@@ -1671,6 +1695,8 @@
             latency = data.latency_ms;
           }
 
+          let mediaItems = data.media_items || [];
+
           if (latency !== undefined) {
             latencyInfo.textContent = latency + " ms";
           }
@@ -1682,17 +1708,18 @@
             latency_ms: latency,
             image_url: imgUrl,
             video_url: vidUrl,
+            media_items: mediaItems,
             data: resData
           });
           saveSessions();
 
-          appendSilvaMessageDOM(replyMsg, rawCall, latency, imgUrl, vidUrl, resData);
+          appendSilvaMessageDOM(replyMsg, rawCall, latency, imgUrl, vidUrl, resData, mediaItems);
 
         } catch (err) {
           const errMsg = "Erro de conexão ao servidor Silva: " + err.message;
           session.messages.push({ role: "silva", text: errMsg });
           saveSessions();
-          appendSilvaMessageDOM(errMsg, null, undefined, null, null, null);
+          appendSilvaMessageDOM(errMsg, null, undefined, null, null, null, []);
         } finally {
           sendBtn.disabled = false;
           promptTextarea.focus();
@@ -1727,9 +1754,9 @@
         }
       });
 
-      // 12. Modal Fullscreen de Imagem
+      // 12. Modal Fullscreen de Imagem (com PIN seguro)
       function openImageModal(src) {
-        modalImg.src = src;
+        modalImg.src = withPin(src);
         imageModal.style.display = "flex";
       }
       function closeImageModal() {

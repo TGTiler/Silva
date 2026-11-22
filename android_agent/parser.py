@@ -115,6 +115,7 @@ def execute_call(model_output: str) -> Dict[str, Any]:
     raw_calls = []
     latest_image_url = None
     latest_video_url = None
+    media_items = []
 
     for func_name, args in calls:
         target_func = AVAILABLE_TOOLS[func_name]
@@ -129,10 +130,12 @@ def execute_call(model_output: str) -> Dict[str, Any]:
             img_url = tool_res.get("image_url")
             if img_url:
                 latest_image_url = img_url
+                media_items.append({"type": "image", "url": img_url})
 
             vid_url = tool_res.get("video_url")
             if vid_url:
                 latest_video_url = vid_url
+                media_items.append({"type": "video", "url": vid_url})
 
             messages.append(msg)
             executed_details.append({
@@ -170,5 +173,6 @@ def execute_call(model_output: str) -> Dict[str, Any]:
         "calls": executed_details,
         "data": [d.get("data") for d in executed_details if d.get("data") is not None],
         "image_url": latest_image_url,
-        "video_url": latest_video_url
+        "video_url": latest_video_url,
+        "media_items": media_items
     }

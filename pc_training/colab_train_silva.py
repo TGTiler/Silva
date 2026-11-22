@@ -99,13 +99,14 @@ SILVA_SYSTEM_PROMPT = (
     "Você é o Silva, um micro-agente offline para controle de smartphone Android.\n"
     "Sua única função é traduzir o pedido do usuário para chamadas de função estritas.\n"
     "Ferramentas disponíveis: get_battery(), get_last_sms(limit), send_sms(number, message), "
-    "take_photo(camera_id), record_video(duration, camera_id), take_screenshot(), open_app(app_name), "
-    "make_call(number), get_location(), get_last_location(), set_location_state(state=bool), "
-    "get_weather(day, time, location), set_torch(state), set_dnd(state=bool), vibrate(duration_ms), "
-    "get_clipboard(), set_clipboard(text), tell_joke(), set_alarm(time, label, days), cancel_alarm(time, day, label), "
-    "schedule_event(title, date, time), remember_note(key, value), recall_note(query), get_notifications(app), "
-    "set_volume(stream, level), set_brightness(level), set_timer(minutes, label), calculate(expression), "
-    "search_google(query), request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), list_capabilities(), none().\n"
+    "take_photo(camera_id), record_video(duration, camera_id), take_screenshot(), open_app(app_name), make_call(number), get_location(), "
+    "get_last_location(), set_location_state(state=bool), get_weather(day, time, location), "
+    "set_torch(state), set_dnd(state=bool), vibrate(duration_ms), get_clipboard(), set_clipboard(text), "
+    "tell_joke(), set_alarm(time, label, days), cancel_alarm(time, day, label), schedule_event(title, date, time), "
+    "remember_note(key, value), recall_note(query), get_notifications(app), set_volume(stream, level), "
+    "set_brightness(level), set_timer(minutes, label), calculate(expression), search_google(query, open_browser), "
+    "request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), "
+    "scan_wifi(), list_capabilities(), none().\n"
     "Responda EXCLUSIVAMENTE com uma ou mais tags de chamada no formato:\n"
     "<call>nome_da_funcao(arg1=valor1, arg2=valor2)</call>\n"
     "Quando o usuário solicitar mais de uma ação na mesma frase, emita múltiplas tags em sequência (ex: <call>acao1()</call><call>acao2()</call>).\n"
@@ -143,6 +144,31 @@ print(f"[*] Baixando modelo base: {MODEL_ID}...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
+
+# Verificação Pré-Treino Anti-Truncamento
+print("\n[*] Diagnosticando comprimento de tokens pré-treino...")
+MAX_TRAIN_LENGTH = 512
+max_tokens_found = 0
+exceeded_samples = []
+
+for idx, sample in enumerate(raw_samples):
+    tok_len = len(tokenizer(sample["text"], truncation=False)["input_ids"])
+    if tok_len > max_tokens_found:
+        max_tokens_found = tok_len
+    if tok_len > MAX_TRAIN_LENGTH:
+        exceeded_samples.append((idx, tok_len, sample["text"][:120]))
+
+print(f"[*] Comprimento máximo encontrado no dataset: {max_tokens_found} tokens (limite de segurança: {MAX_TRAIN_LENGTH})")
+
+if exceeded_samples:
+    print(f"\n[ALERTA CRÍTICO] {len(exceeded_samples)} amostras ultrapassaram o limite de {MAX_TRAIN_LENGTH} tokens!")
+    for idx, tok_len, preview in exceeded_samples[:5]:
+        print(f"  - Amostra #{idx}: {tok_len} tokens -> {preview}...")
+    raise ValueError(
+        f"Treinamento abortado: {len(exceeded_samples)} amostras seriam truncadas com max_length={MAX_TRAIN_LENGTH}."
+    )
+else:
+    print(f"[OK] 100% das {len(raw_samples)} amostras cabem com folga dentro de {MAX_TRAIN_LENGTH} tokens! Zero truncamento.\n")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if torch.cuda.is_available() else torch.float32
@@ -196,9 +222,9 @@ if HAS_SFT_CONFIG:
     # TRL >= 0.20 usa 'max_length'; versões anteriores usavam 'max_seq_length'
     sft_sig = inspect.signature(SFTConfig.__init__).parameters
     if "max_length" in sft_sig:
-        sft_kwargs["max_length"] = 256
+        sft_kwargs["max_length"] = 512
     elif "max_seq_length" in sft_sig:
-        sft_kwargs["max_seq_length"] = 256
+        sft_kwargs["max_seq_length"] = 512
 
     training_args = SFTConfig(**sft_kwargs)
 
@@ -234,7 +260,7 @@ else:
         model=model,
         train_dataset=dataset,
         dataset_text_field="text",
-        max_seq_length=256,
+        max_seq_length=512,
         tokenizer=tokenizer,
         args=training_args
     )

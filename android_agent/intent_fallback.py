@@ -45,7 +45,7 @@ def _protect_compound_names(text: str) -> str:
 
 def _unprotect_compound_names(text: str) -> str:
     """Restaura nomes próprios que tiveram seu conector protegido temporariamente."""
-    return text.replace("Abreu__E__Lima", "Abreu e Lima")
+    return re.sub(r"\bAbreu__E__Lima\b", "Abreu e Lima", text, flags=re.IGNORECASE)
 
 
 def _format_call(func_name: str, **kwargs) -> str:
@@ -123,8 +123,8 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
     s = re.sub(r"\bmetade\s+de\s+(\d+(?:[\.,]\d+)?)", r"0.5 * \1", s)
 
     # 5. Raiz quadrada e cúbica
-    s = re.sub(r"raiz\s+c[uú]bica\s+de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"cbrt(\1)", s)
-    s = re.sub(r"raiz\s+(?:quadrada\s+)?de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"sqrt(\1)", s)
+    s = re.sub(r"(?:a\s+)?raiz\s+c[uú]bica\s+de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"cbrt(\1)", s)
+    s = re.sub(r"(?:a\s+)?raiz\s+(?:quadrada\s+)?de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"sqrt(\1)", s)
 
     # 6. Fatorial: "X fatorial" ou "fatorial de X" ou "X!" -> "factorial(X)"
     s = re.sub(r"fatorial\s+de\s+(\d+)", r"factorial(\1)", s)
@@ -176,8 +176,8 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
         r"(?i)\bquanto\s+[eé]\s+(?:o\s+resultado\s+de\s+)?",
         r"(?i)\bquanto\s+d[aá]\s+",
         r"(?i)\bquanto\s+fica\s+",
-        r"(?i)\bcalcule\s+(?:o\s+resultado\s+de\s+)?",
-        r"(?i)\bcalcula\s+(?:o\s+resultado\s+de\s+)?",
+        r"(?i)\bcalcule\s+(?:o\s+resultado\s+de\s+|a\s+)?",
+        r"(?i)\bcalcula\s+(?:o\s+resultado\s+de\s+|a\s+)?",
         r"(?i)\bcalcular\s+",
         r"(?i)\bresultado\s+de\s+",
         r"(?i)\bo\s+resultado\s+de\s+",
@@ -360,7 +360,7 @@ def _clean_install_app_name(raw_name: str) -> str:
 
 def _clean_weather_location(raw_loc: str) -> str:
     """Limpa e normaliza nome de localidade removendo palavras de tempo, fillers e pontuação."""
-    s = raw_loc.strip()
+    s = _unprotect_compound_names(raw_loc.strip())
     if not s:
         return ""
 
@@ -877,7 +877,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 time_val = m_t.group(1)
 
         loc = ""
-        pattern = r"\b(?:em|para|pra|no|na|de\s+(?!chuva\b|tempo\b|clima\b))\s*([a-zA-ZÀ-ÿ0-9\s,\-]+)"
+        pattern = r"\b(?:em|para|pra|no|na|de\s+(?!chuva\b|tempo\b|clima\b))\s*([a-zA-ZÀ-ÿ0-9\s,\-_]+)"
         matches = re.findall(pattern, raw_cmd, re.IGNORECASE)
         for m in reversed(matches):
             c = _clean_weather_location(m)

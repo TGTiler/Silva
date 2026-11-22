@@ -1,0 +1,321 @@
+"""
+Módulo Mídia do Silva: Foto, Screenshot, Vídeo e Controle de Mídia.
+"""
+
+import os
+import subprocess
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from .core import (
+    CAPTURES_DIR,
+    SIMULATE_HARDWARE,
+    _run_termux_cmd,
+    _exec_android_intent,
+)
+
+def take_photo(camera_id: int = 0) -> Dict[str, Any]:
+    """Captura uma foto e salva no diretório de capturas."""
+    cam_id = 0 if camera_id not in (0, 1) else camera_id
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"capture_{timestamp}.jpg"
+    file_path = CAPTURES_DIR / filename
+    rel_url = f"/captures/{filename}"
+
+    if SIMULATE_HARDWARE:
+        # Gera uma imagem JPEG mínima válida (1x1 ou header JPEG básico) para visualização offline
+        # Assinatura binária simples de JPEG 1x1 pixel
+        jpeg_1x1 = (
+            b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\x08\x06"
+            b"\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14"
+            b"\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.' \",#\x1c\x1c(7),01444\x1f'9=82<.342\xff\xc0\x00"
+            b"\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xc4\x00\x1f\x00\x00\x01\x05\x01\x01\x01\x01"
+            b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\xff\xda"
+            b"\x00\x08\x01\x01\x00\x00?\x00\xbf\x00\xff\xd9"
+        )
+        file_path.write_bytes(jpeg_1x1)
+        return {
+            "status": "ok",
+            "message": f"Silva: Foto capturada pela câmera {cam_id}. [Simulado]",
+            "image_url": rel_url,
+            "data": {"file_path": str(file_path), "camera_id": cam_id}
+        }
+
+    try:
+        res = _run_termux_cmd(["termux-camera-photo", "-c", str(cam_id), str(file_path)], timeout=15)
+        if res.returncode != 0:
+            return {"status": "error", "message": f"Falha ao acionar câmera: {res.stderr.strip()}"}
+
+        cam_label = "frontal (selfie)" if cam_id == 1 else "traseira"
+        return {
+            "status": "ok",
+            "message": f"Silva: Foto capturada com a câmera {cam_label}.",
+            "image_url": rel_url,
+            "data": {"file_path": str(file_path), "camera_id": cam_id}
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Erro na captura de imagem: {str(e)}"}
+
+
+def _is_valid_png(path: Path) -> bool:
+    """Verifica se o arquivo existe, tem tamanho superior a 10 KB e inicia com cabeçalho PNG válido."""
+    try:
+        if path.is_file() and path.stat().st_size > 10 * 1024:
+            with open(path, "rb") as f:
+                header = f.read(4)
+                return header == b"\x89PNG"
+    except Exception:
+        pass
+    return False
+
+
+def take_screenshot() -> Dict[str, Any]:
+    """Captura um print da tela do smartphone e salva no dispositivo."""
+    ts = int(time.time())
+    filename = f"screen_{ts}.png"
+    output_path = CAPTURES_DIR / filename
+    rel_url = f"/captures/{filename}"
+
+    if SIMULATE_HARDWARE:
+        # Gera uma imagem representativa de screenshot no modo simulado
+        try:
+            from PIL import Image, ImageDraw
+            img = Image.new("RGB", (360, 640), color=(18, 16, 28))
+            draw = ImageDraw.Draw(img)
+            draw.rectangle([(20, 40), (340, 100)], fill=(37, 32, 56), outline=(123, 31, 162), width=2)
+            draw.text((40, 60), "Silva — Print Simulado", fill=(241, 241, 245))
+            draw.rectangle([(20, 120), (340, 580)], fill=(24, 21, 36))
+            draw.text((40, 200), f"Capturado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", fill=(155, 152, 171))
+            img.save(output_path, "PNG")
+        except Exception:
+            png_minimal = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+            output_path.write_bytes(png_minimal)
+
+        return {
+            "status": "ok",
+            "message": "Silva: Print da tela capturado.",
+            "image_url": rel_url,
+            "data": {"file_path": str(output_path), "method": "simulated"}
+        }
+
+    try:
+        # Método 1 — ADB Local (adb exec-out screencap -p)
+        adb_bin = shutil.which("adb")
+        if adb_bin:
+            try:
+                proc_devices = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=3)
+                device_lines = [l.strip() for l in proc_devices.stdout.splitlines() if "\tdevice" in l]
+                if device_lines:
+                    proc_cap = subprocess.run([adb_bin, "exec-out", "screencap", "-p"], capture_output=True, timeout=8)
+                    if proc_cap.stdout and len(proc_cap.stdout) > 10 * 1024 and proc_cap.stdout[:4] == b"\x89PNG":
+                        output_path.write_bytes(proc_cap.stdout)
+                        if _is_valid_png(output_path):
+                            return {
+                                "status": "ok",
+                                "message": "Silva: Print da tela capturado.",
+                                "image_url": rel_url,
+                                "data": {"file_path": str(output_path), "method": "adb_local"}
+                            }
+            except Exception:
+                pass
+
+        # Método 2 — Shizuku (rish -c "screencap -p")
+        rish_bin = shutil.which("rish")
+        if rish_bin:
+            try:
+                proc_rish = subprocess.run([rish_bin, "-c", "screencap -p"], capture_output=True, timeout=8)
+                if proc_rish.stdout and len(proc_rish.stdout) > 10 * 1024 and proc_rish.stdout[:4] == b"\x89PNG":
+                    output_path.write_bytes(proc_rish.stdout)
+                    if _is_valid_png(output_path):
+                        return {
+                            "status": "ok",
+                            "message": "Silva: Print da tela capturado.",
+                            "image_url": rel_url,
+                            "data": {"file_path": str(output_path), "method": "rish"}
+                        }
+            except Exception:
+                pass
+
+        # Método 3 — Fallback direto (screencap -p e input keyevent 120)
+        try:
+            temp_sdcard = Path("/sdcard/Download") / f"temp_{filename}"
+            _run_termux_cmd(["screencap", "-p", str(output_path)], timeout=8)
+            if not _is_valid_png(output_path):
+                _run_termux_cmd(["screencap", "-p", str(temp_sdcard)], timeout=8)
+                if _is_valid_png(temp_sdcard):
+                    shutil.move(str(temp_sdcard), str(output_path))
+
+            if _is_valid_png(output_path):
+                return {
+                    "status": "ok",
+                    "message": "Silva: Print da tela capturado.",
+                    "image_url": rel_url,
+                    "data": {"file_path": str(output_path), "method": "screencap"}
+                }
+        except Exception:
+            pass
+
+        try:
+            _run_termux_cmd(["input", "keyevent", "120"], timeout=4)
+            time.sleep(1.8)
+
+            screenshot_dirs = [
+                Path("/sdcard/DCIM/Screenshots"),
+                Path("/sdcard/Pictures/Screenshots"),
+                Path("/storage/emulated/0/DCIM/Screenshots"),
+                Path("/storage/emulated/0/Pictures/Screenshots"),
+                Path("/sdcard/DCIM"),
+                Path("/sdcard/Pictures")
+            ]
+
+            now = time.time()
+            newest_file = None
+            newest_mtime = 0
+
+            for d in screenshot_dirs:
+                if d.is_dir():
+                    try:
+                        for f in d.iterdir():
+                            if f.is_file() and f.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                                mtime = f.stat().st_mtime
+                                if (now - mtime) < 20 and mtime > newest_mtime:
+                                    newest_mtime = mtime
+                                    newest_file = f
+                    except Exception:
+                        pass
+
+            if newest_file and newest_file.is_file():
+                shutil.copy2(newest_file, output_path)
+                if _is_valid_png(output_path):
+                    return {
+                        "status": "ok",
+                        "message": "Silva: Print da tela capturado.",
+                        "image_url": rel_url,
+                        "data": {"file_path": str(output_path), "method": "keyevent_120", "source": str(newest_file)}
+                    }
+        except Exception:
+            pass
+
+        # 4. Mensagem de erro orientativa se todos falharem
+        return {
+            "status": "error",
+            "message": "Não foi possível capturar a tela sem permissão de shell. Para liberar prints no Android sem root, instale 'pkg install android-tools' no Termux e conecte a Depuração por Wi-Fi local (adb connect 127.0.0.1:PORTA)."
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": "Não foi possível capturar a tela sem permissão de shell. Para liberar prints no Android sem root, instale 'pkg install android-tools' no Termux e conecte a Depuração por Wi-Fi local (adb connect 127.0.0.1:PORTA)."
+        }
+
+
+def record_video(duration: int = 10, camera_id: int = 0) -> Dict[str, Any]:
+    """Grava um vídeo por X segundos usando a câmera traseira (0) ou frontal (1)."""
+    dur = max(3, min(int(duration), 120))
+    cam = 1 if int(camera_id) == 1 else 0
+    cam_label = "frontal (selfie)" if cam == 1 else "traseira"
+    ts = int(time.time())
+    filename = f"vid_{ts}.mp4"
+    output_path = CAPTURES_DIR / filename
+    rel_url = f"/captures/{filename}"
+
+    if SIMULATE_HARDWARE:
+        # Assinatura binária mínima de contêiner MP4 (ftypisom)
+        dummy_mp4 = b"\x00\x00\x00\x1cftypisom\x00\x00\x02\x00isomiso2mp41\x00\x00\x00\x08free"
+        output_path.write_bytes(dummy_mp4)
+        return {
+            "status": "ok",
+            "message": f"Silva: Vídeo gravado com sucesso ({dur}s, câmera {cam_label}). [Simulado]",
+            "video_url": rel_url,
+            "data": {"file_path": str(output_path), "duration": dur, "camera_id": cam}
+        }
+
+    try:
+        start_ts = time.time()
+        # Dispara Intent nativa de captura de vídeo do Android
+        _run_termux_cmd([
+            "am", "start",
+            "-a", "android.media.action.VIDEO_CAPTURE",
+            "--ei", "android.intent.extra.durationLimit", str(dur),
+            "--ei", "android.intent.extras.CAMERA_FACING", str(cam),
+            "--ez", "android.intent.extra.quickCapture", "true"
+        ], timeout=6)
+
+        # Aguarda a gravação com margem de segurança de 3s
+        time.sleep(dur + 3)
+
+        # Procura o arquivo .mp4 mais recente criado após o início da chamada
+        video_dirs = [
+            Path("/sdcard/DCIM/Camera"),
+            Path("/sdcard/Movies"),
+            Path("/sdcard/DCIM"),
+            Path("/storage/emulated/0/DCIM/Camera"),
+            Path("/storage/emulated/0/Movies")
+        ]
+        newest_file = None
+        newest_mtime = 0
+        for vd in video_dirs:
+            if vd.is_dir():
+                try:
+                    for f in vd.iterdir():
+                        if f.is_file() and f.suffix.lower() in (".mp4", ".3gp", ".mkv"):
+                            mtime = f.stat().st_mtime
+                            if mtime >= (start_ts - 5) and mtime > newest_mtime:
+                                newest_mtime = mtime
+                                newest_file = f
+                except Exception:
+                    pass
+
+        if newest_file and newest_file.is_file():
+            shutil.copy2(newest_file, output_path)
+            return {
+                "status": "ok",
+                "message": f"Silva: Vídeo gravado com sucesso ({dur}s, câmera {cam_label}).",
+                "video_url": rel_url,
+                "data": {"file_path": str(output_path), "duration": dur, "camera_id": cam, "source": str(newest_file)}
+            }
+
+        return {
+            "status": "ok",
+            "message": f"Silva: Gravação de vídeo iniciada ({dur}s, câmera {cam_label}).",
+            "data": {"duration": dur, "camera_id": cam}
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Erro na gravação de vídeo: {str(e)}"}
+
+
+
+def media_control(action: str) -> Dict[str, Any]:
+    """Controla a reprodução global de música ou vídeo no Android (play, pause, next, previous)."""
+    raw_action = str(action or "").strip().lower()
+    normalized_action = MEDIA_ACTION_SYNONYMS.get(raw_action)
+    if not normalized_action:
+        for syn, target in MEDIA_ACTION_SYNONYMS.items():
+            if syn in raw_action:
+                normalized_action = target
+                break
+
+    if not normalized_action or normalized_action not in MEDIA_KEYEVENTS:
+        return {
+            "status": "error",
+            "message": f"Ação de mídia '{action}' inválida. Use 'pause', 'play', 'next' ou 'previous'."
+        }
+
+    msg = MEDIA_CONFIRMATIONS[normalized_action]
+
+    if not SIMULATE_HARDWARE:
+        # Tentativa 1 (Nativo Android 10+): cmd media_session dispatch {normalized_action}
+        res1 = _exec_android_intent(f"cmd media_session dispatch {normalized_action}")
+        # Tentativa 2 (Fallback via KeyEvent caso cmd media_session falhe)
+        if res1.returncode != 0 or "Error" in res1.stderr:
+            key_code = MEDIA_KEYEVENTS[normalized_action]
+            _exec_android_intent(f"input keyevent {key_code}")
+
+    return {
+        "status": "ok",
+        "message": msg,
+        "data": {"action": normalized_action}
+    }
+
+

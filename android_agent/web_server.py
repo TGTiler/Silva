@@ -4,10 +4,13 @@ Construído com a biblioteca padrão (http.server.ThreadingHTTPServer)
 garantindo zero dependências externas e alta estabilidade no Android.
 """
 
+import errno
 import json
 import mimetypes
 import os
+import signal
 import sys
+import threading
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -21,6 +24,16 @@ from scheduler import start_events_scheduler
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 llm_client = SilvaLLMClient()
+
+
+class ReusableThreadingHTTPServer(ThreadingHTTPServer):
+    """
+    Servidor HTTP multi-thread com reutilização imediata de socket (SO_REUSEADDR)
+    e threads daemon para evitar Address already in use (Errno 98) e garantir
+    encerramento limpo sem processos zumbis.
+    """
+    allow_reuse_address = True
+    daemon_threads = True
 
 
 class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
@@ -149,20 +162,73 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 
 def start_server(host: str = WEB_HOST, port: int = WEB_PORT):
-    server_address = (host, port)
-    httpd = ThreadingHTTPServer(server_address, SilvaHTTPRequestHandler)
-    print(f"[*] Silva Web Server ativo em http://{host}:{port}")
+    httpd = None
+    active_port = port
+    max_port = port + 5
+
+    for current_port in range(port, max_port + 1):
+        try:
+            server_address = (host, current_port)
+            httpd = ReusableThreadingHTTPServer(server_address, SilvaHTTPRequestHandler)
+            active_port = current_port
+            break
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                print(f"[AVISO] Porta {current_port} já está em uso (Errno 98: Address already in use).")
+                if current_port < max_port:
+                    print(f"[*] Tentando porta alternativa {current_port + 1}...")
+                else:
+                    print(f"[ERRO] Falha ao iniciar servidor: portas {port} até {max_port} ocupadas.")
+                    raise
+            else:
+                raise
+
+    if active_port != port:
+        print(f"[!] ATENÇÃO: Porta original {port} estava em uso. Fallback para http://{host}:{active_port}")
+
+    print(f"[*] Silva Web Server ativo em http://{host}:{active_port}")
+
     try:
         start_events_scheduler(interval_sec=30)
         print("[*] Agendador de lembretes ativo em background (verificação a cada 30s)")
     except Exception as e:
         print(f"[AVISO] Falha ao iniciar agendador de lembretes: {e}")
+
+    # Registra handlers de sinal para encerramento gracioso (apenas na thread principal)
+    orig_sigint = None
+    orig_sigterm = None
+
+    def _shutdown_handler(signum, frame):
+        print(f"\n[*] Sinal {signum} recebido. Encerrando servidor Silva de forma limpa...")
+        threading.Thread(target=httpd.shutdown, daemon=True).start()
+
+    if threading.current_thread() is threading.main_thread():
+        try:
+            orig_sigint = signal.signal(signal.SIGINT, _shutdown_handler)
+            orig_sigterm = signal.signal(signal.SIGTERM, _shutdown_handler)
+        except (ValueError, AttributeError):
+            pass
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         print("\n[*] Encerrando servidor Silva...")
     finally:
-        httpd.server_close()
+        if orig_sigint is not None:
+            try:
+                signal.signal(signal.SIGINT, orig_sigint)
+            except (ValueError, AttributeError):
+                pass
+        if orig_sigterm is not None:
+            try:
+                signal.signal(signal.SIGTERM, orig_sigterm)
+            except (ValueError, AttributeError):
+                pass
+        try:
+            httpd.server_close()
+        except Exception:
+            pass
+        print("[*] Servidor finalizado e sockets liberados.")
 
 
 if __name__ == "__main__":

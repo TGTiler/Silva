@@ -368,14 +368,21 @@ def get_last_sms(limit: int = 5) -> Dict[str, Any]:
     """Lê as últimas mensagens SMS recebidas."""
     limit = max(1, min(int(limit), 20))
     if SIMULATE_HARDWARE:
-        simulated_messages = [
-            {"number": "11987654321", "received": "2026-11-20 20:30", "body": "Chegando em 10 minutos!"},
-            {"number": "Nubank", "received": "2026-11-20 18:45", "body": "Compra de R$ 45,00 aprovada."},
+        simulated_raw = [
+            {"sender": "11987654321", "number": "11987654321", "date": "2026-11-20 20:30", "received": "2026-11-20 20:30", "body": "Chegando em 10 minutos!"},
+            {"sender": "Nubank", "number": "Nubank", "date": "2026-11-20 18:45", "received": "2026-11-20 18:45", "body": "Compra de R$ 45,00 aprovada."},
+            {"sender": "Google", "number": "Google", "date": "2026-11-20 12:15", "received": "2026-11-20 12:15", "body": "Seu código de verificação é 839201."}
         ][:limit]
+        lines = [f"Silva: Últimos SMS recebidos ({len(simulated_raw)}):"]
+        for idx, sms in enumerate(simulated_raw, 1):
+            s_body = sms["body"].strip()
+            if len(s_body) > 240:
+                s_body = s_body[:237] + "..."
+            lines.append(f"{idx}. De: {sms['sender']} ({sms['date']})\n   \"{s_body}\"")
         return {
             "status": "ok",
-            "message": f"Silva: Encontrei {len(simulated_messages)} mensagens recentes. [Simulado]",
-            "data": simulated_messages
+            "message": "\n".join(lines) + " [Simulado]",
+            "data": simulated_raw
         }
 
     try:
@@ -383,17 +390,39 @@ def get_last_sms(limit: int = 5) -> Dict[str, Any]:
         if res.returncode != 0:
             return {"status": "error", "message": f"Falha ao obter SMS: {res.stderr.strip()}"}
 
-        messages = json.loads(res.stdout)
+        raw_messages = json.loads(res.stdout)
         formatted = []
-        for sms in messages:
+        for sms in raw_messages:
+            sender = sms.get("number") or sms.get("sender") or "Desconhecido"
+            date_str = sms.get("received") or sms.get("date") or ""
+            body_str = (sms.get("body") or "").strip()
             formatted.append({
-                "number": sms.get("number", "Desconhecido"),
-                "received": sms.get("received", ""),
-                "body": sms.get("body", "")
+                "sender": sender,
+                "number": sender,
+                "date": date_str,
+                "received": date_str,
+                "body": body_str
             })
 
-        summary = f"Silva: {len(formatted)} SMS encontrados."
-        return {"status": "ok", "message": summary, "data": formatted}
+        if not formatted:
+            return {
+                "status": "ok",
+                "message": "Silva: Nenhuma mensagem SMS encontrada.",
+                "data": []
+            }
+
+        lines = [f"Silva: Últimos SMS recebidos ({len(formatted)}):"]
+        for idx, sms in enumerate(formatted, 1):
+            s_body = sms["body"]
+            if len(s_body) > 240:
+                s_body = s_body[:237] + "..."
+            lines.append(f"{idx}. De: {sms['sender']} ({sms['date']})\n   \"{s_body}\"")
+
+        return {
+            "status": "ok",
+            "message": "\n".join(lines),
+            "data": formatted
+        }
     except Exception as e:
         return {"status": "error", "message": f"Erro ao listar SMS: {str(e)}"}
 
@@ -2105,6 +2134,8 @@ class SafeMathEvaluator(ast.NodeVisitor):
         return self.visit(node.body)
 
     def visit_Constant(self, node):
+        if isinstance(node.value, bool):
+            raise ValueError("Valores booleanos não são permitidos.")
         if isinstance(node.value, (int, float)):
             return node.value
         raise ValueError("Apenas valores numéricos são permitidos.")
@@ -2139,7 +2170,10 @@ def calculate(expression: str) -> Dict[str, Any]:
     if not expr_clean:
         return {"status": "error", "message": "Expressão matemática vazia."}
 
-    normalized = expr_clean.replace("x", "*").replace("X", "*").replace("÷", "/").replace(",", ".")
+    # Normaliza x, ×, ÷ e vírgula decimal
+    normalized = expr_clean.replace("×", "*").replace("÷", "/").replace(",", ".")
+    normalized = re.sub(r"(?<=\d|\))\s*[xX]\s*(?=\d|\()", " * ", normalized)
+    normalized = re.sub(r"\b[xX]\b", "*", normalized)
 
     try:
         tree = ast.parse(normalized, mode="eval")

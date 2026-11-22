@@ -5,9 +5,134 @@ sejam traduzidos com precisão imediata mesmo em micro-modelos quantizados.
 Suporta comandos únicos e multi-ações encadeadas ("e", "depois", "também").
 """
 
+import ast
 import re
 import unicodedata
 from typing import List, Optional
+
+
+NUM_WORDS_PT = {
+    "zero": "0", "um": "1", "uma": "1", "dois": "2", "duas": "2",
+    "tres": "3", "três": "3", "quatro": "4", "cinco": "5",
+    "seis": "6", "meia": "6", "sete": "7", "oito": "8", "nove": "9",
+    "dez": "10", "onze": "11", "doze": "12", "treze": "13",
+    "quatorze": "14", "catorze": "14", "quinze": "15",
+    "dezesseis": "16", "dezasseis": "16", "dezessete": "17",
+    "dezoito": "18", "dezenove": "19", "vinte": "20",
+    "trinta": "30", "quarenta": "40", "cinquenta": "50",
+    "sessenta": "60", "setenta": "70", "oitenta": "80",
+    "noventa": "90", "cem": "100", "cento": "100", "mil": "1000",
+}
+
+
+def _normalize_math_expression(raw_text: str) -> Optional[str]:
+    """
+    Normaliza operadores, símbolos e palavras numéricas em português para uma
+    expressão aritmética Python válida executável pelo SafeMathEvaluator.
+    Retorna a expressão normalizada ou None se não for um cálculo válido.
+    """
+    if not raw_text:
+        return None
+
+    clean = raw_text.strip().rstrip("?!.,;:")
+    lower = clean.lower()
+    norm = normalize_text(lower)
+
+    # 1. Verifica se há intenção de cálculo ou expressão matemática direta
+    math_triggers = [
+        "quanto e", "quanto da", "quanto fica", "calcule", "calcular",
+        "calcula", "resultado de", "raiz quadrada", "conta de", "valor de"
+    ]
+    has_trigger = any(trig in norm for trig in math_triggers)
+    has_direct_math = bool(re.search(r"\b\d+\s*(?:[\+\-\*\/÷×\^%]|x|vezes|dividido|mais|menos)\s*\d+\b", norm, re.IGNORECASE))
+
+    if not has_trigger and not has_direct_math:
+        return None
+
+    s = lower
+
+    # 2. Porcentagem: "X% de Y" ou "X por cento de Y" -> "(X / 100) * Y"
+    s = re.sub(
+        r"(\d+(?:[\.,]\d+)?)\s*(?:%|por\s+cento)\s+de\s+(\d+(?:[\.,]\d+)?)",
+        r"(\1 / 100) * \2",
+        s
+    )
+
+    # 3. Raiz quadrada: "raiz quadrada de X" -> "X ** 0.5"
+    s = re.sub(r"raiz\s+quadrada\s+de\s+(\d+(?:[\.,]\d+)?)", r"\1 ** 0.5", s)
+
+    # 4. Potências e expoentes
+    s = re.sub(r"\bao\s+quadrado\b", " ** 2", s)
+    s = re.sub(r"\bao\s+cubo\b", " ** 3", s)
+    s = re.sub(r"\belevado\s+a(?:o|\s+a)?\b", " ** ", s)
+
+    # 5. Converter palavras numéricas em português para dígitos
+    for word, digit in sorted(NUM_WORDS_PT.items(), key=lambda item: len(item[0]), reverse=True):
+        s = re.sub(rf"\b{word}\b", digit, s)
+
+    # 6. Converter operadores textuais e alternativos
+    s = re.sub(r"\bmultiplicado\s+por\b", " * ", s)
+    s = re.sub(r"\bvezes\b", " * ", s)
+    s = re.sub(r"×", " * ", s)
+    # x como operador de multiplicação entre números ou espaços
+    s = re.sub(r"(?<=\d|\))\s*[xX]\s*(?=\d|\()", " * ", s)
+    s = re.sub(r"\b[xX]\b", " * ", s)
+
+    s = re.sub(r"\bdividido\s+por\b", " / ", s)
+    s = re.sub(r"\bdividido\b", " / ", s)
+    s = re.sub(r"÷", " / ", s)
+
+    s = re.sub(r"\bmais\b", " + ", s)
+    s = re.sub(r"\bsomado\s+(?:a|com)\b", " + ", s)
+
+    s = re.sub(r"\bmenos\b", " - ", s)
+    s = re.sub(r"\bsubtra[ií]do\s+de\b", " - ", s)
+
+    # 7. Vírgula decimal entre números para ponto
+    s = re.sub(r"(?<=\d),(?=\d)", ".", s)
+
+    # 8. Remover palavras de preenchimento (fillers)
+    filler_patterns = [
+        r"(?i)\bquanto\s+[eé]\s+(?:o\s+resultado\s+de\s+)?",
+        r"(?i)\bquanto\s+d[aá]\s+",
+        r"(?i)\bquanto\s+fica\s+",
+        r"(?i)\bcalcule\s+(?:o\s+resultado\s+de\s+)?",
+        r"(?i)\bcalcula\s+(?:o\s+resultado\s+de\s+)?",
+        r"(?i)\bcalcular\s+",
+        r"(?i)\bresultado\s+de\s+",
+        r"(?i)\bo\s+resultado\s+de\s+",
+        r"(?i)\bconta\s+de\s+",
+        r"(?i)\bqual\s+[eé]\s+(?:o\s+resultado\s+de\s+|o\s+valor\s+de\s+)?",
+        r"(?i)\bqual\s+o\s+resultado\s+de\s+",
+        r"(?i)\bme\s+diga\s+",
+        r"(?i)\bpor\s+favor\b",
+        r"(?i)\bpfv\b",
+        r"[?!]+$"
+    ]
+    for pat in filler_patterns:
+        s = re.sub(pat, " ", s)
+
+    # Substitui potências '^' por '**'
+    s = s.replace("^", " ** ")
+
+    # Normaliza múltiplos espaços
+    s = re.sub(r"\s+", " ", s).strip()
+
+    # 9. Validação estrita
+    if not re.match(r"^[0-9\+\-\*\/\(\)\.\s%]+$", s):
+        return None
+
+    if not re.search(r"[\+\-\*\/\%]", s):
+        return None
+
+    try:
+        parsed = ast.parse(s, mode="eval")
+        if isinstance(parsed.body, (ast.BinOp, ast.UnaryOp)):
+            return s
+    except Exception:
+        return None
+
+    return None
 
 
 def normalize_text(text: str) -> str:
@@ -169,6 +294,13 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
     ]
     if any(p in cmd_clean for p in help_phrases) or cmd_clean in ["ajuda", "help", "menu", "comandos", "funcoes", "funções"]:
         return "<call>list_capabilities()</call>"
+
+    # 0.1 Calculadora matemática com normalização completa (PT-BR)
+    if not any(w in cmd for w in ["volume", "brilho", "timer", "alarme", "lembrete"]):
+        math_expr = _normalize_math_expression(raw_cmd)
+        if math_expr:
+            escaped_expr = math_expr.replace("'", "\\'")
+            return f"<call>calculate(expression='{escaped_expr}')</call>"
 
     # 1. Lanterna (set_torch)
     if "lanterna" in cmd or "torch" in cmd or "flash" in cmd:
@@ -342,17 +474,33 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             return f'<call>make_call(number="{target}")</call>'
 
     # 8. Envio de SMS (send_sms)
-    m_sms = re.search(r"(?:envia|enviar|manda|mandar)\s+(?:um\s+)?sms\s+(?:para|pro|pra)?\s*([a-zA-Z0-9_\+\s]+?)\s+(?:falando|dizendo|com a mensagem|que|de)\s+(.+)", raw_cmd, re.IGNORECASE)
+    m_sms = re.search(
+        r"(?:envia|enviar|manda|mandar|escreve|escrever)\s+(?:um\s+)?(?:sms|mensagem\s+de\s+texto|torpedo)\s+(?:para|pro|pra)?\s*([a-zA-Z0-9_\+\s]+?)\s+(?:falando|dizendo|com a mensagem|que|de)\s+(.+)",
+        raw_cmd,
+        re.IGNORECASE
+    )
     if m_sms:
         to_target = m_sms.group(1).strip()
         msg_body = m_sms.group(2).strip()
         return f'<call>send_sms(number="{to_target}", message="{msg_body}")</call>'
 
     # 9. Leitura de SMS (get_last_sms)
-    if any(w in cmd for w in ["ler sms", "leia sms", "ultimos sms", "ultimo sms", "mensagens recentes", "ver sms"]):
-        m_lim = re.search(r"(\d+)\s*(?:ultimos|sms|mensagens)?", cmd)
-        limit = int(m_lim.group(1)) if m_lim else 5
-        return f"<call>get_last_sms(limit={limit})</call>"
+    is_sms_target = bool(re.search(r"\b(?:sms|mensagens?\s+de\s+texto|torpedos?|caixa\s+de\s+entrada|mensagens?)\b", cmd))
+    is_sms_action = bool(re.search(r"\b(?:ler|leia|mostrar|mostre|ver|veja|listar|liste|quais|qual|recebi|recebido|recebidos|recebidas|chegou|chegaram|ultim[oa]s?|nov[oa]s?|recentes?)\b", cmd))
+
+    if (is_sms_target and is_sms_action) or any(w in cmd for w in ["ler sms", "leia sms", "ultimos sms", "ultimo sms", "mensagens recentes", "ver sms", "minhas mensagens", "ler mensagens", "caixa de entrada"]):
+        # Garante que não é comando de envio
+        if not any(v in cmd for v in ["enviar", "envia ", "mandar", "manda ", "escrever", "escreve "]):
+            m_num = re.search(r"\b(\d+)\s*(?:ultim[oa]s?|sms|mensagens?|torpedos?)\b", cmd) or re.search(r"(?:ultim[oa]s?|ler|mostrar|ver)\s+(\d+)\b", cmd)
+            if m_num:
+                limit = max(1, min(int(m_num.group(1)), 20))
+            elif re.search(r"\bqual\s+(?:sms|mensagem)\s+recebi\b", cmd):
+                limit = 3
+            elif any(w in cmd for w in ["ultimo sms", "ultima mensagem", "ultimo torpedo", "o ultimo", "a ultima"]):
+                limit = 1
+            else:
+                limit = 5
+            return f"<call>get_last_sms(limit={limit})</call>"
 
     # 10. Localização / GPS
     if any(w in cmd for w in ["ultima localizacao", "última localização", "ultimo gps", "onde estive", "onde eu estava", "posicao anterior", "localizacao anterior"]):
@@ -511,11 +659,10 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         return f"<call>set_brightness(level={level})</call>"
 
     # 19. Calculadora (calculate)
-    m_calc = re.search(r"(?:quanto e|calcula|calcule|conta de)\s+([0-9\+\-\*\/\(\)\^\.\s]+)", cmd)
-    if m_calc:
-        expr = m_calc.group(1).strip()
-        expr = expr.replace("^", "**").rstrip("?")
-        return f'<call>calculate(expression="{expr}")</call>'
+    math_expr = _normalize_math_expression(raw_cmd)
+    if math_expr:
+        escaped_expr = math_expr.replace("'", "\\'")
+        return f"<call>calculate(expression='{escaped_expr}')</call>"
 
     # 20. Previsão do tempo / Clima (get_weather)
     if any(w in cmd for w in ["clima", "previsao", "tempo", "chover", "chuva", "temperatura"]) and not any(w in cmd for w in ["no google", "pesquisa no google"]):

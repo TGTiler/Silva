@@ -491,13 +491,17 @@ O antigo monolito `tools.py` (3.621 linhas) foi decomposto em um pacote modular 
 
 ### 3.13 `silva-agent/pc_training/colab_train_silva.py`
 
-Sem classes ou funções; pipeline top-level:
+Pipeline autônomo completo para Google Colab (GPU T4):
 
-1. instalação/setup de dependências e `llama.cpp` (`silva-agent/pc_training/colab_train_silva.py:9-52`);
-2. upload e leitura do JSONL (`silva-agent/pc_training/colab_train_silva.py:54-72`);
-3. formatação ChatML e SFT/LoRA (`silva-agent/pc_training/colab_train_silva.py:74-253`);
-4. inferência de teste (`silva-agent/pc_training/colab_train_silva.py:255-299`);
-5. conversão e quantização GGUF (`silva-agent/pc_training/colab_train_silva.py:301-339`).
+1. **Instalação e Compilação:** Remove `torchao` conflitante, instala stack Hugging Face (`transformers`, `peft`, `trl`, `accelerate`, `gguf`) e compila `llama-quantize` no `llama.cpp` (`silva-agent/pc_training/colab_train_silva.py:9-52`).
+2. **Carregamento e Split Determinístico:** Carrega arquivos separados (`train_clean.jsonl` e `eval_clean.jsonl`) ou dataset consolidado (`silva_colab_dataset.jsonl`) com split determinístico `seed=42` em 95% treino (~5.790) e 5% avaliação (~304) (`silva-agent/pc_training/colab_train_silva.py:54-150`).
+3. **Auditoria de Tokens e SFT/LoRA (4 Épocas):**
+   - System prompt sincronizado com as 36 ferramentas.
+   - Auditoria pré-treino com média, P99 e detecção de truncamento na janela `max_length=512`.
+   - `LoraConfig` (r=16, alpha=32, dropout=0.08) em todos os módulos de atenção e MLP.
+   - Treinamento calibrado por 4 épocas (`learning_rate=2.5e-4`, cosine scheduler, `load_best_model_at_end=True`, `metric_for_best_model="eval_loss"`), auditoria do melhor checkpoint e fusão `merge_and_unload()` (`silva-agent/pc_training/colab_train_silva.py:152-380`).
+4. **Bateria de Inferência Pós-Merge:** Validação com `temperature=0.0` / `do_sample=False` em 10 cenários essenciais (hardware, Wi-Fi, transporte, delivery, mídia, apps, clima, matemática, memória e neutro `none()`) (`silva-agent/pc_training/colab_train_silva.py:382-435`).
+5. **Conversão e Quantização GGUF:** Conversão para FP16, quantização `Q5_K_M` (~105MB) e download automático no navegador (`silva-agent/pc_training/colab_train_silva.py:437-470`).
 
 ### 3.14 Scripts operacionais autorais
 
@@ -776,10 +780,14 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - Sanitização contra Directory Traversal com `target_path.resolve().is_relative_to(CAPTURES_DIR.resolve())` retornando HTTP 403 Forbidden para tentativas de escape.
     - O parser passou a retornar lista acumulada `"media_items": [{"type": "image"|"video", "url": ...}]` mantendo retrocompatibilidade com `image_url` e `video_url`.
     - Frontend web atualizado com helper `withPin(url)` e renderização de múltiplas mídias via DOM API sem `innerHTML` e sem emojis.
-12. **Blindagem do Pipeline de Treinamento no Colab (`colab_train_silva.py`)**:
-    - Aumento da janela de contexto para `max_length=512` no `SFTConfig` / `SFTTrainer`.
-    - Sincronização estrita do `SILVA_SYSTEM_PROMPT` no script com as 36 ferramentas do `config.py`.
-    - Diagnóstico pré-treino com checagem de tamanho de tokens por amostra e validação antecipada anti-truncamento.
+12. **Refatoração Segura do Pipeline de Treinamento no Colab (`colab_train_silva.py`)**:
+    - Janela de contexto ampliada para `max_length=512` em `SFTConfig` e `TrainingArguments`.
+    - Sincronização estrita (caractere por caractere) do `SILVA_SYSTEM_PROMPT` com `android_agent/config.py` (36 ferramentas).
+    - Split determinístico automático com `random.seed(42)` em 95% treino (~5.790) e 5% avaliação (~304) para arquivos consolidados (`silva_colab_dataset.jsonl`) ou carregamento direto de `train_clean.jsonl` e `eval_clean.jsonl`.
+    - Auditoria estatística pré-treino de tokens (média, P99 e detecção de truncamento com alerta explícito).
+    - Hiperparâmetros calibrados para 4 épocas: LoRA com `r=16`, `alpha=32`, `dropout=0.08` em todos os módulos lineares; taxa de aprendizado suave `2.5e-4` com `cosine`, `weight_decay=0.01`, `eval_strategy="epoch"` e salvamento a cada época (`save_total_limit=2`).
+    - Blindagem anti-overfitting via `load_best_model_at_end=True` monitorando `metric_for_best_model="eval_loss"`, com log explícito de auditoria do checkpoint selecionado para fusão GGUF.
+    - Bateria de inferência pós-merge atualizada com 10 cenários essenciais (`temperature=0.0` / `do_sample=False`) cobrindo ferramentas de hardware, mobilidade, delivery, mídia, apps, clima, cálculo e conversa neutra (`none()`).
 13. **Suíte Completa de Testes Automatizados (`silva-agent/tests/`)**:
     - Suíte com testes automatizados em Python stdlib (`unittest`), cobrindo conformidade de schemas e dataset (`test_contracts.py`), validação de AST, fallback e clima (`test_parser_and_fallback.py`), persistência SQLite FTS5, mocks de hardware e calculadora (`test_tools_and_memory.py`), e servidor HTTP com autenticação PIN e proteção contra traversal (`test_web_server.py`).
 14. **Reestruturação do Motor de Linguagem Natural com 4 Pilares (`android_agent/nlp/`)**:

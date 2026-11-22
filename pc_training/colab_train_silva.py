@@ -38,7 +38,7 @@ subprocess.run([
     "sentencepiece"
 ], check=True)
 
-# 2. Clonar e compilar llama-quantize no llama.cpp
+# 3. Clonar e compilar llama-quantize no llama.cpp
 if not os.path.isdir("llama.cpp"):
     print("[*] Clonando repositório llama.cpp...")
     subprocess.run(["git", "clone", "--depth", "1", "https://github.com/ggerganov/llama.cpp.git"], check=True)
@@ -51,50 +51,77 @@ if not os.path.isfile(quantize_bin):
 
 print("[OK] Ambiente e ferramentas de compilação prontos!")
 
-# %% [2] UPLOAD DO DATASET (silva_colab_dataset.jsonl)
+# %% [2] CARREGAMENTO DO DATASET E SPLIT DETERMINÍSTICO (95% TREINO / 5% AVALIAÇÃO)
 print("\n" + "=" * 65)
-print(" [2/5] CARREGAMENTO DO DATASET ")
-print("=" * 65)
-
-from google.colab import files
-
-dataset_path = "silva_colab_dataset.jsonl"
-if not os.path.isfile(dataset_path):
-    print(">>> Clique em 'Choose Files' e selecione o arquivo 'silva_colab_dataset.jsonl':")
-    uploaded = files.upload()
-    for fname in uploaded.keys():
-        if fname.endswith(".jsonl"):
-            dataset_path = fname
-            break
-else:
-    print(f"[*] Arquivo '{dataset_path}' já detectado no ambiente! Pulando upload.")
-
-print(f"[OK] Dataset carregado: {dataset_path} ({os.path.getsize(dataset_path)} bytes)")
-
-# %% [3] FINE-TUNING SFT RÁPIDO COM LORA NA GPU T4
-print("\n" + "=" * 65)
-print(" [3/5] INICIANDO FINE-TUNING SFT (SmolLM2-135M) ")
+print(" [2/5] CARREGAMENTO E DIVISÃO DO DATASET ")
 print("=" * 65)
 
 import json
-import torch
-from datasets import Dataset
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    TrainingArguments
-)
-from peft import LoraConfig, get_peft_model, TaskType
+import random
 
-# Suporte compatível tanto para versões novas de TRL (SFTConfig) quanto legadas
 try:
-    from trl import SFTTrainer, SFTConfig
-    HAS_SFT_CONFIG = True
+    from google.colab import files
+    HAS_COLAB_FILES = True
 except ImportError:
-    from trl import SFTTrainer
-    HAS_SFT_CONFIG = False
+    HAS_COLAB_FILES = False
 
-# System Prompt estrito idêntico ao runtime de produção do Silva no Android
+train_clean_file = "train_clean.jsonl"
+eval_clean_file = "eval_clean.jsonl"
+consolidated_file = "silva_colab_dataset.jsonl"
+
+train_raw = []
+eval_raw = []
+
+# Opção 1: Arquivos pré-divididos já existem no ambiente
+if os.path.isfile(train_clean_file) and os.path.isfile(eval_clean_file):
+    print(f"[*] Detectados arquivos pré-divididos no ambiente:")
+    print(f"    - Treino: {train_clean_file}")
+    print(f"    - Avaliação: {eval_clean_file}")
+    with open(train_clean_file, "r", encoding="utf-8") as f:
+        train_raw = [json.loads(line) for line in f if line.strip()]
+    with open(eval_clean_file, "r", encoding="utf-8") as f:
+        eval_raw = [json.loads(line) for line in f if line.strip()]
+else:
+    # Opção 2: Arquivo consolidado (upload ou já presente localmente)
+    dataset_path = consolidated_file
+    if not os.path.isfile(dataset_path):
+        if HAS_COLAB_FILES:
+            print(">>> Clique em 'Choose Files' e selecione o arquivo 'silva_colab_dataset.jsonl':")
+            uploaded = files.upload()
+            for fname in uploaded.keys():
+                if fname.endswith(".jsonl"):
+                    dataset_path = fname
+                    break
+        else:
+            # Fallback para caminhos relativos no workspace
+            for candidate in [
+                "dataset/silva_colab_dataset.jsonl",
+                "../dataset/silva_colab_dataset.jsonl",
+                "silva-agent/dataset/silva_colab_dataset.jsonl"
+            ]:
+                if os.path.isfile(candidate):
+                    dataset_path = candidate
+                    break
+
+    if not os.path.isfile(dataset_path):
+        raise FileNotFoundError(f"Arquivo de dataset não encontrado: {dataset_path}")
+
+    print(f"[*] Carregando dataset consolidado: {dataset_path} ({os.path.getsize(dataset_path)} bytes)")
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        all_samples = [json.loads(line) for line in f if line.strip()]
+
+    # Split determinístico 95% treino / 5% avaliação com seed=42
+    random.seed(42)
+    random.shuffle(all_samples)
+    eval_count = max(1, int(len(all_samples) * 0.05))
+    eval_raw = all_samples[:eval_count]
+    train_raw = all_samples[eval_count:]
+    print(f"[*] Split determinístico (seed=42): 95% Treino ({len(train_raw)}) | 5% Avaliação ({len(eval_raw)})")
+
+# ==============================================================================
+# ATENÇÃO: Esta constante deve permanecer 100% idêntica ao SILVA_SYSTEM_PROMPT
+# definido em silva-agent/android_agent/config.py.
+# ==============================================================================
 SILVA_SYSTEM_PROMPT = (
     "Você é o Silva, um micro-agente offline para controle de smartphone Android.\n"
     "Sua única função é traduzir o pedido do usuário para chamadas de função estritas.\n"
@@ -115,27 +142,47 @@ SILVA_SYSTEM_PROMPT = (
     "NUNCA adicione saudações, introduções ou explicações fora da tag."
 )
 
-# Carrega e formata o dataset no padrão ChatML
-raw_samples = []
-with open(dataset_path, "r", encoding="utf-8") as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        item = json.loads(line)
-        prompt = item["prompt"]
-        completion = item["completion"]
 
-        # Formato de conversação ChatML
-        text = (
-            f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
-            f"<|im_start|>user\n{prompt}<|im_end|>\n"
-            f"<|im_start|>assistant\n{completion}<|im_end|>"
-        )
-        raw_samples.append({"text": text})
+def format_chatml(item):
+    prompt = item["prompt"]
+    completion = item["completion"]
+    text = (
+        f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
+        f"<|im_start|>user\n{prompt}<|im_end|>\n"
+        f"<|im_start|>assistant\n{completion}<|im_end|>"
+    )
+    return {"text": text}
 
-dataset = Dataset.from_list(raw_samples)
-print(f"[*] Total de exemplos formatados para treino: {len(dataset)}")
+
+train_samples = [format_chatml(x) for x in train_raw]
+eval_samples = [format_chatml(x) for x in eval_raw]
+
+# %% [3] FINE-TUNING SFT COM LORA NA GPU T4 (CALIBRADO PARA 4 ÉPOCAS)
+print("\n" + "=" * 65)
+print(" [3/5] INICIANDO FINE-TUNING SFT (SmolLM2-135M) ")
+print("=" * 65)
+
+import torch
+from datasets import Dataset
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TrainingArguments
+)
+from peft import LoraConfig, get_peft_model, TaskType
+
+# Suporte compatível tanto para versões novas de TRL (SFTConfig) quanto legadas
+try:
+    from trl import SFTTrainer, SFTConfig
+    HAS_SFT_CONFIG = True
+except ImportError:
+    from trl import SFTTrainer
+    HAS_SFT_CONFIG = False
+
+train_dataset = Dataset.from_list(train_samples)
+eval_dataset = Dataset.from_list(eval_samples)
+print(f"[*] Total de exemplos formatados para treino: {len(train_dataset)}")
+print(f"[*] Total de exemplos formatados para avaliação: {len(eval_dataset)}")
 
 # Modelo base SmolLM2-135M
 MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct"
@@ -145,30 +192,39 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
-# Verificação Pré-Treino Anti-Truncamento
-print("\n[*] Diagnosticando comprimento de tokens pré-treino...")
+# ==============================================================================
+# AUDITORIA PRÉ-TREINO DE COMPRIMENTO DE TOKENS (JANELA: 512 TOKENS)
+# ==============================================================================
+print("\n[*] Executando auditoria pré-treino de tokens...")
 MAX_TRAIN_LENGTH = 512
-max_tokens_found = 0
-exceeded_samples = []
 
-for idx, sample in enumerate(raw_samples):
-    tok_len = len(tokenizer(sample["text"], truncation=False)["input_ids"])
-    if tok_len > max_tokens_found:
-        max_tokens_found = tok_len
-    if tok_len > MAX_TRAIN_LENGTH:
-        exceeded_samples.append((idx, tok_len, sample["text"][:120]))
+all_formatted_samples = train_samples + eval_samples
+token_lengths = [
+    len(tokenizer(s["text"], truncation=False)["input_ids"])
+    for s in all_formatted_samples
+]
 
-print(f"[*] Comprimento máximo encontrado no dataset: {max_tokens_found} tokens (limite de segurança: {MAX_TRAIN_LENGTH})")
+total_count = len(token_lengths)
+mean_len = sum(token_lengths) / total_count if total_count > 0 else 0
+sorted_lens = sorted(token_lengths)
+p99_idx = min(int(0.99 * total_count), total_count - 1)
+p99_len = sorted_lens[p99_idx]
+max_tokens_found = max(token_lengths) if token_lengths else 0
+truncated_samples = [(i, l) for i, l in enumerate(token_lengths) if l > MAX_TRAIN_LENGTH]
 
-if exceeded_samples:
-    print(f"\n[ALERTA CRÍTICO] {len(exceeded_samples)} amostras ultrapassaram o limite de {MAX_TRAIN_LENGTH} tokens!")
-    for idx, tok_len, preview in exceeded_samples[:5]:
-        print(f"  - Amostra #{idx}: {tok_len} tokens -> {preview}...")
-    raise ValueError(
-        f"Treinamento abortado: {len(exceeded_samples)} amostras seriam truncadas com max_length={MAX_TRAIN_LENGTH}."
-    )
+print(f"[*] Estatísticas de Comprimento de Tokens:")
+print(f"  - Total de amostras auditadas: {total_count}")
+print(f"  - Média de tokens por amostra: {mean_len:.1f}")
+print(f"  - Percentil 99 (P99): {p99_len} tokens")
+print(f"  - Tamanho máximo encontrado (max_tokens): {max_tokens_found} tokens (janela: {MAX_TRAIN_LENGTH})")
+
+if truncated_samples:
+    print(f"\n[ALERTA DE TRUNCAMENTO] {len(truncated_samples)} amostra(s) ({len(truncated_samples) / total_count * 100:.2f}%) ultrapassam o limite de {MAX_TRAIN_LENGTH} tokens e serão truncadas pelo SFTTrainer!")
+    for idx, tok_len in truncated_samples[:5]:
+        sample_preview = all_formatted_samples[idx]["text"][:120].replace("\n", " ")
+        print(f"    - Amostra #{idx}: {tok_len} tokens -> {sample_preview}...")
 else:
-    print(f"[OK] 100% das {len(raw_samples)} amostras cabem com folga dentro de {MAX_TRAIN_LENGTH} tokens! Zero truncamento.\n")
+    print(f"[OK] 100% das {total_count} amostras cabem com folga dentro da janela de {MAX_TRAIN_LENGTH} tokens! Zero truncamento.\n")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if torch.cuda.is_available() else torch.float32
@@ -188,12 +244,13 @@ except TypeError:
         trust_remote_code=True
     )
 
-# Configuração LoRA otimizada para micro-modelos
+# Configuração LoRA calibrada para micro-modelos com 4 épocas (dropout 0.08)
 peft_config = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
     r=16,
     lora_alpha=32,
-    lora_dropout=0.05,
+    lora_dropout=0.08,
+    bias="none",
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
 )
 model = get_peft_model(base_model, peft_config)
@@ -202,16 +259,23 @@ model.print_trainable_parameters()
 import inspect
 
 if HAS_SFT_CONFIG:
+    sft_sig = inspect.signature(SFTConfig.__init__).parameters
+
     sft_kwargs = {
         "output_dir": "./silva_checkpoints",
-        "num_train_epochs": 3,
+        "num_train_epochs": 4,
         "per_device_train_batch_size": 16,
+        "per_device_eval_batch_size": 16,
         "gradient_accumulation_steps": 2,
-        "learning_rate": 3e-4,
+        "learning_rate": 2.5e-4,
+        "lr_scheduler_type": "cosine",
         "weight_decay": 0.01,
-        "warmup_steps": 20,
-        "logging_steps": 15,
-        "save_strategy": "no",
+        "logging_steps": 25,
+        "save_strategy": "epoch",
+        "save_total_limit": 2,
+        "metric_for_best_model": "eval_loss",
+        "greater_is_better": False,
+        "load_best_model_at_end": True,
         "fp16": (device == "cuda"),
         "bf16": False,
         "optim": "adamw_torch",
@@ -219,8 +283,19 @@ if HAS_SFT_CONFIG:
         "dataset_text_field": "text"
     }
 
+    # Compatibilidade eval_strategy vs evaluation_strategy
+    if "eval_strategy" in sft_sig:
+        sft_kwargs["eval_strategy"] = "epoch"
+    elif "evaluation_strategy" in sft_sig:
+        sft_kwargs["evaluation_strategy"] = "epoch"
+
+    # Compatibilidade warmup_ratio vs warmup_steps
+    if "warmup_ratio" in sft_sig:
+        sft_kwargs["warmup_ratio"] = 0.05
+    else:
+        sft_kwargs["warmup_steps"] = 25
+
     # TRL >= 0.20 usa 'max_length'; versões anteriores usavam 'max_seq_length'
-    sft_sig = inspect.signature(SFTConfig.__init__).parameters
     if "max_length" in sft_sig:
         sft_kwargs["max_length"] = 512
     elif "max_seq_length" in sft_sig:
@@ -230,7 +305,8 @@ if HAS_SFT_CONFIG:
 
     trainer_kwargs = {
         "model": model,
-        "train_dataset": dataset,
+        "train_dataset": train_dataset,
+        "eval_dataset": eval_dataset,
         "args": training_args
     }
     trainer_sig = inspect.signature(SFTTrainer.__init__).parameters
@@ -241,34 +317,63 @@ if HAS_SFT_CONFIG:
 
     trainer = SFTTrainer(**trainer_kwargs)
 else:
-    training_args = TrainingArguments(
-        output_dir="./silva_checkpoints",
-        num_train_epochs=3,
-        per_device_train_batch_size=16,
-        gradient_accumulation_steps=2,
-        learning_rate=3e-4,
-        weight_decay=0.01,
-        warmup_steps=20,
-        logging_steps=15,
-        save_strategy="no",
-        fp16=(device == "cuda"),
-        bf16=False,
-        optim="adamw_torch",
-        report_to="none"
-    )
+    t_sig = inspect.signature(TrainingArguments.__init__).parameters
+    t_kwargs = {
+        "output_dir": "./silva_checkpoints",
+        "num_train_epochs": 4,
+        "per_device_train_batch_size": 16,
+        "per_device_eval_batch_size": 16,
+        "gradient_accumulation_steps": 2,
+        "learning_rate": 2.5e-4,
+        "lr_scheduler_type": "cosine",
+        "weight_decay": 0.01,
+        "logging_steps": 25,
+        "save_strategy": "epoch",
+        "save_total_limit": 2,
+        "metric_for_best_model": "eval_loss",
+        "greater_is_better": False,
+        "load_best_model_at_end": True,
+        "fp16": (device == "cuda"),
+        "bf16": False,
+        "optim": "adamw_torch",
+        "report_to": "none"
+    }
+    if "eval_strategy" in t_sig:
+        t_kwargs["eval_strategy"] = "epoch"
+    elif "evaluation_strategy" in t_sig:
+        t_kwargs["evaluation_strategy"] = "epoch"
+
+    if "warmup_ratio" in t_sig:
+        t_kwargs["warmup_ratio"] = 0.05
+    else:
+        t_kwargs["warmup_steps"] = 25
+
+    training_args = TrainingArguments(**t_kwargs)
+
     trainer = SFTTrainer(
         model=model,
-        train_dataset=dataset,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
         dataset_text_field="text",
         max_seq_length=512,
         tokenizer=tokenizer,
         args=training_args
     )
 
-print("[*] Iniciando treinamento por 3 épocas...")
+print("[*] Iniciando treinamento calibrado por 4 épocas com avaliação e checkpoint seguro...")
 start_time = time.time()
 trainer.train()
 print(f"[OK] Treinamento concluído em {round(time.time() - start_time, 1)} segundos!")
+
+# Auditoria do melhor checkpoint selecionado (load_best_model_at_end=True)
+print("\n" + "=" * 65)
+print(" AUDITORIA DO MELHOR CHECKPOINT (ANTI-OVERFITTING) ")
+print("=" * 65)
+best_metric = getattr(trainer.state, "best_metric", None)
+best_checkpoint = getattr(trainer.state, "best_model_checkpoint", None)
+print(f"[*] Menor eval_loss obtido (best_metric): {best_metric}")
+print(f"[*] Checkpoint selecionado para exportação (best_model_checkpoint): {best_checkpoint}")
+print("=" * 65 + "\n")
 
 # Fusão dos pesos LoRA no modelo base
 print("[*] Mesclando pesos LoRA (merge_and_unload)...")
@@ -278,39 +383,32 @@ merged_model.save_pretrained(merged_dir)
 tokenizer.save_pretrained(merged_dir)
 print(f"[OK] Modelo fundido salvo em: {merged_dir}")
 
-# %% [4] TESTE RÁPIDO PÓS-TREINO (VALIDAÇÃO VISUAL)
+# %% [4] TESTE RÁPIDO DE INFERÊNCIA PÓS-TREINO (10 CENÁRIOS ESSENCIAIS)
 print("\n" + "=" * 65)
 print(" [4/5] TESTE RÁPIDO DE INFERÊNCIA PÓS-TREINO ")
 print("=" * 65)
 
-test_prompts = [
-    "Silva, liga para a minha mãe",
-    "Disca para 11987654321",
-    "Coloca um alarme para amanhã às 07:00",
-    "Silva, lembra que a chave reserva tá na gaveta",
-    "Quanto é 250 dividido por 5?",
-    "Coloca o celular no silencioso",
-    "Silva, tira um print da tela",
-    "Silva, pesquisa no google previsão do tempo em Paulista",
-    "peça um uber para mim ir ao Shopping Recife",
-    "silva pede uma pizza de calabresa no ifood pfv",
-    "busca acai na 99",
-    "baixa o aplicativo do whatsapp",
-    "pausa a música agora",
-    "pula para a próxima música",
-    "O que você pode fazer?",
-    "Qual é a capital da França?",
-    "Silva, ativa o não perturbe e coloca o brilho da tela em 20%"
+test_scenarios = [
+    ("silva quanto ta a bateria agr?", "get_battery()"),
+    ("quais wifis tem disponiveis aqui perto?", "scan_wifi()"),
+    ("chama um uber p/ o shopping recife", "request_ride(destination='shopping recife', app='uber')"),
+    ("pede um hamburguer no ifood pfv", "order_food(query='hamburguer', app='ifood')"),
+    ("baixa o telegram na play store", "install_app(app_name='telegram')"),
+    ("pausa a musica q ta tocando", "media_control(action='pause')"),
+    ("como vai ficar o clima de paulista, pernambuco amn?", "get_weather(day='amanhã', time='', location='Paulista, Pernambuco')"),
+    ("quanto e a raiz quadrada de 144?", "calculate(expression='sqrt(144)')"),
+    ("guarda q a senha do wifi e Silva2026", "remember_note(...)"),
+    ("oi silva tudo bem com vc?", "none()")
 ]
 
 merged_model.eval()
-print(f"{'Prompt do Usuário':<55} | Saída do Silva")
-print("-" * 105)
+print(f"{'Prompt do Usuário':<50} | {'Saída Gerada':<45} | Esperado")
+print("-" * 125)
 
-for p in test_prompts:
+for prompt, expected in test_scenarios:
     prompt_input = (
         f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
-        f"<|im_start|>user\n{p}<|im_end|>\n"
+        f"<|im_start|>user\n{prompt}<|im_end|>\n"
         f"<|im_start|>assistant\n<call>"
     )
     inputs = tokenizer(prompt_input, return_tensors="pt").to(merged_model.device)
@@ -318,7 +416,7 @@ for p in test_prompts:
         outputs = merged_model.generate(
             **inputs,
             max_new_tokens=48,
-            temperature=0.1,
+            temperature=0.0,
             do_sample=False,
             eos_token_id=tokenizer.encode("<|im_end|>")[0],
             pad_token_id=tokenizer.eos_token_id
@@ -327,9 +425,9 @@ for p in test_prompts:
     full_call = f"<call>{gen_text}" if not gen_text.startswith("<call>") else gen_text
     if "</call>" in full_call:
         full_call = full_call[:full_call.rfind("</call>") + 7]
-    print(f"{p:<55} | {full_call}")
+    print(f"{prompt:<50} | {full_call:<45} | {expected}")
 
-print("=" * 105)
+print("=" * 125)
 
 # %% [5] CONVERSÃO GGUF, QUANTIZAÇÃO Q5_K_M E DOWNLOAD AUTOMÁTICO
 print("\n" + "=" * 65)

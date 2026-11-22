@@ -501,7 +501,8 @@ Pipeline autônomo completo para Google Colab (GPU T4):
    - Tokenização manual via `tokenize_chatml_example(item)` em duas partes: Prompt mascarado com `labels = -100` e Resposta treinável com token de parada explícito `<|im_end|>`. Se a sequência total exceder a janela, o início do prompt é podado, garantindo 100% de integridade da completion e do token de encerramento.
    - `DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=-100)` com `Trainer`.
    - Auditoria visual obrigatória pré-treino com assertions rigorosas garantindo início com `<call>`, término com `<|im_end|>` e ausência de vazamento do prompt nas labels ativas.
-   - Treinamento calibrado por 4 épocas (`learning_rate=3e-4`, cosine scheduler, `per_device_train_batch_size=4`, `gradient_accumulation_steps=8` mantendo batch efetivo de 32, `gradient_checkpointing=True`, `load_best_model_at_end=True`, `metric_for_best_model="eval_loss"`), auditoria do melhor checkpoint e fusão `merge_and_unload()` (`silva-agent/pc_training/colab_train_silva.py:152-450`).
+   - Otimização de VRAM para GPU T4: `per_device_train_batch_size=4`, `gradient_accumulation_steps=8` (mantendo batch efetivo de 32), `gradient_checkpointing=True` com `base_model.config.use_cache=False`, `PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"` e limpeza preventiva de memória via `torch.cuda.empty_cache()` e `gc.collect()`.
+   - Treinamento calibrado por 4 épocas (`learning_rate=3e-4`, cosine scheduler, `load_best_model_at_end=True`, `metric_for_best_model="eval_loss"`), auditoria do melhor checkpoint e fusão `merge_and_unload()` (`silva-agent/pc_training/colab_train_silva.py:152-450`).
 4. **Bateria de Inferência Pós-Merge:** Validação via `apply_chat_template(..., add_generation_prompt=True)` com `eos_token_id=eos_id`, `pad_token_id=tokenizer.pad_token_id`, `temperature=0.0` / `do_sample=False` e corte limpo no primeiro `<|im_end|>` ou `</call>` em 10 cenários essenciais (`silva-agent/pc_training/colab_train_silva.py:452-510`).
 5. **Conversão e Quantização GGUF:** Conversão para FP16, quantização `Q5_K_M` (~105MB) e download automático no navegador (`silva-agent/pc_training/colab_train_silva.py:512-545`).
 
@@ -803,7 +804,17 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - Tokenização determinística em duas partes via `tokenize_chatml_example`: prompt com `labels = -100` e completion com paragem explícita `+ [eos_id]`.
     - Uso de `DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=-100)` com `Trainer`, eliminando qualquer dependência de Jinja `{% generation %}` do TRL.
     - Auditoria pré-treino com validação formal via `assert` garantindo que as labels ativas comecem com `<call>`, terminem com `<|im_end|>` e não contenham vazamentos do prompt.
+    - Janela estendida para 1024 tokens com micro-batch 4, acumulação 8 e `gradient_checkpointing=True`, eliminando estouros de VRAM (`OutOfMemoryError`) na GPU T4.
     - Inferência pós-merge `[4/5]` atualizada com `eos_token_id=eos_id`, `pad_token_id=tokenizer.pad_token_id` e corte limpo no primeiro `<|im_end|>` ou `</call>`.
+16. **Blindagem de `scan_wifi()` contra Falhas de Localização e API do Android**:
+    - `tools/hardware.py` atualizado para tratar respostas da `Termux:API` retornadas como dicionário contendo `"API_ERROR"` (quando o GPS/Localização estiver desligado no Android 10+), evitando quebras por `AttributeError: 'str' object has no attribute 'get'`.
+    - Mapeamento dinâmico de chaves `"frequency_mhz"` e `"frequency"`, além de tratamento resiliente de RSSI e segurança.
+    - Testado em hardware real no smartphone via Wi-Fi (`192.168.0.106:5000`) com 16 redes reais escaneadas com sucesso.
+17. **Deploy Automático e Sincronização via ADB**:
+    - Fluxo de empacotamento atômico do código-fonte (`silva_code_update.tar.gz`) e transferência do modelo binário `silva-135m.gguf` via ADB sobre TCP/IP.
+    - Scripts operacionais (`apply_code_update.sh` e `install_model_and_restart.sh`) com parada cirúrgica de instâncias antigas do `llama-server` e inicialização de background segura.
+18. **Guia Passo a Passo para Usuários (`dataset/PASSO_A_PASSO.md`)**:
+    - Documentação prática orientando o fluxo de edição de dados, execução de `prepare_final_dataset.py`, validação sintática via `validate_dataset.py` e upload no Google Colab.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

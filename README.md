@@ -160,7 +160,7 @@ silva-agent/
 - **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
 - **`intent_fallback.py` e `nlp/`**: Motor determinístico de alta velocidade (<2ms) reestruturado em 4 pilares: Parser Numérico Composto (`parse_ptbr_numbers`), Normalizador de Gírias e Typos (`normalize_colloquial_ptbr`), Roteador por Pontuação (`ScoredIntentRouter`) cobrindo as 36 ferramentas e Splitter Inteligente de cláusulas compostas. Trata números por extenso de zero a milhões, gírias de celular ("no talo", "zap", "insta"), erros de digitação ("baterria", "lanterana"), previsão do tempo inteligente, cálculo científico e desambiguação estrita de Wi-Fi.
 - **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código, checa a whitelist de permissões (`AVAILABLE_TOOLS`) e propaga o status real das chamadas (`ok`, `partial_error`, `error`).
-- **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 36 ferramentas nativas divididas em domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`), incluindo: varredura de Wi-Fi (`scan_wifi`), memória persistente com SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
+- **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 36 ferramentas nativas divididas em domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`), incluindo: varredura de Wi-Fi (`scan_wifi`) com ordenação por sinal, identificação de banda (2.4/5GHz), segurança e tratamento resiliente de permissão/GPS no Android, memória persistente com SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
 - **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), e o `SILVA_SYSTEM_PROMPT` sincronizado para as 36 ferramentas.
 - **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, sidebar retrátil com histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
 
@@ -169,6 +169,7 @@ silva-agent/
 - **`validate_dataset.py`**: Analisa arquivos `.jsonl` linha por linha, extrai chamadas via regex, compila os argumentos via AST e emite relatórios de conformidade estrita e proporção percentual de classes (com validação estrita de tipos inteiros).
 - **`prepare_final_dataset.py`**: Enriquece a base com variações naturais de contatos humanos (ex: *"Mãe"*, *"Amor"*, *"Doutor Carlos"*), remove duplicatas e gera a divisão treino (95%) e validação (5%).
 - **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 6.094 exemplos prontos para upload e treino no Colab (100% válidos contra o schema das 36 ferramentas).
+- **`PASSO_A_PASSO.md`**: Guia prático passo a passo para o usuário adicionar novos exemplos, recriar os datasets e validar a integridade sintática de forma 100% autônoma.
 
 #### 3. Módulo `pc_training/` (Treino e Conversão)
 - **`colab_train_silva.py`**: Pipeline tudo-em-um para o Google Colab: desinstala pacotes conflitantes, atualiza Hugging Face, clona e compila `llama-quantize` no `llama.cpp`, realiza fine-tuning LoRA calibrado (4 épocas, janela 1024 tokens, batch micro 4 com 8 acumulações = 32 efetivo, `gradient_checkpointing=True`, `learning_rate=3e-4`, split determinístico 95/5, mascaramento manual de prompt `labels=-100`, separação estrita `pad_token != eos_token`, `DataCollatorForSeq2Seq` e `load_best_model_at_end=True`), valida 10 cenários de inferência via ChatML, funde pesos no modelo SmolLM2-135M, quantiza em `Q5_K_M` e dispara o download automático de `silva-135m.gguf`.
@@ -191,7 +192,7 @@ chmod +x setup_termux.sh start_silva.sh
 ```
 
 ### 3. Inserção do Modelo e Inicialização
-Coloque o arquivo `silva-135m.gguf` dentro de `android_agent/models/` e execute:
+Coloque o arquivo `silva-135m.gguf` dentro de `android_agent/models/` (diretamente no celular ou via ADB do PC com `adb push silva-135m.gguf /sdcard/Download/`) e execute:
 ```bash
 ./start_silva.sh
 ```

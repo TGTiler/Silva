@@ -5340,3 +5340,123 @@
 {"prompt": "quais são suas funcoes hj?", "completion": "<call>list_capabilities()</call>"}
 {"prompt": "ei silva oq vc sabe fazer msm?", "completion": "<call>list_capabilities()</call>"}
 {"prompt": "me mostra td q vc faz pfvr silva", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva como ta o tempo em campina grande hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Campina Grande\")</call>"}
+{"prompt": "vai chover em petrolina, pe amn a tarde?", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"Petrolina, PE\")</call>"}
+{"prompt": "ei silva previsao de mossoró, rn p/ sabado", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"Mossoró, RN\")</call>"}
+{"prompt": "clima em feira de santana hj de manha pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"manhã\", location=\"Feira de Santana\")</call>"}
+{"prompt": "silva me fala o tempo de ilhéus, ba no domingo", "completion": "<call>get_weather(day=\"domingo\", time=\"\", location=\"Ilhéus, BA\")</call>"}
+{"prompt": "vai chover em juazeiro do norte depois de amn?", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"Juazeiro do Norte\")</call>"}
+{"prompt": "ei silva como fica o clima em crato, ce hj a noite", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Crato, CE\")</call>"}
+{"prompt": "previsao p/ parnaíba, pi amn de manha pfvr", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"Parnaíba, PI\")</call>"}
+{"prompt": "silva ta quente em imperatriz, ma hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Imperatriz, MA\")</call>"}
+{"prompt": "como vai ta o tempo em marabá, pa no sabado", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"Marabá, PA\")</call>"}
+{"prompt": "ei silva vai chover em macapá amn de tarde?", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"Macapá\")</call>"}
+{"prompt": "clima em rio branco, ac hj a tarde pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"Rio Branco, AC\")</call>"}
+{"prompt": "silva me diz a previsao de palmas, to p/ domingo", "completion": "<call>get_weather(day=\"domingo\", time=\"\", location=\"Palmas, TO\")</call>"}
+{"prompt": "vai chover em dourados, ms amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"Dourados, MS\")</call>"}
+{"prompt": "ei silva como ta o tempo em uberlândia hj a noite", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Uberlândia\")</call>"}
+{"prompt": "previsao p/ juiz de fora, mg no sabado de tarde", "completion": "<call>get_weather(day=\"sábado\", time=\"tarde\", location=\"Juiz de Fora, MG\")</call>"}
+{"prompt": "silva vai fazer sol em vitória, es amn?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Vitória, ES\")</call>"}
+{"prompt": "como fica o clima em londrina, pr hj de manha", "completion": "<call>get_weather(day=\"hoje\", time=\"manhã\", location=\"Londrina, PR\")</call>"}
+{"prompt": "ei silva previsao de joinville p/ domingo a tarde", "completion": "<call>get_weather(day=\"domingo\", time=\"tarde\", location=\"Joinville\")</call>"}
+{"prompt": "tempo em caxias do sul, rs depois de amn pfvr", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"Caxias do Sul, RS\")</call>"}
+{"prompt": "silva como ta o clima em pelotas hj a noite?", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Pelotas\")</call>"}
+{"prompt": "vai chover em chapecó, sc no sabado de manha?", "completion": "<call>get_weather(day=\"sábado\", time=\"manhã\", location=\"Chapecó, SC\")</call>"}
+{"prompt": "ei silva me fala o tempo de anápolis, go p/ amn", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Anápolis, GO\")</call>"}
+{"prompt": "previsao p/ rondonópolis, mt hj a tarde pfvr", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"Rondonópolis, MT\")</call>"}
+{"prompt": "silva como fica o clima em santarém, pa no domingo", "completion": "<call>get_weather(day=\"domingo\", time=\"\", location=\"Santarém, PA\")</call>"}
+{"prompt": "vai chover em cachoeiro de itapemirim amn de tarde?", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"Cachoeiro de Itapemirim\")</call>"}
+{"prompt": "ei silva me diz a previsao de barreiras, ba p/ sabado", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"Barreiras, BA\")</call>"}
+{"prompt": "tempo em arapiraca, al hj a noite pfvr", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Arapiraca, AL\")</call>"}
+{"prompt": "silva como ta o clima em sobral hj de manha?", "completion": "<call>get_weather(day=\"hoje\", time=\"manhã\", location=\"Sobral\")</call>"}
+{"prompt": "vai chover em pesqueira, pe amn?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Pesqueira, PE\")</call>"}
+{"prompt": "silva vai chover amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "como ta o tempo hj a noite?", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "ei silva previsao p/ domingo a tarde pfv", "completion": "<call>get_weather(day=\"domingo\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "vai fazer sol depois de amn?", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"\")</call>"}
+{"prompt": "silva me fala o clima de amn de tarde", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "como fica o tempo no sabado a noite?", "completion": "<call>get_weather(day=\"sábado\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "ei silva vai ta frio hj de madrugada?", "completion": "<call>get_weather(day=\"hoje\", time=\"madrugada\", location=\"\")</call>"}
+{"prompt": "silva previsao do tempo p/ segunda de manha pfv", "completion": "<call>get_weather(day=\"segunda\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "vai chover amn a noite?", "completion": "<call>get_weather(day=\"amanhã\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "como ta o clima agr a tarde?", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "ei silva me diz a previsao p/ terça de manha", "completion": "<call>get_weather(day=\"terça\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "silva como fica o tempo no domingo a noite?", "completion": "<call>get_weather(day=\"domingo\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "previsao p/ quarta a tarde pfvr", "completion": "<call>get_weather(day=\"quarta\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "vai chover hj de manha?", "completion": "<call>get_weather(day=\"hoje\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "ei silva como vai ta o clima depois de amn a tarde?", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "silva me fala a previsao p/ quinta a noite", "completion": "<call>get_weather(day=\"quinta\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "vai fazer sol no sabado?", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"\")</call>"}
+{"prompt": "como fica o clima amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "ei silva previsao p/ sexta a tarde pfv", "completion": "<call>get_weather(day=\"sexta\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "silva vai chover domingo de manha?", "completion": "<call>get_weather(day=\"domingo\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "como ta o tempo hj de madrugada?", "completion": "<call>get_weather(day=\"hoje\", time=\"madrugada\", location=\"\")</call>"}
+{"prompt": "ei silva me fala o tempo de amn a noite", "completion": "<call>get_weather(day=\"amanhã\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "silva previsao p/ terça a tarde blz", "completion": "<call>get_weather(day=\"terça\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "vai ta quente hj a tarde?", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "como fica o clima no domingo de manha?", "completion": "<call>get_weather(day=\"domingo\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "ei silva previsao p/ depois de amn a noite pfv", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "silva vai chover sexta de manha?", "completion": "<call>get_weather(day=\"sexta\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "me fala a previsao p/ sabado a tarde pfvr", "completion": "<call>get_weather(day=\"sábado\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "ei silva como ta o clima hj a tarde?", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "silva vai fazer frio amn a noite?", "completion": "<call>get_weather(day=\"amanhã\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "como ta o tempo em são paulo hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"São Paulo\")</call>"}
+{"prompt": "silva me fala a previsao p/ caruaru amn", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Caruaru\")</call>"}
+{"prompt": "vai chover no recife hj a noite pfv?", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Recife\")</call>"}
+{"prompt": "clima de fortaleza amn de manha", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"Fortaleza\")</call>"}
+{"prompt": "ei silva como fica o tempo em jaboatão depois de amn", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"Jaboatão\")</call>"}
+{"prompt": "previsao p/ olinda, pe no domingo a tarde pfvr", "completion": "<call>get_weather(day=\"domingo\", time=\"tarde\", location=\"Olinda, PE\")</call>"}
+{"prompt": "silva ta quente em paulista, pernambuco hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Paulista, Pernambuco\")</call>"}
+{"prompt": "como vai ta o clima em salvador no sabado", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"Salvador\")</call>"}
+{"prompt": "ei silva previsao de natal, rn p/ amn de tarde", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"Natal, RN\")</call>"}
+{"prompt": "vai chover em joão pessoa hj de manha?", "completion": "<call>get_weather(day=\"hoje\", time=\"manhã\", location=\"João Pessoa\")</call>"}
+{"prompt": "silva me diz o tempo de maceió, al no fds", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"Maceió, AL\")</call>"}
+{"prompt": "clima em aracaju p/ domingo a noite pfv", "completion": "<call>get_weather(day=\"domingo\", time=\"noite\", location=\"Aracaju\")</call>"}
+{"prompt": "ei silva como ta o tempo em teresina hj a tarde", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"Teresina\")</call>"}
+{"prompt": "previsao de são luís, ma p/ depois de amn", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"São Luís, MA\")</call>"}
+{"prompt": "silva vai chover em belém no sabado de manha?", "completion": "<call>get_weather(day=\"sábado\", time=\"manhã\", location=\"Belém\")</call>"}
+{"prompt": "como fica o clima em manaus, am hj a noite", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Manaus, AM\")</call>"}
+{"prompt": "ei silva previsao p/ boa vista no domingo", "completion": "<call>get_weather(day=\"domingo\", time=\"\", location=\"Boa Vista\")</call>"}
+{"prompt": "tempo em porto velho, ro amn de tarde pfvr", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"Porto Velho, RO\")</call>"}
+{"prompt": "silva como ta o clima em rio branco hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Rio Branco\")</call>"}
+{"prompt": "vai chover em cuiabá, mt na sexta a tarde?", "completion": "<call>get_weather(day=\"sexta\", time=\"tarde\", location=\"Cuiabá, MT\")</call>"}
+{"prompt": "ei silva previsao de goiânia p/ amn de manha", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"Goiânia\")</call>"}
+{"prompt": "clima em brasília, df hj a noite pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Brasília, DF\")</call>"}
+{"prompt": "silva me fala o tempo de campo grande no sabado", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"Campo Grande\")</call>"}
+{"prompt": "previsao p/ belo horizonte, mg amn de tarde", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"Belo Horizonte, MG\")</call>"}
+{"prompt": "ei silva vai chover em vitória hj de manha?", "completion": "<call>get_weather(day=\"hoje\", time=\"manhã\", location=\"Vitória\")</call>"}
+{"prompt": "como ta o clima no rio de janeiro no domingo", "completion": "<call>get_weather(day=\"domingo\", time=\"\", location=\"Rio de Janeiro\")</call>"}
+{"prompt": "silva previsao de curitiba, pr p/ depois de amn", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"Curitiba, PR\")</call>"}
+{"prompt": "tempo em florianópolis hj a tarde pfvr", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"Florianópolis\")</call>"}
+{"prompt": "ei silva como fica o clima em porto alegre amn", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Porto Alegre\")</call>"}
+{"prompt": "silva vai chover em caruaru no sabado de manha?", "completion": "<call>get_weather(day=\"sábado\", time=\"manhã\", location=\"Caruaru\")</call>"}
+{"prompt": "como vai ta o tempo hj?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "silva me fala a previsao p/ amn pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"\")</call>"}
+{"prompt": "vai chover hj a tarde?", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "ei silva como fica o clima depois de amn?", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"\")</call>"}
+{"prompt": "previsao p/ amn de manha pfvr", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "silva ta frio hj a noite?", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "como ta o tempo agr?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "ei silva me diz a previsao p/ sabado", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"\")</call>"}
+{"prompt": "vai fazer sol amn de tarde?", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "silva como vai ta o clima no domingo a noite?", "completion": "<call>get_weather(day=\"domingo\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "previsao p/ hj a noite pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "ei silva chove amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "como fica o tempo no fds?", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"\")</call>"}
+{"prompt": "silva me fala o clima de segunda pfv", "completion": "<call>get_weather(day=\"segunda\", time=\"\", location=\"\")</call>"}
+{"prompt": "vai chover depois de amn a tarde?", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "ei silva como ta o tempo hj de manha?", "completion": "<call>get_weather(day=\"hoje\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "previsao p/ terça a noite pfvr", "completion": "<call>get_weather(day=\"terça\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "silva vai ta quente no domingo?", "completion": "<call>get_weather(day=\"domingo\", time=\"\", location=\"\")</call>"}
+{"prompt": "como fica o clima amn a noite?", "completion": "<call>get_weather(day=\"amanhã\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "ei silva me diz a previsao p/ quarta de manha", "completion": "<call>get_weather(day=\"quarta\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "silva chove hj a madrugada?", "completion": "<call>get_weather(day=\"hoje\", time=\"madrugada\", location=\"\")</call>"}
+{"prompt": "previsao do tempo p/ quinta a tarde pfv", "completion": "<call>get_weather(day=\"quinta\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "ei silva como vai ta o clima no sabado de manha?", "completion": "<call>get_weather(day=\"sábado\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "vai chover domingo a tarde?", "completion": "<call>get_weather(day=\"domingo\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "silva me fala o tempo de amn a tarde pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "como ta o clima hj a tarde?", "completion": "<call>get_weather(day=\"hoje\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "ei silva previsao p/ sexta a noite blz", "completion": "<call>get_weather(day=\"sexta\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "silva vai fazer frio amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "previsao do tempo p/ depois de amn a noite pfvr", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"noite\", location=\"\")</call>"}
+{"prompt": "ei silva como fica o tempo no domingo de manha?", "completion": "<call>get_weather(day=\"domingo\", time=\"manhã\", location=\"\")</call>"}

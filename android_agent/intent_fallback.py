@@ -275,6 +275,76 @@ def _clean_install_app_name(raw_name: str) -> str:
     return text.strip()
 
 
+def _clean_weather_location(raw_loc: str) -> str:
+    """Limpa e normaliza nome de localidade removendo palavras de tempo, fillers e pontuação."""
+    s = raw_loc.strip()
+    if not s:
+        return ""
+
+    time_noise_tokens = [
+        r"depois de amanh[aã]",
+        r"fim de semana",
+        r"de madrugada",
+        r"de manh[aã]",
+        r"pela manh[aã]",
+        r"[aà] tarde",
+        r"[aà] noite",
+        r"por favor",
+        r"hoje", r"hj", r"amanh[aã]", r"amn",
+        r"segunda", r"ter[cç]a", r"quarta", r"quinta", r"sexta", r"s[aá]bado", r"domingo",
+        r"fds", r"manh[aã]", r"tarde", r"noite", r"madrugada",
+        r"pfvr?", r"silva", r"agora", r"agr",
+        r"\d{1,2}h(?:\d{2})?", r"\d{1,2}:\d{2}",
+    ]
+
+    changed = True
+    while changed:
+        changed = False
+        s = re.sub(r"^[?!.,;\s]+|[?!.,;\s]+$", "", s).strip()
+        for pat in time_noise_tokens:
+            m_end = re.search(r"(?:\s+(?:no|na|em|de|para|pra))?\s+" + pat + r"[?!.,;\s]*$", s, re.IGNORECASE)
+            if m_end:
+                s = s[:m_end.start()].strip()
+                changed = True
+            m_start = re.search(r"^[?!.,;\s]*" + pat + r"(?:\s+(?:no|na|em|de|para|pra))?\s+", s, re.IGNORECASE)
+            if m_start:
+                s = s[m_start.end():].strip()
+                changed = True
+
+    s = re.sub(r"^[?!.,;\s]+|[?!.,;\s]+$", "", s).strip()
+    s = re.sub(r"^(?:em|para|pra|no|na|de)\s+", "", s, flags=re.IGNORECASE).strip()
+    s = re.sub(r"\s+(?:em|para|pra|no|na|de)$", "", s, flags=re.IGNORECASE).strip()
+
+    if not s:
+        return ""
+
+    invalid_words = {
+        "hoje", "amanha", "amanhã", "depois", "aqui", "minha cidade",
+        "mim", "graus", "tempo", "chuva", "sol", "calor", "frio", "clima", "previsao", "previsão"
+    }
+    if s.lower() in invalid_words:
+        return ""
+
+    # Preserva cidade e estado separados por vírgula com capitalização limpa
+    parts = [p.strip() for p in s.split(",") if p.strip()]
+    cleaned_parts = []
+    for part in parts:
+        if len(part) == 2 and part.isalpha():
+            cleaned_parts.append(part.upper())
+        else:
+            words = part.split()
+            cap_words = []
+            for i, w in enumerate(words):
+                w_lower = w.lower()
+                if i > 0 and w_lower in {"de", "da", "do", "das", "dos", "e"}:
+                    cap_words.append(w_lower)
+                else:
+                    cap_words.append(w.capitalize())
+            cleaned_parts.append(" ".join(cap_words))
+
+    return ", ".join(cleaned_parts)
+
+
 def parse_single_intent(raw_cmd: str) -> Optional[str]:
     """Tenta identificar uma intenção específica e retornar uma tag <call>...</call>."""
     cmd = normalize_text(raw_cmd)
@@ -692,15 +762,15 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 time_val = m_t.group(1)
 
         loc = ""
-        m_city = re.search(r"(?:em|para|pra|no|na)\s+([a-zA-ZÀ-ÿ\s,\-]+)", raw_cmd, re.IGNORECASE)
-        if m_city:
-            cand = m_city.group(1).strip()
-            cand = re.sub(r"(?i)\s+(?:no|na|em|de|para|pra)?\s*(?:hoje|amanha|amanhã|depois de amanha|depois de amanhã|segunda|terca|terça|quarta|quinta|sexta|sabado|sábado|domingo|noite|tarde|manha|manhã|as|às|\d{1,2}h|\d{1,2}:\d{2}).*$", "", cand).strip()
-            cand = re.sub(r"[?!.;]+$", "", cand).strip().rstrip(",")
-            if cand and cand.lower() not in ["hoje", "amanha", "amanhã", "depois", "aqui", "minha cidade", "mim", "graus"]:
-                loc = cand
+        pattern = r"\b(?:em|para|pra|no|na|de\s+(?!chuva\b|tempo\b|clima\b))\s*([a-zA-ZÀ-ÿ0-9\s,\-]+)"
+        matches = re.findall(pattern, raw_cmd, re.IGNORECASE)
+        for m in reversed(matches):
+            c = _clean_weather_location(m)
+            if c:
+                loc = c
+                break
 
-        return f'<call>get_weather(day="{day}", time="{time_val}", location="{loc}")</call>'
+        return f"<call>get_weather(day='{day}', time='{time_val}', location='{loc}')</call>"
 
     # 21. Pesquisa no Google (search_google)
     if any(w in cmd for w in ["pesquisa", "pesquise", "busca", "busque", "procura", "procure", "google", "no google"]):

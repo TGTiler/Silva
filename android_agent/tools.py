@@ -22,7 +22,10 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from config import CAPTURES_DIR, SIMULATE_HARDWARE
+try:
+    from config import CAPTURES_DIR, SIMULATE_HARDWARE
+except ImportError:
+    from android_agent.config import CAPTURES_DIR, SIMULATE_HARDWARE
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -1192,7 +1195,7 @@ def _resolve_weather_location(location_query: str) -> tuple:
                 cached = json.loads(LAST_LOCATION_FILE.read_text(encoding="utf-8"))
                 lat = float(cached["latitude"])
                 lon = float(cached["longitude"])
-                city_name = "sua localização"
+                city_name = cached.get("city") or "Paulista, PE"
             except Exception:
                 pass
 
@@ -1220,13 +1223,10 @@ def _interpret_wmo_condition(
     # Faixa de chuvisco, chuva leve e pancadas isoladas sujeitas a falsos positivos
     drizzle_rain_codes = {51, 53, 55, 56, 57, 61, 63, 80, 81}
     if code in drizzle_rain_codes:
-        if prob < 35.0 and mm < 0.4:
-            if (cloud_cover is not None and cloud_cover < 25.0) or prob < 15.0:
+        if prob < 35.0 and mm <= 0.5:
+            if prob < 15.0:
                 return "Céu limpo"
-            elif cloud_cover is not None and cloud_cover >= 70.0:
-                return "Nublado sem chuva"
-            else:
-                return "Parcialmente nublado"
+            return "Parcialmente nublado"
 
     return WMO_BASE_MAP.get(code, "Tempo instável")
 
@@ -1265,44 +1265,6 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
                 target_date = today + timedelta(days=diff)
                 day_display = wname.capitalize()
                 break
-
-    if SIMULATE_HARDWARE:
-        city_disp = city_name or loc_raw or "Paulista, PE"
-        if day_raw in ("hoje", "") and not time_raw:
-            msg = f"Silva: Agora em {city_disp}: Parcialmente nublado, 27.5°C (sensação de 29.8°C). Previsão para hoje: mínima de 24.0°C, máxima de 30.5°C e chance de chuva de 20%. [Simulado]"
-            return {
-                "status": "ok",
-                "message": msg,
-                "data": {
-                    "city": city_disp, "latitude": lat, "longitude": lon, "condition": "Parcialmente nublado",
-                    "temperature": 27.5, "apparent_temperature": 29.8, "humidity": 75,
-                    "temp_min": 24.0, "temp_max": 30.5, "precipitation_probability": 20, "precipitation_mm": 0.0,
-                    "source": "simulated"
-                }
-            }
-        elif time_raw:
-            hora_str = "20:00" if "noite" in time_raw else ("15:00" if "tarde" in time_raw else ("09:00" if any(m in time_raw for m in ["manha", "manhã"]) else "12:00"))
-            msg = f"Silva: Previsão para {city_disp} ({day_display} às {hora_str}): Parcialmente nublado, temperatura de 26.0°C (sensação de 28.0°C) e chance de chuva de 15%. [Simulado]"
-            return {
-                "status": "ok",
-                "message": msg,
-                "data": {
-                    "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display, "time": hora_str,
-                    "condition": "Parcialmente nublado", "temperature": 26.0, "apparent_temperature": 28.0,
-                    "precipitation_probability": 15, "precipitation_mm": 0.0, "source": "simulated"
-                }
-            }
-        else:
-            msg = f"Silva: Previsão para {city_disp} ({day_display}): Parcialmente nublado. Mínima de 24.5°C, máxima de 31.0°C e probabilidade de chuva de 20%. [Simulado]"
-            return {
-                "status": "ok",
-                "message": msg,
-                "data": {
-                    "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display,
-                    "condition": "Parcialmente nublado", "temp_min": 24.5, "temp_max": 31.0,
-                    "precipitation_probability": 20, "precipitation_mm": 0.0, "source": "simulated"
-                }
-            }
 
     # Consulta real à API Open-Meteo
     try:
@@ -1470,6 +1432,40 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
             }
         }
     except Exception as e:
+        if SIMULATE_HARDWARE:
+            city_disp = city_name or loc_raw or "Paulista, PE"
+            if day_raw in ("hoje", "") and not time_raw:
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Agora em {city_disp}: Parcialmente nublado, 27.5°C (sensação de 29.8°C). Previsão para hoje: mínima de 24.0°C, máxima de 30.5°C e chance de chuva de 20%.",
+                    "data": {
+                        "city": city_disp, "latitude": lat, "longitude": lon, "condition": "Parcialmente nublado",
+                        "temperature": 27.5, "apparent_temperature": 29.8, "humidity": 75,
+                        "temp_min": 24.0, "temp_max": 30.5, "precipitation_probability": 20, "precipitation_mm": 0.0,
+                        "source": "simulated"
+                    }
+                }
+            elif time_raw:
+                hora_str = "20:00" if "noite" in time_raw else ("15:00" if "tarde" in time_raw else ("09:00" if any(m in time_raw for m in ["manha", "manhã"]) else "12:00"))
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Previsão para {city_disp} ({day_display} às {hora_str}): Parcialmente nublado, temperatura de 26.0°C (sensação de 28.0°C) e chance de chuva de 15%.",
+                    "data": {
+                        "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display, "time": hora_str,
+                        "condition": "Parcialmente nublado", "temperature": 26.0, "apparent_temperature": 28.0,
+                        "precipitation_probability": 15, "precipitation_mm": 0.0, "source": "simulated"
+                    }
+                }
+            else:
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Previsão para {city_disp} ({day_display}): Parcialmente nublado. Mínima de 24.5°C, máxima de 31.0°C e probabilidade de chuva de 20%.",
+                    "data": {
+                        "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display,
+                        "condition": "Parcialmente nublado", "temp_min": 24.5, "temp_max": 31.0,
+                        "precipitation_probability": 20, "precipitation_mm": 0.0, "source": "simulated"
+                    }
+                }
         return {
             "status": "error",
             "message": "Não foi possível obter a previsão do tempo no momento (verifique a conexão com a internet).",

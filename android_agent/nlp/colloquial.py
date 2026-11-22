@@ -51,12 +51,13 @@ def normalize_colloquial_ptbr(text: str) -> str:
     s = re.sub(r"\bno\s+talo\b", "100%", s, flags=re.IGNORECASE)
     
     if level_ctx:
-        s = re.sub(r"\b(?:no\s+m[aá]ximo|no\s+[uú]ltimo|tudo)\b", "100%", s, flags=re.IGNORECASE)
-        s = re.sub(r"\b(?:no\s+m[ií]nimo|no\s+mudo|zerado|mudo)\b", "0%", s, flags=re.IGNORECASE)
-        s = re.sub(r"\b(?:na\s+metade|meio\s+termo)\b", "50%", s, flags=re.IGNORECASE)
+        s = re.sub(r"\b(?:total(?:mente)?|no\s+m[aá]ximo|ao\s+m[aá]ximo|m[aá]ximo|no\s+[uú]ltimo|completo|tudo)\b", "100%", s, flags=re.IGNORECASE)
+        s = re.sub(r"\b(?:no\s+m[ií]nimo|ao\s+m[ií]nimo|m[ií]nimo|no\s+mudo|zerado|zero|mudo|silenciar)\b", "0%", s, flags=re.IGNORECASE)
+        s = re.sub(r"\b(?:na\s+metade|metade|meio\s+termo|meio)\b", "50%", s, flags=re.IGNORECASE)
     else:
-        # Padrões com verbos de ação para volume/brilho ("bota no máximo", "deixa mudo")
-        s = re.sub(r"\b(?:bota|coloca|deixa|define|aumenta)\s+no\s+m[aá]ximo\b", r"\g<0> 100%", s, flags=re.IGNORECASE)
+        # Padrões com verbos de ação para volume/brilho ("bota no máximo", "deixa mudo", "aumente total")
+        s = re.sub(r"\b(?:bota|coloca|deixa|define|aumenta|aumente|diminui|diminua)\s+no\s+m[aá]ximo\b", r"\g<0> 100%", s, flags=re.IGNORECASE)
+        s = re.sub(r"\b(?:bota|coloca|deixa|define|aumenta|aumente)\s+total(?:mente)?\b", r"\g<0> 100%", s, flags=re.IGNORECASE)
 
     # 2. Gírias de Aplicativos e Serviços
     app_slang = [

@@ -119,8 +119,8 @@ silva-agent/
 │   ├── intent_fallback.py         # Roteador determinístico de ultra-baixa latência (<2ms)
 │   ├── nlp/                       # Pacote de Processamento de Linguagem Natural (PT-BR)
 │   │   ├── numbers.py             # Pilar A: Parser numérico composto (centenas, multiplicadores, horários)
-│   │   ├── colloquial.py          # Pilar B: Normalizador de gírias, níveis e typos com difflib
-│   │   └── router.py              # Pilar C: Roteador por pontuação (ScoredIntentRouter) das 36 tools
+│   │   ├── colloquial.py          # Pilar B: Normalizador de gírias, níveis ("no talo", "total") e typos com difflib
+│   │   └── router.py              # Pilar C: Roteador por pontuação (ScoredIntentRouter) com tolerância a typos matemáticos e recall restrito
 │   ├── parser.py                  # Analisador sintático AST seguro, validador de whitelist e propagação de status
 │   ├── tools/                     # Pacote modular das 36 ferramentas (core, hardware, media, comms, etc)
 │   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 36 tools

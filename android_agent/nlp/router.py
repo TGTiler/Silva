@@ -5,6 +5,7 @@ e garante cobertura completa das 36 ferramentas do Silva com formatação segura
 """
 
 import ast
+import difflib
 import re
 import unicodedata
 from typing import Callable, Dict, List, Optional, Tuple, Any
@@ -69,22 +70,37 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
 
     clean = raw_text.strip().rstrip("?!.,;:")
     lower = clean.lower()
-    norm = normalize_text(lower)
+
+    # Pré-tratamento com difflib para tolerar typos em palavras-chave matemáticas
+    math_fuzzy_keywords = [
+        "raiz", "quadrada", "cubica", "seno", "cosseno",
+        "tangente", "fatorial", "logaritmo", "calcula", "calcular"
+    ]
+    tokens = re.findall(r"\w+|[^\w\s]|\s+", lower)
+    corrected_tokens = []
+    for tok in tokens:
+        norm_tok = normalize_text(tok)
+        if re.match(r"^[a-zA-Z]+$", norm_tok) and len(norm_tok) >= 4:
+            matches = difflib.get_close_matches(norm_tok, math_fuzzy_keywords, n=1, cutoff=0.80)
+            if matches:
+                corrected_tokens.append(matches[0])
+                continue
+        corrected_tokens.append(tok)
+    s = "".join(corrected_tokens)
+    norm = normalize_text(s)
 
     math_triggers = [
         "quanto e", "quanto da", "quanto fica", "calcule", "calcular",
-        "calcula", "resultado de", "raiz quadrada", "raiz cubica", "raiz de",
+        "calcula", "resultado de", "raiz quadrada", "raiz cubica", "raiz de", "raiz",
         "fatorial", "seno", "cosseno", "tangente", "logaritmo", "log",
         "conta de", "valor de", "ao quadrado", "ao cubo", "elevado a"
     ]
     has_trigger = any(trig in norm for trig in math_triggers)
     has_direct_math = bool(re.search(r"\b\d+\s*(?:[\+\-\*\/÷×\^%]|x|vezes|dividido|mais|menos)\s*\d+\b", norm, re.IGNORECASE))
-    has_math_func = any(f"{fn}(" in lower for fn in ALLOWED_MATH_NAMES)
+    has_math_func = any(f"{fn}(" in s for fn in ALLOWED_MATH_NAMES)
 
     if not has_trigger and not has_direct_math and not has_math_func:
         return None
-
-    s = lower
 
     # Acréscimos e descontos de porcentagem
     s = re.sub(
@@ -109,9 +125,18 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
     s = re.sub(r"(\d+)\s*/\s*(\d+)\s+de\s+(\d+(?:[\.,]\d+)?)", r"(\1 / \2) * \3", s)
     s = re.sub(r"\bmetade\s+de\s+(\d+(?:[\.,]\d+)?)", r"0.5 * \1", s)
 
-    # Raízes
-    s = re.sub(r"(?:a\s+)?raiz\s+c[uú]bica\s+de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"cbrt(\1)", s)
-    s = re.sub(r"(?:a\s+)?raiz\s+(?:quadrada\s+)?de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"sqrt(\1)", s)
+    # Raízes cúbicas (aceita c[uú]bic[aoei]\w*)
+    s = re.sub(
+        r"(?:a\s+)?raiz\s+c[uú]bic[aoei]\w*\s*(?:de\s+)?(\d+(?:[\.,]\d+)?|\([^\)]+\))",
+        r"cbrt(\1)",
+        s
+    )
+    # Raízes quadradas e raízes diretas (aceita quadrad[aoei]\w* ou simplesmente raiz de)
+    s = re.sub(
+        r"(?:a\s+)?raiz\s+(?:quadrad[aoei]\w*\s+)?(?:de\s+)?(\d+(?:[\.,]\d+)?|\([^\)]+\))",
+        r"sqrt(\1)",
+        s
+    )
 
     # Fatorial
     s = re.sub(r"fatorial\s+de\s+(\d+)", r"factorial(\1)", s)
@@ -167,7 +192,11 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
         r"(?i)\bconta\s+de\s+",
         r"(?i)\bqual\s+[eé]\s+(?:o\s+resultado\s+de\s+|o\s+valor\s+de\s+)?",
         r"(?i)\bqual\s+o\s+resultado\s+de\s+",
+        r"(?i)\bqual\s+(?:[eé]|a|o)\s+(?:o\s+resultado\s+de\s+|o\s+valor\s+de\s+|a\s+|o\s+)?",
+        r"(?i)\bqual\s+[ao]\s+",
+        r"(?i)\bqual\s+",
         r"(?i)\bme\s+diga\s+",
+        r"(?i)\bme\s+diz\s+",
         r"(?i)\bpor\s+favor\b",
         r"(?i)\bpfv\b",
         r"[?!]+$"
@@ -815,8 +844,8 @@ def extract_schedule(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 def extract_memory(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Notas e lembranças de longo prazo."""
-    if any(w in norm for w in ["lembra que", "lembrar que", "anota que", "salva que", "guarda que"]):
-        content = re.sub(r"(?i)^(?:silva,?\s*)?(?:lembra|lembrar|anota|anotar|salva|salvar|guarda|guardar)\s+que\s+", "", raw).strip()
+    if any(w in norm for w in ["lembra que", "lembrar que", "anota que", "salva que", "guarda que", "anote que", "salve que", "guarde que"]):
+        content = re.sub(r"(?i)^(?:silva,?\s*)?(?:lembra|lembrar|lembre|anota|anotar|anote|salva|salvar|salve|guarda|guardar|guarde)\s+que\s+", "", raw).strip()
         if "=" in content:
             k, v = content.split("=", 1)
         elif re.search(r"\s+[eé]\s*:\s*", content, re.IGNORECASE):
@@ -832,10 +861,34 @@ def extract_memory(raw: str, norm: str) -> Tuple[float, Optional[str]]:
             k, v = "nota", content
         return 0.95, _format_call("remember_note", key=k.strip(), value=v.strip())
 
-    if any(w in norm for w in ["o que voce lembra", "onde guardei", "lembra de", "lembra do", "lembra da"]) or (
-        any(w in norm for w in ["qual o", "qual a"]) and not any(w in norm for w in ["bateria", "clima", "tempo", "previsao", "temperatura", "localizacao", "hora", "clipboard", "foto", "print", "wifi"])
-    ):
-        q = re.sub(r"(?i)^(?:silva,?\s*)?(?:qual|onde|o que|lembra)\s+(?:voce\s+lembra\s+)?(?:de|do|da|o|a)?\s*", "", raw).strip().rstrip("?")
+    # Bloqueio explícito de perguntas de conhecimento geral / enciclopédicas ou termos matemáticos
+    blocking_terms = [
+        "quem foi", "quem e", "o que e", "o que sao", "como funciona",
+        "previsao", "clima", "tempo", "temperatura",
+        "raiz", "seno", "cosseno", "tangente", "fatorial", "log", "calculo",
+        "por cento", "%"
+    ]
+    if any(term in norm for term in blocking_terms):
+        return 0.0, None
+
+    # Marcadores obrigatórios de memória pessoal para recall_note
+    personal_memory_markers = [
+        "onde eu guardei", "onde guardei", "onde deixei", "onde anotei",
+        "o que eu anotei", "o que voce lembra", "na memoria",
+        "qual era a senha", "qual a senha", "qual e a senha",
+        "qual meu", "qual minha", "qual era o",
+        "minha nota", "minhas notas", "minha anotacao", "minhas anotacoes",
+        "lembra de", "lembra do", "lembra da", "lembra",
+        "lembre de", "lembre do", "lembre da", "lembre"
+    ]
+    if any(m in norm for m in personal_memory_markers):
+        q = re.sub(
+            r"(?i)^(?:silva,?\s*)?(?:qual\s+(?:era\s+a\s+|era\s+o\s+|e\s+a\s+|e\s+o\s+|a\s+|o\s+|meu\s+|minha\s+)|onde\s+(?:eu\s+)?(?:guardei|deixei|anotei)\s+|o\s+que\s+(?:eu\s+anotei|voce\s+lembra)\s+(?:sobre\s+)?|minhas?\s+(?:notas?|anotac(?:ao|oes))\s+(?:sobre\s+)?|lembra\s+(?:de\s+|do\s+|da\s+|que\s+|o\s+|a\s+)?|lembre\s+(?:de\s+|do\s+|da\s+|que\s+|o\s+|a\s+)?|lembre-se\s+(?:de\s+|do\s+|da\s+)?|na\s+memoria\s+)?",
+            "",
+            raw
+        ).strip().rstrip("?!.,;:")
+        if not q:
+            q = raw.strip().rstrip("?!.,;:")
         return 0.88, _format_call("recall_note", query=q)
 
     return 0.0, None
@@ -852,11 +905,73 @@ def extract_notifications(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def _extract_level(norm: str, default: int = 50) -> int:
+    """
+    Extrai nível de intensidade (0 a 100) para volume e brilho.
+    Mapeia:
+      - 100: "total", "totalmente", "maximo", "ao maximo", "no maximo", "no talo", "no ultimo", "completo", "100%", "tudo"
+      - 0: "minimo", "ao minimo", "no minimo", "zerado", "zero", "mudo", "silenciar", "0%"
+      - 50: "metade", "meio", "50%" ou quando não houver modificador nem número
+      - Número explícito caso fornecido.
+    """
+    # 1. Nível Máximo (100)
+    max_patterns = [
+        r"\bno\s+talo\b",
+        r"\bao\s+maximo\b",
+        r"\bno\s+maximo\b",
+        r"\bno\s+ultimo\b",
+        r"\btotalmente\b",
+        r"\btotal\b",
+        r"\bmaximo\b",
+        r"\bcompleto\b",
+        r"\b100\s*%",
+        r"\btudo\b",
+    ]
+    for pat in max_patterns:
+        if re.search(pat, norm, re.IGNORECASE):
+            return 100
+
+    # 2. Nível Mínimo (0)
+    min_patterns = [
+        r"\bao\s+minimo\b",
+        r"\bno\s+minimo\b",
+        r"\bzerado\b",
+        r"\bzero\b",
+        r"\bmudo\b",
+        r"\bsilenciar\b",
+        r"\bminimo\b",
+        r"\b0\s*%",
+    ]
+    for pat in min_patterns:
+        if re.search(pat, norm, re.IGNORECASE):
+            return 0
+
+    # 3. Metade / Meio (50)
+    half_patterns = [
+        r"\bmetade\b",
+        r"\bmeio\b",
+        r"\b50\s*%",
+    ]
+    for pat in half_patterns:
+        if re.search(pat, norm, re.IGNORECASE):
+            return 50
+
+    # 4. Número explícito presente
+    m = re.search(r"\b(\d+)\s*(?:%|porcento)?\b", norm)
+    if m:
+        try:
+            val = int(m.group(1))
+            return max(0, min(100, val))
+        except ValueError:
+            pass
+
+    return default
+
+
 def extract_volume(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Volume e som."""
     if "volume" in norm or (("som" in norm or "musica" in norm) and any(w in norm for w in ["aumenta", "diminui", "bota", "coloca"])):
-        m_vol = re.search(r"(\d+)\s*(?:%|porcento)?", norm)
-        level = int(m_vol.group(1)) if m_vol else 50
+        level = _extract_level(norm, default=50)
         return 0.92, _format_call("set_volume", stream="music", level=level)
     return 0.0, None
 
@@ -864,8 +979,7 @@ def extract_volume(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 def extract_brightness(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Brilho da tela."""
     if "brilho" in norm:
-        m_bri = re.search(r"(\d+)\s*(?:%|porcento)?", norm)
-        level = int(m_bri.group(1)) if m_bri else 50
+        level = _extract_level(norm, default=50)
         return 0.92, _format_call("set_brightness", level=level)
     return 0.0, None
 

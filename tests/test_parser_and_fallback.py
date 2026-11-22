@@ -159,6 +159,27 @@ class TestParserAndFallback(unittest.TestCase):
         call_ride = match_intent_fallback("chama um uber para Abreu e Lima")
         self.assertEqual(call_ride, "<call>request_ride(destination='Abreu e Lima', app='uber')</call>")
 
+    def test_fallback_volume_math_and_recall_refinements(self):
+        """Testa melhorias de sinônimos de volume/brilho, tolerância a typos matemáticos e restrição de recall_note."""
+        # 1. Volume total / máximo / mínimo / meio
+        self.assertEqual(match_intent_fallback("Aumente total o volume"), "<call>set_volume(stream='music', level=100)</call>")
+        self.assertEqual(match_intent_fallback("abaixe o volume no minimo"), "<call>set_volume(stream='music', level=0)</call>")
+        self.assertEqual(match_intent_fallback("volume pela metade"), "<call>set_volume(stream='music', level=50)</call>")
+
+        # 2. Typos em funções matemáticas: quadrade -> quadrada
+        self.assertEqual(match_intent_fallback("Qual a raiz quadrade de 144"), "<call>calculate(expression='sqrt(144)')</call>")
+        self.assertEqual(match_intent_fallback("qual a raiz cubica de 27"), "<call>calculate(expression='cbrt(27)')</call>")
+
+        # 3. Perguntas gerais enciclopédicas não devem acionar recall_note (devem ir para o LLM)
+        self.assertIsNone(match_intent_fallback("qual a capital da franca"))
+        self.assertIsNone(match_intent_fallback("quem foi albert einstein"))
+
+        # 4. Busca de memória pessoal explícita
+        call_wifi = match_intent_fallback("qual a senha do wifi")
+        self.assertIsNotNone(call_wifi)
+        self.assertIn("recall_note", call_wifi)
+
+
 
 if __name__ == "__main__":
     unittest.main()

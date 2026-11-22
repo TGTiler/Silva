@@ -815,6 +815,11 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - Scripts operacionais (`apply_code_update.sh` e `install_model_and_restart.sh`) com parada cirúrgica de instâncias antigas do `llama-server` e inicialização de background segura.
 18. **Guia Passo a Passo para Usuários (`dataset/PASSO_A_PASSO.md`)**:
     - Documentação prática orientando o fluxo de edição de dados, execução de `prepare_final_dataset.py`, validação sintática via `validate_dataset.py` e upload no Google Colab.
+19. **Calibração Fina de Roteamento Determinístico (Volume/Brilho, Typos Matemáticos e Restrição do `recall_note`)**:
+    - *Extensibilidade de Nível em Volume e Brilho (`_extract_level`)*: Mapeamento determinístico de sinônimos de nível máximo (`total`, `totalmente`, `maximo`, `ao maximo`, `no maximo`, `no talo`, `no ultimo`, `completo`, `100%`, `tudo`) para `level=100`, nível mínimo (`minimo`, `ao minimo`, `no minimo`, `zerado`, `zero`, `mudo`, `silenciar`, `0%`) para `level=0`, e meio/metade para `level=50`.
+    - *Tolerância a Typos no Normalizador Matemático (`_normalize_math_expression`)*: Pré-tratamento com `difflib.get_close_matches(cutoff=0.80)` nos tokens das expressões matemáticas contra o vocabulário de cálculo (`raiz`, `quadrada`, `cubica`, etc.), flexibilização de regexes de raízes quadradas (`quadrad[aoei]\w*` e `raiz de`) e cúbicas (`c[uú]bic[aoei]\w*`), além de remoção de fillers como `qual a ...` para extração limpa da AST.
+    - *Restrição Estrita do `recall_note` e Bloqueio Enciclopédico*: Remoção da captura genérica gulosa baseada em `qual o`/`qual a`, exigência de marcadores explícitos de memória pessoal (`onde guardei`, `onde anotei`, `minha nota`, `qual a senha`, `lembra`, etc.), e bloqueio de termos matemáticos/perguntas enciclopédicas gerais para permitir resposta direta pelo LLM (ex: `qual a capital da franca` retorna `None`).
+    - *Suíte Expandida e Deploy*: 23 testes automatizados passando 100% e atualização validada no hardware real do dispositivo via ADB e API HTTP.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

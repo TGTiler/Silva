@@ -179,6 +179,43 @@ class TestParserAndFallback(unittest.TestCase):
         self.assertIsNotNone(call_wifi)
         self.assertIn("recall_note", call_wifi)
 
+    def test_fallback_wifi_ecosystem_and_memory(self):
+        """Testa ecossistema Wi-Fi completo (connect_wifi, get_wifi_info, set_wifi_state)."""
+        # 1. connect_wifi com senha preservando case
+        c1 = match_intent_fallback("Silva, conecte-se ao wifi Casa_5G com a senha 1234565")
+        self.assertEqual(c1, "<call>connect_wifi(ssid='Casa_5G', password='1234565')</call>")
+
+        # 2. connect_wifi rede aberta
+        c2 = match_intent_fallback("conectar ao wi-fi RedeAberta")
+        self.assertEqual(c2, "<call>connect_wifi(ssid='RedeAberta', password='')</call>")
+
+        # 3. get_wifi_info
+        c3 = match_intent_fallback("qual meu ip e qual wifi estou conectado?")
+        self.assertEqual(c3, "<call>get_wifi_info()</call>")
+
+        c4 = match_intent_fallback("qual wifi estou conectado")
+        self.assertEqual(c4, "<call>get_wifi_info()</call>")
+
+        # 4. set_wifi_state
+        c5 = match_intent_fallback("desativa o wi-fi pfv")
+        self.assertEqual(c5, "<call>set_wifi_state(state=False)</call>")
+
+        c6 = match_intent_fallback("liga o wifi")
+        self.assertEqual(c6, "<call>set_wifi_state(state=True)</call>")
+
+        # 5. Execução simulada salvando credencial no SQLite memory.db
+        from android_agent.tools import connect_wifi, recall_note
+        res_conn = connect_wifi(ssid="Casa_5G", password="MinhaSenhaForte2026")
+        self.assertEqual(res_conn["status"], "ok")
+        self.assertTrue(res_conn["data"]["saved_to_memory"])
+
+        # Recupera do banco de memórias SQLite FTS5
+        res_recall = recall_note(query="wifi Casa_5G")
+        self.assertEqual(res_recall["status"], "ok")
+        self.assertTrue(res_recall["data"]["found"])
+        keys_found = [n["key"] for n in res_recall["data"]["notes"]]
+        self.assertIn("wifi Casa_5G", keys_found)
+
 
 
 if __name__ == "__main__":

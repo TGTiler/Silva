@@ -136,7 +136,7 @@ SILVA_SYSTEM_PROMPT = (
     "remember_note(key, value), recall_note(query), get_notifications(app), set_volume(stream, level), "
     "set_brightness(level), set_timer(minutes, label), calculate(expression), search_google(query, open_browser), "
     "request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), "
-    "scan_wifi(), list_capabilities(), none().\n"
+    "scan_wifi(), connect_wifi(ssid, password), get_wifi_info(), set_wifi_state(state), list_capabilities(), none().\n"
     "Responda EXCLUSIVAMENTE com chamadas no formato: <call>get_battery()</call> ou <call>set_torch(state=True)</call>.\n"
     "Quando o usuário solicitar mais de uma ação na mesma frase, emita múltiplas tags em sequência (ex: <call>get_battery()</call><call>set_torch(state=True)</call>).\n"
     "Caso o comando não corresponda a nenhuma ferramenta ou seja uma conversa geral, responda apenas:\n"
@@ -467,6 +467,9 @@ print("=" * 65)
 test_scenarios = [
     ("silva quanto ta a bateria agr?", "get_battery()"),
     ("quais wifis tem disponiveis aqui perto?", "scan_wifi()"),
+    ("conecta no wifi Casa_5G senha 1234565", "connect_wifi(ssid='Casa_5G', password='1234565')"),
+    ("qual rede wifi estou conectado agr?", "get_wifi_info()"),
+    ("desativa o wifi do celular", "set_wifi_state(state=False)"),
     ("chama um uber p/ o shopping recife", "request_ride(destination='shopping recife', app='uber')"),
     ("pede um hamburguer no ifood pfv", "order_food(query='hamburguer', app='ifood')"),
     ("baixa o telegram na play store", "install_app(app_name='telegram')"),

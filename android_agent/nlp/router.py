@@ -450,29 +450,95 @@ def extract_battery(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """
-    Desambiguação explícita de Wi-Fi:
-    1. senha/codigo/pass + wifi -> recall_note (0.95)
-    2. abrir/configurar wifi -> open_app (0.90)
-    3. escanear/listar/redes/perto wifi -> scan_wifi (0.95)
+    Desambiguação explícita de Wi-Fi e rede:
+    1. get_wifi_info: informações da conexão atual, sinal, IP local
+    2. set_wifi_state: ligar/desligar Wi-Fi
+    3. connect_wifi: conectar a rede Wi-Fi informando SSID e senha opcional
+    4. recall_note: consultar senhas de Wi-Fi salvas
+    5. open_app: abrir configurações de Wi-Fi
+    6. scan_wifi: escanear redes próximas
     """
-    is_wifi = any(w in norm for w in ["wifi", "wifis", "wi-fi", "wi-fis", "rede sem fio", "redes sem fio"])
+    is_wifi = any(w in norm for w in ["wifi", "wifis", "wi-fi", "wi-fis", "rede sem fio", "redes sem fio", "ip"])
     if not is_wifi:
         return 0.0, None
 
-    # Caso 1: Senha de Wi-Fi salva -> recall_note
-    has_pwd = any(w in norm for w in ["senha", "password", "pass", "codigo", "chave"])
-    if has_pwd:
-        return 0.95, _format_call("recall_note", query="senha do wifi")
+    # Verbos imperativos de conexão
+    connect_patterns = [
+        r"\bconecte-se\b", r"\bconectar-se\b", r"\bconecta\b", r"\bconecte\b",
+        r"\bconectar\b", r"\bentrar\s+n[ao]\b", r"\bentra\s+n[ao]\b", r"\bentre\s+n[ao]\b",
+        r"\bacessar\s+(?:o|a)?\b", r"\bacessa\s+(?:o|a)?\b"
+    ]
+    has_connect_verbs = any(re.search(p, norm) for p in connect_patterns)
 
-    # Caso 2: Abrir configurações de Wi-Fi -> open_app
+    # Caso 1: get_wifi_info (informações da conexão atual, IP)
+    info_triggers = [
+        "qual wifi estou", "qual wi-fi estou", "qual wifi eu to", "qual wifi to",
+        "qual rede estou", "qual rede eu to", "qual rede to", "qual rede que estou",
+        "rede que estou", "wifi que estou", "rede atual", "wifi atual", "conexao atual",
+        "qual conexao", "qual meu ip", "meu ip", "qual o ip", "qual e o ip",
+        "ip do celular", "ip do telefone", "ip do aparelho", "ip da rede", "ip local",
+        "status do wifi", "status da rede", "status da conexao", "info do wifi", "informacoes do wifi",
+        "dados da rede wifi", "dados do wifi", "detalhes do wifi", "estou conectado", "to conectado"
+    ]
+    if any(t in norm for t in info_triggers) and not has_connect_verbs:
+        return 0.96, _format_call("get_wifi_info")
+
+    # Caso 2: set_wifi_state (liga / desliga wifi)
+    turn_off_wifi = any(re.search(rf"\b{v}\b.*\b(?:wi-?fi|rede\s+sem\s+fio)\b|\b(?:wi-?fi|rede\s+sem\s+fio)\b.*\b{v}\b", norm) for v in [
+        "desliga", "desligar", "desligue", "desativa", "desativar", "desative",
+        "deshabilita", "deshabilitar", "deshabilite", "apaga", "apagar", "off"
+    ])
+    if turn_off_wifi:
+        return 0.96, _format_call("set_wifi_state", state=False)
+
+    turn_on_wifi = any(re.search(rf"\b{v}\b.*\b(?:wi-?fi|rede\s+sem\s+fio)\b|\b(?:wi-?fi|rede\s+sem\s+fio)\b.*\b{v}\b", norm) for v in [
+        "liga", "ligar", "ligue", "ativa", "ativar", "ative",
+        "habilita", "habilitar", "habilite", "on"
+    ])
+    if turn_on_wifi and not has_connect_verbs:
+        return 0.96, _format_call("set_wifi_state", state=True)
+
+    # Caso 3: connect_wifi (conectar a rede com SSID e senha opcional)
+    if has_connect_verbs:
+        clean_text = re.sub(r"^(?:silva,?\s*)", "", raw, flags=re.IGNORECASE).strip().rstrip("?!.,;:")
+        pwd_pat = r"\s+(?:com\s+a\s+senha|com\s+senha|senha|com\s+a\s+chave|com\s+chave|chave|password|pass)(?:\s*[:=]?\s*|\s+)(.+)$"
+        m_pwd = re.search(pwd_pat, clean_text, re.IGNORECASE)
+        if m_pwd:
+            prefix_and_ssid = clean_text[:m_pwd.start()].strip()
+            pwd = m_pwd.group(1).strip()
+        else:
+            prefix_and_ssid = clean_text
+            pwd = ""
+
+        curr = prefix_and_ssid.strip()
+        curr = re.sub(r"^(?:por\s+favor,?\s*|pfv,?\s*)", "", curr, flags=re.IGNORECASE).strip()
+        curr = re.sub(r"^(?:conecte-se|conectar-se|conecta|conecte|conectar|entra|entre|entrar|acesse|acessa|acessar)\b", "", curr, flags=re.IGNORECASE).strip()
+        curr = re.sub(r"^(?:ao|a\s+o|no|na|a|o|em|de|da|do|pra|para)\b\s*", "", curr, flags=re.IGNORECASE).strip()
+        curr = re.sub(r"^(?:rede(?:\s+sem\s+fio)?\s*(?:wi-?fi)?|wi-?fi)\b\s*", "", curr, flags=re.IGNORECASE).strip()
+        curr = re.sub(r"^(?:ao|no|na|a|o)?\s*(?:wi-?fi|rede(?:\s+sem\s+fio)?)\b\s*", "", curr, flags=re.IGNORECASE).strip()
+        ssid = curr.strip("\"'")
+        pwd = pwd.strip("\"'")
+        if ssid:
+            return 0.96, _format_call("connect_wifi", ssid=ssid, password=pwd)
+
+    # Caso 4: Senha de Wi-Fi salva -> recall_note
+    has_pwd = any(w in norm for w in ["senha", "password", "pass", "codigo", "chave", "passe"])
+    if has_pwd:
+        m_q = re.search(r"(?:senha|password|chave|codigo|passe)(?:\s+d[oa]|\s+de)?\s*(?:wi-?fi|wifi)?\s*(.*)", norm)
+        target = m_q.group(1).strip() if m_q else ""
+        target = re.sub(r"^(?:wi-?fi|wifi|rede)\s*", "", target).strip().rstrip("?!.,;:")
+        query = f"senha do wifi {target}".strip() if target else "senha do wifi"
+        return 0.95, _format_call("recall_note", query=query)
+
+    # Caso 5: Abrir configurações de Wi-Fi -> open_app
     has_open = any(w in norm for w in ["abre", "abra", "abrir", "configura", "configurar", "configuracoes", "ajustes", "tela"])
     if has_open and not any(s in norm for s in ["escanear", "escaneie", "buscar", "procurar", "quais", "listar"]):
         return 0.90, _format_call("open_app", app_name="wifi")
 
-    # Caso 3: Escanear redes próximas -> scan_wifi
+    # Caso 6: Escanear redes próximas -> scan_wifi
     scan_triggers = [
         "escanear", "escaneie", "listar", "lista", "proximas", "proxima", "perto",
-        "disponiveis", "disponivel", "redes", "quais", "ver", "mostre", "mostrar", "tem", "buscar", "busca"
+        "disponiveis", "disponivel", "redes", "quais", "ver", "mostre", "mostrar", "tem", "buscar", "busca", "scan"
     ]
     if any(t in norm for t in scan_triggers):
         return 0.95, _format_call("scan_wifi")

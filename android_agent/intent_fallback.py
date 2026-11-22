@@ -151,8 +151,16 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
             if call:
                 matched_calls.append(call)
 
-    if len(matched_calls) >= 2:
-        return "".join(matched_calls)
+    # Deduplica chamadas idênticas consecutivas (ex: 'qual meu ip e qual wifi estou conectado')
+    unique_calls = []
+    for call in matched_calls:
+        if not unique_calls or call != unique_calls[-1]:
+            unique_calls.append(call)
+
+    if len(unique_calls) >= 2:
+        return "".join(unique_calls)
+    if len(unique_calls) == 1 and len(matched_calls) >= 2:
+        return unique_calls[0]
 
     # Caso não seja comando composto, avalia o prompt inteiro como comando único
     return _ROUTER.route(colloquial_normalized)

@@ -5,6 +5,8 @@ Módulo Hardware do Silva: Bateria, Lanterna, DND, Vibração, Volume, Brilho e 
 import json
 import os
 import re
+import socket
+import struct
 import time
 from pathlib import Path
 from typing import Any, Dict
@@ -478,5 +480,251 @@ def scan_wifi() -> Dict[str, Any]:
             "message": f"Silva: Erro ao escanear Wi-Fi: {str(e)}",
             "data": {"networks": []}
         }
+
+
+def connect_wifi(ssid: str, password: str = "") -> Dict[str, Any]:
+    """
+    Conecta a uma rede Wi-Fi informando nome (SSID) e senha opcional.
+    Salva automaticamente a credencial no SQLite memory.db se a senha for fornecida.
+    """
+    clean_ssid = str(ssid or "").strip().strip('"\'')
+    clean_pass = str(password or "").strip().strip('"\'')
+
+    if not clean_ssid:
+        return {
+            "status": "error",
+            "message": "Silva: O nome da rede Wi-Fi (SSID) é obrigatório."
+        }
+
+    # Salva na memória SQLite se houver senha fornecida
+    if clean_pass:
+        try:
+            from .memory_schedule import remember_note
+            remember_note(key=f"wifi {clean_ssid}", value=clean_pass)
+        except Exception:
+            pass
+
+    if SIMULATE_HARDWARE:
+        tipo = "com senha" if clean_pass else "rede aberta"
+        return {
+            "status": "ok",
+            "message": f"Silva: Conectado com sucesso à rede Wi-Fi '{clean_ssid}' ({tipo}) [Simulado].",
+            "data": {
+                "ssid": clean_ssid,
+                "protected": bool(clean_pass),
+                "saved_to_memory": bool(clean_pass),
+                "simulated": True
+            }
+        }
+
+    # Modo Real no Android / Termux
+    # Camada 1: Conexão direta via cmd wifi (Shizuku, ADB ou Root)
+    cmd_args = ["cmd", "wifi", "connect-network", clean_ssid]
+    if clean_pass:
+        cmd_args.extend(["wpa2", clean_pass])
+    else:
+        cmd_args.append("open")
+
+    try:
+        res = _run_termux_cmd(cmd_args, timeout=8)
+        output = (res.stdout + " " + res.stderr).strip()
+        is_permission_error = any(
+            err in output for err in ["SecurityException", "Permission denied", "not allowed", "Error"]
+        )
+
+        if res.returncode == 0 and not is_permission_error:
+            return {
+                "status": "ok",
+                "message": f"Silva: Conectado diretamente à rede Wi-Fi '{clean_ssid}'.",
+                "data": {"ssid": clean_ssid, "direct_connect": True, "protected": bool(clean_pass)}
+            }
+    except Exception:
+        pass
+
+    # Camada 2: Fallback inteligente sem Root/ADB (Android 10+)
+    # Copia a senha para a área de transferência e abre as configurações de Wi-Fi
+    if clean_pass:
+        try:
+            _run_termux_cmd(["termux-clipboard-set", clean_pass], timeout=3)
+        except Exception:
+            pass
+
+        try:
+            _run_termux_cmd(["am", "start", "-a", "android.settings.WIFI_SETTINGS"], timeout=3)
+        except Exception:
+            pass
+
+        return {
+            "status": "ok",
+            "message": f"Silva: Senha da rede '{clean_ssid}' copiada para a área de transferência! Selecione a rede na tela aberta e cole a senha.",
+            "data": {
+                "ssid": clean_ssid,
+                "fallback": True,
+                "clipboard_copied": True,
+                "settings_opened": True
+            }
+        }
+    else:
+        try:
+            _run_termux_cmd(["am", "start", "-a", "android.settings.WIFI_SETTINGS"], timeout=3)
+        except Exception:
+            pass
+
+        return {
+            "status": "ok",
+            "message": f"Silva: Abrindo configurações de Wi-Fi para conectar à rede aberta '{clean_ssid}'.",
+            "data": {"ssid": clean_ssid, "fallback": True, "settings_opened": True}
+        }
+
+
+def get_wifi_info() -> Dict[str, Any]:
+    """Mostra informações detalhadas da rede Wi-Fi conectada, sinal, velocidade e IP local."""
+    web_port = os.getenv("WEB_PORT", "5000")
+
+    if SIMULATE_HARDWARE:
+        return {
+            "status": "ok",
+            "message": f"Silva: Conectado ao Wi-Fi 'Silva_5G' | IP: 192.168.1.105 | Sinal: 96% (-52 dBm) | Velocidade: 433 Mbps | Acesso web: http://192.168.1.105:{web_port} [Simulado]",
+            "data": {
+                "connected": True,
+                "ssid": "Silva_5G",
+                "ip": "192.168.1.105",
+                "link_speed_mbps": 433,
+                "rssi": -52,
+                "quality_pct": 96,
+                "web_url": f"http://192.168.1.105:{web_port}",
+                "simulated": True
+            }
+        }
+
+    try:
+        res = _run_termux_cmd(["termux-wifi-connectioninfo"], timeout=5)
+        if res.returncode != 0:
+            return {
+                "status": "error",
+                "message": f"Silva: Falha ao obter dados de Wi-Fi: {res.stderr.strip()}",
+                "data": {"connected": False}
+            }
+
+        info = json.loads(res.stdout) if res.stdout.strip() else {}
+        ssid = str(info.get("ssid", "")).strip().strip('"')
+        if not ssid or ssid.lower() == "<unknown ssid>":
+            return {
+                "status": "ok",
+                "message": "Silva: O aparelho está desconectado do Wi-Fi no momento.",
+                "data": {"connected": False, "ssid": None}
+            }
+
+        # Tratamento de IP (string ou inteiro little-endian de 32 bits)
+        ip_raw = info.get("ip")
+        ip_str = ""
+        if isinstance(ip_raw, int) and ip_raw != 0:
+            import socket
+            import struct
+            try:
+                ip_str = socket.inet_ntoa(struct.pack("<I", ip_raw))
+            except Exception:
+                ip_str = str(ip_raw)
+        elif isinstance(ip_raw, str):
+            ip_str = ip_raw.strip()
+
+        try:
+            rssi = int(info.get("rssi", -100))
+        except (ValueError, TypeError):
+            rssi = -100
+        quality_pct = max(0, min(100, 2 * (rssi + 100)))
+
+        try:
+            link_speed = int(info.get("link_speed_mbps", info.get("network_id", 0)))
+        except (ValueError, TypeError):
+            link_speed = 0
+
+        web_url = f"http://{ip_str}:{web_port}" if ip_str and ip_str != "0.0.0.0" else ""
+
+        msg_parts = [f"Silva: Conectado ao Wi-Fi '{ssid}'"]
+        if ip_str and ip_str != "0.0.0.0":
+            msg_parts.append(f"IP: {ip_str}")
+        msg_parts.append(f"Sinal: {quality_pct}% ({rssi} dBm)")
+        if link_speed > 0:
+            msg_parts.append(f"Velocidade: {link_speed} Mbps")
+        if web_url:
+            msg_parts.append(f"Acesso web: {web_url}")
+
+        return {
+            "status": "ok",
+            "message": " | ".join(msg_parts),
+            "data": {
+                "connected": True,
+                "ssid": ssid,
+                "bssid": info.get("bssid", ""),
+                "ip": ip_str,
+                "rssi": rssi,
+                "quality_pct": quality_pct,
+                "link_speed_mbps": link_speed,
+                "frequency_mhz": info.get("frequency_mhz", 0),
+                "web_url": web_url
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Silva: Erro ao obter dados do Wi-Fi: {str(e)}",
+            "data": {"connected": False}
+        }
+
+
+def set_wifi_state(state: bool) -> Dict[str, Any]:
+    """Liga ou desliga o Wi-Fi do dispositivo."""
+    state_bool = bool(state)
+    txt = "ativado" if state_bool else "desativado"
+
+    if SIMULATE_HARDWARE:
+        return {
+            "status": "ok",
+            "message": f"Silva: Wi-Fi {txt} (simulado).",
+            "data": {"state": state_bool, "simulated": True}
+        }
+
+    cmd_val = "true" if state_bool else "false"
+
+    # Camada 1: termux-wifi-enable
+    try:
+        res = _run_termux_cmd(["termux-wifi-enable", cmd_val], timeout=5)
+        out = (res.stdout + " " + res.stderr).strip()
+        if res.returncode == 0 and not any(err in out for err in ["SecurityException", "Permission denied", "Error"]):
+            return {
+                "status": "ok",
+                "message": f"Silva: Wi-Fi {txt} com sucesso.",
+                "data": {"state": state_bool}
+            }
+    except Exception:
+        pass
+
+    # Camada 2: Fallback svc wifi
+    try:
+        svc_val = "enable" if state_bool else "disable"
+        res_svc = _run_termux_cmd(["svc", "wifi", svc_val], timeout=5)
+        out_svc = (res_svc.stdout + " " + res_svc.stderr).strip()
+        if res_svc.returncode == 0 and not any(err in out_svc for err in ["SecurityException", "Permission denied"]):
+            return {
+                "status": "ok",
+                "message": f"Silva: Wi-Fi {txt} com sucesso via svc.",
+                "data": {"state": state_bool}
+            }
+    except Exception:
+        pass
+
+    # Camada 3: Fallback configurações de Wi-Fi
+    action_txt = "ligar" if state_bool else "desligar"
+    try:
+        _run_termux_cmd(["am", "start", "-a", "android.settings.WIFI_SETTINGS"], timeout=3)
+    except Exception:
+        pass
+
+    return {
+        "status": "ok",
+        "message": f"Silva: O Android bloqueou a alteração direta de Wi-Fi em segundo plano. Abrindo configurações para você {action_txt} o Wi-Fi manualmente.",
+        "data": {"state": state_bool, "settings_opened": True, "fallback": True}
+    }
 
 

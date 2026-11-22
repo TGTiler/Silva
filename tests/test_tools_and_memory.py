@@ -156,6 +156,33 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertIn("data", res)
         self.assertIn("city", res["data"])
 
+    def test_wifi_tools_simulation(self):
+        """Testa connect_wifi, get_wifi_info e set_wifi_state em modo simulado."""
+        # 1. connect_wifi
+        r_conn = tools.connect_wifi(ssid="MinhaRede_5G", password="SenhaSegura123")
+        self.assertEqual(r_conn["status"], "ok")
+        self.assertEqual(r_conn["data"]["ssid"], "MinhaRede_5G")
+        self.assertTrue(r_conn["data"]["protected"])
+
+        r_empty = tools.connect_wifi(ssid="")
+        self.assertEqual(r_empty["status"], "error")
+
+        # 2. get_wifi_info
+        r_info = tools.get_wifi_info()
+        self.assertEqual(r_info["status"], "ok")
+        self.assertIn("Silva_5G", r_info["message"])
+        self.assertEqual(r_info["data"]["ssid"], "Silva_5G")
+        self.assertEqual(r_info["data"]["ip"], "192.168.1.105")
+
+        # 3. set_wifi_state
+        r_on = tools.set_wifi_state(state=True)
+        self.assertEqual(r_on["status"], "ok")
+        self.assertTrue(r_on["data"]["state"])
+
+        r_off = tools.set_wifi_state(state=False)
+        self.assertEqual(r_off["status"], "ok")
+        self.assertFalse(r_off["data"]["state"])
+
 
 if __name__ == "__main__":
     unittest.main()

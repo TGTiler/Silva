@@ -5741,3 +5741,305 @@
 {"prompt": "calcula 39% de 7200 menos 16% de 3400 pfvr", "completion": "<call>calculate(expression=\"(39 / 100) * 7200 - (16 / 100) * 3400\")</call>"}
 {"prompt": "ei silva quanto da a raiz quadrada de 196 mais a raiz de 324", "completion": "<call>calculate(expression=\"sqrt(196) + sqrt(324)\")</call>"}
 {"prompt": "calcula o valor presente de 15000 a 1.5% ao mes por 12 meses", "completion": "<call>calculate(expression=\"15000 / (1 + 1.5 / 100)**12\")</call>"}
+{"prompt": "Silva, conecte-se ao wifi Casa_5G com a senha 1234565", "completion": "<call>connect_wifi(ssid=\"Casa_5G\", password=\"1234565\")</call>"}
+{"prompt": "conecta no wi-fi Fibra_Net c/ a senha abc@2026 pfv", "completion": "<call>connect_wifi(ssid=\"Fibra_Net\", password=\"abc@2026\")</call>"}
+{"prompt": "ei silva entra na rede wifi Escritorio_2G senha master9988", "completion": "<call>connect_wifi(ssid=\"Escritorio_2G\", password=\"master9988\")</call>"}
+{"prompt": "conectar ao wifi Visitantes sem senha blz", "completion": "<call>connect_wifi(ssid=\"Visitantes\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Studio_Pro c/ senha studio1234", "completion": "<call>connect_wifi(ssid=\"Studio_Pro\", password=\"studio1234\")</call>"}
+{"prompt": "entra no wi-fi Quarto_5G a senha e 987654321 pfvr", "completion": "<call>connect_wifi(ssid=\"Quarto_5G\", password=\"987654321\")</call>"}
+{"prompt": "conecta na rede Shopping_Gratis q é aberta", "completion": "<call>connect_wifi(ssid=\"Shopping_Gratis\", password=\"\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Rede_Local com senha admin2026", "completion": "<call>connect_wifi(ssid=\"Rede_Local\", password=\"admin2026\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Apartamento_302 senha sol@1020", "completion": "<call>connect_wifi(ssid=\"Apartamento_302\", password=\"sol@1020\")</call>"}
+{"prompt": "conecta agr no wifi Lab_IA c/ a senha pytorch99 vlw", "completion": "<call>connect_wifi(ssid=\"Lab_IA\", password=\"pytorch99\")</call>"}
+{"prompt": "ei silva conecta no wifi Ponto_Acesso senha 00112233", "completion": "<call>connect_wifi(ssid=\"Ponto_Acesso\", password=\"00112233\")</call>"}
+{"prompt": "quero conectar no wi-fi Cafe_Centro a senha tá como cafe1234", "completion": "<call>connect_wifi(ssid=\"Cafe_Centro\", password=\"cafe1234\")</call>"}
+{"prompt": "Silva conecta o cel na rede Roteador_Sala c/ senha wifi2026", "completion": "<call>connect_wifi(ssid=\"Roteador_Sala\", password=\"wifi2026\")</call>"}
+{"prompt": "entrar no wifi Praca_Publica sem senha agr", "completion": "<call>connect_wifi(ssid=\"Praca_Publica\", password=\"\")</call>"}
+{"prompt": "conecta pfv no wi-fi UltraFibra_5G senha ultra#77", "completion": "<call>connect_wifi(ssid=\"UltraFibra_5G\", password=\"ultra#77\")</call>"}
+{"prompt": "silva se conecta na rede Casa_Fundos com senha 55443322", "completion": "<call>connect_wifi(ssid=\"Casa_Fundos\", password=\"55443322\")</call>"}
+{"prompt": "conectar wifi Escola_Alunos senha aluno2026 blz", "completion": "<call>connect_wifi(ssid=\"Escola_Alunos\", password=\"aluno2026\")</call>"}
+{"prompt": "liga na rede wi-fi Oficina_Tech c/ senha tech@500", "completion": "<call>connect_wifi(ssid=\"Oficina_Tech\", password=\"tech@500\")</call>"}
+{"prompt": "ei silva conecta no wifi Biblioteca_Livre q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Biblioteca_Livre\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Rede_Gamer c/ a senha ggwp1337 vlw", "completion": "<call>connect_wifi(ssid=\"Rede_Gamer\", password=\"ggwp1337\")</call>"}
+{"prompt": "Silva, qual wifi eu tô conectado agr?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "me diz qual o ip do celular na rede pfv", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "vê p/ mim em qual rede wi-fi o aparelho tá conectado", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ei silva qual é o meu ip local hj?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "mostra os dados da conexao wifi atual blz", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "como tá o sinal do wi-fi q eu tô usando agr?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva me passa o endereco ip do cel p/ eu abrir no pc", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "qual rede wi-fi tá conectada nesse momento pfvr?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "checa o status do wifi e a velocidade da conexao", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "silva vê qual ip pegou no roteador agr", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "tô conectado em qual wifi msm?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "me mostra as informacoes do wi-fi conectado vlw", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ei silva qual o ip da rede local?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ve se o sinal do wifi tá forte e qual rede é", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "informacoes da conexao wi-fi atual pfv", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva, vê qual ip local o celular tá usando agr", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "qual o nome do wifi q tá conectado ai?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "mostra o ip e a qualidade do sinal wifi blz", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "silva me fala os detalhes da rede conectada", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "qual é o ip do telefone na rede wi-fi?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva, liga o wi-fi do celular pfv", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desliga o wifi agr blz", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "ativa o wi-fi p/ mim pfvr", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "ei silva desativa o wifi p/ economizar bateria", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "habilita o wi-fi do aparelho agr", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "corta o wifi do cel vlw", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "Silva ativa o wi-fi ai rapidinho", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desabilita o wi-fi nesse momento pfv", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "liga o wifi q eu preciso usar a internet", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "silva desliga o wi-fi do telefone agr", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "pode ligar o wi-fi p/ mim blz?", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desconecta e desliga o wifi pfvr", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "ei silva liga o wi-fi do smartphone", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "apaga o wifi ai q vou sair de casa", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "reativa o wi-fi do celular pfv", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "Silva, desativa o wi-fi agr msm", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "coloca o wifi p/ funcionar ai", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "tira o celular do wi-fi desligando ele", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "silva habilita a conexao wi-fi vlw", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desliga o wi-fi do aparelho pfv", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "Silva, conecta no wifi Sala_5G c/ a senha casa2026", "completion": "<call>connect_wifi(ssid=\"Sala_5G\", password=\"casa2026\")</call>"}
+{"prompt": "entra no wi-fi Cozinha_2G senha cafe4321 pfv", "completion": "<call>connect_wifi(ssid=\"Cozinha_2G\", password=\"cafe4321\")</call>"}
+{"prompt": "ei silva conecta na rede Trabalho_Net c/ senha job@2026", "completion": "<call>connect_wifi(ssid=\"Trabalho_Net\", password=\"job@2026\")</call>"}
+{"prompt": "conectar no wifi Hotel_Wifi senha hospede123 blz", "completion": "<call>connect_wifi(ssid=\"Hotel_Wifi\", password=\"hospede123\")</call>"}
+{"prompt": "silva põe no wifi Garagem_5G c/ senha carro9988", "completion": "<call>connect_wifi(ssid=\"Garagem_5G\", password=\"carro9988\")</call>"}
+{"prompt": "entra no wi-fi Varanda_2G a senha é 11223344 pfvr", "completion": "<call>connect_wifi(ssid=\"Varanda_2G\", password=\"11223344\")</call>"}
+{"prompt": "conecta na rede Mercado_Free q é aberta", "completion": "<call>connect_wifi(ssid=\"Mercado_Free\", password=\"\")</call>"}
+{"prompt": "Silva conecta no wifi Academia_Plus senha fit2026", "completion": "<call>connect_wifi(ssid=\"Academia_Plus\", password=\"fit2026\")</call>"}
+{"prompt": "bota no wi-fi Suite_Master senha suite@1010", "completion": "<call>connect_wifi(ssid=\"Suite_Master\", password=\"suite@1010\")</call>"}
+{"prompt": "conecta agora no wifi Dev_Zone c/ senha code777 vlw", "completion": "<call>connect_wifi(ssid=\"Dev_Zone\", password=\"code777\")</call>"}
+{"prompt": "ei silva conecta no wifi Recepcao senha 55667788", "completion": "<call>connect_wifi(ssid=\"Recepcao\", password=\"55667788\")</call>"}
+{"prompt": "quero conectar no wi-fi Padaria_Central senha pao2026", "completion": "<call>connect_wifi(ssid=\"Padaria_Central\", password=\"pao2026\")</call>"}
+{"prompt": "Silva conecta o cel na rede Router_Quarto c/ senha dorm2026", "completion": "<call>connect_wifi(ssid=\"Router_Quarto\", password=\"dorm2026\")</call>"}
+{"prompt": "entrar no wifi Parque_Livre sem senha agr", "completion": "<call>connect_wifi(ssid=\"Parque_Livre\", password=\"\")</call>"}
+{"prompt": "conecta pfv no wi-fi NetVeloz_5G senha veloz#88", "completion": "<call>connect_wifi(ssid=\"NetVeloz_5G\", password=\"veloz#88\")</call>"}
+{"prompt": "silva se conecta na rede Casa_Frente com senha 33221100", "completion": "<call>connect_wifi(ssid=\"Casa_Frente\", password=\"33221100\")</call>"}
+{"prompt": "conectar wifi Faculdade_Alunos senha fac2026 blz", "completion": "<call>connect_wifi(ssid=\"Faculdade_Alunos\", password=\"fac2026\")</call>"}
+{"prompt": "liga na rede wi-fi Loja_Tech c/ senha loja@600", "completion": "<call>connect_wifi(ssid=\"Loja_Tech\", password=\"loja@600\")</call>"}
+{"prompt": "ei silva conecta no wifi Museu_Free q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Museu_Free\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Lan_House c/ a senha pro1337 vlw", "completion": "<call>connect_wifi(ssid=\"Lan_House\", password=\"pro1337\")</call>"}
+{"prompt": "Silva, conecta no wifi Escritorio_5G c/ senha corp2026", "completion": "<call>connect_wifi(ssid=\"Escritorio_5G\", password=\"corp2026\")</call>"}
+{"prompt": "entra no wi-fi Quintal_2G senha jardim77 pfv", "completion": "<call>connect_wifi(ssid=\"Quintal_2G\", password=\"jardim77\")</call>"}
+{"prompt": "ei silva conecta na rede Studio_Arte c/ senha art@3030", "completion": "<call>connect_wifi(ssid=\"Studio_Arte\", password=\"art@3030\")</call>"}
+{"prompt": "conectar no wifi Restaurante_Wifi senha mesa1234 blz", "completion": "<call>connect_wifi(ssid=\"Restaurante_Wifi\", password=\"mesa1234\")</call>"}
+{"prompt": "silva põe no wifi Apto_501 c/ senha predio2026", "completion": "<call>connect_wifi(ssid=\"Apto_501\", password=\"predio2026\")</call>"}
+{"prompt": "entra no wi-fi Clinica_Net a senha é 99887766 pfvr", "completion": "<call>connect_wifi(ssid=\"Clinica_Net\", password=\"99887766\")</call>"}
+{"prompt": "conecta na rede Aeroporto_Free q é aberta", "completion": "<call>connect_wifi(ssid=\"Aeroporto_Free\", password=\"\")</call>"}
+{"prompt": "Silva conecta no wifi Banco_Tech senha secure2026", "completion": "<call>connect_wifi(ssid=\"Banco_Tech\", password=\"secure2026\")</call>"}
+{"prompt": "bota no wi-fi Sala_Reuniao senha meet@4040", "completion": "<call>connect_wifi(ssid=\"Sala_Reuniao\", password=\"meet@4040\")</call>"}
+{"prompt": "conecta agora no wifi Games_Zone c/ senha play2026 vlw", "completion": "<call>connect_wifi(ssid=\"Games_Zone\", password=\"play2026\")</call>"}
+{"prompt": "ei silva conecta no wifi Portaria senha 44332211", "completion": "<call>connect_wifi(ssid=\"Portaria\", password=\"44332211\")</call>"}
+{"prompt": "quero conectar no wi-fi Livraria_Cafe senha livro2026", "completion": "<call>connect_wifi(ssid=\"Livraria_Cafe\", password=\"livro2026\")</call>"}
+{"prompt": "Silva conecta o cel na rede Router_Cozinha c/ senha coz2026", "completion": "<call>connect_wifi(ssid=\"Router_Cozinha\", password=\"coz2026\")</call>"}
+{"prompt": "entrar no wifi Praca_Central sem senha agr", "completion": "<call>connect_wifi(ssid=\"Praca_Central\", password=\"\")</call>"}
+{"prompt": "conecta pfv no wi-fi SuperFibra_5G senha super#99", "completion": "<call>connect_wifi(ssid=\"SuperFibra_5G\", password=\"super#99\")</call>"}
+{"prompt": "silva se conecta na rede Casa_Lateral com senha 77665544", "completion": "<call>connect_wifi(ssid=\"Casa_Lateral\", password=\"77665544\")</call>"}
+{"prompt": "conectar wifi Curso_Alunos senha curso2026 blz", "completion": "<call>connect_wifi(ssid=\"Curso_Alunos\", password=\"curso2026\")</call>"}
+{"prompt": "liga na rede wi-fi Assistencia_Tech c/ senha fix@700", "completion": "<call>connect_wifi(ssid=\"Assistencia_Tech\", password=\"fix@700\")</call>"}
+{"prompt": "ei silva conecta no wifi Teatro_Free q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Teatro_Free\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Esports_Arena c/ a senha frag2026 vlw", "completion": "<call>connect_wifi(ssid=\"Esports_Arena\", password=\"frag2026\")</call>"}
+{"prompt": "Silva, conecta no wifi Predio_5G c/ senha condo2026", "completion": "<call>connect_wifi(ssid=\"Predio_5G\", password=\"condo2026\")</call>"}
+{"prompt": "entra no wi-fi Chacara_2G senha sitio55 pfv", "completion": "<call>connect_wifi(ssid=\"Chacara_2G\", password=\"sitio55\")</call>"}
+{"prompt": "ei silva conecta na rede Ateliê_Net c/ senha obra@8080", "completion": "<call>connect_wifi(ssid=\"Atelie_Net\", password=\"obra@8080\")</call>"}
+{"prompt": "conectar no wifi Hamburgueria_Wifi senha lanche123 blz", "completion": "<call>connect_wifi(ssid=\"Hamburgueria_Wifi\", password=\"lanche123\")</call>"}
+{"prompt": "silva põe no wifi Cobertura_5G c/ senha top2026", "completion": "<call>connect_wifi(ssid=\"Cobertura_5G\", password=\"top2026\")</call>"}
+{"prompt": "entra no wi-fi Consultorio_Net a senha é 22334455 pfvr", "completion": "<call>connect_wifi(ssid=\"Consultorio_Net\", password=\"22334455\")</call>"}
+{"prompt": "conecta na rede Rodoviaria_Free q é aberta", "completion": "<call>connect_wifi(ssid=\"Rodoviaria_Free\", password=\"\")</call>"}
+{"prompt": "Silva conecta no wifi Finance_Tech senha money2026", "completion": "<call>connect_wifi(ssid=\"Finance_Tech\", password=\"money2026\")</call>"}
+{"prompt": "bota no wi-fi Sala_Estar senha sofá@9090", "completion": "<call>connect_wifi(ssid=\"Sala_Estar\", password=\"sofa@9090\")</call>"}
+{"prompt": "conecta agora no wifi Cyber_Zone c/ senha hack2026 vlw", "completion": "<call>connect_wifi(ssid=\"Cyber_Zone\", password=\"hack2026\")</call>"}
+{"prompt": "ei silva conecta no wifi Guarita senha 88990011", "completion": "<call>connect_wifi(ssid=\"Guarita\", password=\"88990011\")</call>"}
+{"prompt": "quero conectar no wi-fi Sorveteria_Net senha gelo2026", "completion": "<call>connect_wifi(ssid=\"Sorveteria_Net\", password=\"gelo2026\")</call>"}
+{"prompt": "Silva conecta o cel na rede Router_Varanda c/ senha var2026", "completion": "<call>connect_wifi(ssid=\"Router_Varanda\", password=\"var2026\")</call>"}
+{"prompt": "entrar no wifi Jardim_Publico sem senha agr", "completion": "<call>connect_wifi(ssid=\"Jardim_Publico\", password=\"\")</call>"}
+{"prompt": "conecta pfv no wi-fi MegaFibra_5G senha mega#55", "completion": "<call>connect_wifi(ssid=\"MegaFibra_5G\", password=\"mega#55\")</call>"}
+{"prompt": "silva se conecta na rede Casa_Fundos_2 com senha 66554433", "completion": "<call>connect_wifi(ssid=\"Casa_Fundos_2\", password=\"66554433\")</call>"}
+{"prompt": "conectar wifi Instituto_Alunos senha inst2026 blz", "completion": "<call>connect_wifi(ssid=\"Instituto_Alunos\", password=\"inst2026\")</call>"}
+{"prompt": "liga na rede wi-fi Eletro_Tech c/ senha volt@800", "completion": "<call>connect_wifi(ssid=\"Eletro_Tech\", password=\"volt@800\")</call>"}
+{"prompt": "ei silva conecta no wifi Galeria_Free q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Galeria_Free\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Stream_House c/ a senha live2026 vlw", "completion": "<call>connect_wifi(ssid=\"Stream_House\", password=\"live2026\")</call>"}
+{"prompt": "Silva, conecta no wifi Torre_5G c/ senha torre2026", "completion": "<call>connect_wifi(ssid=\"Torre_5G\", password=\"torre2026\")</call>"}
+{"prompt": "Silva, conecta no wifi Sala_Jogos c/ a senha game2026", "completion": "<call>connect_wifi(ssid=\"Sala_Jogos\", password=\"game2026\")</call>"}
+{"prompt": "entra no wi-fi Mercado_Livre senha oferta55 pfv", "completion": "<call>connect_wifi(ssid=\"Mercado_Livre\", password=\"oferta55\")</call>"}
+{"prompt": "ei silva conecta na rede Studio_Foto c/ senha foto2026", "completion": "<call>connect_wifi(ssid=\"Studio_Foto\", password=\"foto2026\")</call>"}
+{"prompt": "conectar no wifi Pet_Shop sem senha blz", "completion": "<call>connect_wifi(ssid=\"Pet_Shop\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Farmacia_Net c/ senha saude123", "completion": "<call>connect_wifi(ssid=\"Farmacia_Net\", password=\"saude123\")</call>"}
+{"prompt": "entra no wi-fi Oficina_Mecanica a senha e motor77 pfvr", "completion": "<call>connect_wifi(ssid=\"Oficina_Mecanica\", password=\"motor77\")</call>"}
+{"prompt": "conecta na rede Aeroclube q é aberta", "completion": "<call>connect_wifi(ssid=\"Aeroclube\", password=\"\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Hamburgueria_2 com senha lanche@88", "completion": "<call>connect_wifi(ssid=\"Hamburgueria_2\", password=\"lanche@88\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Sala_Cinema senha filme2026", "completion": "<call>connect_wifi(ssid=\"Sala_Cinema\", password=\"filme2026\")</call>"}
+{"prompt": "conecta agr no wifi Lavanderia c/ a senha roupa99 vlw", "completion": "<call>connect_wifi(ssid=\"Lavanderia\", password=\"roupa99\")</call>"}
+{"prompt": "ei silva conecta no wifi Churrasqueira senha carne2026", "completion": "<call>connect_wifi(ssid=\"Churrasqueira\", password=\"carne2026\")</call>"}
+{"prompt": "quero conectar no wi-fi Horta_Urbana a senha tá planta55", "completion": "<call>connect_wifi(ssid=\"Horta_Urbana\", password=\"planta55\")</call>"}
+{"prompt": "Silva conecta o cel na rede Ateliê_Moda c/ senha moda@2026", "completion": "<call>connect_wifi(ssid=\"Atelie_Moda\", password=\"moda@2026\")</call>"}
+{"prompt": "entrar no wifi Coworking_Net c/ senha cowork77 agr", "completion": "<call>connect_wifi(ssid=\"Coworking_Net\", password=\"cowork77\")</call>"}
+{"prompt": "conecta pfv no wi-fi Padoca_2 senha pao@2026", "completion": "<call>connect_wifi(ssid=\"Padoca_2\", password=\"pao@2026\")</call>"}
+{"prompt": "silva se conecta na rede Oficina_Bike com senha bike123", "completion": "<call>connect_wifi(ssid=\"Oficina_Bike\", password=\"bike123\")</call>"}
+{"prompt": "conectar wifi Studio_Danca senha danca2026 blz", "completion": "<call>connect_wifi(ssid=\"Studio_Danca\", password=\"danca2026\")</call>"}
+{"prompt": "liga na rede wi-fi Tabacaria c/ senha fumo55", "completion": "<call>connect_wifi(ssid=\"Tabacaria\", password=\"fumo55\")</call>"}
+{"prompt": "ei silva conecta no wifi Piscina_Free q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Piscina_Free\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Mercado_Central c/ a senha feira2026 vlw", "completion": "<call>connect_wifi(ssid=\"Mercado_Central\", password=\"feira2026\")</call>"}
+{"prompt": "Silva, em qual wifi eu tô conectado agr?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "me diz a velocidade do link e o ip local pfv", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ei silva mostra o ip local do cel p/ eu abrir o :5000 no pc", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "qual o ip 192.168 q o cel pegou no wifi hj?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "mostra a intensidade do sinal e a rede atual blz", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "como tá a velocidade do link wifi agr em mbps?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva me passa o ip local p/ eu acessar o servidor no navegador", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "qual rede e qual ip tá conectado nesse momento pfvr?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "checa a conexao wifi atual e me fala o ip local", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "silva vê qual ip o cel pegou no roteador agr", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "tô em qual wifi e qual o meu ip local msm?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "me mostra o ssid, o sinal e o ip da rede vlw", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ei silva qual o ip local p/ abrir http no pc?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ve a velocidade do wifi e o ip local atual", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "informacoes da conexao atual: rede, sinal e ip pfv", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva, qual ip local o celular tá usando agr?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "qual o nome do wifi conectado e a velocidade do link?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "mostra o ip local e a forca do sinal wifi blz", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "silva me fala o ip local p/ eu abrir o :5000 no navegador", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "qual é o ip 192.168 do telefone na rede wi-fi?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva, liga o wi-fi do celular pfv", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desliga o wifi agr blz", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "ativa o wi-fi p/ mim pfvr", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "ei silva desativa o wifi p/ economizar bateria", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "habilita o wi-fi do aparelho agr", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "corta o wifi do cel vlw", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "Silva ativa o wi-fi ai rapidinho", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desabilita o wi-fi nesse momento pfv", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "liga o wifi q eu preciso usar a internet", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "silva desliga o wi-fi do telefone agr", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "pode ligar o wi-fi p/ mim blz?", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desconecta e desliga o wifi pfvr", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "ei silva liga o wi-fi do smartphone", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "apaga o wifi ai q vou sair de casa", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "reativa o wi-fi do celular pfv", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "Silva, desativa o wi-fi agr msm", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "coloca o wifi p/ funcionar ai", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "tira o celular do wi-fi desligando ele", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "silva habilita a conexao wi-fi vlw", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desliga o wi-fi do aparelho pfv", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "Silva, conecta no wifi Garagem_5G c/ a senha carro2026", "completion": "<call>connect_wifi(ssid=\"Garagem_5G\", password=\"carro2026\")</call>"}
+{"prompt": "entra no wi-fi Varanda_2G senha sol1234 pfv", "completion": "<call>connect_wifi(ssid=\"Varanda_2G\", password=\"sol1234\")</call>"}
+{"prompt": "ei silva conecta na rede Suite_Master c/ senha suite2026", "completion": "<call>connect_wifi(ssid=\"Suite_Master\", password=\"suite2026\")</call>"}
+{"prompt": "conectar no wifi Academia_Plus sem senha blz", "completion": "<call>connect_wifi(ssid=\"Academia_Plus\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Dev_Zone c/ senha code777", "completion": "<call>connect_wifi(ssid=\"Dev_Zone\", password=\"code777\")</call>"}
+{"prompt": "entra no wi-fi Padaria_Central a senha e pao2026 pfvr", "completion": "<call>connect_wifi(ssid=\"Padaria_Central\", password=\"pao2026\")</call>"}
+{"prompt": "conecta na rede Parque_Livre q é aberta", "completion": "<call>connect_wifi(ssid=\"Parque_Livre\", password=\"\")</call>"}
+{"prompt": "Silva, faz conexao no wifi NetVeloz_5G com senha veloz#88", "completion": "<call>connect_wifi(ssid=\"NetVeloz_5G\", password=\"veloz#88\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Casa_Frente senha 33221100", "completion": "<call>connect_wifi(ssid=\"Casa_Frente\", password=\"33221100\")</call>"}
+{"prompt": "conecta agr no wifi Faculdade_Alunos c/ a senha fac2026 vlw", "completion": "<call>connect_wifi(ssid=\"Faculdade_Alunos\", password=\"fac2026\")</call>"}
+{"prompt": "ei silva conecta no wifi Loja_Tech senha loja@600", "completion": "<call>connect_wifi(ssid=\"Loja_Tech\", password=\"loja@600\")</call>"}
+{"prompt": "quero conectar no wi-fi Museu_Free a senha tá vazia", "completion": "<call>connect_wifi(ssid=\"Museu_Free\", password=\"\")</call>"}
+{"prompt": "Silva conecta o cel na rede Lan_House c/ senha pro1337", "completion": "<call>connect_wifi(ssid=\"Lan_House\", password=\"pro1337\")</call>"}
+{"prompt": "entrar no wifi Quintal_2G c/ senha jardim77 agr", "completion": "<call>connect_wifi(ssid=\"Quintal_2G\", password=\"jardim77\")</call>"}
+{"prompt": "conecta pfv no wi-fi Studio_Arte senha art@3030", "completion": "<call>connect_wifi(ssid=\"Studio_Arte\", password=\"art@3030\")</call>"}
+{"prompt": "silva se conecta na rede Restaurante_Wifi com senha mesa1234", "completion": "<call>connect_wifi(ssid=\"Restaurante_Wifi\", password=\"mesa1234\")</call>"}
+{"prompt": "conectar wifi Apto_501 senha predio2026 blz", "completion": "<call>connect_wifi(ssid=\"Apto_501\", password=\"predio2026\")</call>"}
+{"prompt": "liga na rede wi-fi Clinica_Net c/ senha 99887766", "completion": "<call>connect_wifi(ssid=\"Clinica_Net\", password=\"99887766\")</call>"}
+{"prompt": "ei silva conecta no wifi Aeroporto_Free q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Aeroporto_Free\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Banco_Tech c/ a senha secure2026 vlw", "completion": "<call>connect_wifi(ssid=\"Banco_Tech\", password=\"secure2026\")</call>"}
+{"prompt": "Silva, conecta no wifi Sala_Reuniao c/ a senha meet@4040", "completion": "<call>connect_wifi(ssid=\"Sala_Reuniao\", password=\"meet@4040\")</call>"}
+{"prompt": "entra no wi-fi Games_Zone senha play2026 pfv", "completion": "<call>connect_wifi(ssid=\"Games_Zone\", password=\"play2026\")</call>"}
+{"prompt": "ei silva conecta na rede Portaria c/ senha 44332211", "completion": "<call>connect_wifi(ssid=\"Portaria\", password=\"44332211\")</call>"}
+{"prompt": "conectar no wifi Livraria_Cafe sem senha blz", "completion": "<call>connect_wifi(ssid=\"Livraria_Cafe\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Router_Cozinha c/ senha coz2026", "completion": "<call>connect_wifi(ssid=\"Router_Cozinha\", password=\"coz2026\")</call>"}
+{"prompt": "entra no wi-fi Praca_Central a senha e livre123 pfvr", "completion": "<call>connect_wifi(ssid=\"Praca_Central\", password=\"livre123\")</call>"}
+{"prompt": "conecta na rede SuperFibra_5G q tem senha super#99", "completion": "<call>connect_wifi(ssid=\"SuperFibra_5G\", password=\"super#99\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Casa_Lateral com senha 77665544", "completion": "<call>connect_wifi(ssid=\"Casa_Lateral\", password=\"77665544\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Curso_Alunos senha curso2026", "completion": "<call>connect_wifi(ssid=\"Curso_Alunos\", password=\"curso2026\")</call>"}
+{"prompt": "conecta agr no wifi Assistencia_Tech c/ a senha fix@700 vlw", "completion": "<call>connect_wifi(ssid=\"Assistencia_Tech\", password=\"fix@700\")</call>"}
+{"prompt": "ei silva conecta no wifi Teatro_Free senha vazia", "completion": "<call>connect_wifi(ssid=\"Teatro_Free\", password=\"\")</call>"}
+{"prompt": "quero conectar no wi-fi Esports_Arena a senha tá frag2026", "completion": "<call>connect_wifi(ssid=\"Esports_Arena\", password=\"frag2026\")</call>"}
+{"prompt": "Silva conecta o cel na rede Predio_5G c/ senha condo2026", "completion": "<call>connect_wifi(ssid=\"Predio_5G\", password=\"condo2026\")</call>"}
+{"prompt": "entrar no wifi Chacara_2G c/ senha sitio55 agr", "completion": "<call>connect_wifi(ssid=\"Chacara_2G\", password=\"sitio55\")</call>"}
+{"prompt": "conecta pfv no wi-fi Atelie_Net senha obra@8080", "completion": "<call>connect_wifi(ssid=\"Atelie_Net\", password=\"obra@8080\")</call>"}
+{"prompt": "silva se conecta na rede Hamburgueria_Wifi com senha lanche123", "completion": "<call>connect_wifi(ssid=\"Hamburgueria_Wifi\", password=\"lanche123\")</call>"}
+{"prompt": "conectar wifi Cobertura_5G senha top2026 blz", "completion": "<call>connect_wifi(ssid=\"Cobertura_5G\", password=\"top2026\")</call>"}
+{"prompt": "liga na rede wi-fi Consultorio_Net c/ senha 22334455", "completion": "<call>connect_wifi(ssid=\"Consultorio_Net\", password=\"22334455\")</call>"}
+{"prompt": "ei silva conecta no wifi Rodoviaria_Free q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Rodoviaria_Free\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Finance_Tech c/ a senha money2026 vlw", "completion": "<call>connect_wifi(ssid=\"Finance_Tech\", password=\"money2026\")</call>"}
+{"prompt": "Silva, conecta no wifi Sala_Estar c/ a senha sofa@9090", "completion": "<call>connect_wifi(ssid=\"Sala_Estar\", password=\"sofa@9090\")</call>"}
+{"prompt": "entra no wi-fi Cyber_Zone senha hack2026 pfv", "completion": "<call>connect_wifi(ssid=\"Cyber_Zone\", password=\"hack2026\")</call>"}
+{"prompt": "ei silva conecta na rede Guarita c/ senha 88990011", "completion": "<call>connect_wifi(ssid=\"Guarita\", password=\"88990011\")</call>"}
+{"prompt": "conectar no wifi Sorveteria_Net sem senha blz", "completion": "<call>connect_wifi(ssid=\"Sorveteria_Net\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Router_Varanda c/ senha var2026", "completion": "<call>connect_wifi(ssid=\"Router_Varanda\", password=\"var2026\")</call>"}
+{"prompt": "entra no wi-fi Jardim_Publico a senha e jardim99 pfvr", "completion": "<call>connect_wifi(ssid=\"Jardim_Publico\", password=\"jardim99\")</call>"}
+{"prompt": "conecta na rede MegaFibra_5G q tem senha mega#55", "completion": "<call>connect_wifi(ssid=\"MegaFibra_5G\", password=\"mega#55\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Casa_Fundos_2 com senha 66554433", "completion": "<call>connect_wifi(ssid=\"Casa_Fundos_2\", password=\"66554433\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Instituto_Alunos senha inst2026", "completion": "<call>connect_wifi(ssid=\"Instituto_Alunos\", password=\"inst2026\")</call>"}
+{"prompt": "conecta agr no wifi Eletro_Tech c/ a senha volt@800 vlw", "completion": "<call>connect_wifi(ssid=\"Eletro_Tech\", password=\"volt@800\")</call>"}
+{"prompt": "ei silva conecta no wifi Galeria_Free senha vazia", "completion": "<call>connect_wifi(ssid=\"Galeria_Free\", password=\"\")</call>"}
+{"prompt": "quero conectar no wi-fi Stream_House a senha tá live2026", "completion": "<call>connect_wifi(ssid=\"Stream_House\", password=\"live2026\")</call>"}
+{"prompt": "Silva conecta o cel na rede Torre_5G c/ senha torre2026", "completion": "<call>connect_wifi(ssid=\"Torre_5G\", password=\"torre2026\")</call>"}
+{"prompt": "entrar no wifi Oficina_Mecanica c/ senha motor77 agr", "completion": "<call>connect_wifi(ssid=\"Oficina_Mecanica\", password=\"motor77\")</call>"}
+{"prompt": "conecta pfv no wi-fi Pet_Shop senha pet@2026", "completion": "<call>connect_wifi(ssid=\"Pet_Shop\", password=\"pet@2026\")</call>"}
+{"prompt": "silva se conecta na rede Farmacia_Net com senha saude123", "completion": "<call>connect_wifi(ssid=\"Farmacia_Net\", password=\"saude123\")</call>"}
+{"prompt": "conectar wifi Sala_Jogos senha game2026 blz", "completion": "<call>connect_wifi(ssid=\"Sala_Jogos\", password=\"game2026\")</call>"}
+{"prompt": "liga na rede wi-fi Mercado_Livre c/ senha oferta55", "completion": "<call>connect_wifi(ssid=\"Mercado_Livre\", password=\"oferta55\")</call>"}
+{"prompt": "ei silva conecta no wifi Aeroclube q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Aeroclube\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Studio_Foto c/ a senha foto2026 vlw", "completion": "<call>connect_wifi(ssid=\"Studio_Foto\", password=\"foto2026\")</call>"}
+{"prompt": "Silva, conecta no wifi Varanda_5G c/ a senha sol@2026", "completion": "<call>connect_wifi(ssid=\"Varanda_5G\", password=\"sol@2026\")</call>"}
+{"prompt": "entra no wi-fi Cozinha_Net senha panela77 pfv", "completion": "<call>connect_wifi(ssid=\"Cozinha_Net\", password=\"panela77\")</call>"}
+{"prompt": "ei silva conecta na rede Garagem_2G c/ senha carro@55", "completion": "<call>connect_wifi(ssid=\"Garagem_2G\", password=\"carro@55\")</call>"}
+{"prompt": "conectar no wifi Quintal_Free sem senha blz", "completion": "<call>connect_wifi(ssid=\"Quintal_Free\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Suite_Net c/ senha suite@88", "completion": "<call>connect_wifi(ssid=\"Suite_Net\", password=\"suite@88\")</call>"}
+{"prompt": "entra no wi-fi Escritorio_Home a senha e home2026 pfvr", "completion": "<call>connect_wifi(ssid=\"Escritorio_Home\", password=\"home2026\")</call>"}
+{"prompt": "conecta na rede Padaria_Free q é aberta", "completion": "<call>connect_wifi(ssid=\"Padaria_Free\", password=\"\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Fibra_Max com senha max#2026", "completion": "<call>connect_wifi(ssid=\"Fibra_Max\", password=\"max#2026\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Sala_TV senha tv1234", "completion": "<call>connect_wifi(ssid=\"Sala_TV\", password=\"tv1234\")</call>"}
+{"prompt": "conecta agr no wifi Loja_Centro c/ a senha loja@99 vlw", "completion": "<call>connect_wifi(ssid=\"Loja_Centro\", password=\"loja@99\")</call>"}
+{"prompt": "ei silva conecta no wifi Academia_Fit senha fit@2026", "completion": "<call>connect_wifi(ssid=\"Academia_Fit\", password=\"fit@2026\")</call>"}
+{"prompt": "quero conectar no wi-fi Hotel_Plaza a senha tá plaza123", "completion": "<call>connect_wifi(ssid=\"Hotel_Plaza\", password=\"plaza123\")</call>"}
+{"prompt": "Silva conecta o cel na rede Studio_Beleza c/ senha bela@2026", "completion": "<call>connect_wifi(ssid=\"Studio_Beleza\", password=\"bela@2026\")</call>"}
+{"prompt": "entrar no wifi Mercado_Bairro c/ senha feira77 agr", "completion": "<call>connect_wifi(ssid=\"Mercado_Bairro\", password=\"feira77\")</call>"}
+{"prompt": "conecta pfv no wi-fi Clinica_Vida senha vida@2026", "completion": "<call>connect_wifi(ssid=\"Clinica_Vida\", password=\"vida@2026\")</call>"}
+{"prompt": "silva se conecta na rede Escola_Prof com senha prof2026", "completion": "<call>connect_wifi(ssid=\"Escola_Prof\", password=\"prof2026\")</call>"}
+{"prompt": "conectar wifi Restaurante_Sabor senha sabor77 blz", "completion": "<call>connect_wifi(ssid=\"Restaurante_Sabor\", password=\"sabor77\")</call>"}
+{"prompt": "liga na rede wi-fi Oficina_Car c/ senha motor@2026", "completion": "<call>connect_wifi(ssid=\"Oficina_Car\", password=\"motor@2026\")</call>"}
+{"prompt": "ei silva conecta no wifi Praca_Free q nao tem senha", "completion": "<call>connect_wifi(ssid=\"Praca_Free\", password=\"\")</call>"}
+{"prompt": "conecta ai no wifi Biblioteca_Net c/ a senha livro77 vlw", "completion": "<call>connect_wifi(ssid=\"Biblioteca_Net\", password=\"livro77\")</call>"}
+{"prompt": "Silva, conecta no wifi Apto_301 c/ a senha predio@2026", "completion": "<call>connect_wifi(ssid=\"Apto_301\", password=\"predio@2026\")</call>"}
+{"prompt": "entra no wi-fi Sala_Reuniao_2 senha meet88 pfv", "completion": "<call>connect_wifi(ssid=\"Sala_Reuniao_2\", password=\"meet88\")</call>"}
+{"prompt": "ei silva conecta na rede Cafe_Esquina c/ senha cafe@55", "completion": "<call>connect_wifi(ssid=\"Cafe_Esquina\", password=\"cafe@55\")</call>"}
+{"prompt": "conectar no wifi Parque_Free sem senha blz", "completion": "<call>connect_wifi(ssid=\"Parque_Free\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Lab_Tech c/ senha lab@2026", "completion": "<call>connect_wifi(ssid=\"Lab_Tech\", password=\"lab@2026\")</call>"}
+{"prompt": "entra no wi-fi Coworking_2 a senha e work77 pfvr", "completion": "<call>connect_wifi(ssid=\"Coworking_2\", password=\"work77\")</call>"}
+{"prompt": "conecta na rede Shopping_Free q é aberta", "completion": "<call>connect_wifi(ssid=\"Shopping_Free\", password=\"\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Net_Casa com senha casa@2026", "completion": "<call>connect_wifi(ssid=\"Net_Casa\", password=\"casa@2026\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Quarto_Net senha dorm77", "completion": "<call>connect_wifi(ssid=\"Quarto_Net\", password=\"dorm77\")</call>"}
+{"prompt": "conecta agr no wifi Pet_Center c/ a senha pet@55 vlw", "completion": "<call>connect_wifi(ssid=\"Pet_Center\", password=\"pet@55\")</call>"}
+{"prompt": "ei silva conecta no wifi Sorveteria_2 senha gelo@2026", "completion": "<call>connect_wifi(ssid=\"Sorveteria_2\", password=\"gelo@2026\")</call>"}
+{"prompt": "quero conectar no wi-fi Lanchonete a senha tá lanche77", "completion": "<call>connect_wifi(ssid=\"Lanchonete\", password=\"lanche77\")</call>"}
+{"prompt": "Silva conecta o cel na rede Fit_Net c/ senha fit@55", "completion": "<call>connect_wifi(ssid=\"Fit_Net\", password=\"fit@55\")</call>"}
+{"prompt": "entrar no wifi Auditorio c/ senha audit77 agr", "completion": "<call>connect_wifi(ssid=\"Auditorio\", password=\"audit77\")</call>"}
+{"prompt": "conecta pfv no wi-fi Recepcao_2 senha recep@2026", "completion": "<call>connect_wifi(ssid=\"Recepcao_2\", password=\"recep@2026\")</call>"}
+{"prompt": "silva se conecta na rede Chacara_Net com senha sitio@55", "completion": "<call>connect_wifi(ssid=\"Chacara_Net\", password=\"sitio@55\")</call>"}
+{"prompt": "conectar wifi Praia_Free senha vazia blz", "completion": "<call>connect_wifi(ssid=\"Praia_Free\", password=\"\")</call>"}
+{"prompt": "liga na rede wi-fi Farmacia_Vida c/ senha saude77", "completion": "<call>connect_wifi(ssid=\"Farmacia_Vida\", password=\"saude77\")</call>"}
+{"prompt": "ei silva conecta no wifi Cobertura_Net q tem senha top@2026", "completion": "<call>connect_wifi(ssid=\"Cobertura_Net\", password=\"top@2026\")</call>"}
+{"prompt": "conecta ai no wifi Sala_Jantar c/ a senha janta77 vlw", "completion": "<call>connect_wifi(ssid=\"Sala_Jantar\", password=\"janta77\")</call>"}
+{"prompt": "Silva, conecta no wifi Varanda_Net c/ a senha sol77", "completion": "<call>connect_wifi(ssid=\"Varanda_Net\", password=\"sol77\")</call>"}
+{"prompt": "entra no wi-fi Loja_Roupa senha moda@2026 pfv", "completion": "<call>connect_wifi(ssid=\"Loja_Roupa\", password=\"moda@2026\")</call>"}
+{"prompt": "ei silva conecta na rede Banco_Net c/ senha segur@55", "completion": "<call>connect_wifi(ssid=\"Banco_Net\", password=\"segur@55\")</call>"}
+{"prompt": "conectar no wifi Rodoviaria_Free2 sem senha blz", "completion": "<call>connect_wifi(ssid=\"Rodoviaria_Free2\", password=\"\")</call>"}
+{"prompt": "silva conecta p/ mim no wifi Cyber_2 c/ senha hack@2026", "completion": "<call>connect_wifi(ssid=\"Cyber_2\", password=\"hack@2026\")</call>"}
+{"prompt": "entra no wi-fi Guarita_2 a senha e port77 pfvr", "completion": "<call>connect_wifi(ssid=\"Guarita_2\", password=\"port77\")</call>"}
+{"prompt": "conecta na rede Teatro_Free2 q é aberta", "completion": "<call>connect_wifi(ssid=\"Teatro_Free2\", password=\"\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Predio_Net com senha condo@55", "completion": "<call>connect_wifi(ssid=\"Predio_Net\", password=\"condo@55\")</call>"}
+{"prompt": "bota p/ conectar no wi-fi Horta_Net senha planta@2026", "completion": "<call>connect_wifi(ssid=\"Horta_Net\", password=\"planta@2026\")</call>"}
+{"prompt": "conecta agr no wifi Atelie_2 c/ a senha arte77 vlw", "completion": "<call>connect_wifi(ssid=\"Atelie_2\", password=\"arte77\")</call>"}
+{"prompt": "ei silva conecta no wifi Sorveteria_Net2 senha gelo77", "completion": "<call>connect_wifi(ssid=\"Sorveteria_Net2\", password=\"gelo77\")</call>"}
+{"prompt": "Silva, vê qual o ip local do cel agr pfv", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "me mostra o link em mbps e o ip da rede blz", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ei silva tô em qual wifi e qual o ip 192.168?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "preciso do ip local p/ abrir o :5000 no pc pfvr", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "mostra a rede atual, o sinal e a velocidade do link", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "como tá o sinal e qual o ip local do cel agora?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva me passa o ip local e o ssid conectado vlw", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "ei silva ativa o wi-fi do aparelho pfv", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "desliga o wifi q eu quero economizar bateria blz", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "silva liga o wi-fi ai rapidinho pfvr", "completion": "<call>set_wifi_state(state=True)</call>"}

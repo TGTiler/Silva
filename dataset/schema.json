@@ -394,6 +394,36 @@
       "description": "Escaneia e lista as redes Wi-Fi disponíveis nas proximidades, exibindo intensidade de sinal, frequência e segurança.",
       "parameters": {}
     },
+    "connect_wifi": {
+      "description": "Conecta a uma rede Wi-Fi informando nome (SSID) e senha opcional.",
+      "parameters": {
+        "ssid": {
+          "type": "string",
+          "required": true,
+          "description": "Nome da rede Wi-Fi"
+        },
+        "password": {
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Senha da rede Wi-Fi"
+        }
+      }
+    },
+    "get_wifi_info": {
+      "description": "Mostra informações da rede Wi-Fi conectada, sinal e IP local.",
+      "parameters": {}
+    },
+    "set_wifi_state": {
+      "description": "Liga ou desliga o Wi-Fi do dispositivo.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "True para ligar, False para desligar"
+        }
+      }
+    },
     "none": {
       "description": "Chamada nula emitida quando o usuário faz uma pergunta geral, saudação ou comando sem ferramenta correspondente.",
       "parameters": {}

@@ -60,7 +60,7 @@ SILVA_SYSTEM_PROMPT = (
     "remember_note(key, value), recall_note(query), get_notifications(app), set_volume(stream, level), "
     "set_brightness(level), set_timer(minutes, label), calculate(expression), search_google(query, open_browser), "
     "request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), "
-    "scan_wifi(), list_capabilities(), none().\n"
+    "scan_wifi(), connect_wifi(ssid, password), get_wifi_info(), set_wifi_state(state), list_capabilities(), none().\n"
     "Responda EXCLUSIVAMENTE com chamadas no formato: <call>get_battery()</call> ou <call>set_torch(state=True)</call>.\n"
     "Quando o usuário solicitar mais de uma ação na mesma frase, emita múltiplas tags em sequência (ex: <call>get_battery()</call><call>set_torch(state=True)</call>).\n"
     "Caso o comando não corresponda a nenhuma ferramenta ou seja uma conversa geral, responda apenas:\n"

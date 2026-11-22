@@ -29,6 +29,9 @@ from .hardware import (
     set_volume,
     set_brightness,
     scan_wifi,
+    connect_wifi,
+    get_wifi_info,
+    set_wifi_state,
 )
 
 from .media import (
@@ -128,6 +131,9 @@ AVAILABLE_TOOLS = {
     "media_control": media_control,
     "list_capabilities": list_capabilities,
     "scan_wifi": scan_wifi,
+    "connect_wifi": connect_wifi,
+    "get_wifi_info": get_wifi_info,
+    "set_wifi_state": set_wifi_state,
     "none": none,
 }
 
@@ -154,6 +160,9 @@ __all__ = [
     "set_volume",
     "set_brightness",
     "scan_wifi",
+    "connect_wifi",
+    "get_wifi_info",
+    "set_wifi_state",
     "_is_valid_png",
     "take_photo",
     "take_screenshot",

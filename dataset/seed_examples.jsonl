@@ -131,3 +131,9 @@
 {"prompt": "Me mostra as redes wifi próximas", "completion": "<call>scan_wifi()</call>"}
 {"prompt": "Verifique o sinal das redes wi-fi por perto", "completion": "<call>scan_wifi()</call>"}
 {"prompt": "Faz um scan de redes wifi", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Silva, conecte-se ao wifi Casa_5G com a senha 1234565", "completion": "<call>connect_wifi(ssid=\"Casa_5G\", password=\"1234565\")</call>"}
+{"prompt": "Conectar na rede wifi aberta Shopping_Free", "completion": "<call>connect_wifi(ssid=\"Shopping_Free\", password=\"\")</call>"}
+{"prompt": "Qual wifi estou conectado agora?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Qual o meu ip local e status do wifi?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Silva, liga o wifi do celular", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"prompt": "Desativa o wi-fi por favor", "completion": "<call>set_wifi_state(state=False)</call>"}

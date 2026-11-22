@@ -96,8 +96,11 @@ O Silva possui 36 ferramentas implementadas no pacote modular `android_agent/too
 | **32** | `install_app(app_name)` | `app_name` (str, obrigatório) | Abre a Google Play Store diretamente na página de instalação ou pesquisa do app. |
 | **33** | `media_control(action)` | `action` (str, obrigatório: play/pause/next/previous) | Controla a reprodução de mídia nativamente (`cmd media_session` e KeyEvents). |
 | **34** | `scan_wifi()` | *Nenhum* | Escaneia redes Wi-Fi próximas, identificando sinal (dBm e %), frequência, segurança e rede conectada. |
-| **35** | `list_capabilities()` | *Nenhum* | Retorna guia organizado de todas as funções e comandos do Silva com exemplos práticos. |
-| **36** | `none()` | *Nenhum* | Emissão neutra para saudações e conversas gerais. |
+| **35** | `connect_wifi(ssid, password)` | `ssid` (str, obrigatório), `password` (str, opcional) | Conecta a uma rede Wi-Fi direta ou via fallback seguro com cópia de credencial e salvamento em SQLite. |
+| **36** | `get_wifi_info()` | *Nenhum* | Obtém informações detalhadas da conexão Wi-Fi atual (SSID, IP local, sinal %, dBm e link web). |
+| **37** | `set_wifi_state(state)` | `state` (bool, obrigatório) | Ativa ou desativa a interface Wi-Fi do smartphone via Termux:API e fallback svc. |
+| **38** | `list_capabilities()` | *Nenhum* | Retorna guia organizado de todas as funções e comandos do Silva com exemplos práticos. |
+| **39** | `none()` | *Nenhum* | Emissão neutra para saudações e conversas gerais. |
 
 ---
 

@@ -1062,59 +1062,130 @@ def get_last_location() -> Dict[str, Any]:
         return {"status": "error", "message": f"Erro ao consultar última localização: {str(e)}"}
 
 
-WMO_WEATHER_CODES = {
-    0: "Céu limpo ☀️",
-    1: "Predomínio de sol 🌤️",
-    2: "Parcialmente nublado ⛅",
-    3: "Nublado / Encoberto ☁️",
-    45: "Nevoeiro 🌫️",
-    48: "Nevoeiro com geada 🌫️",
-    51: "Chuvisco leve 🌦️",
-    53: "Chuvisco moderado 🌧️",
-    55: "Chuvisco intenso 🌧️",
-    61: "Chuva fraca 🌧️",
-    63: "Chuva moderada 🌧️",
-    65: "Chuva forte ⛈️",
-    80: "Pancadas de chuva leves 🌦️",
-    81: "Pancadas de chuva moderadas 🌧️",
-    82: "Pancadas de chuva violentas ⛈️",
-    95: "Tempestade com trovoadas ⛈️",
-    96: "Tempestade com granizo leve ⛈️",
-    99: "Tempestade com granizo pesado ⛈️"
+UF_TO_STATE = {
+    "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas",
+    "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal", "ES": "Espírito Santo",
+    "GO": "Goiás", "MA": "Maranhão", "MT": "Mato Grosso", "MS": "Mato Grosso do Sul",
+    "MG": "Minas Gerais", "PA": "Pará", "PB": "Paraíba", "PR": "Paraná",
+    "PE": "Pernambuco", "PI": "Piauí", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte",
+    "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima", "SC": "Santa Catarina",
+    "SP": "São Paulo", "SE": "Sergipe", "TO": "Tocantins"
+}
+
+WMO_BASE_MAP = {
+    0: "Céu limpo",
+    1: "Predominantemente limpo",
+    2: "Parcialmente nublado",
+    3: "Nublado",
+    45: "Nevoeiro",
+    48: "Nevoeiro com geada",
+    51: "Chuvisco leve",
+    53: "Chuvisco moderado",
+    55: "Chuvisco denso",
+    56: "Chuvisco congelante leve",
+    57: "Chuvisco congelante denso",
+    61: "Chuva leve",
+    63: "Chuva moderada",
+    65: "Chuva forte",
+    66: "Chuva congelante leve",
+    67: "Chuva congelante forte",
+    71: "Neve fraca",
+    73: "Neve moderada",
+    75: "Neve forte",
+    77: "Grãos de neve",
+    80: "Pancadas de chuva leves",
+    81: "Pancadas de chuva moderadas",
+    82: "Chuva forte",
+    85: "Pancadas de neve leves",
+    86: "Pancadas de neve fortes",
+    95: "Trovoadas",
+    96: "Trovoadas com granizo leve",
+    99: "Trovoadas com granizo forte"
 }
 
 
-def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[str, Any]:
-    """Consulta previsão do tempo detalhada por dia, horário e cidade via Open-Meteo."""
-    day_raw = str(day).strip().lower() if day else "hoje"
-    time_raw = str(time).strip().lower() if time else ""
-    loc_raw = str(location).strip() if location else ""
+def _normalize_geo_text(text: str) -> str:
+    """Normaliza texto removendo acentos e convertendo para minúsculas para comparações geográficas."""
+    nfkd = unicodedata.normalize("NFKD", str(text).lower())
+    return "".join([c for c in nfkd if not unicodedata.combining(c)]).strip()
 
-    if SIMULATE_HARDWARE:
-        city_disp = loc_raw or "sua localização"
-        t_label = f" às {time_raw}" if time_raw else ""
-        return {
-            "status": "ok",
-            "message": f"Silva: Previsão do tempo para {city_disp} ({day_raw}{t_label}): Parcialmente nublado ⛅. Temperatura 28.5°C, chance de chuva de 25%. [Simulado]",
-            "data": {"day": day_raw, "time": time_raw, "location": city_disp, "condition": "Parcialmente nublado", "temperature": 28.5, "rain_probability": 25}
-        }
 
-    # 1. Determina Coordenadas e Nome do Local
+def _resolve_weather_location(location_query: str) -> tuple:
+    """
+    Resolve coordenadas (latitude, longitude) e nome formatado da localidade.
+    Prioriza o Brasil (BR) e desempata por estado/UF se informado.
+    """
+    loc_clean = str(location_query).strip() if location_query else ""
     lat, lon, city_name = None, None, None
-    if loc_raw and not any(loc_raw.lower() == k for k in ["aqui", "minha cidade", "minha localizacao", "localizacao atual", "local"]):
+
+    is_generic = not loc_clean or any(
+        loc_clean.lower() == k
+        for k in ["aqui", "minha cidade", "minha localizacao", "localizacao atual", "local", "onde estou", "onde eu estou"]
+    )
+
+    if not is_generic:
+        city_part = loc_clean
+        state_hint = ""
+
+        # Separa Cidade e Estado ("Cidade, Estado" ou "Cidade - Estado" ou "Cidade UF")
+        if "," in loc_clean:
+            parts = loc_clean.split(",", 1)
+            city_part, state_hint = parts[0].strip(), parts[1].strip()
+        elif " - " in loc_clean:
+            parts = loc_clean.split(" - ", 1)
+            city_part, state_hint = parts[0].strip(), parts[1].strip()
+        else:
+            m_uf = re.search(r"\b([A-Za-z]{2})$", loc_clean)
+            if m_uf and m_uf.group(1).upper() in UF_TO_STATE:
+                state_hint = m_uf.group(1).upper()
+                city_part = loc_clean[:m_uf.start()].strip()
+
         try:
-            url_geo = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote_plus(loc_raw)}&count=1&language=pt"
+            url_geo = (
+                f"https://geocoding-api.open-meteo.com/v1/search?"
+                f"name={urllib.parse.quote_plus(city_part)}&count=5&language=pt&format=json"
+            )
             req_geo = urllib.request.Request(url_geo, headers={"User-Agent": "SilvaAgent/1.0"})
-            with urllib.request.urlopen(req_geo, timeout=4.0) as resp:
+            with urllib.request.urlopen(req_geo, timeout=4.5) as resp:
                 geo_data = json.loads(resp.read().decode())
-                if geo_data.get("results"):
-                    first = geo_data["results"][0]
-                    lat = float(first["latitude"])
-                    lon = float(first["longitude"])
-                    city_name = first.get("name", loc_raw)
+                results = geo_data.get("results", [])
+
+                if results:
+                    chosen = None
+                    if state_hint:
+                        norm_hint = _normalize_geo_text(state_hint)
+                        full_state = UF_TO_STATE.get(state_hint.upper(), "")
+                        norm_full = _normalize_geo_text(full_state) if full_state else ""
+
+                        for item in results:
+                            admin1 = item.get("admin1", "")
+                            norm_admin1 = _normalize_geo_text(admin1)
+                            is_br = (
+                                item.get("country_code", "").upper() == "BR"
+                                or item.get("country", "").lower() == "brasil"
+                            )
+                            if is_br and (norm_hint in norm_admin1 or (norm_full and norm_full in norm_admin1)):
+                                chosen = item
+                                break
+
+                    if not chosen:
+                        for item in results:
+                            if item.get("country_code", "").upper() == "BR" or item.get("country", "").lower() == "brasil":
+                                chosen = item
+                                break
+
+                    if not chosen:
+                        chosen = results[0]
+
+                    lat = float(chosen["latitude"])
+                    lon = float(chosen["longitude"])
+                    c_name = chosen.get("name", city_part)
+                    admin1 = chosen.get("admin1", "")
+                    city_name = f"{c_name}, {admin1}" if admin1 else c_name
         except Exception:
             pass
 
+    # Fallback para última localização registrada (cache GPS)
     if lat is None or lon is None:
         if LAST_LOCATION_FILE.is_file():
             try:
@@ -1125,12 +1196,50 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
             except Exception:
                 pass
 
+    # Fallback padrão seguro (Paulista, PE)
     if lat is None or lon is None:
-        lat, lon, city_name = -7.9408, -34.8730, "Paulista"
+        lat, lon, city_name = -7.9408, -34.8730, "Paulista, PE"
 
-    city_name = city_name or loc_raw or "sua localização"
+    return lat, lon, (city_name or loc_clean or "Paulista, PE")
 
-    # 2. Resolução da Data Alvo
+
+def _interpret_wmo_condition(
+    weather_code: int,
+    precip_prob: Optional[float] = None,
+    precip_mm: Optional[float] = None,
+    cloud_cover: Optional[float] = None
+) -> str:
+    """
+    Sanitiza e traduz códigos meteorológicos WMO para descrições precisas em português,
+    eliminando falsos positivos de chuva/chuvisco quando probabilidade e volume são baixos.
+    """
+    code = int(weather_code) if weather_code is not None else 0
+    prob = float(precip_prob) if precip_prob is not None else 0.0
+    mm = float(precip_mm) if precip_mm is not None else 0.0
+
+    # Faixa de chuvisco, chuva leve e pancadas isoladas sujeitas a falsos positivos
+    drizzle_rain_codes = {51, 53, 55, 56, 57, 61, 63, 80, 81}
+    if code in drizzle_rain_codes:
+        if prob < 35.0 and mm < 0.4:
+            if (cloud_cover is not None and cloud_cover < 25.0) or prob < 15.0:
+                return "Céu limpo"
+            elif cloud_cover is not None and cloud_cover >= 70.0:
+                return "Nublado sem chuva"
+            else:
+                return "Parcialmente nublado"
+
+    return WMO_BASE_MAP.get(code, "Tempo instável")
+
+
+def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[str, Any]:
+    """Consulta previsão do tempo detalhada por dia, horário e cidade via Open-Meteo."""
+    day_raw = str(day).strip().lower() if day else "hoje"
+    time_raw = str(time).strip().lower() if time else ""
+    loc_raw = str(location).strip() if location else ""
+
+    # Determina Coordenadas e Nome do Local com prioridade Brasil e desempate por Estado
+    lat, lon, city_name = _resolve_weather_location(loc_raw)
+
     today = date.today()
     target_date = today
     day_display = "hoje"
@@ -1151,47 +1260,92 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
         for wname, wday in weekdays_map.items():
             if wname in day_raw:
                 diff = (wday - today.weekday()) % 7
-                if diff == 0 and ("proxim" in day_raw or "que vem" in day_raw):
-                    diff = 7
-                elif diff == 0:
+                if diff == 0:
                     diff = 7
                 target_date = today + timedelta(days=diff)
                 day_display = wname.capitalize()
                 break
 
-    # 3. Resolução do Horário Alvo (se fornecido)
-    target_hour = None
-    if time_raw:
-        if "noite" in time_raw:
-            target_hour = 20
-        elif "tarde" in time_raw:
-            target_hour = 15
-        elif "manha" in time_raw or "manhã" in time_raw:
-            target_hour = 9
-        elif "madrugada" in time_raw:
-            target_hour = 3
+    if SIMULATE_HARDWARE:
+        city_disp = city_name or loc_raw or "Paulista, PE"
+        if day_raw in ("hoje", "") and not time_raw:
+            msg = f"Silva: Agora em {city_disp}: Parcialmente nublado, 27.5°C (sensação de 29.8°C). Previsão para hoje: mínima de 24.0°C, máxima de 30.5°C e chance de chuva de 20%. [Simulado]"
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {
+                    "city": city_disp, "latitude": lat, "longitude": lon, "condition": "Parcialmente nublado",
+                    "temperature": 27.5, "apparent_temperature": 29.8, "humidity": 75,
+                    "temp_min": 24.0, "temp_max": 30.5, "precipitation_probability": 20, "precipitation_mm": 0.0,
+                    "source": "simulated"
+                }
+            }
+        elif time_raw:
+            hora_str = "20:00" if "noite" in time_raw else ("15:00" if "tarde" in time_raw else ("09:00" if any(m in time_raw for m in ["manha", "manhã"]) else "12:00"))
+            msg = f"Silva: Previsão para {city_disp} ({day_display} às {hora_str}): Parcialmente nublado, temperatura de 26.0°C (sensação de 28.0°C) e chance de chuva de 15%. [Simulado]"
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {
+                    "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display, "time": hora_str,
+                    "condition": "Parcialmente nublado", "temperature": 26.0, "apparent_temperature": 28.0,
+                    "precipitation_probability": 15, "precipitation_mm": 0.0, "source": "simulated"
+                }
+            }
         else:
-            m_h = re.search(r"(\d{1,2})", time_raw)
-            if m_h:
-                h_val = int(m_h.group(1))
-                if 0 <= h_val <= 23:
-                    target_hour = h_val
+            msg = f"Silva: Previsão para {city_disp} ({day_display}): Parcialmente nublado. Mínima de 24.5°C, máxima de 31.0°C e probabilidade de chuva de 20%. [Simulado]"
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {
+                    "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display,
+                    "condition": "Parcialmente nublado", "temp_min": 24.5, "temp_max": 31.0,
+                    "precipitation_probability": 20, "precipitation_mm": 0.0, "source": "simulated"
+                }
+            }
 
-    # 4. Consulta API Open-Meteo
+    # Consulta real à API Open-Meteo
     try:
         url_forecast = (
             f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
-            f"&hourly=temperature_2m,precipitation_probability,weathercode"
-            f"&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode"
-            f"&timezone=auto"
+            f"&timezone=auto&forecast_days=7"
+            f"&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,weather_code,cloud_cover,wind_speed_10m"
+            f"&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,cloud_cover"
+            f"&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
         )
         req_w = urllib.request.Request(url_forecast, headers={"User-Agent": "SilvaAgent/1.0"})
         with urllib.request.urlopen(req_w, timeout=5.0) as resp:
             data_w = json.loads(resp.read().decode())
 
-        if target_hour is not None:
+        current_block = data_w.get("current", {})
+        hourly_block = data_w.get("hourly", {})
+        daily_block = data_w.get("daily", {})
+
+        # CASO 2: Horário ou período específico (time != "")
+        if time_raw:
+            if "noite" in time_raw:
+                target_hour = 20
+                hora_str = "20:00"
+            elif "tarde" in time_raw:
+                target_hour = 15
+                hora_str = "15:00"
+            elif "manha" in time_raw or "manhã" in time_raw:
+                target_hour = 9
+                hora_str = "09:00"
+            elif "madrugada" in time_raw:
+                target_hour = 3
+                hora_str = "03:00"
+            else:
+                m_h = re.search(r"(\d{1,2})", time_raw)
+                if m_h:
+                    target_hour = max(0, min(23, int(m_h.group(1))))
+                    hora_str = f"{target_hour:02d}:00"
+                else:
+                    target_hour = 12
+                    hora_str = "12:00"
+
             target_prefix = f"{target_date.isoformat()}T{target_hour:02d}:"
-            hourly_times = data_w.get("hourly", {}).get("time", [])
+            hourly_times = hourly_block.get("time", [])
             match_idx = None
             for i, ht in enumerate(hourly_times):
                 if ht.startswith(target_prefix):
@@ -1199,58 +1353,127 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
                     break
 
             if match_idx is not None:
-                temp = data_w["hourly"]["temperature_2m"][match_idx]
-                rain_prob = data_w["hourly"]["precipitation_probability"][match_idx]
-                wcode = data_w["hourly"]["weathercode"][match_idx]
-                cond = WMO_WEATHER_CODES.get(wcode, "Tempo instável")
+                temp = hourly_block.get("temperature_2m", [0.0])[match_idx]
+                sensacao = hourly_block.get("apparent_temperature", [temp])[match_idx]
+                prob = hourly_block.get("precipitation_probability", [0])[match_idx]
+                precip_mm = hourly_block.get("precipitation", [0.0])[match_idx]
+                clouds = hourly_block.get("cloud_cover", [0.0])[match_idx]
+                wcode = hourly_block.get("weather_code", [0])[match_idx]
+                cond = _interpret_wmo_condition(wcode, prob, precip_mm, clouds)
 
-                msg = f"Silva: Previsão para {city_name} em {day_display} às {target_hour:02d}:00: {cond}. Temperatura de {temp:.1f}°C e chance de chuva de {rain_prob}%."
+                msg = f"Silva: Previsão para {city_name} ({day_display} às {hora_str}): {cond}, temperatura de {temp:.1f}°C (sensação de {sensacao:.1f}°C) e chance de chuva de {prob}%."
                 return {
                     "status": "ok",
                     "message": msg,
                     "data": {
-                        "location": city_name,
+                        "city": city_name,
+                        "latitude": lat,
+                        "longitude": lon,
                         "day": day_display,
-                        "time": f"{target_hour:02d}:00",
+                        "time": hora_str,
                         "condition": cond,
                         "temperature": temp,
-                        "precipitation_probability": rain_prob
+                        "apparent_temperature": sensacao,
+                        "precipitation_probability": prob,
+                        "precipitation_mm": precip_mm,
+                        "source": "open-meteo"
                     }
                 }
 
-        # Previsão diária geral
-        daily_times = data_w.get("daily", {}).get("time", [])
+        # CASO 1: Clima de Hoje sem hora específica (day == "hoje" e time == "")
+        if day_raw in ("hoje", "") and not time_raw:
+            temp_atual = current_block.get("temperature_2m", 0.0)
+            sensacao = current_block.get("apparent_temperature", temp_atual)
+            umidade = current_block.get("relative_humidity_2m", 0)
+            current_wcode = current_block.get("weather_code", 0)
+            current_precip = current_block.get("precipitation", 0.0)
+            current_clouds = current_block.get("cloud_cover", 0.0)
+
+            # Busca probabilidade da hora atual no array horário
+            current_time_str = current_block.get("time", "")
+            current_hour_prob = 0
+            if current_time_str:
+                prefix = current_time_str[:13]
+                for i, ht in enumerate(hourly_block.get("time", [])):
+                    if ht.startswith(prefix):
+                        current_hour_prob = hourly_block.get("precipitation_probability", [0])[i]
+                        break
+
+            condicao_atual = _interpret_wmo_condition(current_wcode, current_hour_prob, current_precip, current_clouds)
+
+            temp_min = daily_block.get("temperature_2m_min", [temp_atual])[0]
+            temp_max = daily_block.get("temperature_2m_max", [temp_atual])[0]
+            prob_max = daily_block.get("precipitation_probability_max", [0])[0]
+
+            msg = (
+                f"Silva: Agora em {city_name}: {condicao_atual}, {temp_atual:.1f}°C (sensação de {sensacao:.1f}°C). "
+                f"Previsão para hoje: mínima de {temp_min:.1f}°C, máxima de {temp_max:.1f}°C e chance de chuva de {prob_max}%."
+            )
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {
+                    "city": city_name,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "condition": condicao_atual,
+                    "temperature": temp_atual,
+                    "apparent_temperature": sensacao,
+                    "humidity": umidade,
+                    "temp_min": temp_min,
+                    "temp_max": temp_max,
+                    "precipitation_probability": prob_max,
+                    "precipitation_mm": current_precip,
+                    "source": "open-meteo"
+                }
+            }
+
+        # CASO 3: Dias futuros sem hora específica (day != "hoje" e time == "")
+        diff_days = (target_date - today).days
+        if diff_days < 0 or diff_days > 6:
+            return {
+                "status": "ok",
+                "message": "Silva: A previsão do tempo está disponível para até 7 dias no futuro.",
+                "data": {"location": city_name, "day": day_display}
+            }
+
+        daily_times = daily_block.get("time", [])
         day_str = target_date.isoformat()
-        day_idx = 0
+        day_idx = diff_days
         for i, dt in enumerate(daily_times):
             if dt == day_str:
                 day_idx = i
                 break
 
-        t_max = data_w["daily"]["temperature_2m_max"][day_idx]
-        t_min = data_w["daily"]["temperature_2m_min"][day_idx]
-        rain_max = data_w["daily"]["precipitation_probability_max"][day_idx]
-        wcode = data_w["daily"]["weathercode"][day_idx]
-        cond = WMO_WEATHER_CODES.get(wcode, "Tempo instável")
+        t_min = daily_block.get("temperature_2m_min", [0.0])[day_idx]
+        t_max = daily_block.get("temperature_2m_max", [0.0])[day_idx]
+        rain_max = daily_block.get("precipitation_probability_max", [0])[day_idx]
+        precip_sum = daily_block.get("precipitation_sum", [0.0])[day_idx]
+        wcode = daily_block.get("weather_code", [0])[day_idx]
+        cond = _interpret_wmo_condition(wcode, rain_max, precip_sum, None)
 
-        msg = f"Silva: Previsão do tempo para {city_name} ({day_display}): {cond}. Mínima de {t_min:.1f}°C, máxima de {t_max:.1f}°C e probabilidade máxima de chuva de {rain_max}%."
+        msg = f"Silva: Previsão para {city_name} ({day_display}): {cond}. Mínima de {t_min:.1f}°C, máxima de {t_max:.1f}°C e probabilidade de chuva de {rain_max}%."
         return {
             "status": "ok",
             "message": msg,
             "data": {
-                "location": city_name,
+                "city": city_name,
+                "latitude": lat,
+                "longitude": lon,
                 "day": day_display,
                 "condition": cond,
                 "temp_min": t_min,
                 "temp_max": t_max,
-                "precipitation_probability_max": rain_max
+                "precipitation_probability": rain_max,
+                "precipitation_sum": precip_sum,
+                "source": "open-meteo"
             }
         }
     except Exception as e:
         return {
-            "status": "ok",
-            "message": f"Silva: Não foi possível obter previsão online no momento ({str(e)}). Verifique a conexão com a internet.",
-            "data": {"day": day_raw, "time": time_raw, "location": city_name, "error": str(e)}
+            "status": "error",
+            "message": "Não foi possível obter a previsão do tempo no momento (verifique a conexão com a internet).",
+            "data": {"error": str(e), "location": city_name}
         }
 
 

@@ -692,11 +692,11 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 time_val = m_t.group(1)
 
         loc = ""
-        m_city = re.search(r"(?:em|para|pra|no|na)\s+([a-zA-ZÀ-ÿ\s]+)", raw_cmd, re.IGNORECASE)
+        m_city = re.search(r"(?:em|para|pra|no|na)\s+([a-zA-ZÀ-ÿ\s,\-]+)", raw_cmd, re.IGNORECASE)
         if m_city:
             cand = m_city.group(1).strip()
             cand = re.sub(r"(?i)\s+(?:no|na|em|de|para|pra)?\s*(?:hoje|amanha|amanhã|depois de amanha|depois de amanhã|segunda|terca|terça|quarta|quinta|sexta|sabado|sábado|domingo|noite|tarde|manha|manhã|as|às|\d{1,2}h|\d{1,2}:\d{2}).*$", "", cand).strip()
-            cand = re.sub(r"[?!.,;]+$", "", cand).strip()
+            cand = re.sub(r"[?!.;]+$", "", cand).strip().rstrip(",")
             if cand and cand.lower() not in ["hoje", "amanha", "amanhã", "depois", "aqui", "minha cidade", "mim", "graus"]:
                 loc = cand
 

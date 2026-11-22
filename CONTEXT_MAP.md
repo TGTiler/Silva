@@ -497,7 +497,8 @@ Pipeline autônomo completo para Google Colab (GPU T4):
 2. **Carregamento e Split Determinístico:** Carrega arquivos separados (`train_clean.jsonl` e `eval_clean.jsonl`) ou dataset consolidado (`silva_colab_dataset.jsonl`) com split determinístico `seed=42` em 95% treino (~5.790) e 5% avaliação (~304) (`silva-agent/pc_training/colab_train_silva.py:54-150`).
 3. **Auditoria de Tokens e SFT/LoRA com Mascaramento Manual de Labels:**
    - Separação estrita de `eos_token_id` (`<|im_end|>`) e `pad_token_id` (`<|endoftext|>`), impedindo que o collator mascare o token de parada.
-   - Tokenização manual via `tokenize_chatml_example(item)` em duas partes: Prompt mascarado com `labels = -100` e Resposta treinável com token de parada explícito `<|im_end|>`.
+   - Auditoria pré-treino com média, P99 e detecção de truncamento na janela `max_length=1024` via ChatML template.
+   - Tokenização manual via `tokenize_chatml_example(item)` em duas partes: Prompt mascarado com `labels = -100` e Resposta treinável com token de parada explícito `<|im_end|>`. Se a sequência total exceder a janela, o início do prompt é podado, garantindo 100% de integridade da completion e do token de encerramento.
    - `DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=-100)` com `Trainer`.
    - Auditoria visual obrigatória pré-treino com assertions rigorosas garantindo início com `<call>`, término com `<|im_end|>` e ausência de vazamento do prompt nas labels ativas.
    - Treinamento calibrado por 4 épocas (`learning_rate=3e-4`, cosine scheduler, `load_best_model_at_end=True`, `metric_for_best_model="eval_loss"`), auditoria do melhor checkpoint e fusão `merge_and_unload()` (`silva-agent/pc_training/colab_train_silva.py:152-450`).

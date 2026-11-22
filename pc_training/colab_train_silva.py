@@ -191,13 +191,14 @@ assert tokenizer.eos_token_id != tokenizer.pad_token_id, "pad_token_id e eos_tok
 # 2. TOKENIZAÇÃO MANUAL COM labels = -100 NO PROMPT (SEM DEPENDER DE completion_only_loss)
 # ==============================================================================
 print("\n[*] Construindo datasets com mascaramento manual de labels (-100 no prompt)...")
-MAX_TRAIN_LENGTH = 512
+MAX_TRAIN_LENGTH = 1024
 
 def tokenize_chatml_example(item):
     """
     Constrói cada exemplo manualmente em duas partes:
     - Parte 1 (Prompt mascarado): System Prompt + Pergunta do usuário com generation prompt (labels = -100)
     - Parte 2 (Resposta treinável): Resposta <call>...</call> com token de parada explícito <|im_end|>
+    Garante que a completion NUNCA seja truncada se a sequência total atingir MAX_TRAIN_LENGTH.
     """
     prompt_str = tokenizer.apply_chat_template(
         [
@@ -210,8 +211,14 @@ def tokenize_chatml_example(item):
     prompt_ids = tokenizer.encode(prompt_str, add_special_tokens=False)
     completion_ids = tokenizer.encode(item["completion"].strip(), add_special_tokens=False) + [eos_id]
 
-    input_ids = (prompt_ids + completion_ids)[:MAX_TRAIN_LENGTH]
-    labels = ([-100] * len(prompt_ids) + completion_ids)[:MAX_TRAIN_LENGTH]
+    total_len = len(prompt_ids) + len(completion_ids)
+    if total_len > MAX_TRAIN_LENGTH:
+        # Se ultrapassar a janela máxima, preserva 100% da completion e trunca o início do prompt
+        max_prompt_len = max(0, MAX_TRAIN_LENGTH - len(completion_ids))
+        prompt_ids = prompt_ids[-max_prompt_len:]
+
+    input_ids = prompt_ids + completion_ids
+    labels = [-100] * len(prompt_ids) + completion_ids
     attention_mask = [1] * len(input_ids)
 
     return {
@@ -229,7 +236,7 @@ print(f"[*] Total de exemplos tokenizados para treino: {len(train_dataset)}")
 print(f"[*] Total de exemplos tokenizados para avaliação: {len(eval_dataset)}")
 
 # ==============================================================================
-# AUDITORIA PRÉ-TREINO DE COMPRIMENTO DE TOKENS (JANELA: 512 TOKENS)
+# AUDITORIA PRÉ-TREINO DE COMPRIMENTO DE TOKENS (JANELA: 1024 TOKENS)
 # ==============================================================================
 print("\n[*] Executando auditoria pré-treino de comprimento de tokens...")
 all_formatted_samples = train_samples + eval_samples
@@ -368,6 +375,10 @@ print(f"[*] Tokens sob cálculo de perda (completion + eos): {unmasked_count}")
 print(f"[*] Trecho sob cálculo de gradiente decodificado:\n    {repr(decoded_target)}")
 
 # Validações estritas por assertion antes de iniciar o treinamento
+assert unmasked_count > 0, (
+    f"ERRO CRÍTICO: Nenhum token ativo encontrado nas labels (unmasked_count = 0)! "
+    f"O prompt_ids excedeu MAX_TRAIN_LENGTH ({MAX_TRAIN_LENGTH})."
+)
 assert decoded_target.startswith("<call>"), (
     f"ERRO CRÍTICO: Labels ativas devem começar exatamente com '<call>', mas obtido: {repr(decoded_target[:30])}"
 )

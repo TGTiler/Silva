@@ -1,6 +1,6 @@
 # Silva — Context Map Técnico
 
-> Documento de referência gerado por inspeção estática do projeto. Escopo inspecionado: `2026-11-21`, checkout `silva-agent` em `ce97d28965bbd196287446f357a80e94be2ea5eb` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código.
+> Documento de referência gerado por inspeção estática do projeto. Escopo inspecionado: `2026-11-22`, checkout `silva-agent` em `e36dd44` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código.
 
 ## 1. Estrutura de Pastas e Árvore de Arquivos
 
@@ -50,7 +50,7 @@ Silva/
     │   ├── scheduler.py                     # autoral: daemon background que monitora compromissos locais e dispara alertas
     │   ├── setup_termux.sh                  # autoral: instala Termux, dependências e llama.cpp
     │   ├── start_silva.sh                   # autoral: boot resiliente, limpeza cirúrgica de órfãos e gestão de PIDs
-    │   ├── tools.py                         # autoral: implementação das 35 ferramentas Android
+    │   ├── tools.py                         # autoral: implementação das 36 ferramentas Android
     │   ├── web_server.py                    # autoral: servidor ReusableThreadingHTTPServer com SO_REUSEADDR, fallback de porta e API REST
     │   ├── __pycache__/                     # artefato gerado: bytecode Python 3.12
     │   │   ├── config.cpython-312.pyc       # bytecode de config.py
@@ -61,7 +61,7 @@ Silva/
     │   │   └── web_server.cpython-312.pyc    # bytecode de web_server.py
     │   ├── captures/                        # diretório de estado gerado: fotos, vídeos, prints e mapas
     │   │   └── .gitkeep                     # placeholder versionado
-    │   ├── data/                            # diretório de estado gerado: memória, localização, PIDs e DND
+    │   ├── data/                            # diretório de estado: SQLite FTS5 (memory.db), localização, PIDs, DND e lembretes
     │   │   └── .gitkeep                     # placeholder versionado
     │   ├── models/                          # diretório de artefatos de modelo
     │   │   ├── .gitkeep                     # placeholder versionado
@@ -72,13 +72,13 @@ Silva/
     │   └── static/                          # frontend estático sem build
     │       └── index.html                   # autoral: interface web, CSS e JavaScript inline
     ├── dataset/                             # engenharia e artefatos de dados autorais
-    │   ├── schema.json                      # autoral: contrato customizado de ferramentas/parâmetros
+    │   ├── schema.json                      # autoral: contrato customizado de 36 ferramentas/41 parâmetros
     │   ├── seed_examples.jsonl              # autoral: 104 exemplos-base
-    │   ├── train.jsonl                      # autoral/estado: 4.888 exemplos; contém calls fora do schema
+    │   ├── train.jsonl                      # autoral/estado: 5.743 exemplos limpos e enriquecidos
     │   ├── train.jsonl.bak                  # autoral/backup: 4.140 exemplos anteriores ao reparo
-    │   ├── train_clean.jsonl                # autoral/estado: 4.356 exemplos limpos de treino
-    │   ├── eval_clean.jsonl                 # autoral/estado: 229 exemplos limpos de avaliação
-    │   ├── silva_colab_dataset.jsonl        # autoral/estado: 4.585 exemplos consolidados
+    │   ├── train_clean.jsonl                # autoral/estado: 5.790 exemplos limpos de treino
+    │   ├── eval_clean.jsonl                 # autoral/estado: 304 exemplos limpos de avaliação
+    │   ├── silva_colab_dataset.jsonl        # autoral/estado: 6.094 exemplos consolidados
     │   ├── prepare_final_dataset.py          # autoral: valida, enriquece, deduplica e divide
     │   ├── repair_train_dataset.py           # autoral: corrige e enriquece o dataset de treino
     │   ├── validate_dataset.py               # autoral: validador AST/schema dos JSONL
@@ -108,28 +108,28 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `update_direct.sh` (31 linhas) | Sincronização direta via ADB e reinício controlado no Termux. |
 | `silva-agent/.env.example` (20 linhas) | Contrato de variáveis de ambiente. |
 | `silva-agent/.gitignore` (41 linhas) | Exclusões de secrets, mídia, modelos, caches e backups. |
-| `silva-agent/README.md` (214 linhas) | Documentação principal com arquitetura, catálogo de 35 ferramentas e guia de execução. |
-| `silva-agent/android_agent/config.py` (69 linhas) | Configuração, paths e prompt de function calling. |
-| `silva-agent/android_agent/intent_fallback.py` (828 linhas) | Regras determinísticas de intents, normalizador matemático e sanitização de cidades. |
-| `silva-agent/android_agent/llm_client.py` (116 linhas) | Cliente HTTP do `llama-server`. |
-| `silva-agent/android_agent/main.py` (104 linhas) | Entry point CLI/Web. |
-| `silva-agent/android_agent/parser.py` (166 linhas) | Parser AST, whitelist e execução. |
-| `silva-agent/android_agent/scheduler.py` (63 linhas) | Daemon em background para monitoramento de eventos e alarmes locais. |
+| `silva-agent/README.md` (215 linhas) | Documentação principal com arquitetura, catálogo das 36 ferramentas e guia de execução. |
+| `silva-agent/android_agent/config.py` (70 linhas) | Configuração, paths e prompt de function calling. |
+| `silva-agent/android_agent/intent_fallback.py` (966 linhas) | Regras determinísticas de intents (36 tools), normalizador matemático/científico, scan Wi-Fi e sanitização de cidades. |
+| `silva-agent/android_agent/llm_client.py` (119 linhas) | Cliente HTTP do `llama-server`. |
+| `silva-agent/android_agent/main.py` (114 linhas) | Entry point CLI/Web com inicialização segura do daemon `scheduler`. |
+| `silva-agent/android_agent/parser.py` (174 linhas) | Parser AST, whitelist de 36 ferramentas, execução e propagação de status real (`ok`, `partial_error`, `error`). |
+| `silva-agent/android_agent/scheduler.py` (83 linhas) | Daemon em background thread-safe e reentrante para monitoramento de eventos e alarmes locais. |
 | `silva-agent/android_agent/setup_termux.sh` (48 linhas) | Setup de dependências e build do `llama-server`. |
 | `silva-agent/android_agent/start_silva.sh` (176 linhas) | Orquestração de inicialização idempotente, limpeza de processos e gestão de PIDs. |
-| `silva-agent/android_agent/tools.py` (2.995 linhas) | Implementação das 35 ferramentas nativas. |
+| `silva-agent/android_agent/tools.py` (3.621 linhas) | Implementação das 36 ferramentas nativas, persistência SQLite FTS5, busca web multi-fonte e escrita atômica com RLock. |
 | `silva-agent/android_agent/web_server.py` (235 linhas) | Servidor HTTP com SO_REUSEADDR, fallback de porta e API de chat. |
 | `silva-agent/android_agent/static/index.html` (1.776 linhas) | Frontend responsivo estilo Claude/DeepSeek com histórico local. |
-| `silva-agent/dataset/schema.json` (393 linhas) | Contrato estrito de 35 ferramentas e 42 parâmetros. |
+| `silva-agent/dataset/schema.json` (402 linhas) | Contrato estrito de 36 ferramentas e 41 parâmetros. |
 | `silva-agent/dataset/prepare_final_dataset.py` (383 linhas) | Preparação e split do dataset final. |
 | `silva-agent/dataset/repair_train_dataset.py` (572 linhas) | Reparo/enriquecimento do dataset de treino. |
 | `silva-agent/dataset/validate_dataset.py` (185 linhas) | Validador de dataset. |
 | `silva-agent/dataset/seed_examples.jsonl` (104 linhas) | Base canônica de 104 exemplos. |
-| `silva-agent/dataset/train.jsonl` (5.008 linhas) | Estado local de treino enriquecido com novas ferramentas e casos de uso. |
+| `silva-agent/dataset/train.jsonl` (5.743 linhas) | Estado local de treino enriquecido com novas ferramentas e casos de uso. |
 | `silva-agent/dataset/train.jsonl.bak` (4.140 linhas) | Backup anterior ao reparo. |
-| `silva-agent/dataset/train_clean.jsonl` (4.356 linhas) | Divisão limpa de treino. |
-| `silva-agent/dataset/eval_clean.jsonl` (229 linhas) | Divisão limpa de avaliação. |
-| `silva-agent/dataset/silva_colab_dataset.jsonl` (4.585 linhas) | Dataset consolidado usado no Colab. |
+| `silva-agent/dataset/train_clean.jsonl` (5.790 linhas) | Divisão limpa de treino (95% do dataset consolidado). |
+| `silva-agent/dataset/eval_clean.jsonl` (304 linhas) | Divisão limpa de avaliação (5% do dataset consolidado). |
+| `silva-agent/dataset/silva_colab_dataset.jsonl` (6.094 linhas) | Dataset consolidado usado no Colab (100% aderente ao schema de 36 tools). |
 | `silva-agent/pc_training/colab_train_silva.py` (339 linhas) | Pipeline completo Google Colab. |
 | `silva-agent/pc_training/train_sft.py` (181 linhas) | Treinamento SFT desktop previsto. |
 | `silva-agent/pc_training/export_gguf.py` (102 linhas) | Conversão HF→GGUF e quantização previstas. |
@@ -143,7 +143,7 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `**/__pycache__/*.pyc` | Bytecode Python 3.12 gerado. |
 | `silva-agent/.git/**` | Metadados e objetos do Git. |
 
-**Mecanismo real de persistência:** não há banco de dados. Runtime usa JSON local em `silva-agent/android_agent/data/`: `memory.json`, `last_location.json` e `dnd_backup.json` (`silva-agent/android_agent/tools.py:26-28`, `silva-agent/android_agent/tools.py:1190-1191`, `silva-agent/android_agent/tools.py:1673-1690`). Multimídia usa arquivos em `silva-agent/android_agent/captures/`; configuração usa `.env`; navegador usa `localStorage["silva_pin"]`; treinamento usa JSONL e artefatos GGUF. Não há escrita atômica, transação, lock ou versionamento de estado.
+**Mecanismo real de persistência:** O sistema utiliza **SQLite 3 com motor de busca textual FTS5 (`silva-agent/android_agent/data/memory.db`)** para memória persistente de longo prazo (tabela `memories` e índice virtual `memories_fts` sincronizado por triggers, transações ACID, modo WAL e classificação automática por categoria). Para os arquivos de estado JSON (`last_location.json`, `events.json`, `dnd_backup.json`), emprega escrita atômica segura (`_atomic_write_json` via arquivo temporário + `fsync` + `replace`) protegida por lock reentrante de threads (`_FILE_LOCK = threading.RLock()`). Multimídia usa arquivos em `silva-agent/android_agent/captures/`; configuração usa `.env`; navegador usa `localStorage["silva_pin"]`; agendamento usa daemon reentrante `scheduler.py`; treinamento usa JSONL (6.094 amostras) e artefatos GGUF.
 
 ## 2. Anatomia Completa do Estado e Modelos de Dados
 
@@ -151,30 +151,45 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 
 Não existe uma estrutura central única. O estado é distribuído entre:
 
-1. memória volátil do processo: `llm_client` global, `_LAST_JOKE` e argumentos locais (`silva-agent/android_agent/web_server.py:21-22`, `silva-agent/android_agent/tools.py:1384-1392`);
-2. arquivos JSON em `android_agent/data/`;
-3. arquivos de mídia em `android_agent/captures/`;
-4. configuração carregada de `.env`/`.env.example` (`silva-agent/android_agent/config.py:26-49`);
-5. PIN persistido no navegador (`silva-agent/android_agent/static/index.html:505-510`).
+1. memória volátil do processo: `llm_client` global, `_LAST_JOKE` e argumentos locais (`silva-agent/android_agent/web_server.py:21-22`, `silva-agent/android_agent/tools.py:1760-1768`);
+2. banco de dados relacional e motor de busca: SQLite 3 com tabela virtual FTS5 em `silva-agent/android_agent/data/memory.db`;
+3. arquivos JSON gravados com escrita atômica e protegidos por `_FILE_LOCK = threading.RLock()` em `silva-agent/android_agent/data/` (`events.json`, `last_location.json`, `dnd_backup.json`, `llama.pid`, `web.pid`);
+4. arquivos de mídia em `android_agent/captures/`;
+5. configuração carregada de `.env`/`.env.example` (`silva-agent/android_agent/config.py:26-49`);
+6. PIN persistido no navegador (`silva-agent/android_agent/static/index.html`).
 
-### 2.2 `memory.json`
+### 2.2 `data/memory.db` (SQLite 3 com FTS5)
 
-Raiz: objeto JSON `dict`; cada chave é a chave textual da nota. Escrita em `remember_note()` e lida por `_load_memory()` (`silva-agent/android_agent/tools.py:1677-1717`).
+Motor de memória de longo prazo transacional (ACID) com `PRAGMA journal_mode=WAL;` e inicialização idempotente via `_init_memory_db()`.
 
-```text
-{
-  "<key>": {
-    "value": string,
-    "timestamp": "YYYY-MM-DD HH:MM:SS"
-  }
-}
+#### Schema Relacional:
+```sql
+CREATE TABLE IF NOT EXISTS memories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT UNIQUE NOT NULL,
+    value TEXT NOT NULL,
+    category TEXT DEFAULT 'geral',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+    key,
+    value,
+    category,
+    content='memories',
+    content_rowid='id'
+);
 ```
 
-- `key`: `str(key).strip()`, obrigatório e não vazio (`silva-agent/android_agent/tools.py:1702-1705`).
-- `value`: `str(value).strip()`, obrigatório e não vazio (`silva-agent/android_agent/tools.py:1702-1705`).
-- `timestamp`: `datetime.now().strftime("%Y-%m-%d %H:%M:%S")` (`silva-agent/android_agent/tools.py:1708-1711`).
-- Campo persistido: todo o dicionário.
-- Campo efêmero: score, tokens normalizados e candidatos durante `recall_note()` (`silva-agent/android_agent/tools.py:1734-1773`).
+- **Triggers de Sincronização Automática**:
+  - `memories_ai`: Dispara `AFTER INSERT ON memories` mantendo o índice FTS5 sincronizado.
+  - `memories_ad`: Dispara `AFTER DELETE ON memories` removendo a entrada do índice virtual.
+  - `memories_au`: Dispara `AFTER UPDATE ON memories` atualizando os campos em `memories_fts`.
+- **Categorização Automática**: `_classify_memory_category(key, value)` atribui semanticamente uma categoria: `wifi` (senhas/redes), `senha` (credenciais/códigos), `estudo` (aulas/matérias), `pessoal` (preferências/anotações) ou `geral`.
+- **Migração Transparente e Sem Perdas**: Função `_migrate_json_to_sqlite()` detecta a existência de `data/memory.json` legado, importa todas as chaves e timestamps via `INSERT OR REPLACE` e renomeia o arquivo original para `memory.json.migrated`.
+- **Busca Híbrida**: `recall_note(query)` executa ranqueamento BM25 por `memories_fts MATCH ? ORDER BY rank` e, em caso de sintaxe FTS restrita ou ausência de match, aciona fallback relacional com `LIKE ?` e correspondência de tokens com ordenação decrescente de relevância.
+- **Thread-Safety**: Todas as operações de leitura e escrita são enclausuradas em `with _FILE_LOCK:`, garantindo concorrência segura entre requisições web e daemons.
 
 ### 2.3 `last_location.json`
 
@@ -243,7 +258,7 @@ Cada linha dos JSONL é um registro com duas chaves obrigatórias (`silva-agent/
 }
 ```
 
-O contrato de tools é `dataset/schema.json:1-393`, mas é customizado e não JSON Schema Draft-07 aplicável. Contém 35 ferramentas, 42 parâmetros, tipos `string|integer|boolean`; obrigatoriedade é marcada por `"required": true` dentro do parâmetro (`silva-agent/dataset/schema.json:6-392`).
+O contrato de tools é `dataset/schema.json:1-402`, mas é customizado e não JSON Schema Draft-07 aplicável. Contém 36 ferramentas, 41 parâmetros, tipos `string|integer|boolean`; obrigatoriedade é marcada por `"required": true` dentro do parâmetro (`silva-agent/dataset/schema.json:6-401`).
 
 | Ferramenta | Parâmetros: tipo, obrigatoriedade, default | Schema |
 |---|---|---|
@@ -252,36 +267,37 @@ O contrato de tools é `dataset/schema.json:1-393`, mas é customizado e não JS
 | `send_sms` | `number: string`; `message: string` | `silva-agent/dataset/schema.json:21-35` |
 | `take_photo` | `camera_id: integer?`, default `0` | `silva-agent/dataset/schema.json:36-45` |
 | `take_screenshot` | nenhum | `silva-agent/dataset/schema.json:46-49` |
-| `search_google` | `query: string` | `silva-agent/dataset/schema.json:50-59` |
-| `open_app` | `app_name: string` | `silva-agent/dataset/schema.json:60-69` |
-| `make_call` | `number: string` | `silva-agent/dataset/schema.json:70-79` |
-| `get_location` | nenhum | `silva-agent/dataset/schema.json:80-83` |
-| `set_torch` | `state: boolean` | `silva-agent/dataset/schema.json:84-93` |
-| `set_dnd` | `state: boolean` | `silva-agent/dataset/schema.json:94-103` |
-| `vibrate` | `duration_ms: integer?`, default `500` | `silva-agent/dataset/schema.json:104-113` |
-| `get_clipboard` | nenhum | `silva-agent/dataset/schema.json:114-117` |
-| `set_clipboard` | `text: string` | `silva-agent/dataset/schema.json:118-127` |
-| `tell_joke` | nenhum | `silva-agent/dataset/schema.json:128-131` |
-| `set_alarm` | `time: string`; `label: string?`; `days: string?` | `silva-agent/dataset/schema.json:132-151` |
-| `cancel_alarm` | `time: string?`; `day: string?`; `label: string?` | `silva-agent/dataset/schema.json:152-171` |
-| `schedule_event` | `title: string`; `date: string?`; `time: string?` | `silva-agent/dataset/schema.json:172-191` |
-| `remember_note` | `key: string`; `value: string` | `silva-agent/dataset/schema.json:192-206` |
-| `recall_note` | `query: string` | `silva-agent/dataset/schema.json:207-216` |
-| `get_notifications` | `app: string?` | `silva-agent/dataset/schema.json:217-226` |
-| `set_volume` | `stream: string?`, default `"media"`; `level: integer` | `silva-agent/dataset/schema.json:227-242` |
-| `set_brightness` | `level: integer` | `silva-agent/dataset/schema.json:243-252` |
-| `set_timer` | `minutes: integer`; `label: string?` | `silva-agent/dataset/schema.json:253-267` |
-| `calculate` | `expression: string` | `silva-agent/dataset/schema.json:268-277` |
-| `set_location_state` | `state: boolean` | `silva-agent/dataset/schema.json:278-287` |
-| `get_last_location` | nenhum | `silva-agent/dataset/schema.json:288-291` |
-| `get_weather` | `day: string?`, default `"hoje"`; `time: string?`, default `""`; `location: string?`, default `""` | `silva-agent/dataset/schema.json:292-314` |
-| `record_video` | `duration: integer?`, default `10`; `camera_id: integer?`, default `0` | `silva-agent/dataset/schema.json:315-331` |
-| `request_ride` | `destination: string`; `app: string?`, default `"uber"` | `silva-agent/dataset/schema.json:332-348` |
-| `order_food` | `query: string`; `app: string?`, default `"ifood"` | `silva-agent/dataset/schema.json:349-365` |
-| `install_app` | `app_name: string` | `silva-agent/dataset/schema.json:366-375` |
-| `media_control` | `action: string` (`play/pause/next/previous`) | `silva-agent/dataset/schema.json:376-385` |
-| `list_capabilities` | nenhum | `silva-agent/dataset/schema.json:386-389` |
-| `none` | nenhum | `silva-agent/dataset/schema.json:390-393` |
+| `search_google` | `query: string`; `open_browser: boolean?`, default `false` | `silva-agent/dataset/schema.json:50-64` |
+| `open_app` | `app_name: string` | `silva-agent/dataset/schema.json:65-74` |
+| `make_call` | `number: string` | `silva-agent/dataset/schema.json:75-84` |
+| `get_location` | nenhum | `silva-agent/dataset/schema.json:85-88` |
+| `set_torch` | `state: boolean` | `silva-agent/dataset/schema.json:89-98` |
+| `set_dnd` | `state: boolean` | `silva-agent/dataset/schema.json:99-108` |
+| `vibrate` | `duration_ms: integer?`, default `500` | `silva-agent/dataset/schema.json:109-118` |
+| `get_clipboard` | nenhum | `silva-agent/dataset/schema.json:119-122` |
+| `set_clipboard` | `text: string` | `silva-agent/dataset/schema.json:123-132` |
+| `tell_joke` | nenhum | `silva-agent/dataset/schema.json:133-136` |
+| `set_alarm` | `time: string`; `label: string?`; `days: string?` | `silva-agent/dataset/schema.json:137-156` |
+| `cancel_alarm` | `time: string?`; `day: string?`; `label: string?` | `silva-agent/dataset/schema.json:157-176` |
+| `schedule_event` | `title: string`; `date: string?`; `time: string?` | `silva-agent/dataset/schema.json:177-196` |
+| `remember_note` | `key: string`; `value: string` | `silva-agent/dataset/schema.json:197-211` |
+| `recall_note` | `query: string` | `silva-agent/dataset/schema.json:212-221` |
+| `get_notifications` | `app: string?` | `silva-agent/dataset/schema.json:222-231` |
+| `set_volume` | `stream: string?`, default `"media"`; `level: integer` | `silva-agent/dataset/schema.json:232-247` |
+| `set_brightness` | `level: integer` | `silva-agent/dataset/schema.json:248-257` |
+| `set_timer` | `minutes: integer`; `label: string?` | `silva-agent/dataset/schema.json:258-272` |
+| `calculate` | `expression: string` | `silva-agent/dataset/schema.json:273-282` |
+| `set_location_state` | `state: boolean` | `silva-agent/dataset/schema.json:283-292` |
+| `get_last_location` | nenhum | `silva-agent/dataset/schema.json:293-296` |
+| `get_weather` | `day: string?`, default `"hoje"`; `time: string?`, default `""`; `location: string?`, default `""` | `silva-agent/dataset/schema.json:297-319` |
+| `record_video` | `duration: integer?`, default `10`; `camera_id: integer?`, default `0` | `silva-agent/dataset/schema.json:320-336` |
+| `request_ride` | `destination: string`; `app: string?`, default `"uber"` | `silva-agent/dataset/schema.json:337-353` |
+| `order_food` | `query: string`; `app: string?`, default `"ifood"` | `silva-agent/dataset/schema.json:354-370` |
+| `install_app` | `app_name: string` | `silva-agent/dataset/schema.json:371-380` |
+| `media_control` | `action: string` (`play/pause/next/previous`) | `silva-agent/dataset/schema.json:381-390` |
+| `list_capabilities` | nenhum | `silva-agent/dataset/schema.json:391-394` |
+| `scan_wifi` | nenhum | `silva-agent/dataset/schema.json:395-398` |
+| `none` | nenhum | `silva-agent/dataset/schema.json:399-402` |
 
 Não há enums formais. Limites citados (`camera_id` 0/1, vídeo 3–120, volume/brilho 0–100) aparecem em descrições, não como `enum`, `minimum` ou `maximum` (`silva-agent/dataset/schema.json:36-45`, `silva-agent/dataset/schema.json:227-252`, `silva-agent/dataset/schema.json:315-331`).
 
@@ -310,10 +326,10 @@ Configuração central e prompt.
 
 ### 3.2 `silva-agent/android_agent/main.py`
 
-- `print_banner()` → `None`: imprime URL do LLM e estado de simulação (`silva-agent/android_agent/main.py:17-30`).
-- `run_cli_mode()` → `None`: loop `input()`, aceita calls diretas, consulta o cliente LLM e executa (`silva-agent/android_agent/main.py:33-75`).
-- `run_web_mode(host: str, port: int)` → `None`: banner, PIN em claro e `start_server()` (`silva-agent/android_agent/main.py:78-85`).
-- `main()` → `None`: parse de `--web`, `--cli`, `--host`, `--port`; web é o default (`silva-agent/android_agent/main.py:87-100`).
+- `print_banner()` → `None`: imprime URL do LLM, status do scheduler e estado de simulação (`silva-agent/android_agent/main.py:17-34`).
+- `run_cli_mode()` → `None`: inicializa `scheduler.start_scheduler()`, loop `input()`, aceita calls diretas, consulta o cliente LLM e executa (`silva-agent/android_agent/main.py:37-82`).
+- `run_web_mode(host: str, port: int)` → `None`: inicializa `scheduler.start_scheduler()`, banner, PIN em claro e `start_server()` (`silva-agent/android_agent/main.py:85-94`).
+- `main()` → `None`: parse de `--web`, `--cli`, `--host`, `--port`; web é o default (`silva-agent/android_agent/main.py:96-114`).
 
 ### 3.3 `silva-agent/android_agent/web_server.py`
 
@@ -322,85 +338,90 @@ Configuração central e prompt.
 - `SilvaHTTPRequestHandler._send_file(file_path: Path, mime_type: str)` → `None`: envia arquivo ou 404 (`silva-agent/android_agent/web_server.py:43-53`).
 - `SilvaHTTPRequestHandler.do_OPTIONS()` → `None`: preflight 204 (`silva-agent/android_agent/web_server.py:55-61`).
 - `SilvaHTTPRequestHandler.do_GET()` → `None`: roteia `/`, `/index.html`, `/captures/*`, `/api/health` (`silva-agent/android_agent/web_server.py:63-102`).
-- `SilvaHTTPRequestHandler.do_POST()` → `None`: valida PIN/body, gera call e executa (`silva-agent/android_agent/web_server.py:104-165`).
+- `SilvaHTTPRequestHandler.do_POST()` → `None`: valida PIN/body, gera call, executa e propaga status real (`ok`, `partial_error`, `error`) (`silva-agent/android_agent/web_server.py:104-165`).
 - `start_server(host: str = WEB_HOST, port: int = WEB_PORT)` → `None`: instancia `ReusableThreadingHTTPServer`, com fallback dinâmico de portas (`port` até `port + 5`) em caso de `errno.EADDRINUSE`, registra handlers de `SIGINT`/`SIGTERM` e chama `shutdown()`/`server_close()` no encerramento (`silva-agent/android_agent/web_server.py:168-235`).
 
 ### 3.4 `silva-agent/android_agent/llm_client.py`
 
 - `SilvaLLMClient.__init__(base_url: str = LLAMA_SERVER_URL, timeout: int = LLM_TIMEOUT_SECONDS)` → `None`: normaliza URL (`silva-agent/android_agent/llm_client.py:18-20`).
 - `SilvaLLMClient.check_health()` → `dict`: tenta `/health`, depois `/`; retorna `online/status/url/error` (`silva-agent/android_agent/llm_client.py:22-37`).
-- `SilvaLLMClient.generate_call(user_prompt: str)` → `Tuple[Optional[str], float, Optional[str]]`: fallback local, prompt ChatML, `POST /completion`, normalização da tag e validação superficial de tool (`silva-agent/android_agent/llm_client.py:39-116`).
+- `SilvaLLMClient.generate_call(user_prompt: str)` → `Tuple[Optional[str], float, Optional[str]]`: fallback local, prompt ChatML, `POST /completion`, normalização da tag e validação superficial de tool (`silva-agent/android_agent/llm_client.py:39-119`).
 
 ### 3.5 `silva-agent/android_agent/intent_fallback.py`
 
 - `normalize_text(text: str)` → `str`: NFKD, remove diacríticos, minúsculas e `strip()` (`silva-agent/android_agent/intent_fallback.py:14-18`).
-- `_normalize_math_expression(raw_text: str)` → `Optional[str]`: traduz números por extenso (`zero`..`mil`), operadores (`vezes`, `x`, `dividido por`, `mais`, `menos`, `ao quadrado`, etc.) e porcentagens para expressão Python válida (`silva-agent/android_agent/intent_fallback.py:35-115`).
-- `_clean_weather_location(raw_loc: str)` → `str`: sanitiza nomes de cidades/estados, remove termos de tempo e ruídos (`hoje`, `amanhã`, turnos, `silva`, `por favor`), aceita preposições `de/em/no/na/para/pra` e normaliza capitalização (`silva-agent/android_agent/intent_fallback.py:278-348`).
-- `parse_single_intent(raw_cmd: str)` → `Optional[str]`: roteamento determinístico cobrindo 35 ferramentas nativas (`silva-agent/android_agent/intent_fallback.py:351-792`).
-- `match_intent_fallback(user_prompt: str)` → `Optional[str]`: divide cláusulas por conectores (` e `, ` depois `, ` em seguida `, `;`), executa fallback por cláusula e combina tags em chamadas compostas (`silva-agent/android_agent/intent_fallback.py:795-828`).
+- `_normalize_math_expression(raw_text: str)` → `Optional[str]`: traduz números por extenso (`zero`..`mil`), operadores (`vezes`, `x`, `dividido por`, `mais`, `menos`), raízes quadradas/cúbicas, trigonometria (`sen`, `cos`, `tan`), logaritmos, porcentagens e exponenciação para AST válida (`silva-agent/android_agent/intent_fallback.py:35-155`).
+- `_clean_weather_location(raw_loc: str)` → `str`: sanitiza nomes de cidades/estados, remove termos de tempo e ruídos (`hoje`, `amanhã`, turnos, `silva`, `por favor`), aceita preposições `de/em/no/na/para/pra` e normaliza capitalização (`silva-agent/android_agent/intent_fallback.py:318-388`).
+- `parse_single_intent(raw_cmd: str)` → `Optional[str]`: roteamento determinístico cobrindo as 36 ferramentas nativas, incluindo `scan_wifi` e consultas web multi-fonte (`silva-agent/android_agent/intent_fallback.py:391-925`).
+- `match_intent_fallback(user_prompt: str)` → `Optional[str]`: divide cláusulas por conectores (` e `, ` depois `, ` em seguida `, `;`) preservando operadores matemáticos, executa fallback por cláusula e combina tags em chamadas compostas (`silva-agent/android_agent/intent_fallback.py:928-966`).
 
 ### 3.6 `silva-agent/android_agent/parser.py`
 
-- `parse_function_calls(model_output: str)` → `List[Tuple[str, Dict[str, Any]]]`: extrai tags, aplica whitelist, AST literal, binding de assinatura, defaults e validação estrita de `bool` (`silva-agent/android_agent/parser.py:19-90`).
+- `parse_function_calls(model_output: str)` → `List[Tuple[str, Dict[str, Any]]]`: extrai tags, aplica whitelist de 36 ferramentas, AST literal, binding de assinatura, defaults e validação estrita de tipos (`silva-agent/android_agent/parser.py:19-90`).
 - `parse_function_call(model_output: str)` → `Dict[str, Any]`: compatibilidade de call única; sempre retorna `is_valid=True` porque a entrada é normalizada para `none()` (`silva-agent/android_agent/parser.py:93-104`).
-- `execute_call(model_output: str)` → `Dict[str, Any]`: executa calls em sequência, agrega mensagens/dados e retorna status externo fixo `"ok"` (`silva-agent/android_agent/parser.py:107-166`).
+- `execute_call(model_output: str)` → `Dict[str, Any]`: executa calls em sequência, agrega mensagens/dados e retorna status real consolidado (`"ok"`, `"partial_error"` ou `"error"`) (`silva-agent/android_agent/parser.py:107-174`).
 
 ### 3.7 `silva-agent/android_agent/tools.py`
 
 #### Helpers e estruturas
 
-- `sanitize_phone_number(number: str)` → `str`: mantém dígitos e `+` inicial (`silva-agent/android_agent/tools.py:203-208`).
-- `resolve_contact_or_number(target: str)` → `str`: resolve contato por substring ou sanitiza número (`silva-agent/android_agent/tools.py:211-239`).
-- `_run_termux_cmd(cmd: list[str], timeout: int = 10)` → `subprocess.CompletedProcess`: argv sem shell, resolução de binários e fallback shell (`silva-agent/android_agent/tools.py:242-282`).
-- `_exec_android_intent(cmd_str: str, timeout: int = 6)` → `subprocess.CompletedProcess`: executa string via `sh -c` (`silva-agent/android_agent/tools.py:285-307`).
-- `_generate_map_preview(lat: float, lon: float)` → `Optional[str]`: tile Web Mercator OSM ou mapa Pillow local (`silva-agent/android_agent/tools.py:710-796`).
-- `_load_memory()` → `dict`; `_save_memory(data: dict)` → `None`: JSON local de notas (`silva-agent/android_agent/tools.py:1677-1690`).
-- `_normalize_text(text: str)` → `str`: normalização usada na busca de notas (`silva-agent/android_agent/tools.py:1693-1697`).
-- `SafeMathEvaluator(ast.NodeVisitor)` com `visit`, `generic_visit`, `visit_Expression`, `visit_Constant`, `visit_UnaryOp`, `visit_BinOp`: allowlist aritmética (`silva-agent/android_agent/tools.py:1951-2001`).
+- `_FILE_LOCK = threading.RLock()`: lock reentrante protegendo concorrência de threads para arquivos de dados e SQLite (`silva-agent/android_agent/tools.py:36`).
+- `_atomic_write_json(file_path: Path, data: Any)` → `None`: escrita atômica segura via arquivo temporário + `flush()` + `os.fsync()` + `os.replace()` (`silva-agent/android_agent/tools.py:46-60`).
+- `_init_memory_db()` → `sqlite3.Connection`: inicializa tabelas `memories` e `memories_fts` (FTS5) com modo WAL e triggers automáticos (`silva-agent/android_agent/tools.py:63-125`).
+- `_migrate_json_to_sqlite()` → `None`: migração automática de `memory.json` legado para SQLite FTS5 (`silva-agent/android_agent/tools.py:128-158`).
+- `_classify_memory_category(key: str, value: str)` → `str`: categorização semântica automática (`wifi`, `senha`, `estudo`, `pessoal`, `geral`) (`silva-agent/android_agent/tools.py:161-180`).
+- `DuckDuckGoHTMLParser(HTMLParser)`: parser nativo de busca web DuckDuckGo Lite sem dependências pip (`silva-agent/android_agent/tools.py:183-228`).
+- `sanitize_phone_number(number: str)` → `str`: mantém dígitos e `+` inicial (`silva-agent/android_agent/tools.py:233-238`).
+- `resolve_contact_or_number(target: str)` → `str`: resolve contato por substring ou sanitiza número (`silva-agent/android_agent/tools.py:241-269`).
+- `_run_termux_cmd(cmd: list[str], timeout: int = 10)` → `subprocess.CompletedProcess`: argv sem shell, resolução de binários e fallback shell (`silva-agent/android_agent/tools.py:272-312`).
+- `_exec_android_intent(cmd_str: str, timeout: int = 6)` → `subprocess.CompletedProcess`: executa string via `sh -c` (`silva-agent/android_agent/tools.py:315-337`).
+- `_generate_map_preview(lat: float, lon: float)` → `Optional[str]`: tile Web Mercator OSM ou mapa Pillow local (`silva-agent/android_agent/tools.py:740-826`).
+- `SafeMathEvaluator(ast.NodeVisitor)`: avaliador científico robusto AST com operações aritméticas, potência segura ($\le 1000$), bloqueio de booleanos e funções do módulo `math` (`sqrt`, `cbrt`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `log`, `log10`, `log2`, `exp`, `factorial`, `abs`, `round`, `floor`, `ceil`, `pi`, `e`) (`silva-agent/android_agent/tools.py:2650-2770`).
 
-#### Catálogo integral das ferramentas
+#### Catálogo integral das 36 ferramentas
 
 | Função → retorno | Efeito principal | Referência |
 |---|---|---|
-| `get_battery()` → `dict` | Estado e carga da bateria | `silva-agent/android_agent/tools.py:310-339` |
-| `get_last_sms(limit=5)` → `dict` | Lê SMS recentes | `silva-agent/android_agent/tools.py:342-373` |
-| `send_sms(number, message)` → `dict` | Envia SMS | `silva-agent/android_agent/tools.py:376-403` |
-| `take_photo(camera_id=0)` → `dict` | Captura JPEG | `silva-agent/android_agent/tools.py:406-446` |
-| `take_screenshot()` → `dict` | Captura tela | `silva-agent/android_agent/tools.py:449-540` |
-| `record_video(duration=10, camera_id=0)` → `dict` | Intent de gravação e cópia do arquivo | `silva-agent/android_agent/tools.py:543-615` |
-| `open_app(app_name)` → `dict` | Abre activity Android | `silva-agent/android_agent/tools.py:618-681` |
-| `make_call(number)` → `dict` | Disca | `silva-agent/android_agent/tools.py:684-707` |
-| `get_location()` → `dict` | GPS e persiste `last_location.json` | `silva-agent/android_agent/tools.py:799-863` |
-| `set_location_state(state)` → `dict` | Liga/desliga GPS ou abre settings | `silva-agent/android_agent/tools.py:866-905` |
-| `get_last_location()` → `dict` | Lê último JSON e formata data | `silva-agent/android_agent/tools.py:908-951` |
-| `get_weather(day="hoje", time="", location="")` → `dict` | Open-Meteo | `silva-agent/android_agent/tools.py:976-1143` |
-| `set_torch(state)` → `dict` | Liga/desliga lanterna | `silva-agent/android_agent/tools.py:1146-1170` |
-| `set_dnd(state)` → `dict` | DND nativo ou fallback por volume | `silva-agent/android_agent/tools.py:1173-1273` |
-| `vibrate(duration_ms=500)` → `dict` | Vibração | `silva-agent/android_agent/tools.py:1276-1297` |
-| `get_clipboard()` → `dict` | Lê clipboard | `silva-agent/android_agent/tools.py:1300-1321` |
-| `set_clipboard(text)` → `dict` | Escreve clipboard | `silva-agent/android_agent/tools.py:1324-1351` |
-| `tell_joke()` → `dict` | Piada aleatória sem repetição consecutiva | `silva-agent/android_agent/tools.py:1387-1397` |
-| `parse_ptbr_date(date_str)` → `date` | Interpreta datas PT-BR | `silva-agent/android_agent/tools.py:1416-1495` |
-| `parse_time_str(time_str)` → `tuple[int,int]` | Interpreta hora | `silva-agent/android_agent/tools.py:1498-1526` |
-| `set_alarm(time, label="", days="")` → `dict` | Intent `SET_ALARM` | `silva-agent/android_agent/tools.py:1529-1565` |
-| `cancel_alarm(time="", day="", label="")` → `dict` | Intent `DISMISS_ALARM` | `silva-agent/android_agent/tools.py:1568-1614` |
-| `schedule_event(title, date="", time="")` → `dict` | Intent de calendário | `silva-agent/android_agent/tools.py:1617-1670` |
-| `remember_note(key, value)` → `dict` | Salva nota | `silva-agent/android_agent/tools.py:1700-1717` |
-| `recall_note(query)` → `dict` | Busca ranqueada de notas | `silva-agent/android_agent/tools.py:1720-1779` |
-| `get_notifications(app="")` → `dict` | Lê notificações | `silva-agent/android_agent/tools.py:1782-1836` |
-| `set_volume(stream="media", level=50)` → `dict` | Ajusta volume | `silva-agent/android_agent/tools.py:1839-1886` |
-| `set_brightness(level)` → `dict` | Ajusta brilho | `silva-agent/android_agent/tools.py:1889-1911` |
-| `set_timer(minutes, label="")` → `dict` | Intent `SET_TIMER` | `silva-agent/android_agent/tools.py:1914-1948` |
-| `calculate(expression)` → `dict` | Avaliador aritmético seguro com AST | `silva-agent/android_agent/tools.py:2400-2440` |
-| `search_google(query)` → `dict` | Abre Google e busca snippet DDG | `silva-agent/android_agent/tools.py:2445-2510` |
-| `request_ride(destination, app="uber")` → `dict` | Intent para Uber ou 99 com destino configurado | `silva-agent/android_agent/tools.py:2550-2595` |
-| `order_food(query, app="ifood")` → `dict` | Intent para iFood ou 99Food buscando o prato | `silva-agent/android_agent/tools.py:2598-2645` |
-| `install_app(app_name)` → `dict` | Abre Google Play Store na página do app | `silva-agent/android_agent/tools.py:2648-2688` |
-| `media_control(action)` → `dict` | Controle de mídia via `cmd media_session` e KeyEvents | `silva-agent/android_agent/tools.py:2691-2740` |
-| `list_capabilities()` → `dict` | Catálogo de ferramentas e exemplos | `silva-agent/android_agent/tools.py:2743-2790` |
-| `none()` → `dict` | Resposta neutra | `silva-agent/android_agent/tools.py:2800-2810` |
+| `get_battery()` → `dict` | Estado e carga da bateria | `silva-agent/android_agent/tools.py:340-369` |
+| `get_last_sms(limit=5)` → `dict` | Lê SMS recentes | `silva-agent/android_agent/tools.py:372-403` |
+| `send_sms(number, message)` → `dict` | Envia SMS | `silva-agent/android_agent/tools.py:406-433` |
+| `take_photo(camera_id=0)` → `dict` | Captura JPEG | `silva-agent/android_agent/tools.py:436-476` |
+| `take_screenshot()` → `dict` | Captura tela | `silva-agent/android_agent/tools.py:479-570` |
+| `record_video(duration=10, camera_id=0)` → `dict` | Intent de gravação e cópia do arquivo | `silva-agent/android_agent/tools.py:573-645` |
+| `open_app(app_name)` → `dict` | Abre activity Android | `silva-agent/android_agent/tools.py:648-711` |
+| `make_call(number)` → `dict` | Disca | `silva-agent/android_agent/tools.py:714-737` |
+| `get_location()` → `dict` | GPS e persiste `last_location.json` | `silva-agent/android_agent/tools.py:829-893` |
+| `set_location_state(state)` → `dict` | Liga/desliga GPS ou abre settings | `silva-agent/android_agent/tools.py:896-935` |
+| `get_last_location()` → `dict` | Lê último JSON atômico e formata data | `silva-agent/android_agent/tools.py:938-981` |
+| `get_weather(day="hoje", time="", location="")` → `dict` | Open-Meteo com filtro de chuva e geocoding BR | `silva-agent/android_agent/tools.py:1006-1173` |
+| `set_torch(state)` → `dict` | Liga/desliga lanterna | `silva-agent/android_agent/tools.py:1176-1200` |
+| `set_dnd(state)` → `dict` | DND nativo ou fallback por volume | `silva-agent/android_agent/tools.py:1203-1303` |
+| `vibrate(duration_ms=500)` → `dict` | Vibração | `silva-agent/android_agent/tools.py:1306-1327` |
+| `get_clipboard()` → `dict` | Lê clipboard | `silva-agent/android_agent/tools.py:1330-1351` |
+| `set_clipboard(text)` → `dict` | Escreve clipboard | `silva-agent/android_agent/tools.py:1354-1381` |
+| `tell_joke()` → `dict` | Piada aleatória sem repetição consecutiva | `silva-agent/android_agent/tools.py:1417-1427` |
+| `parse_ptbr_date(date_str)` → `date` | Interpreta datas PT-BR | `silva-agent/android_agent/tools.py:1446-1525` |
+| `parse_time_str(time_str)` → `tuple[int,int]` | Interpreta hora | `silva-agent/android_agent/tools.py:1528-1556` |
+| `set_alarm(time, label="", days="")` → `dict` | Intent `SET_ALARM` | `silva-agent/android_agent/tools.py:1559-1595` |
+| `cancel_alarm(time="", day="", label="")` → `dict` | Intent `DISMISS_ALARM` | `silva-agent/android_agent/tools.py:1598-1644` |
+| `schedule_event(title, date="", time="")` → `dict` | Agenda compromisso local com alarme e gravação atômica | `silva-agent/android_agent/tools.py:1647-1725` |
+| `remember_note(key, value)` → `dict` | Salva nota com categorização em SQLite FTS5 | `silva-agent/android_agent/tools.py:1735-1775` |
+| `recall_note(query)` → `dict` | Busca híbrida FTS5 (BM25 + LIKE fallback) | `silva-agent/android_agent/tools.py:1778-1850` |
+| `get_notifications(app="")` → `dict` | Lê notificações do sistema | `silva-agent/android_agent/tools.py:1853-1907` |
+| `set_volume(stream="media", level=50)` → `dict` | Ajusta volume | `silva-agent/android_agent/tools.py:1910-1957` |
+| `set_brightness(level)` → `dict` | Ajusta brilho | `silva-agent/android_agent/tools.py:1960-1982` |
+| `set_timer(minutes, label="")` → `dict` | Intent `SET_TIMER` | `silva-agent/android_agent/tools.py:1985-2019` |
+| `calculate(expression)` → `dict` | Avaliador matemático científico seguro via AST | `silva-agent/android_agent/tools.py:2775-2820` |
+| `search_google(query, open_browser=False)` → `dict` | Busca web multi-fonte (Wikipédia, DDG Instant Answer, DDG HTML Lite) | `silva-agent/android_agent/tools.py:2825-2959` |
+| `scan_wifi()` → `dict` | Escaneia redes Wi-Fi próximas, intensidade (dBm/%), banda e segurança | `silva-agent/android_agent/tools.py:2962-3030` |
+| `request_ride(destination, app="uber")` → `dict` | Intent para Uber ou 99 com destino configurado | `silva-agent/android_agent/tools.py:3033-3078` |
+| `order_food(query, app="ifood")` → `dict` | Intent para iFood ou 99Food buscando o prato | `silva-agent/android_agent/tools.py:3081-3128` |
+| `install_app(app_name)` → `dict` | Abre Google Play Store na página do app | `silva-agent/android_agent/tools.py:3131-3171` |
+| `media_control(action)` → `dict` | Controle de mídia via `cmd media_session` e KeyEvents | `silva-agent/android_agent/tools.py:3174-3223` |
+| `list_capabilities()` → `dict` | Catálogo completo das 36 ferramentas com exemplos | `silva-agent/android_agent/tools.py:3226-3285` |
+| `none()` → `dict` | Resposta neutra | `silva-agent/android_agent/tools.py:3295-3305` |
 
-`AVAILABLE_TOOLS` registra exatamente essas 35 funções, sem wrappers ou aliases (`silva-agent/android_agent/tools.py:2950-2995`).
+`AVAILABLE_TOOLS` registra exatamente essas 36 funções, sem wrappers ou aliases (`silva-agent/android_agent/tools.py:3580-3621`).
 
 ### 3.8 `silva-agent/dataset/validate_dataset.py`
 
@@ -506,27 +527,35 @@ y_tile = int(y_exact)
 (silva-agent/android_agent/tools.py:721-727)
 ```
 
-### 4.3 Score da memória
+### 4.3 Busca e ranqueamento da memória (SQLite FTS5)
 
 ```text
-score = 0
-if norm_query == norm_key: score += 10
-elif norm_query in norm_key: score += 6
-elif norm_key in norm_query: score += 5
-score += 2 * len(query_tokens & key_tokens)
-if norm_query in norm_value: score += 3
-keep score > 0
-sort descending
-return first 3
-(silva-agent/android_agent/tools.py:1734-1778)
+1. Consulta primária com BM25 FTS5:
+   SELECT key, value, category FROM memories_fts 
+   WHERE memories_fts MATCH ? 
+   ORDER BY rank LIMIT 3;
+(silva-agent/android_agent/tools.py:1795-1810)
+
+2. Fallback relacional (LIKE + Token scoring):
+   Disparado se query contiver sintaxe FTS restrita ou retornar vazia:
+   SELECT key, value, category FROM memories 
+   WHERE key LIKE ? OR value LIKE ?;
+   Scoring:
+     exact_match => score += 10
+     query_in_key => score += 6
+     key_in_query => score += 5
+     token_intersection => score += 2 * len(query_tokens & key_tokens)
+     query_in_value => score += 3
+   Ordenação decrescente por score; seleciona as 3 primeiras notas.
+(silva-agent/android_agent/tools.py:1812-1845)
 ```
 
 ### 4.4 Resolução de data e hora
 
-- `hoje`: data corrente; `amanhã`: `+1 dia`; `depois de amanhã`: `+2 dias` (`silva-agent/android_agent/tools.py:1423-1431`).
-- Weekday: `(target_weekday - today_weekday) % 7`; se o alvo é o dia atual, avança 7 (`silva-agent/android_agent/tools.py:1433-1448`).
-- Data por extenso com ano de dois dígitos: `year + 2000`; data passada sem ano explícito passa ao ano seguinte (`silva-agent/android_agent/tools.py:1450-1468`).
-- Data inválida/não reconhecida retorna hoje; hora inválida retorna `(9, 0)` (`silva-agent/android_agent/tools.py:1492-1495`, `silva-agent/android_agent/tools.py:1498-1502`).
+- `hoje`: data corrente; `amanhã`: `+1 dia`; `depois de amanhã`: `+2 dias` (`silva-agent/android_agent/tools.py:1450-1460`).
+- Weekday: `(target_weekday - today_weekday) % 7`; se o alvo é o dia atual, avança 7 (`silva-agent/android_agent/tools.py:1462-1478`).
+- Data por extenso com ano de dois dígitos: `year + 2000`; data passada sem ano explícito passa ao ano seguinte (`silva-agent/android_agent/tools.py:1480-1498`).
+- Data inválida/não reconhecida retorna hoje; hora inválida retorna `(9, 0)` (`silva-agent/android_agent/tools.py:1522-1525`, `silva-agent/android_agent/tools.py:1528-1532`).
 
 ### 4.5 Clima
 
@@ -535,36 +564,32 @@ amanhã: today + 1 day
 depois de amanhã: today + 2 days
 weekday: (target - today.weekday()) % 7; current weekday => +7
 night => 20h; tarde => 15h; manhã => 9h; madrugada => 3h
-(silva-agent/android_agent/tools.py:1022-1067)
+(silva-agent/android_agent/tools.py:1052-1097)
 ```
 
-Sem cidade e sem última localização, usa `-7.9408, -34.8730, "Paulista"` (`silva-agent/android_agent/tools.py:1017-1020`).
+Sem cidade e sem última localização, usa `-7.9408, -34.8730, "Paulista"` (`silva-agent/android_agent/tools.py:1047-1050`).
+Filtro de chuva calibra falsos positivos quando probabilidade $< 35\%$ e volume $\le 0.5\text{ mm}$ (`silva-agent/android_agent/tools.py:1120-1145`).
 
-### 4.6 Avaliador matemático
+### 4.6 Avaliador matemático e científico (`SafeMathEvaluator`)
 
-Permite `+`, `-`, `*`, `/`, `//`, `%`, `**`, unário `+`/`-`; constantes `int`/`float`. Exponente só é rejeitado quando `abs(right) > 1000`; divisão/módulo por zero são rejeitados (`silva-agent/android_agent/tools.py:1951-2001`). Formatação fracionária:
-
-```text
-f"{result:.4f}".rstrip("0").rstrip(".")
-(silva-agent/android_agent/tools.py:2017-2020)
-```
+Permite:
+- Operações aritméticas: `+`, `-`, `*`, `/`, `//`, `%`, `**`, unário `+`/`-`.
+- Funções matemáticas seguras: `sqrt`, `cbrt`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `log`, `log10`, `log2`, `exp`, `factorial`, `abs`, `round`, `floor`, `ceil`.
+- Constantes: `pi`, `e`.
+- Regras de segurança estritas:
+  - Rejeita valores booleanos (`isinstance(node.value, bool)` gera erro para impedir casts indevidos).
+  - Expoente máximo protegido: rejeita quando `abs(right) > 1000`.
+  - Divisão ou módulo por zero rejeitados com mensagem amigável.
+  - Formatação fracionária limpa: `f"{result:.6f}".rstrip("0").rstrip(".")` (`silva-agent/android_agent/tools.py:2770-2810`).
 
 ### 4.7 Dataset
 
 ```text
-half = count_needed // 2
-call_samples = half
-send_sms_samples = count_needed - half
-# count_needed=300 => 150 + 150
-(silva-agent/dataset/prepare_final_dataset.py:211-242)
-
-dedup_key = " ".join(item["prompt"].strip().lower().split())
-(silva-agent/dataset/prepare_final_dataset.py:310-321)
-
-eval_count = max(1, int(total_total * 0.05))
-train_count = total_total - eval_count
-# 4585 => eval=229, train=4356
-(silva-agent/dataset/prepare_final_dataset.py:327-333)
+total_consolidado = 6094 exemplos (silva_colab_dataset.jsonl)
+eval_count = max(1, int(total_consolidado * 0.05)) # 304 amostras (eval_clean.jsonl)
+train_count = total_consolidado - eval_count       # 5790 amostras (train_clean.jsonl)
+Aderência ao schema: 100% nas 36 ferramentas e 41 parâmetros formais.
+(silva-agent/dataset/prepare_final_dataset.py:327-340)
 ```
 
 Parâmetros SFT/LoRA no Colab: `r=16`, `lora_alpha=32`, `lora_dropout=0.05`, módulos `q,k,v,o,gate,up,down`, `epochs=3`, `batch_size=16`, `gradient_accumulation_steps=2`, `learning_rate=3e-4`, `weight_decay=0.01`, `warmup_steps=20`, `max_length=256` (`silva-agent/pc_training/colab_train_silva.py:165-203`).
@@ -573,7 +598,7 @@ Parâmetros SFT/LoRA no Colab: `r=16`, `lora_alpha=32`, `lora_dropout=0.05`, mó
 
 1. `start_silva.sh` entra no diretório do runtime e solicita wake lock (`silva-agent/android_agent/start_silva.sh:6-9`).
 2. Localiza `llama-server` e GGUF (`silva-agent/android_agent/start_silva.sh:15-32`).
-3. Instala trap de cleanup (`silva-agent/android_agent/start_silva.sh:35-45`).
+3. Instala trap de cleanup unificada (`silva-agent/android_agent/start_silva.sh:35-45`).
 4. Inicia `llama-server` em `127.0.0.1:8080`, contexto 2048 e 4 threads (`silva-agent/android_agent/start_silva.sh:47-56`).
 5. Executa `python3 main.py --web --port 5000` (`silva-agent/android_agent/start_silva.sh:83`).
 
@@ -585,14 +610,14 @@ Parâmetros SFT/LoRA no Colab: `r=16`, `lora_alpha=32`, `lora_dropout=0.05`, mó
 4. Call direta `<call>...</call>` é executada; demais mensagens vão a `generate_call()` (`silva-agent/android_agent/web_server.py:121-128`).
 5. `generate_call()` tenta fallback determinístico antes do LLM (`silva-agent/android_agent/llm_client.py:44-51`).
 6. Sem fallback, envia ChatML ao `POST /completion` (`silva-agent/android_agent/llm_client.py:53-81`).
-7. O parser extrai, valida e executa sequencialmente (`silva-agent/android_agent/parser.py:19-166`).
-8. A resposta HTTP agrega `latency_ms` (`silva-agent/android_agent/web_server.py:141-145`).
+7. O parser extrai, valida e executa sequencialmente (`silva-agent/android_agent/parser.py:19-174`).
+8. A resposta HTTP agrega `latency_ms` e propaga o status real consolidado (`silva-agent/android_agent/web_server.py:141-145`).
 
 ### 4.10 Fluxo de dataset e treinamento
 
-1. Backup `train.jsonl.bak` é reparado e enriquecido por `repair_train_dataset.py` (`silva-agent/dataset/repair_train_dataset.py:475-568`).
-2. `train.jsonl` + seed + contatos sintéticos são validados/deduplicados (`silva-agent/dataset/prepare_final_dataset.py:245-321`).
-3. O conjunto é embaralhado e dividido 4.356/229 (`silva-agent/dataset/prepare_final_dataset.py:323-349`).
+1. Amostras canônicas e enriquecidas são processadas por `repair_train_dataset.py` e validadas por `validate_dataset.py`.
+2. `prepare_final_dataset.py` consolida, deduplica e valida todas as amostras contra `schema.json` (36 ferramentas).
+3. O conjunto de 6.094 amostras é dividido em 5.790 treino e 304 avaliação (`silva-agent/dataset/silva_colab_dataset.jsonl`).
 4. O Colab converte registros em ChatML, aplica LoRA/SFT, funde o adapter e gera GGUF (`silva-agent/pc_training/colab_train_silva.py:74-339`).
 5. O runtime carrega o GGUF via `llama-server` (`silva-agent/android_agent/start_silva.sh:26-56`).
 
@@ -606,20 +631,20 @@ Parâmetros SFT/LoRA no Colab: `r=16`, `lora_alpha=32`, `lora_dropout=0.05`, mó
 | `GET /index.html` | nenhum | Mesmo arquivo da raiz (`silva-agent/android_agent/web_server.py:62-65`). |
 | `GET /captures/<filename>` | filename URL-decoded | 200 com arquivo; 404 ausente; 403 se `safe_path` não iniciar com o prefixo de `CAPTURES_DIR` (`silva-agent/android_agent/web_server.py:67-76`). |
 | `GET /api/health` | nenhum | 200 `{"status":"ok","agent":"Silva","llm":{"online":bool,"status":str,"url":str,"error"?:str}}` (`silva-agent/android_agent/web_server.py:78-85`). |
-| `POST /api/chat` | body `{"message": string}`; header `X-Access-Pin` se `ACCESS_PIN` configurado | 403 `{"status":"error","message":"PIN de acesso inválido ou ausente."}`; 400 para JSON inválido ou mensagem vazia; 200 com o retorno de `execute_call()` (`silva-agent/android_agent/web_server.py:93-145`). |
+| `POST /api/chat` | body `{"message": string}`; header `X-Access-Pin` se `ACCESS_PIN` configurado | 403 `{"status":"error","message":"PIN de acesso inválido ou ausente."}`; 400 para JSON inválido ou mensagem vazia; 200 com o retorno de `execute_call()` propagando status real (`ok`, `partial_error`, `error`) (`silva-agent/android_agent/web_server.py:93-145`). |
 | `OPTIONS *` | headers de preflight | 204; CORS `*`, métodos `GET, POST, OPTIONS`, headers `Content-Type, X-Access-Pin` (`silva-agent/android_agent/web_server.py:50-56`). |
 | `GET /api/health` (llama-server) | nenhum | Health local do modelo; fallback para `GET /` (`silva-agent/android_agent/llm_client.py:22-37`). |
 | `POST /completion` (llama-server) | `prompt`, `temperature=0.0`, `n_predict=48`, `stop`, `stream=false`, `cache_prompt=true` | Retorna `content`; latência medida (`silva-agent/android_agent/llm_client.py:53-109`). |
 
-Formato de sucesso do parser, base do `/api/chat`:
+Formato de resposta do parser, base do `/api/chat`:
 
 ```json
 {
-  "status": "ok",
+  "status": "ok | partial_error | error",
   "message": "string",
   "raw_call": "string",
   "func_name": "string | multi_call",
-  "calls": [{"func_name": "string", "args": {}, "status": "string", "data": null}],
+  "calls": [{"func_name": "string", "args": {}, "status": "ok | error", "data": null}],
   "data": [],
   "image_url": null,
   "video_url": null,
@@ -627,20 +652,20 @@ Formato de sucesso do parser, base do `/api/chat`:
 }
 ```
 
-Referências: `silva-agent/android_agent/parser.py:157-165`, `silva-agent/android_agent/web_server.py:141-145`.
+Referências: `silva-agent/android_agent/parser.py:157-173`, `silva-agent/android_agent/web_server.py:141-145`.
 
 ### 5.2 Comandos CLI
 
 | Comando | Parâmetros | Ação |
 |---|---|---|
-| `python3 main.py --web` | `--host`, `--port` opcionais | Inicia servidor web; `--web` é default (`silva-agent/android_agent/main.py:87-100`). |
-| `python3 main.py --cli` | entrada stdin | Entra no loop de perguntas (`silva-agent/android_agent/main.py:33-75`). |
-| `sair`, `exit`, `quit` no CLI | nenhum | Encerra CLI (`silva-agent/android_agent/main.py:49-51`). |
-| `<call>get_battery()</call>` no CLI/Web | tag completa | Execução direta, ainda passa pelo parser (`silva-agent/android_agent/main.py:53-56`, `silva-agent/android_agent/web_server.py:121-125`). |
+| `python3 main.py --web` | `--host`, `--port` opcionais | Inicia servidor web com daemon scheduler; `--web` é default (`silva-agent/android_agent/main.py:85-114`). |
+| `python3 main.py --cli` | entrada stdin | Entra no loop de perguntas com daemon scheduler ativo (`silva-agent/android_agent/main.py:37-82`). |
+| `sair`, `exit`, `quit` no CLI | nenhum | Encerra CLI (`silva-agent/android_agent/main.py:56-58`). |
+| `<call>get_battery()</call>` no CLI/Web | tag completa | Execução direta, processada pelo parser (`silva-agent/android_agent/main.py:60-63`, `silva-agent/android_agent/web_server.py:121-125`). |
 
 ### 5.3 Handlers/ferramentas
 
-Todas as 35 funções de `AVAILABLE_TOOLS` são comandos de function calling (`silva-agent/android_agent/tools.py:2950-2995`). Assinaturas, defaults, efeitos e referências estão em §3.7.
+Todas as 36 funções de `AVAILABLE_TOOLS` são comandos de function calling (`silva-agent/android_agent/tools.py:3580-3621`). Assinaturas, defaults, efeitos e referências estão em §3.7.
 
 ## 6. Arquitetura do Frontend / Interface de Usuário
 
@@ -694,28 +719,36 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
    - `web_server.py` utiliza `ReusableThreadingHTTPServer` com `SO_REUSEADDR` e threads daemon, além de fallback dinâmico de portas (`5000` a `5005`), eliminando travamentos por `Address already in use` (`Errno 98`).
    - `start_silva.sh` implementa limpeza cirúrgica prévia de instâncias órfãs de `llama-server` e `main.py`, respeita a variável `WEB_PORT` do `.env` e gerencia PIDs via `data/llama.pid` e `data/web.pid` com `trap cleanup EXIT INT TERM` unificado.
 2. **Normalização Matemática e de Linguagem Natural**:
-   - `intent_fallback.py` normaliza números por extenso em português (`zero`..`mil`), operadores (`vezes`, `x`, `dividido por`, `mais`, `menos`, `ao quadrado`, `%`) e valida expressões via AST antes de chamar `calculate()`.
+   - `intent_fallback.py` normaliza números por extenso em português (`zero`..`mil`), operadores (`vezes`, `x`, `dividido por`, `mais`, `menos`), raízes, trigonometria e valida expressões via AST antes de chamar `calculate()`.
 3. **Calibração Meteorológica e Resolução Geográfica**:
    - `tools.py` calibra códigos WMO de chuvisco/chuva leve para `Céu limpo` ou `Parcialmente nublado` quando a probabilidade for $< 35\%$ e o volume $\le 0.5\text{ mm}$, eliminando falsos positivos.
    - Geocoding Open-Meteo prioriza localidades no Brasil (`country_code == 'BR'`) com desempate por estado/UF (`UF_TO_STATE`).
    - `intent_fallback.py` aceita preposições `de/em/no/na/para/pra`, remove ruídos temporais e preserva capitalização limpa de cidades.
 4. **Redesign da Interface Web**:
    - Interface 100% offline inspirada em Claude/DeepSeek, com sidebar retrátil, histórico de conversas no `localStorage`, badges de telemetria e cards rápidos.
-5. **Expansão de Ferramentas**:
-   - `AVAILABLE_TOOLS` e `dataset/schema.json` agora cobrem formalmente 35 ferramentas nativas (incluindo `request_ride`, `order_food`, `install_app`, `media_control`, `list_capabilities`).
+5. **36 Ferramentas Nativas e Nova Ferramenta `scan_wifi()`**:
+   - `AVAILABLE_TOOLS` e `dataset/schema.json` agora cobrem formalmente 36 ferramentas nativas (41 parâmetros).
+   - `scan_wifi()` escaneia redes Wi-Fi próximas, calcula percentual de intensidade via RSSI, identifica frequência (2.4 GHz vs 5 GHz), criptografia (WPA3, WPA2, Aberta) e a rede atualmente conectada, com orientação de GPS no Android.
+6. **Busca Web Multi-Fonte em Cascata**:
+   - `search_google()` opera com cascata tripla: 1ª Wikipédia PT-BR REST API; 2ª DuckDuckGo Instant Answer API; 3ª DuckDuckGo HTML Lite via parser nativo `DuckDuckGoHTMLParser(HTMLParser)` sem dependências externas, com parâmetro `open_browser=False`.
+7. **Calculadora Científica Robusta via AST**:
+   - `SafeMathEvaluator` com operações aritméticas, potência segura ($\le 1000$), funções científicas (`math.sqrt`, `cbrt`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `log`, `log10`, `log2`, `exp`, `factorial`, `abs`, `round`, `floor`, `ceil`), constantes `pi` e `e`, e bloqueio de booleanos.
+8. **Memória Persistente SQLite FTS5 ACID e Escrita Atômica**:
+   - Memória de longo prazo transacional em `data/memory.db` com busca textual FTS5 (BM25 + fallback LIKE), triggers automáticos de sincronização, modo WAL e migração sem perdas de `memory.json`.
+   - Estados JSON (`events.json`, `last_location.json`, `dnd_backup.json`) gravados de forma atômica (`_atomic_write_json`) com lock reentrante de concorrência (`_FILE_LOCK = threading.RLock()`).
+9. **Daemon Scheduler Ativo no Boot e Dataset Consolidado**:
+   - `scheduler.py` thread-safe e reentrante disparado no boot do `main.py` para alertas e notificações em segundo plano.
+   - Dataset consolidado de 6.094 amostras limpas (`silva_colab_dataset.jsonl`), dividido em 5.790 treino e 304 avaliação, com 100% de conformidade com o schema.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 
-1. **JSON sem escrita atômica.** `memory.json`, `last_location.json` e `dnd_backup.json` são escritos diretamente; interrupção abrupta no Android pode truncar o arquivo (`silva-agent/android_agent/tools.py`).
-2. **Read-modify-write sem lock na memória.** `remember_note()` carrega o JSON completo e regrava; duas requisições simultâneas em threads separadas podem sobrescrever notas.
-3. **HTTP em texto claro (Plaintext).** A comunicação na rede local Wi-Fi ocorre sobre HTTP sem TLS (`0.0.0.0:5000`), dependendo do PIN estático (`X-Access-Pin`) para autorização básica.
-4. **Snapshots de release binários legados.** Arquivos como `silva_deploy.tar.gz` e `silva_update.tar.gz` na raiz do workspace representam snapshots antigos e devem ser gerados novamente se for necessária uma distribuição empacotada.
-5. **Atualização isolada de arquivos.** Atualizar `tools.py` isoladamente sem regenerar o dataset de treino ou vice-versa pode gerar discrepâncias de vocabulário e chamadas aceitas.
-6. **API e recursos privileged sem confirmação manual.** O PIN protege o endpoint `/api/chat`; chamadas telefônicas, SMS, câmera e volume executam imediatamente após a validação da chamada no parser.
+1. **HTTP em texto claro (Plaintext).** A comunicação na rede local Wi-Fi ocorre sobre HTTP sem TLS (`0.0.0.0:5000`), dependendo do PIN estático (`X-Access-Pin`) para autorização na rede local.
+2. **Snapshots de release binários legados.** Arquivos como `silva_deploy.tar.gz` e `silva_update.tar.gz` na raiz do workspace representam snapshots antigos e devem ser gerados novamente se for necessária uma distribuição empacotada.
+3. **API e recursos privileged sem confirmação manual.** O PIN protege o endpoint `/api/chat`; chamadas telefônicas, SMS, câmera e volume executam imediatamente após a validação da chamada no parser.
+4. **Dependência de permissões do Termux:API.** Chamadas nativas de hardware (Wi-Fi scan, GPS, SMS, câmera, áudio) exigem que as permissões do sistema Android tenham sido concedidas previamente ao aplicativo Termux:API.
 
 ### 7.3 Ordem recomendada para evolução futura do sistema
 
-1. **Persistência transacional.** Implementar escrita JSON atômica (arquivo temporário + `fsync` + `rename`) e locks simples para evitar perda de dados em encerramentos abruptos no Android.
-2. **Endurecimento de segurança na rede local.** Adicionar suporte opcional a HTTPS autoassinado na LAN e rate limiting básico de tentativas no endpoint de autenticação `/api/chat`.
-3. **Pipeline de release e empacotamento.** Regenerar os arquivos de snapshot (`silva_deploy.tar.gz`) incorporando os novos scripts (`update_direct.sh`, `scheduler.py`), o catálogo completo de 35 ferramentas e o novo frontend minimalista.
-4. **Automação de testes de regressão.** Criar uma suíte leve de testes unitários offline no repositório cobrindo o validador AST do `parser.py`, o normalizador do `intent_fallback.py` e os mocks de hardware do `tools.py`.
+1. **Endurecimento de segurança na rede local.** Adicionar suporte opcional a HTTPS autoassinado na LAN e rate limiting básico de tentativas no endpoint de autenticação `/api/chat`.
+2. **Pipeline de release e empacotamento.** Regenerar os arquivos de snapshot (`silva_deploy.tar.gz`) incorporando os novos scripts (`update_direct.sh`, `scheduler.py`), o catálogo completo de 36 ferramentas, SQLite FTS5 e o novo frontend minimalista.
+3. **Automação de testes de regressão.** Criar uma suíte leve de testes unitários offline no repositório cobrindo o validador AST do `parser.py`, o normalizador do `intent_fallback.py`, o banco SQLite FTS5 e os mocks de hardware do `tools.py`.

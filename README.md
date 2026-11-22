@@ -16,9 +16,9 @@ O sistema conta com um **servidor web nativo** com interface moderna inspirada e
 | **Quantização Móvel** | **Q5_K_M (Medium)** | ~105 MB de tamanho em disco, ideal para dispositivos ARM64 |
 | **Janela de Contexto** | **2.048 tokens** | Espaço amplo para System Prompt completo + histórico de ações |
 | **Vocabulário** | **49.152 tokens** | Tokenizador ChatML nativo |
-| **Ferramentas Nativas (Tools)** | **35 ferramentas** | Controle de hardware, utilitários, sensores, mobilidade, delivery, mídia, apps e ajuda |
-| **Parâmetros de Ferramentas** | **40 parâmetros formais** | Catalogados e tipados estritamente no `dataset/schema.json` |
-| **Base de Dados de Treino** | **5.686 amostras limpas** | 100% validadas por analisador sintático AST em PT-BR |
+| **Ferramentas Nativas (Tools)** | **36 ferramentas** | Controle de hardware, utilitários, sensores, mobilidade, delivery, mídia, redes Wi-Fi, apps e ajuda |
+| **Parâmetros de Ferramentas** | **41 parâmetros formais** | Catalogados e tipados estritamente no `dataset/schema.json` |
+| **Base de Dados de Treino** | **6.094 amostras limpas** | 100% validadas por analisador sintático AST em PT-BR (0 erros) |
 
 ---
 
@@ -56,11 +56,11 @@ O sistema conta com um **servidor web nativo** com interface moderna inspirada e
 
 ---
 
-## 🛠️ Catálogo Completo das 35 Ferramentas
+## 🛠️ Catálogo Completo das 36 Ferramentas
 
-O Silva possui 35 ferramentas implementadas em `android_agent/tools.py` e catalogadas formalmente em `dataset/schema.json`:
+O Silva possui 36 ferramentas implementadas em `android_agent/tools.py` e catalogadas formalmente em `dataset/schema.json`:
 
-| # | Ferramenta | Parâmetros (40 no total) | Descrição do Hardware / Função |
+| # | Ferramenta | Parâmetros (41 no total) | Descrição do Hardware / Função |
 | :-: | :--- | :--- | :--- |
 | **1** | `get_battery()` | *Nenhum* | Consulta status, porcentagem, temperatura e saúde da bateria. |
 | **2** | `get_last_sms(limit)` | `limit` (int, padrão: 5) | Lê as últimas mensagens SMS recebidas na caixa de entrada. |
@@ -74,7 +74,7 @@ O Silva possui 35 ferramentas implementadas em `android_agent/tools.py` e catalo
 | **10** | `get_last_location()` | *Nenhum* | Consulta a última localização salva offline mesmo com GPS desligado. |
 | **11** | `set_location_state(state)` | `state` (bool, obrigatório) | Liga ou desliga o serviço de GPS/localização do aparelho. |
 | **12** | `get_weather(day, time, location)` | `day` (str), `time` (str), `location` (str) | Previsão do tempo detalhada via Open-Meteo (PT-BR). |
-| **13** | `search_google(query)` | `query` (str, obrigatório) | Pesquisa no Google abrindo navegador e gerando link rápido. |
+| **13** | `search_google(query, open_browser)` | `query` (str, obrigatório), `open_browser` (bool, padrão: False) | Pesquisa multi-fonte na web (Wikipédia PT-BR + DuckDuckGo) com parsing nativo e abertura opcional do navegador. |
 | **14** | `set_torch(state)` | `state` (bool, obrigatório) | Liga (`True`) ou desliga (`False`) a lanterna traseira. |
 | **15** | `set_dnd(state)` | `state` (bool, obrigatório) | Ativa ou desativa modo Não Perturbe / Silencioso. |
 | **16** | `vibrate(duration_ms)` | `duration_ms` (int, padrão: 500) | Aciona vibração háptica no aparelho pelo tempo informado. |
@@ -84,19 +84,20 @@ O Silva possui 35 ferramentas implementadas em `android_agent/tools.py` e catalo
 | **20** | `set_alarm(time, label, days)` | `time` (str, obrigatório), `label` (str), `days` (str) | Agenda alarme no relógio nativo do Android. |
 | **21** | `cancel_alarm(time, day, label)` | `time` (str), `day` (str), `label` (str) | Cancela ou descarta alarme configurado. |
 | **22** | `schedule_event(title, date, time)`| `title` (str, obrigatório), `date` (str), `time` (str) | Cria compromisso na agenda local + Intent direta no Calendário Samsung. |
-| **23** | `remember_note(key, value)` | `key` (str, obrigatório), `value` (str, obrigatório) | Salva nota ou informação na memória persistente offline. |
-| **24** | `recall_note(query)` | `query` (str, obrigatório) | Busca notas, lembretes e compromissos armazenados anteriormente. |
+| **23** | `remember_note(key, value)` | `key` (str, obrigatório), `value` (str, obrigatório) | Salva/atualiza notas na memória relacional SQLite FTS5 (ou remove se valor for vazio). |
+| **24** | `recall_note(query)` | `query` (str, obrigatório) | Busca híbrida (FTS5 BM25 + LIKE) de anotações e compromissos passados. |
 | **25** | `get_notifications(app)` | `app` (str, opcional) | Lê notificações recentes da barra de status do Android. |
 | **26** | `set_volume(stream, level)` | `stream` (str: media/ring/alarm), `level` (int: 0-100) | Ajusta volume por canal de áudio em porcentagem. |
 | **27** | `set_brightness(level)` | `level` (int: 0 a 100, obrigatório) | Ajusta o brilho da tela do smartphone de 0% a 100%. |
 | **28** | `set_timer(minutes, label)` | `minutes` (int, obrigatório), `label` (str) | Inicia timer ou cronômetro no relógio do Android. |
-| **29** | `calculate(expression)` | `expression` (str, obrigatório) | Resolve cálculos matemáticos e expressões aritméticas offline. |
+| **29** | `calculate(expression)` | `expression` (str, obrigatório) | Calculadora científica e financeira AST (raízes, trigonométricas, log, fatorial, porcentagem). |
 | **30** | `request_ride(destination, app)` | `destination` (str, obrigatório), `app` (str, padrão: "uber") | Abre app de transporte (Uber ou 99) com o destino configurado a partir da localização atual. |
 | **31** | `order_food(query, app)` | `query` (str, obrigatório), `app` (str, padrão: "ifood") | Abre app de delivery (iFood ou 99) buscando o prato, restaurante ou item pedido. |
 | **32** | `install_app(app_name)` | `app_name` (str, obrigatório) | Abre a Google Play Store diretamente na página de instalação ou pesquisa do app. |
 | **33** | `media_control(action)` | `action` (str, obrigatório: play/pause/next/previous) | Controla a reprodução de mídia nativamente (`cmd media_session` e KeyEvents). |
-| **34** | `list_capabilities()` | *Nenhum* | Retorna guia organizado de todas as funções e comandos do Silva com exemplos práticos. |
-| **35** | `none()` | *Nenhum* | Emissão neutra para saudações e conversas gerais. |
+| **34** | `scan_wifi()` | *Nenhum* | Escaneia redes Wi-Fi próximas, identificando sinal (dBm e %), frequência, segurança e rede conectada. |
+| **35** | `list_capabilities()` | *Nenhum* | Retorna guia organizado de todas as funções e comandos do Silva com exemplos práticos. |
+| **36** | `none()` | *Nenhum* | Emissão neutra para saudações e conversas gerais. |
 
 ---
 
@@ -116,25 +117,25 @@ silva-agent/
 │   ├── scheduler.py               # Agendador daemon em background para lembretes de agenda
 │   ├── llm_client.py              # Cliente HTTP para o llama-server local com fallback
 │   ├── intent_fallback.py         # Roteador determinístico de ultra-baixa latência (<2ms)
-│   ├── parser.py                  # Analisador sintático AST seguro e validador de whitelist
-│   ├── tools.py                   # Implementação real das 35 ferramentas de hardware/apps
-│   ├── config.py                  # Configurações globais, portas, PIN e System Prompt
+│   ├── parser.py                  # Analisador sintático AST seguro, validador de whitelist e propagação de status
+│   ├── tools.py                   # Implementação real das 36 ferramentas (hardware, apps, wifi, sqlite fts5)
+│   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 36 tools
 │   ├── setup_termux.sh            # Instalação automática de dependências e build do llama.cpp
 │   ├── start_silva.sh             # Script de inicialização (llama-server + web_server)
 │   ├── captures/                  # Armazena fotos, vídeos, prints e mapas gerados
-│   ├── data/                      # Persistência de notas, eventos de agenda e localização
+│   ├── data/                      # Persistência: banco relacional SQLite FTS5 (memory.db), events.json e localização
 │   ├── models/                    # Pasta onde reside o micro-modelo silva-135m.gguf
 │   └── static/
 │       └── index.html             # Interface web responsiva (Desktop/Mobile, dark mode, zero CDNs)
 │
 ├── dataset/                       # ENGENHARIA DE DADOS E VALIDAÇÃO
-│   ├── schema.json                # Especificação JSON Schema formal das 35 ferramentas
-│   ├── seed_examples.jsonl        # 125 exemplos canônicos de referência em PT-BR
-│   ├── train.jsonl                # Dataset completo com 5.342 amostras validadas
-│   ├── train_clean.jsonl          # 95% do dataset limpo para fine-tuning supervisionado (5.402)
-│   ├── eval_clean.jsonl           # 5% do dataset para avaliação e validação de perda (284)
-│   ├── silva_colab_dataset.jsonl  # 5.686 amostras consolidadas para treino no Google Colab
-│   ├── validate_dataset.py        # Validador sintático AST e verificador de schema
+│   ├── schema.json                # Especificação JSON Schema formal das 36 ferramentas
+│   ├── seed_examples.jsonl        # 133 exemplos canônicos de referência em PT-BR
+│   ├── train.jsonl                # Dataset de treino consolidado
+│   ├── train_clean.jsonl          # 95% do dataset limpo para fine-tuning supervisionado (5.790)
+│   ├── eval_clean.jsonl           # 5% do dataset para avaliação e validação de perda (304)
+│   ├── silva_colab_dataset.jsonl  # 6.094 amostras consolidadas para treino no Google Colab
+│   ├── validate_dataset.py        # Validador sintático AST e verificador de schema estrito
 │   ├── prepare_final_dataset.py   # Gerador de contatos sintéticos, balanceador e divisor
 │   └── repair_train_dataset.py    # Corretor automático de inconsistências e desbalanceamento
 │
@@ -153,17 +154,17 @@ silva-agent/
 - **`start_silva.sh`**: Script de boot resiliente e idempotente. Executa limpeza cirúrgica de instâncias órfãs antigas do `llama-server` e `main.py`, gerencia PIDs via `data/llama.pid` e `data/web.pid`, respeita a variável `WEB_PORT` do `.env` e implementa `trap cleanup EXIT INT TERM` unificado.
 - **`scheduler.py`**: Thread daemon em background que monitora compromissos salvos localmente (`events.json`) a cada 30 segundos, disparando notificações nativas (`termux-notification`) e vibração no horário exato do lembrete.
 - **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
-- **`intent_fallback.py`**: Motor determinístico de alta velocidade para controle de hardware crítico, previsão do tempo inteligente (com preposições `de/em/no/na/para/pra`, limpeza de ruídos temporais e capitalização de cidades), normalizador matemático com tradução de operadores e números por extenso em PT-BR, corridas Uber/99 e delivery iFood.
-- **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código e checa se a função chamada pertence à lista de permissões (`AVAILABLE_TOOLS`).
-- **`tools.py`**: Conector entre a inteligência e o Android. Executa 35 ferramentas nativas incluindo: consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo (com prioridade Brasil, desempate por UF e eliminação rigorosa de falsos positivos de chuva), deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e calculadora segura via AST.
-- **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), e o `SILVA_SYSTEM_PROMPT` sincronizado.
+- **`intent_fallback.py`**: Motor determinístico de alta velocidade (<2ms) para controle de hardware crítico, previsão do tempo inteligente, normalizador matemático e científico com tradução de funções trigonométricas, raízes, fatoriais e porcentagens em PT-BR, escaneamento de Wi-Fi próximo (sem colidir com senhas salvas), corridas Uber/99 e delivery iFood.
+- **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código, checa a whitelist de permissões (`AVAILABLE_TOOLS`) e propaga o status real das chamadas (`ok`, `partial_error`, `error`).
+- **`tools.py`**: Conector entre a inteligência e o Android. Executa 36 ferramentas nativas incluindo: varredura de Wi-Fi (`scan_wifi`), memória persistente com SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
+- **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), e o `SILVA_SYSTEM_PROMPT` sincronizado para as 36 ferramentas.
 - **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, sidebar retrátil com histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
 
 #### 2. Módulo `dataset/` (Dados de Treinamento)
-- **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 35 ferramentas.
-- **`validate_dataset.py`**: Analisa arquivos `.jsonl` linha por linha, extrai chamadas via regex, compila os argumentos via AST e emite relatórios de conformidade e proporção percentual de classes.
+- **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 36 ferramentas.
+- **`validate_dataset.py`**: Analisa arquivos `.jsonl` linha por linha, extrai chamadas via regex, compila os argumentos via AST e emite relatórios de conformidade estrita e proporção percentual de classes (com validação estrita de tipos inteiros).
 - **`prepare_final_dataset.py`**: Enriquece a base com variações naturais de contatos humanos (ex: *"Mãe"*, *"Amor"*, *"Doutor Carlos"*), remove duplicatas e gera a divisão treino (95%) e validação (5%).
-- **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 5.686 exemplos prontos para upload e treino no Colab.
+- **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 6.094 exemplos prontos para upload e treino no Colab (100% válidos contra o schema das 36 ferramentas).
 
 #### 3. Módulo `pc_training/` (Treino e Conversão)
 - **`colab_train_silva.py`**: Pipeline tudo-em-um para o Google Colab: desinstala pacotes conflitantes, atualiza Hugging Face, clona e compila ferramentas do `llama.cpp`, realiza o fine-tuning LoRA com `TRL/SFTTrainer`, funde os pesos no modelo base SmolLM2-135M, quantiza em `Q5_K_M` e dispara o download automático de `silva-135m.gguf`.

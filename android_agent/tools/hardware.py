@@ -360,9 +360,36 @@ def scan_wifi() -> Dict[str, Any]:
             }
 
         raw_scan = res_scan.stdout.strip()
-        networks_data = json.loads(raw_scan) if raw_scan else []
+        try:
+            networks_data = json.loads(raw_scan) if raw_scan else []
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Silva: Falha ao interpretar resposta do Wi-Fi: {str(e)}",
+                "data": {"networks": []}
+            }
 
-        if not networks_data:
+        # Trata resposta de erro retornada como dicionário pela Termux:API (ex: Localização desligada)
+        if isinstance(networks_data, dict):
+            api_error = str(networks_data.get("API_ERROR", "") or networks_data.get("error", "")).strip()
+            if "location" in api_error.lower() or "gps" in api_error.lower():
+                return {
+                    "status": "ok",
+                    "message": (
+                        "Silva: Para escanear redes Wi-Fi nas proximidades, a Localização (GPS) precisa estar ativada "
+                        "no smartphone (exigência do Android). Por favor, ative a Localização e tente novamente."
+                    ),
+                    "data": {"networks": [], "total_found": 0, "warning": "gps_required"}
+                }
+            if api_error:
+                return {
+                    "status": "error",
+                    "message": f"Silva: Erro da API do Termux ao escanear Wi-Fi: {api_error}",
+                    "data": {"networks": []}
+                }
+            networks_data = []
+
+        if not isinstance(networks_data, list) or not networks_data:
             return {
                 "status": "ok",
                 "message": (
@@ -375,14 +402,22 @@ def scan_wifi() -> Dict[str, Any]:
 
         cleaned_networks = []
         for net in networks_data:
+            if not isinstance(net, dict):
+                continue
             ssid = str(net.get("ssid", "")).strip().strip('"')
             if not ssid:
                 continue
             bssid = str(net.get("bssid", "")).strip()
-            rssi = int(net.get("rssi", -100))
+            try:
+                rssi = int(net.get("rssi", -100))
+            except (ValueError, TypeError):
+                rssi = -100
             quality_pct = max(0, min(100, 2 * (rssi + 100)))
 
-            freq = int(net.get("frequency", 0))
+            try:
+                freq = int(net.get("frequency_mhz", net.get("frequency", 0)))
+            except (ValueError, TypeError):
+                freq = 0
             band = "5 GHz" if freq >= 4900 else "2.4 GHz"
 
             capabilities = str(net.get("capabilities", "")).upper()
@@ -393,7 +428,7 @@ def scan_wifi() -> Dict[str, Any]:
             elif "WEP" in capabilities:
                 security = "WEP"
             elif not capabilities or ("ESS" in capabilities and "WPA" not in capabilities):
-                security = "Aberta"
+                security = "Aberta" if capabilities else "Protegida"
             else:
                 security = "Protegida"
 

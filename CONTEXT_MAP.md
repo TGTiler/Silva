@@ -763,7 +763,7 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
    - Interface 100% offline inspirada em Claude/DeepSeek, com sidebar retrátil, histórico de conversas no `localStorage`, badges de telemetria e cards rápidos.
 5. **36 Ferramentas Nativas e Nova Ferramenta `scan_wifi()`**:
    - `AVAILABLE_TOOLS` e `dataset/schema.json` cobrem formalmente 36 ferramentas nativas (41 parâmetros).
-   - `scan_wifi()` escaneia redes Wi-Fi próximas, calcula percentual de intensidade via RSSI, identifica frequência (2.4 GHz vs 5 GHz), criptografia (WPA3, WPA2, Aberta) e a rede atualmente conectada, com orientação de GPS no Android.
+   - `scan_wifi()` escaneia redes Wi-Fi próximas, calcula percentual de intensidade via RSSI, identifica frequência (2.4 GHz vs 5 GHz), criptografia (WPA3, WPA2, Aberta) e a rede atualmente conectada, com tratamento seguro de dicionários de erro (`API_ERROR` quando o GPS/Localização do Android estiver desligado).
 6. **Busca Web Multi-Fonte em Cascata**:
    - `search_google()` opera com cascata tripla: 1ª Wikipédia PT-BR REST API; 2ª DuckDuckGo Instant Answer API; 3ª DuckDuckGo HTML Lite via parser nativo `DuckDuckGoHTMLParser(HTMLParser)` sem dependências externas, com parâmetro `open_browser=False`.
 7. **Calculadora Científica Robusta via AST**:

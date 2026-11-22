@@ -120,7 +120,7 @@ else:
 
 # ==============================================================================
 # ATENÇÃO: Esta constante deve permanecer 100% idêntica ao SILVA_SYSTEM_PROMPT
-# definido em silva-agent/android_agent/config.py.
+# definido em silva-agent/android_agent/config.py (sem placeholders abstratos).
 # ==============================================================================
 SILVA_SYSTEM_PROMPT = (
     "Você é o Silva, um micro-agente offline para controle de smartphone Android.\n"
@@ -134,30 +134,29 @@ SILVA_SYSTEM_PROMPT = (
     "set_brightness(level), set_timer(minutes, label), calculate(expression), search_google(query, open_browser), "
     "request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), "
     "scan_wifi(), list_capabilities(), none().\n"
-    "Responda EXCLUSIVAMENTE com uma ou mais tags de chamada no formato:\n"
-    "<call>nome_da_funcao(arg1=valor1, arg2=valor2)</call>\n"
-    "Quando o usuário solicitar mais de uma ação na mesma frase, emita múltiplas tags em sequência (ex: <call>acao1()</call><call>acao2()</call>).\n"
+    "Responda EXCLUSIVAMENTE com chamadas no formato: <call>get_battery()</call> ou <call>set_torch(state=True)</call>.\n"
+    "Quando o usuário solicitar mais de uma ação na mesma frase, emita múltiplas tags em sequência (ex: <call>get_battery()</call><call>set_torch(state=True)</call>).\n"
     "Caso o comando não corresponda a nenhuma ferramenta ou seja uma conversa geral, responda apenas:\n"
     "<call>none()</call>\n"
     "NUNCA adicione saudações, introduções ou explicações fora da tag."
 )
 
 
-def format_chatml(item):
-    prompt = item["prompt"]
-    completion = item["completion"]
-    text = (
-        f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
-        f"<|im_start|>user\n{prompt}<|im_end|>\n"
-        f"<|im_start|>assistant\n{completion}<|im_end|>"
-    )
-    return {"text": text}
+def format_conversational(item):
+    """Formata amostra no padrão de conversação oficial suportado pelo TRL."""
+    return {
+        "messages": [
+            {"role": "system", "content": SILVA_SYSTEM_PROMPT},
+            {"role": "user", "content": item["prompt"]},
+            {"role": "assistant", "content": item["completion"]}
+        ]
+    }
 
 
-train_samples = [format_chatml(x) for x in train_raw]
-eval_samples = [format_chatml(x) for x in eval_raw]
+train_samples = [format_conversational(x) for x in train_raw]
+eval_samples = [format_conversational(x) for x in eval_raw]
 
-# %% [3] FINE-TUNING SFT COM LORA NA GPU T4 (CALIBRADO PARA 4 ÉPOCAS)
+# %% [3] FINE-TUNING SFT COM LOSS MASKING EXCLUSIVO NA RESPOSTA (COMPLETION ONLY)
 print("\n" + "=" * 65)
 print(" [3/5] INICIANDO FINE-TUNING SFT (SmolLM2-135M) ")
 print("=" * 65)
@@ -195,12 +194,12 @@ if tokenizer.pad_token is None:
 # ==============================================================================
 # AUDITORIA PRÉ-TREINO DE COMPRIMENTO DE TOKENS (JANELA: 512 TOKENS)
 # ==============================================================================
-print("\n[*] Executando auditoria pré-treino de tokens...")
+print("\n[*] Executando auditoria pré-treino de tokens via ChatML template...")
 MAX_TRAIN_LENGTH = 512
 
 all_formatted_samples = train_samples + eval_samples
 token_lengths = [
-    len(tokenizer(s["text"], truncation=False)["input_ids"])
+    len(tokenizer.apply_chat_template(s["messages"], tokenize=True))
     for s in all_formatted_samples
 ]
 
@@ -212,7 +211,7 @@ p99_len = sorted_lens[p99_idx]
 max_tokens_found = max(token_lengths) if token_lengths else 0
 truncated_samples = [(i, l) for i, l in enumerate(token_lengths) if l > MAX_TRAIN_LENGTH]
 
-print(f"[*] Estatísticas de Comprimento de Tokens:")
+print(f"[*] Estatísticas de Comprimento de Tokens (ChatML):")
 print(f"  - Total de amostras auditadas: {total_count}")
 print(f"  - Média de tokens por amostra: {mean_len:.1f}")
 print(f"  - Percentil 99 (P99): {p99_len} tokens")
@@ -221,7 +220,7 @@ print(f"  - Tamanho máximo encontrado (max_tokens): {max_tokens_found} tokens (
 if truncated_samples:
     print(f"\n[ALERTA DE TRUNCAMENTO] {len(truncated_samples)} amostra(s) ({len(truncated_samples) / total_count * 100:.2f}%) ultrapassam o limite de {MAX_TRAIN_LENGTH} tokens e serão truncadas pelo SFTTrainer!")
     for idx, tok_len in truncated_samples[:5]:
-        sample_preview = all_formatted_samples[idx]["text"][:120].replace("\n", " ")
+        sample_preview = str(all_formatted_samples[idx]["messages"])[:120]
         print(f"    - Amostra #{idx}: {tok_len} tokens -> {sample_preview}...")
 else:
     print(f"[OK] 100% das {total_count} amostras cabem com folga dentro da janela de {MAX_TRAIN_LENGTH} tokens! Zero truncamento.\n")
@@ -267,7 +266,7 @@ if HAS_SFT_CONFIG:
         "per_device_train_batch_size": 16,
         "per_device_eval_batch_size": 16,
         "gradient_accumulation_steps": 2,
-        "learning_rate": 2.5e-4,
+        "learning_rate": 3e-4,
         "lr_scheduler_type": "cosine",
         "weight_decay": 0.01,
         "logging_steps": 25,
@@ -276,11 +275,12 @@ if HAS_SFT_CONFIG:
         "metric_for_best_model": "eval_loss",
         "greater_is_better": False,
         "load_best_model_at_end": True,
+        "completion_only_loss": True,
+        "packing": False,
         "fp16": (device == "cuda"),
         "bf16": False,
         "optim": "adamw_torch",
         "report_to": "none",
-        "dataset_text_field": "text"
     }
 
     # Compatibilidade eval_strategy vs evaluation_strategy
@@ -301,6 +301,9 @@ if HAS_SFT_CONFIG:
     elif "max_seq_length" in sft_sig:
         sft_kwargs["max_seq_length"] = 512
 
+    # Filtra apenas parâmetros suportados pela assinatura instalada do SFTConfig
+    sft_kwargs = {k: v for k, v in sft_kwargs.items() if k in sft_sig}
+
     training_args = SFTConfig(**sft_kwargs)
 
     trainer_kwargs = {
@@ -315,6 +318,18 @@ if HAS_SFT_CONFIG:
     else:
         trainer_kwargs["tokenizer"] = tokenizer
 
+    # Fallback se completion_only_loss não for aceito no SFTConfig diretamente
+    if "completion_only_loss" not in sft_sig:
+        try:
+            from trl import DataCollatorForCompletionOnlyLM
+            response_template = "<|im_start|>assistant\n"
+            trainer_kwargs["data_collator"] = DataCollatorForCompletionOnlyLM(
+                response_template=response_template,
+                tokenizer=tokenizer
+            )
+        except Exception:
+            pass
+
     trainer = SFTTrainer(**trainer_kwargs)
 else:
     t_sig = inspect.signature(TrainingArguments.__init__).parameters
@@ -324,7 +339,7 @@ else:
         "per_device_train_batch_size": 16,
         "per_device_eval_batch_size": 16,
         "gradient_accumulation_steps": 2,
-        "learning_rate": 2.5e-4,
+        "learning_rate": 3e-4,
         "lr_scheduler_type": "cosine",
         "weight_decay": 0.01,
         "logging_steps": 25,
@@ -350,15 +365,67 @@ else:
 
     training_args = TrainingArguments(**t_kwargs)
 
+    try:
+        from trl import DataCollatorForCompletionOnlyLM
+        response_template = "<|im_start|>assistant\n"
+        collator = DataCollatorForCompletionOnlyLM(response_template=response_template, tokenizer=tokenizer)
+    except Exception:
+        collator = None
+
     trainer = SFTTrainer(
         model=model,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        dataset_text_field="text",
         max_seq_length=512,
         tokenizer=tokenizer,
+        data_collator=collator,
         args=training_args
     )
+
+# ==============================================================================
+# AUDITORIA DE LOSS MASKING (LABELS -100 vs COMPLETION)
+# ==============================================================================
+print("\n" + "=" * 65)
+print(" AUDITORIA DE LOSS MASKING (LABELS -100 vs COMPLETION) ")
+print("=" * 65)
+
+sample_checked = False
+try:
+    first_item = trainer.train_dataset[0]
+    if isinstance(first_item, dict) and "labels" in first_item:
+        lbls = first_item["labels"]
+        in_ids = first_item["input_ids"]
+        masked = sum(1 for x in lbls if x == -100)
+        unmasked = sum(1 for x in lbls if x != -100)
+        unmasked_ids = [in_ids[i] for i, x in enumerate(lbls) if x != -100]
+        unmasked_text = tokenizer.decode(unmasked_ids, skip_special_tokens=False)
+        print(f"[*] Total de tokens: {len(lbls)}")
+        print(f"[*] Tokens mascarados (-100, sem loss): {masked}")
+        print(f"[*] Tokens com cálculo de loss: {unmasked}")
+        print(f"[*] Trecho sob cálculo de gradiente: {repr(unmasked_text)}")
+        sample_checked = True
+    elif hasattr(trainer, "data_collator") and trainer.data_collator is not None:
+        batch = trainer.data_collator([first_item])
+        if "labels" in batch:
+            lbls = batch["labels"][0].tolist()
+            in_ids = batch["input_ids"][0].tolist()
+            masked = sum(1 for x in lbls if x == -100)
+            unmasked = sum(1 for x in lbls if x != -100)
+            unmasked_ids = [in_ids[i] for i, x in enumerate(lbls) if x != -100]
+            unmasked_text = tokenizer.decode(unmasked_ids, skip_special_tokens=False)
+            print(f"[*] Total de tokens: {len(lbls)}")
+            print(f"[*] Tokens mascarados (-100, sem loss): {masked}")
+            print(f"[*] Tokens com cálculo de loss: {unmasked}")
+            print(f"[*] Trecho sob cálculo de gradiente: {repr(unmasked_text)}")
+            sample_checked = True
+except Exception as e:
+    print(f"[!] Não foi possível inspecionar labels diretamente antes do train: {e}")
+
+if sample_checked:
+    print("[OK] Confirmação: Loss masking ativo! Apenas o turno do assistant (<call>...</call>) gerará gradientes.")
+else:
+    print("[*] SFTTrainer configurado com completion_only_loss=True.")
+print("=" * 65 + "\n")
 
 print("[*] Iniciando treinamento calibrado por 4 épocas com avaliação e checkpoint seguro...")
 start_time = time.time()
@@ -406,10 +473,14 @@ print(f"{'Prompt do Usuário':<50} | {'Saída Gerada':<45} | Esperado")
 print("-" * 125)
 
 for prompt, expected in test_scenarios:
-    prompt_input = (
-        f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
-        f"<|im_start|>user\n{prompt}<|im_end|>\n"
-        f"<|im_start|>assistant\n<call>"
+    messages = [
+        {"role": "system", "content": SILVA_SYSTEM_PROMPT},
+        {"role": "user", "content": prompt}
+    ]
+    prompt_input = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
     )
     inputs = tokenizer(prompt_input, return_tensors="pt").to(merged_model.device)
     with torch.no_grad():
@@ -418,8 +489,8 @@ for prompt, expected in test_scenarios:
             max_new_tokens=48,
             temperature=0.0,
             do_sample=False,
-            eos_token_id=tokenizer.encode("<|im_end|>")[0],
-            pad_token_id=tokenizer.eos_token_id
+            eos_token_id=tokenizer.eos_token_id,
+            pad_token_id=tokenizer.pad_token_id
         )
     gen_text = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
     full_call = f"<call>{gen_text}" if not gen_text.startswith("<call>") else gen_text

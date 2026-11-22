@@ -2,6 +2,7 @@
 Módulo Clima e Web do Silva: Localização (GPS), Previsão do Tempo e Busca Web Multi-Fonte.
 """
 
+import email.utils
 import html
 from html.parser import HTMLParser
 import json
@@ -12,6 +13,7 @@ import time
 import unicodedata
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -731,50 +733,174 @@ class DuckDuckGoHTMLParser(HTMLParser):
             self._cur_snippet.append(data)
 
 
-def _fetch_wikipedia_summary(query: str) -> Optional[Dict[str, str]]:
-    """Consulta a REST API da Wikipédia PT-BR para resumos enciclopédicos."""
-    clean = re.sub(
-        r"(?i)^(?:quem\s+foi|quem\s+[eé]|o\s+que\s+[eé]|o\s+que\s+s[aã]o|qual\s+a\s+hist[oó]ria\s+de|biografia\s+de|hist[oó]ria\s+de|o\s+significado\s+de|significado\s+de|defini[cç][aã]o\s+de|sobre\s+o|sobre\s+a|sobre)\s+",
-        "",
-        query
-    ).strip().rstrip("?!.,;:")
-    if not clean:
+SEARCH_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36",
+    "Accept-Language": "pt-BR,pt;q=0.9"
+}
+
+
+def _fetch_wikipedia_summary(clean_query: str) -> Optional[Dict[str, str]]:
+    """
+    Fonte 1 — Wikipédia PT-BR (Busca Semântica + Resumo):
+    1. Resolve o título oficial via Busca Semântica (ex: 'GTA 6' -> 'Grand Theft Auto VI').
+    2. Obtém o resumo na REST API oficial limitado a ~350 caracteres sem truncar palavras.
+    """
+    if not clean_query:
         return None
 
-    # Tenta busca exata do título formatado
-    slug = urllib.parse.quote(clean.replace(" ", "_"))
-    wiki_url = f"https://pt.wikipedia.org/api/rest_v1/page/summary/{slug}"
-    req = urllib.request.Request(
-        wiki_url,
-        headers={"User-Agent": "SilvaAgent/1.0 (Android; Termux; https://github.com/TGTiler/Silva)"}
-    )
+    resolved_title = clean_query
+    # 1. Busca semântica para resolver o título oficial
     try:
-        with urllib.request.urlopen(req, timeout=3.5) as resp:
+        srsearch = urllib.parse.quote(clean_query)
+        search_api_url = f"https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch={srsearch}&format=json&utf8=1&srlimit=1"
+        req_search = urllib.request.Request(search_api_url, headers=SEARCH_HEADERS)
+        with urllib.request.urlopen(req_search, timeout=6.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            if data.get("type") == "disambiguation":
+            search_list = data.get("query", {}).get("search", [])
+            if search_list and "title" in search_list[0]:
+                resolved_title = search_list[0]["title"]
+    except Exception:
+        resolved_title = clean_query
+
+    # 2. Consulta REST API summary
+    try:
+        slug = urllib.parse.quote(resolved_title.replace(" ", "_"))
+        wiki_url = f"https://pt.wikipedia.org/api/rest_v1/page/summary/{slug}"
+        req_sum = urllib.request.Request(wiki_url, headers=SEARCH_HEADERS)
+        with urllib.request.urlopen(req_sum, timeout=6.0) as resp:
+            sum_data = json.loads(resp.read().decode("utf-8"))
+            if sum_data.get("type") == "disambiguation":
                 return None
-            extract = data.get("extract", "").strip()
-            title = data.get("title", clean)
-            page_url = data.get("content_urls", {}).get("desktop", {}).get("page", f"https://pt.wikipedia.org/wiki/{slug}")
-            if extract:
-                return {
-                    "title": title,
-                    "extract": extract,
-                    "url": page_url
-                }
+            extract = sum_data.get("extract", "").strip()
+            if not extract:
+                return None
+
+            # Limita a ~350 caracteres sem cortar palavras
+            if len(extract) > 350:
+                truncated = extract[:350].rsplit(" ", 1)[0]
+                extract = truncated.rstrip(".,;:") + "..."
+
+            title = sum_data.get("title", resolved_title)
+            page_url = sum_data.get("content_urls", {}).get("desktop", {}).get("page", f"https://pt.wikipedia.org/wiki/{slug}")
+
+            return {
+                "title": title,
+                "summary": extract,
+                "extract": extract,  # compatibilidade retroativa
+                "url": page_url
+            }
     except Exception:
         pass
+
     return None
+
+
+def _fetch_google_news_rss(clean_query: str) -> list[Dict[str, str]]:
+    """
+    Fonte 2 — Google News RSS PT-BR:
+    Consulta https://news.google.com/rss/search?q=<query>&hl=pt-BR&gl=BR&ceid=BR:pt-419
+    Faz parse nativo com xml.etree.ElementTree e extrai até 3 notícias recentes:
+    title (limpando o sufixo '- Nome do Veículo' para o campo source), link e pubDate (DD/MM/YYYY).
+    """
+    results = []
+    try:
+        encoded_q = urllib.parse.quote_plus(clean_query)
+        rss_url = f"https://news.google.com/rss/search?q={encoded_q}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+        req_rss = urllib.request.Request(rss_url, headers=SEARCH_HEADERS)
+        with urllib.request.urlopen(req_rss, timeout=6.0) as resp:
+            xml_bytes = resp.read()
+
+        root = ET.fromstring(xml_bytes)
+        items = root.findall(".//item")
+        for item in items[:3]:
+            raw_title = (item.findtext("title") or "").strip()
+            link = (item.findtext("link") or "").strip()
+            pub_date_raw = (item.findtext("pubDate") or "").strip()
+
+            date_str = ""
+            if pub_date_raw:
+                try:
+                    dt = email.utils.parsedate_to_datetime(pub_date_raw)
+                    date_str = dt.strftime("%d/%m/%Y")
+                except Exception:
+                    date_str = ""
+
+            if " - " in raw_title:
+                t_parts = raw_title.rsplit(" - ", 1)
+                item_title = t_parts[0].strip()
+                source = t_parts[1].strip()
+            else:
+                item_title = raw_title
+                source = "Google News"
+
+            snippet = f"Publicado em {date_str} via {source}" if date_str else f"Fonte: {source}"
+            if item_title and link:
+                results.append({
+                    "title": item_title,
+                    "snippet": snippet,
+                    "source": source,
+                    "url": link
+                })
+    except Exception:
+        pass
+
+    return results
+
+
+def _fetch_duckduckgo_lite(clean_query: str) -> list[Dict[str, str]]:
+    """
+    Fonte 3 — DuckDuckGo Lite (https://lite.duckduckgo.com/lite/):
+    Caso Wikipédia e Google News retornem vazios, faz POST e extrai até 3 resultados orgânicos.
+    """
+    results = []
+    try:
+        ddg_url = "https://lite.duckduckgo.com/lite/"
+        post_data = urllib.parse.urlencode({"q": clean_query}).encode("utf-8")
+        post_headers = dict(SEARCH_HEADERS)
+        post_headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+        req_ddg = urllib.request.Request(ddg_url, data=post_data, headers=post_headers)
+        with urllib.request.urlopen(req_ddg, timeout=6.0) as resp:
+            content = resp.read().decode("utf-8", errors="ignore")
+
+        matches = re.findall(r'<a[^>]+href=[\"\']([^\"\']+)[\"\'][^>]*>(.*?)</a>', content, re.IGNORECASE)
+        snippets = re.findall(r'<td[^>]+class=[\"\']result-snippet[\"\'][^>]*>(.*?)</td>', content, re.IGNORECASE | re.DOTALL)
+
+        raw_pairs = []
+        for u, t in matches:
+            u_clean = u.strip()
+            if u_clean.startswith("http") and "duckduckgo.com/y.js" not in u_clean and "duckduckgo.com/lite" not in u_clean:
+                title_clean = html.unescape(re.sub(r'<[^>]+>', '', t).strip())
+                if title_clean:
+                    raw_pairs.append((u_clean, title_clean))
+
+        for idx, (url, title) in enumerate(raw_pairs[:3]):
+            snip = ""
+            if idx < len(snippets):
+                snip = html.unescape(re.sub(r'<[^>]+>', '', snippets[idx]).strip())
+            results.append({
+                "title": title,
+                "snippet": snip or f"Resultado para {clean_query}",
+                "source": "DuckDuckGo",
+                "url": url
+            })
+    except Exception:
+        pass
+
+    return results
 
 
 def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
     """
-    Pesquisa multi-fonte na web via Wikipédia PT-BR e DuckDuckGo com parsing nativo.
-    Abre o navegador do celular apenas se open_browser=True ou se explicitamente solicitado.
+    Pesquisa multi-fonte na web com cascata real:
+    1. Wikipédia PT-BR (Busca Semântica + Resumo)
+    2. Google News RSS PT-BR (Notícias recentes via XML nativo)
+    3. DuckDuckGo Lite (Fallback orgânico via POST)
+    Abre o navegador se open_browser=True ou se solicitado explicitamente no texto.
     """
     clean_query = str(query).strip()
     if not clean_query:
-        return {"status": "error", "message": "Termo de busca não especificado."}
+        return {"status": "error", "message": "Termo de busca não especificado.", "data": None}
 
     # Verifica se o próprio texto da busca pede para abrir no navegador
     should_open_browser = open_browser or any(
@@ -789,7 +915,7 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
         if "turing" in clean_query.lower():
             wiki_sim = {
                 "title": "Alan Turing",
-                "extract": (
+                "summary": (
                     "Alan Mathison Turing (1912 - 1954) foi um matemático, cientista da computação, lógico, "
                     "criptoanalista, filósofo e biólogo teórico britânico. Turing foi altamente influente no "
                     "desenvolvimento da ciência da computação teórica, proporcionando uma formalização dos conceitos "
@@ -797,42 +923,43 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
                 ),
                 "url": "https://pt.wikipedia.org/wiki/Alan_Turing"
             }
-            msg = (
-                f"Silva: Resultados da pesquisa para '{clean_query}':\n\n"
-                f"[Wikipédia - {wiki_sim['title']}]\n"
-                f"{wiki_sim['extract']}\n"
-                f"Fonte: {wiki_sim['url']}\n\n"
-                f"Link de busca: {search_url}"
-            )
-            return {
-                "status": "ok",
-                "message": msg,
-                "data": {
-                    "query": clean_query,
-                    "url": search_url,
-                    "wikipedia": wiki_sim,
-                    "results": [
-                        {"title": "Alan Turing - Wikipédia", "snippet": wiki_sim["extract"][:150], "url": wiki_sim["url"]}
-                    ],
-                    "opened_browser": False
-                }
+        else:
+            wiki_sim = {
+                "title": clean_query,
+                "summary": f"Informações enciclopédicas e contexto temático sobre {clean_query}.",
+                "url": f"https://pt.wikipedia.org/wiki/{urllib.parse.quote(clean_query.replace(' ', '_'))}"
             }
-        elif not should_open_browser:
-            return {
-                "status": "ok",
-                "message": (
-                    f"Silva: Resultados da pesquisa para '{clean_query}':\n\n"
-                    f"1. {clean_query} - Informações e Notícias\n"
-                    f"Resultados e artigos informativos sobre {clean_query}.\n"
-                    f"Link: {search_url}"
-                ),
-                "data": {
-                    "query": clean_query,
-                    "url": search_url,
-                    "results": [{"title": clean_query, "snippet": f"Resultados para {clean_query}", "url": search_url}],
-                    "opened_browser": False
-                }
+        wiki_sim["extract"] = wiki_sim["summary"]
+
+        news_sim = [
+            {
+                "title": f"Últimas atualizações sobre {clean_query}",
+                "snippet": f"Notícia recente e desenvolvimentos sobre {clean_query}.",
+                "source": "Portal de Notícias",
+                "url": search_url
             }
+        ]
+
+        sections = [
+            f"Silva: Resultados da pesquisa para '{clean_query}':",
+            f"[Wikipédia - {wiki_sim['title']}]\n{wiki_sim['summary']}\nFonte: {wiki_sim['url']}",
+            f"Principais Notícias e Artigos:\n1. {news_sim[0]['title']} ({news_sim[0]['source']})\n   {news_sim[0]['snippet']}\n   Link: {news_sim[0]['url']}",
+            f"Pesquisar no Google: {search_url}"
+        ]
+
+        return {
+            "status": "ok",
+            "message": "\n\n".join(sections),
+            "data": {
+                "query": clean_query,
+                "google_url": search_url,
+                "url": search_url,
+                "wiki": wiki_sim,
+                "wikipedia": wiki_sim,
+                "results": news_sim,
+                "opened_browser": False
+            }
+        }
 
     # Abre no navegador se solicitado
     if should_open_browser:
@@ -841,97 +968,52 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # Cascata Multi-Fonte
-    # 1. Wikipédia PT-BR REST API
+    # Cascata Multi-Fonte Real
+    # 1. Wikipédia PT-BR (Busca Semântica + Resumo)
     wiki_res = _fetch_wikipedia_summary(clean_query)
 
-    # 2. DuckDuckGo Instant Answer API
-    ddg_abstract = None
-    try:
-        ddg_api_url = f"https://api.duckduckgo.com/?q={encoded_query}&format=json&no_html=1&skip_disambig=1"
-        req_api = urllib.request.Request(ddg_api_url, headers={"User-Agent": "SilvaAgent/1.0"})
-        with urllib.request.urlopen(req_api, timeout=3.0) as resp:
-            api_data = json.loads(resp.read().decode("utf-8"))
-            abs_text = api_data.get("AbstractText", "").strip()
-            if abs_text:
-                ddg_abstract = {
-                    "title": api_data.get("Heading", clean_query),
-                    "snippet": abs_text,
-                    "url": api_data.get("AbstractURL", search_url)
-                }
-    except Exception:
-        pass
+    # 2. Google News RSS PT-BR
+    news_res = _fetch_google_news_rss(clean_query)
+    results = list(news_res)
 
-    # 3. DuckDuckGo HTML Lite (POST com parser nativo)
-    web_results = []
-    try:
-        ddg_html_url = "https://html.duckduckgo.com/html/"
-        post_data = urllib.parse.urlencode({"q": clean_query}).encode("utf-8")
-        req_html = urllib.request.Request(
-            ddg_html_url,
-            data=post_data,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Content-Type": "application/x-www-form-urlencoded"
-            }
-        )
-        with urllib.request.urlopen(req_html, timeout=4.0) as resp:
-            content = resp.read().decode("utf-8", errors="ignore")
+    # 3. DuckDuckGo Lite (se Wiki e News estiverem vazios)
+    if not wiki_res and not results:
+        ddg_results = _fetch_duckduckgo_lite(clean_query)
+        if ddg_results:
+            results = ddg_results
 
-        parser = DuckDuckGoHTMLParser(max_results=3)
-        parser.feed(content)
-        web_results = parser.results
-
-        # Fallback de extração via regex caso a estrutura HTML mude
-        if not web_results:
-            raw_links = re.findall(r'<a\s+class="result__url"\s+href="([^"]+)"[^>]*>(.*?)</a>', content)
-            raw_snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', content, re.DOTALL)
-            for idx in range(min(3, len(raw_links), len(raw_snippets))):
-                url = raw_links[idx][0].strip()
-                title = re.sub(r'<[^>]+>', '', raw_links[idx][1]).strip()
-                snip = html.unescape(re.sub(r'<[^>]+>', '', raw_snippets[idx])).strip()
-                if title and url:
-                    web_results.append({"title": title, "snippet": snip, "url": url})
-    except Exception:
-        pass
-
-    # Constrói mensagem final combinada
-    message_sections = [f"Silva: Resultados da pesquisa para '{clean_query}':"]
+    # Formatação Limpa da Resposta (zero linhas em branco vazias)
+    sections = [f"Silva: Resultados da pesquisa para '{clean_query}':"]
 
     if wiki_res:
-        message_sections.append(
-            f"\n[Wikipédia - {wiki_res['title']}]\n"
-            f"{wiki_res['extract']}\n"
+        sections.append(
+            f"[Wikipédia - {wiki_res['title']}]\n"
+            f"{wiki_res['summary']}\n"
             f"Fonte: {wiki_res['url']}"
         )
-    elif ddg_abstract:
-        message_sections.append(
-            f"\n[Resumo]\n"
-            f"{ddg_abstract['snippet']}\n"
-            f"Fonte: {ddg_abstract['url']}"
-        )
 
-    if web_results:
-        message_sections.append("\nResultados na Web:")
-        for idx, item in enumerate(web_results, start=1):
-            message_sections.append(f"{idx}. {item['title']}\n   {item['snippet']}\n   Link: {item['url']}")
+    if results:
+        items_txt = []
+        for idx, item in enumerate(results, start=1):
+            src = f" ({item['source']})" if item.get("source") else ""
+            snip = f"\n   {item['snippet']}" if item.get("snippet") else ""
+            items_txt.append(f"{idx}. {item['title']}{src}{snip}\n   Link: {item['url']}")
+        sections.append("Principais Notícias e Artigos:\n" + "\n".join(items_txt))
 
-    if not wiki_res and not ddg_abstract and not web_results:
-        if should_open_browser:
-            message_sections.append(f"\nPágina de resultados aberta no navegador:\n{search_url}")
-        else:
-            message_sections.append(f"\nConsulte os resultados completos no Google:\n{search_url}")
+    sections.append(f"Pesquisar no Google: {search_url}")
 
-    final_msg = "\n".join(message_sections)
+    final_msg = "\n\n".join(sections)
 
     return {
         "status": "ok",
         "message": final_msg,
         "data": {
             "query": clean_query,
+            "google_url": search_url,
             "url": search_url,
+            "wiki": wiki_res,
             "wikipedia": wiki_res,
-            "results": web_results,
+            "results": results,
             "opened_browser": should_open_browser
         }
     }

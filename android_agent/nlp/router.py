@@ -403,6 +403,81 @@ def _clean_weather_location(raw_loc: str) -> str:
     return ", ".join(cleaned_parts)
 
 
+def _clean_search_query(raw_query: str) -> str:
+    """
+    Limpa e normaliza termos de pesquisa na web:
+    1. Remove comandos imperativos e preposições (pesquise, busca, sobre, por, a respeito de, etc.)
+    2. Remove sufixos de plataforma e cortesia (no google, no chrome, na internet, por favor, etc.)
+    3. Remove artigos definidos e indefinidos no início (o, a, os, as, um, uma, uns, umas)
+    4. Remove pontuações e caracteres residuais.
+    """
+    if not raw_query:
+        return ""
+    q = raw_query.strip()
+    q = re.sub(r"(?i)^(?:silva,?\s*)?", "", q).strip()
+
+    cmd_prefixes = [
+        r"(?:pesquise|pesquisa|busca|busque|procura|procure)\s+(?:no\s+google|no\s+chrome|na\s+internet|na\s+web|no\s+navegador)\s+(?:sobre|por|a\s+respeito\s+de)?",
+        r"fazer\s+uma\s+busca\s+(?:no\s+google\s+|no\s+chrome\s+|na\s+internet\s+)?(?:sobre|por|a\s+respeito\s+de)?",
+        r"faz\s+uma\s+busca\s+(?:no\s+google\s+|no\s+chrome\s+|na\s+internet\s+)?(?:sobre|por|a\s+respeito\s+de)?",
+        r"fazer\s+busca\s+(?:no\s+google\s+|no\s+chrome\s+|na\s+internet\s+)?(?:sobre|por|a\s+respeito\s+de)?",
+        r"faz\s+busca\s+(?:no\s+google\s+|no\s+chrome\s+|na\s+internet\s+)?(?:sobre|por|a\s+respeito\s+de)?",
+        r"(?:pesquisar|pesquise|pesquisa|pesquisando)\s+(?:sobre|por|a\s+respeito\s+de)?",
+        r"(?:buscar|busque|busca|buscando)\s+(?:sobre|por|a\s+respeito\s+de)?",
+        r"(?:procurar|procure|procura|procurando)\s+(?:sobre|por|a\s+respeito\s+de)?",
+        r"google\s+(?:sobre|por|a\s+respeito\s+de)?",
+        r"a\s+respeito\s+de",
+        r"quem\s+foi",
+        r"quem\s+[eé]",
+        r"o\s+que\s+[eé]",
+        r"o\s+que\s+s[aã]o",
+        r"sobre",
+        r"por",
+    ]
+    for p in cmd_prefixes:
+        q = re.sub(rf"(?i)^\b{p}\b\s*", "", q).strip()
+
+    # Preposições residuais no início
+    q = re.sub(r"(?i)^(?:sobre\s+|por\s+|para\s+|pra\s+|a\s+respeito\s+de\s+)", "", q).strip()
+
+    # Sufixos de plataforma e cortesia
+    platform_suffixes = [
+        r"no\s+google",
+        r"pelo\s+google",
+        r"no\s+navegador",
+        r"pelo\s+navegador",
+        r"no\s+chrome",
+        r"pelo\s+chrome",
+        r"na\s+internet",
+        r"pela\s+internet",
+        r"na\s+web",
+        r"pela\s+web",
+        r"por\s+favor",
+        r"pra\s+mim",
+        r"pfvr?",
+        r"agora",
+        r"agr",
+        r"blz",
+        r"silva",
+    ]
+    changed = True
+    while changed:
+        changed = False
+        q = re.sub(r"[?!.,;\s]+$", "", q).strip()
+        for s in platform_suffixes:
+            new_q = re.sub(rf"(?i)\s+\b{s}\b[?!.,;\s]*$", "", q).strip()
+            if new_q != q:
+                q = new_q
+                changed = True
+
+    q = re.sub(r"[?!.,;\s]+$", "", q).strip()
+
+    # Remove artigos definidos e indefinidos no início da query
+    q = re.sub(r"(?i)^(?:o|a|os|as|um|uma|uns|umas)\s+", "", q).strip()
+
+    return re.sub(r"[?!.,;\s]+$", "", q).strip()
+
+
 # ==============================================================================
 # EXTRATORES POR DOMÍNIO
 # ==============================================================================
@@ -1106,18 +1181,7 @@ def extract_weather(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 def extract_search(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Pesquisa no Google."""
     if any(w in norm for w in ["pesquisa", "pesquise", "busca", "busque", "procura", "procure", "google", "no google"]):
-        q = raw
-        q = re.sub(r"(?i)^(?:silva,?\s*)?", "", q).strip()
-        q = re.sub(
-            r"(?i)^(?:pesquise\s+no\s+google|pesquisa\s+no\s+google|busca\s+no\s+google|busque\s+no\s+google|procura\s+no\s+google|procure\s+no\s+google|"
-            r"pesquisa(?:r|ndo)?|pesquise|busca(?:r|ndo)?|busque|procura(?:r|ndo)?|procure|google|fazer\s+uma\s+busca\s+no\s+google\s+por|"
-            r"fazer\s+uma\s+busca\s+por|faz\s+uma\s+busca\s+no\s+google\s+por|faz\s+uma\s+busca\s+por)\s+",
-            "",
-            q
-        ).strip()
-        q = re.sub(r"(?i)^(?:no\s+google\s+|pelo\s+google\s+|sobre\s+|por\s+|para\s+)?", "", q).strip()
-        q = re.sub(r"(?i)\s+(?:no\s+google|pelo\s+google)?\s*(?:por\s+favor|pra\s+mim|agora)?$", "", q).strip().rstrip("?")
-        q = re.sub(r"(?i)\s+(?:no\s+google|pelo\s+google)$", "", q).strip().rstrip("?")
+        q = _clean_search_query(raw)
         if q:
             return 0.85, _format_call("search_google", query=q)
     return 0.0, None

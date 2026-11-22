@@ -74,7 +74,7 @@ O Silva possui 36 ferramentas implementadas no pacote modular `android_agent/too
 | **10** | `get_last_location()` | *Nenhum* | Consulta a última localização salva offline mesmo com GPS desligado. |
 | **11** | `set_location_state(state)` | `state` (bool, obrigatório) | Liga ou desliga o serviço de GPS/localização do aparelho. |
 | **12** | `get_weather(day, time, location)` | `day` (str), `time` (str), `location` (str) | Previsão do tempo detalhada via Open-Meteo (PT-BR). |
-| **13** | `search_google(query, open_browser)` | `query` (str, obrigatório), `open_browser` (bool, padrão: False) | Pesquisa multi-fonte na web (Wikipédia PT-BR + DuckDuckGo) com parsing nativo e abertura opcional do navegador. |
+| **13** | `search_google(query, open_browser)` | `query` (str, obrigatório), `open_browser` (bool, padrão: False) | Pesquisa multi-fonte em cascata real na web (Wikipédia PT-BR semântica + Google News RSS nativo + DuckDuckGo Lite) com card visual estruturado no chat e abertura opcional no navegador. |
 | **14** | `set_torch(state)` | `state` (bool, obrigatório) | Liga (`True`) ou desliga (`False`) a lanterna traseira. |
 | **15** | `set_dnd(state)` | `state` (bool, obrigatório) | Ativa ou desativa modo Não Perturbe / Silencioso. |
 | **16** | `vibrate(duration_ms)` | `duration_ms` (int, padrão: 500) | Aciona vibração háptica no aparelho pelo tempo informado. |

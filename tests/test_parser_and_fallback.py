@@ -226,6 +226,21 @@ class TestParserAndFallback(unittest.TestCase):
         keys_found = [n["key"] for n in res_recall["data"]["notes"]]
         self.assertIn("wifi Casa_5G", keys_found)
 
+    def test_search_query_cleaning_and_multi_source(self):
+        """Testa limpeza de artigos e ruídos na query de busca e retorno de search_google."""
+        call = match_intent_fallback("pesquise sobre o GTA 6 no google")
+        self.assertEqual(call, "<call>search_google(query='GTA 6')</call>")
+
+        call_dot = match_intent_fallback("pesquisar por um hotel em SP no google por favor.")
+        self.assertEqual(call_dot, "<call>search_google(query='hotel em SP')</call>")
+
+        from android_agent.tools import search_google
+        res = search_google("GTA 6", open_browser=False)
+        self.assertEqual(res["status"], "ok")
+        self.assertIn("google_url", res["data"])
+        self.assertIn("wiki", res["data"])
+        self.assertIn("results", res["data"])
+        self.assertNotIn("\n\n\n", res["message"])
 
 
 if __name__ == "__main__":

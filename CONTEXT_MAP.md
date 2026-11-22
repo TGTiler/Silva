@@ -829,6 +829,14 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
 21. **Resolução de Falso Negativo de Desconexão e Desambiguação de Wi-Fi vs Memória**:
     - *Tratamento de SSID Oculto sem GPS (`get_wifi_info`)*: No Android 10+, com localização desativada, `termux-wifi-connectioninfo` retorna `ssid="<unknown ssid>"`. A ferramenta não trata mais isso como desconexão se `supplicant_state == "COMPLETED"` ou se houver IPv4 válido, exibindo `"SSID oculto (ative o GPS para exibir o nome)"`. Adicionado fallback via socket UDP (`8.8.8.8:80`) para obtenção do IP local da LAN caso o comando omita o IP.
     - *Desambiguação `"qual meu wifi"` vs `"recall_note"`*: Adicionados gatilhos diretos para `get_wifi_info()` (`"qual meu wifi"`, `"qual o meu wifi"`, `"meu wifi"`, etc.), com bloqueio em `extract_memory()` para que perguntas sobre Wi-Fi sem a palavra `"senha"` não sejam capturadas como memória pessoal. Preserva `recall_note(query='senha do wifi')` quando a palavra `"senha"` estiver explicitamente presente.
+22. **Busca Web Multi-Fonte em Cascata Real (`search_google`), Limpeza de Query e Card Visual**:
+    - *Limpeza de Termos (`_clean_search_query`)*: Remoção determinística de comandos de busca, preposições, sufixos de plataforma e cortesia (`no google`, `por favor`, etc.), e artigos iniciais definidos/indefinidos (`^(o|a|os|as|um|uma|uns|umas)\s+`), mapeando `"pesquise sobre o GTA 6 no google"` diretamente para `<call>search_google(query='GTA 6')</call>`.
+    - *Cascata Real Multi-Fonte (`weather_web.py`)*: Cascata sem dependências externas utilizando apenas biblioteca padrão do Python (`urllib`, `json`, `xml.etree.ElementTree`, `email.utils`, `html`):
+      1. *Wikipédia PT-BR*: Resolução semântica do título do artigo e resumo via REST API limitado a ~350 caracteres sem cortar palavras.
+      2. *Google News RSS PT-BR*: Parse de feed XML com até 3 notícias recentes, fonte limpa e data formatada `DD/MM/YYYY`.
+      3. *DuckDuckGo Lite*: Fallback via POST orgânico caso as fontes anteriores não retornem resultados.
+      4. *Formatação Consistente*: Resposta textual limpa sem linhas em branco vazias e metadados estruturados (`google_url`, `wiki`, `results`).
+    - *Card Visual no Frontend (`static/index.html`)*: Renderização de `.search-card` seguro contra XSS (`document.createElement`), com ícones SVG inline (zero emojis), bloco de resumo enciclopédico, notícias clicáveis e botão de ação `"Abrir resultados completos no Google"`. Suíte com 26 testes unitários com 100% de aprovação.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

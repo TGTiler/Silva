@@ -662,6 +662,133 @@
       white-space: pre-wrap;
     }
 
+    /* Cards Visuais de Busca Web (.search-card) */
+    .search-card {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      background: rgba(14, 10, 24, 0.9);
+      border: 1px solid rgba(157, 78, 221, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .wiki-block {
+      background: rgba(26, 18, 48, 0.6);
+      border-left: 3px solid var(--purple-accent);
+      border-radius: 0 8px 8px 0;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .wiki-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .wiki-title-wrap {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .wiki-badge {
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      color: var(--purple-accent);
+      background: rgba(157, 78, 221, 0.15);
+      border: 1px solid rgba(157, 78, 221, 0.25);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .wiki-summary {
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      line-height: 1.45;
+    }
+    .wiki-link {
+      font-size: 0.75rem;
+      color: var(--purple-accent);
+      text-decoration: none;
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .wiki-link:hover {
+      text-decoration: underline;
+    }
+    .search-results-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .search-result-item {
+      background: rgba(22, 16, 38, 0.6);
+      border: 1px solid rgba(157, 78, 221, 0.15);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .search-result-item:hover {
+      background: rgba(157, 78, 221, 0.12);
+      border-color: rgba(157, 78, 221, 0.35);
+    }
+    .result-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #f0f0ff;
+      line-height: 1.35;
+    }
+    .result-meta {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .result-source {
+      color: var(--purple-accent);
+      font-weight: 600;
+    }
+    .result-snippet-text {
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .search-action-btn {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(157, 78, 221, 0.35), rgba(114, 9, 183, 0.35));
+      border: 1px solid rgba(157, 78, 221, 0.45);
+      border-radius: 6px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .search-action-btn:hover {
+      background: linear-gradient(135deg, rgba(157, 78, 221, 0.55), rgba(114, 9, 183, 0.55));
+      border-color: var(--purple-accent);
+      color: #ffffff;
+    }
+
     /* Cards de Imagem e Vídeo */
     .media-card {
       margin-top: 10px;
@@ -1550,6 +1677,191 @@
           });
 
           bubble.appendChild(smsContainer);
+        }
+
+        // Renderização de Card de Busca Web (.search-card)
+        let searchData = null;
+        if (Array.isArray(data)) {
+          for (let i = 0; i < data.length; i++) {
+            const item = data[i];
+            if (item && (item.google_url || item.wiki || (Array.isArray(item.results) && item.results.length > 0))) {
+              searchData = item;
+              break;
+            }
+          }
+        } else if (data && (data.google_url || data.wiki || (Array.isArray(data.results) && data.results.length > 0))) {
+          searchData = data;
+        }
+
+        if (searchData) {
+          const searchCard = document.createElement("div");
+          searchCard.className = "search-card";
+
+          // Bloco de Resumo (se wiki existir)
+          if (searchData.wiki && searchData.wiki.title) {
+            const wikiBlock = document.createElement("div");
+            wikiBlock.className = "wiki-block";
+
+            const wikiHeader = document.createElement("div");
+            wikiHeader.className = "wiki-header";
+
+            const wikiTitleWrap = document.createElement("div");
+            wikiTitleWrap.className = "wiki-title-wrap";
+
+            const bookSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            bookSvg.setAttribute("width", "14");
+            bookSvg.setAttribute("height", "14");
+            bookSvg.setAttribute("viewBox", "0 0 24 24");
+            bookSvg.setAttribute("fill", "none");
+            bookSvg.setAttribute("stroke", "currentColor");
+            bookSvg.setAttribute("stroke-width", "2");
+            bookSvg.setAttribute("stroke-linecap", "round");
+            bookSvg.setAttribute("stroke-linejoin", "round");
+            const bookPath1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            bookPath1.setAttribute("d", "M4 19.5A2.5 2.5 0 0 1 6.5 17H20");
+            const bookPath2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            bookPath2.setAttribute("d", "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z");
+            bookSvg.appendChild(bookPath1);
+            bookSvg.appendChild(bookPath2);
+
+            const titleText = document.createElement("span");
+            titleText.textContent = searchData.wiki.title;
+
+            wikiTitleWrap.appendChild(bookSvg);
+            wikiTitleWrap.appendChild(titleText);
+
+            const wikiBadge = document.createElement("span");
+            wikiBadge.className = "wiki-badge";
+            wikiBadge.textContent = "Wikipédia";
+
+            wikiHeader.appendChild(wikiTitleWrap);
+            wikiHeader.appendChild(wikiBadge);
+            wikiBlock.appendChild(wikiHeader);
+
+            if (searchData.wiki.summary || searchData.wiki.extract) {
+              const summaryP = document.createElement("div");
+              summaryP.className = "wiki-summary";
+              summaryP.textContent = searchData.wiki.summary || searchData.wiki.extract;
+              wikiBlock.appendChild(summaryP);
+            }
+
+            if (searchData.wiki.url) {
+              const wikiLink = document.createElement("a");
+              wikiLink.className = "wiki-link";
+              wikiLink.href = searchData.wiki.url;
+              wikiLink.target = "_blank";
+              wikiLink.rel = "noopener noreferrer";
+
+              const linkText = document.createTextNode("Ler na Wikipédia");
+              const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+              arrowSvg.setAttribute("width", "12");
+              arrowSvg.setAttribute("height", "12");
+              arrowSvg.setAttribute("viewBox", "0 0 24 24");
+              arrowSvg.setAttribute("fill", "none");
+              arrowSvg.setAttribute("stroke", "currentColor");
+              arrowSvg.setAttribute("stroke-width", "2");
+              arrowSvg.setAttribute("stroke-linecap", "round");
+              arrowSvg.setAttribute("stroke-linejoin", "round");
+              const arrowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+              arrowPath.setAttribute("d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
+              const arrowPoly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+              arrowPoly.setAttribute("points", "15 3 21 3 21 9");
+              const arrowLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+              arrowLine.setAttribute("x1", "10");
+              arrowLine.setAttribute("y1", "14");
+              arrowLine.setAttribute("x2", "21");
+              arrowLine.setAttribute("y2", "3");
+              arrowSvg.appendChild(arrowPath);
+              arrowSvg.appendChild(arrowPoly);
+              arrowSvg.appendChild(arrowLine);
+
+              wikiLink.appendChild(linkText);
+              wikiLink.appendChild(arrowSvg);
+              wikiBlock.appendChild(wikiLink);
+            }
+
+            searchCard.appendChild(wikiBlock);
+          }
+
+          // Lista de Resultados / Notícias (results)
+          if (Array.isArray(searchData.results) && searchData.results.length > 0) {
+            const listWrap = document.createElement("div");
+            listWrap.className = "search-results-list";
+
+            searchData.results.slice(0, 3).forEach(function (res) {
+              if (!res) return;
+              const itemEl = document.createElement(res.url ? "a" : "div");
+              itemEl.className = "search-result-item";
+              if (res.url) {
+                itemEl.href = res.url;
+                itemEl.target = "_blank";
+                itemEl.rel = "noopener noreferrer";
+              }
+
+              const resTitle = document.createElement("div");
+              resTitle.className = "result-title";
+              resTitle.textContent = res.title || "Resultado de pesquisa";
+              itemEl.appendChild(resTitle);
+
+              const metaRow = document.createElement("div");
+              metaRow.className = "result-meta";
+
+              const srcSpan = document.createElement("span");
+              srcSpan.className = "result-source";
+              srcSpan.textContent = res.source || "Web";
+              metaRow.appendChild(srcSpan);
+
+              if (res.snippet && !res.snippet.startsWith("Fonte:")) {
+                const snipSpan = document.createElement("span");
+                snipSpan.className = "result-snippet-text";
+                snipSpan.textContent = res.snippet;
+                metaRow.appendChild(snipSpan);
+              }
+
+              itemEl.appendChild(metaRow);
+              listWrap.appendChild(itemEl);
+            });
+
+            searchCard.appendChild(listWrap);
+          }
+
+          // Botão de Ação: Abrir resultados completos no Google
+          const googleUrl = searchData.google_url || searchData.url;
+          if (googleUrl) {
+            const actionBtn = document.createElement("a");
+            actionBtn.className = "search-action-btn";
+            actionBtn.href = googleUrl;
+            actionBtn.target = "_blank";
+            actionBtn.rel = "noopener noreferrer";
+
+            const searchSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            searchSvg.setAttribute("width", "13");
+            searchSvg.setAttribute("height", "13");
+            searchSvg.setAttribute("viewBox", "0 0 24 24");
+            searchSvg.setAttribute("fill", "none");
+            searchSvg.setAttribute("stroke", "currentColor");
+            searchSvg.setAttribute("stroke-width", "2");
+            searchSvg.setAttribute("stroke-linecap", "round");
+            searchSvg.setAttribute("stroke-linejoin", "round");
+            const sCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sCircle.setAttribute("cx", "11");
+            sCircle.setAttribute("cy", "11");
+            sCircle.setAttribute("r", "8");
+            const sLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            sLine.setAttribute("x1", "21");
+            sLine.setAttribute("y1", "21");
+            sLine.setAttribute("x2", "16.65");
+            sLine.setAttribute("y2", "16.65");
+            searchSvg.appendChild(sCircle);
+            searchSvg.appendChild(sLine);
+
+            const btnText = document.createTextNode("Abrir resultados completos no Google");
+            actionBtn.appendChild(searchSvg);
+            actionBtn.appendChild(btnText);
+            searchCard.appendChild(actionBtn);
+          }
+
+          bubble.appendChild(searchCard);
         }
 
         // Consolidação de Mídias (Multi-Mídia com fallback para imageUrl/videoUrl)

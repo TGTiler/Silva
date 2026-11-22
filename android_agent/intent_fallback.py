@@ -24,6 +24,7 @@ try:
         _clean_food_query,
         _clean_install_app_name,
         _clean_weather_location,
+        _clean_search_query,
         ALLOWED_MATH_NAMES,
     )
 except ImportError:
@@ -40,6 +41,7 @@ except ImportError:
         _clean_food_query,
         _clean_install_app_name,
         _clean_weather_location,
+        _clean_search_query,
         ALLOWED_MATH_NAMES,
     )
 

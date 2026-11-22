@@ -117,6 +117,10 @@ silva-agent/
 │   ├── scheduler.py               # Agendador daemon em background para lembretes de agenda
 │   ├── llm_client.py              # Cliente HTTP para o llama-server local com fallback
 │   ├── intent_fallback.py         # Roteador determinístico de ultra-baixa latência (<2ms)
+│   ├── nlp/                       # Pacote de Processamento de Linguagem Natural (PT-BR)
+│   │   ├── numbers.py             # Pilar A: Parser numérico composto (centenas, multiplicadores, horários)
+│   │   ├── colloquial.py          # Pilar B: Normalizador de gírias, níveis e typos com difflib
+│   │   └── router.py              # Pilar C: Roteador por pontuação (ScoredIntentRouter) das 36 tools
 │   ├── parser.py                  # Analisador sintático AST seguro, validador de whitelist e propagação de status
 │   ├── tools/                     # Pacote modular das 36 ferramentas (core, hardware, media, comms, etc)
 │   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 36 tools
@@ -154,7 +158,7 @@ silva-agent/
 - **`start_silva.sh`**: Script de boot resiliente e idempotente. Executa limpeza cirúrgica de instâncias órfãs antigas do `llama-server` e `main.py`, gerencia PIDs via `data/llama.pid` e `data/web.pid`, respeita a variável `WEB_PORT` do `.env` e implementa `trap cleanup EXIT INT TERM` unificado.
 - **`scheduler.py`**: Thread daemon em background que monitora compromissos salvos localmente (`events.json`) a cada 30 segundos, disparando notificações nativas (`termux-notification`) e vibração no horário exato do lembrete.
 - **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
-- **`intent_fallback.py`**: Motor determinístico de alta velocidade (<2ms) para controle de hardware crítico, previsão do tempo inteligente, normalizador matemático e científico com tradução de funções trigonométricas, raízes, fatoriais e porcentagens em PT-BR, escaneamento de Wi-Fi próximo (sem colidir com senhas salvas), corridas Uber/99 e delivery iFood.
+- **`intent_fallback.py` e `nlp/`**: Motor determinístico de alta velocidade (<2ms) reestruturado em 4 pilares: Parser Numérico Composto (`parse_ptbr_numbers`), Normalizador de Gírias e Typos (`normalize_colloquial_ptbr`), Roteador por Pontuação (`ScoredIntentRouter`) cobrindo as 36 ferramentas e Splitter Inteligente de cláusulas compostas. Trata números por extenso de zero a milhões, gírias de celular ("no talo", "zap", "insta"), erros de digitação ("baterria", "lanterana"), previsão do tempo inteligente, cálculo científico e desambiguação estrita de Wi-Fi.
 - **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código, checa a whitelist de permissões (`AVAILABLE_TOOLS`) e propaga o status real das chamadas (`ok`, `partial_error`, `error`).
 - **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 36 ferramentas nativas divididas em domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`), incluindo: varredura de Wi-Fi (`scan_wifi`), memória persistente com SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
 - **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), e o `SILVA_SYSTEM_PROMPT` sincronizado para as 36 ferramentas.

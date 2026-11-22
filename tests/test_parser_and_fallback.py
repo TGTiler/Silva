@@ -111,6 +111,54 @@ class TestParserAndFallback(unittest.TestCase):
         self.assertIsNotNone(c3)
         self.assertIn("location='Abreu e Lima'", c3)
 
+    def test_fallback_compound_numbers_ptbr(self):
+        """Testa parsing de números compostos por extenso (centenas, dezenas, multiplicadores)."""
+        # vinte e cinco vezes quatro -> 25 * 4
+        call_mult = match_intent_fallback("quanto é vinte e cinco vezes quatro")
+        self.assertEqual(call_mult, "<call>calculate(expression='25 * 4')</call>")
+
+        # dois mil e quinhentos dividido por cento e vinte e cinco -> 2500 / 125
+        call_div = match_intent_fallback("quanto dá dois mil e quinhentos dividido por cento e vinte e cinco")
+        self.assertEqual(call_div, "<call>calculate(expression='2500 / 125')</call>")
+
+    def test_fallback_contextual_time_and_alarms(self):
+        """Testa expressões contextuais de tempo (meia hora, meia-noite, um quarto de hora)."""
+        # meia hora -> 30 minutos (artigo 'um' antes de timer não deve virar número)
+        call_timer = match_intent_fallback("coloca um timer de meia hora")
+        self.assertIsNotNone(call_timer)
+        self.assertIn("set_timer(minutes=30", call_timer)
+
+        # alarme pra meia-noite -> 00:00
+        call_alarm = match_intent_fallback("coloca alarme pra meia-noite")
+        self.assertIsNotNone(call_alarm)
+        self.assertIn("set_alarm(time='00:00'", call_alarm)
+
+    def test_fallback_typos_and_slangs(self):
+        """Testa tolerância a erros de digitação (typos) e gírias de celular."""
+        # Typos em comando multi-ação: baterria -> bateria, lanterana -> lanterna
+        call_typo = match_intent_fallback("silva vê a baterria e liga a lanterana")
+        self.assertEqual(call_typo, "<call>get_battery()</call><call>set_torch(state=True)</call>")
+
+        # Gírias: no talo -> 100%, zap -> whatsapp
+        call_slang = match_intent_fallback("bota o brilho no talo e abre o zap")
+        self.assertEqual(call_slang, "<call>set_brightness(level=100)</call><call>open_app(app_name='whatsapp')</call>")
+
+    def test_fallback_wifi_disambiguation_and_payloads(self):
+        """Testa desambiguação de Wi-Fi e proteção de payloads de transporte."""
+        # Senha de Wi-Fi -> recall_note
+        call_pwd = match_intent_fallback("qual a senha do wifi")
+        self.assertIsNotNone(call_pwd)
+        self.assertIn("recall_note(", call_pwd)
+        self.assertIn("senha do wifi", call_pwd)
+
+        # Redes próximas -> scan_wifi
+        call_scan = match_intent_fallback("quais wifis tem perto")
+        self.assertEqual(call_scan, "<call>scan_wifi()</call>")
+
+        # Corrida com destino composto 'Abreu e Lima' e artigo 'um'
+        call_ride = match_intent_fallback("chama um uber para Abreu e Lima")
+        self.assertEqual(call_ride, "<call>request_ride(destination='Abreu e Lima', app='uber')</call>")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -361,13 +361,32 @@ Configuração central e prompt.
 - `SilvaLLMClient.check_health()` → `dict`: tenta `/health`, depois `/`; retorna `online/status/url/error` (`silva-agent/android_agent/llm_client.py:22-37`).
 - `SilvaLLMClient.generate_call(user_prompt: str)` → `Tuple[Optional[str], float, Optional[str]]`: fallback local, prompt ChatML, `POST /completion`, normalização da tag e validação superficial de tool (`silva-agent/android_agent/llm_client.py:39-119`).
 
-### 3.5 `silva-agent/android_agent/intent_fallback.py`
+### 3.5 `silva-agent/android_agent/intent_fallback.py` e Pacote `android_agent/nlp/`
 
-- `normalize_text(text: str)` → `str`: NFKD, remove diacríticos, minúsculas e `strip()` (`silva-agent/android_agent/intent_fallback.py:14-18`).
-- `_normalize_math_expression(raw_text: str)` → `Optional[str]`: traduz números por extenso (`zero`..`mil`), operadores (`vezes`, `x`, `dividido por`, `mais`, `menos`), raízes quadradas/cúbicas, trigonometria (`sen`, `cos`, `tan`), logaritmos, porcentagens e exponenciação para AST válida (`silva-agent/android_agent/intent_fallback.py:35-155`).
-- `_clean_weather_location(raw_loc: str)` → `str`: sanitiza nomes de cidades/estados, remove termos de tempo e ruídos (`hoje`, `amanhã`, turnos, `silva`, `por favor`), aceita preposições `de/em/no/na/para/pra` e normaliza capitalização (`silva-agent/android_agent/intent_fallback.py:318-388`).
-- `parse_single_intent(raw_cmd: str)` → `Optional[str]`: roteamento determinístico cobrindo as 36 ferramentas nativas, incluindo `scan_wifi` e consultas web multi-fonte (`silva-agent/android_agent/intent_fallback.py:391-925`).
-- `match_intent_fallback(user_prompt: str)` → `Optional[str]`: divide cláusulas por conectores (` e `, ` depois `, ` em seguida `, `;`) preservando operadores matemáticos, executa fallback por cláusula e combina tags em chamadas compostas (`silva-agent/android_agent/intent_fallback.py:928-966`).
+Arquitetura modular de NLP e intent fallback determinístico dividida em 4 pilares:
+
+- **Pilar A: Parser Numérico Composto (`android_agent/nlp/numbers.py`)**:
+  - `parse_ptbr_numbers(text: str)` → `str`: Converte números compostos por extenso (`"vinte e cinco"` → `"25"`, `"dois mil e quinhentos"` → `"2500"`, `"cento e vinte e cinco"` → `"125"`).
+  - Tratamento contextual prioritário de horários: `"meia-noite"` → `"00:00"`, `"meio-dia"` → `"12:00"`, `"meia hora"` → `"30 minutos"`, `"uma hora e meia"` → `"01:30"` (em contexto de alarme) ou `"90 minutos"` (timer).
+  - Desambiguação de dígitos ditados sequencialmente (`"nove nove oito meia cinco"` → `"9 9 8 6 5"`).
+  - Proteção estrita de artigos indefinidos (`"um"`/`"uma"` não viram número antes de substantivos de ação como `"um uber"`, `"uma foto"`, `"um alarme"`).
+- **Pilar B: Normalizador de Gírias, Níveis e Typos (`android_agent/nlp/colloquial.py`)**:
+  - `normalize_colloquial_ptbr(text: str)` → `str`: Traduz expressões de nível em volume/brilho (`"no talo"`, `"no máximo"` → `"100%"`; `"no mínimo"`, `"no mudo"`, `"zerado"` → `"0%"`; `"na metade"` → `"50%"`).
+  - Normaliza gírias de apps: `"zap"`, `"zapzap"`, `"wpp"`, `"whats"` → `"whatsapp"`; `"insta"` → `"instagram"`; `"yt"` → `"youtube"`; `"spot"` → `"spotify"`; `"playstore"` → `"play store"`.
+  - Tolerância a erros de digitação (typos) com `difflib.get_close_matches(cutoff=0.82)` sobre vocabulário canônico (`"baterria"` → `"bateria"`, `"lanterana"` → `"lanterna"`, `"calcura"` → `"calcula"`).
+- **Pilar C: Roteador por Pontuação de Intenção (`android_agent/nlp/router.py`)**:
+  - `ScoredIntentRouter`: Registra extratores por domínio que retornam `(score: float, call_str: str)`.
+  - Resolução explícita de ambiguidades por peso:
+    - Wi-Fi com senha → `recall_note` (score 0.95);
+    - Wi-Fi com abrir/configurações → `open_app` (score 0.90);
+    - Wi-Fi com escanear/listar/redes/perto → `scan_wifi` (score 0.95).
+  - Bloqueio de perguntas conceituais/enciclopédicas sem verbo de comando para permitir resposta semântica pelo LLM.
+  - Cobertura completa de todas as 36 ferramentas do catálogo.
+  - Formatação 100% segura de chamadas com `_format_call(func_name, **kwargs)` usando `repr()`.
+- **Pilar D: Splitter Inteligente de Cláusulas Compostas (`intent_fallback.py`)**:
+  - `match_intent_fallback(user_prompt: str)` → `Optional[str]`: Protege nomes próprios compostos (`Abreu e Lima`), roda o parser numérico composto **antes** da divisão por `" e "`, normaliza gírias/typos e divide apenas quando o trecho seguinte inicia com verbo de comando (`COMMAND_VERBS`). Concatena `<call>...</call><call>...</call>` para comandos múltiplos.
+  - `parse_single_intent(raw_cmd: str)` → `Optional[str]`: Roteia comandos unitários via `_ROUTER.route()`.
+  - `normalize_text(text: str)` → `str`: Remove diacríticos, pontuação e converte para minúsculas.
 
 ### 3.6 `silva-agent/android_agent/parser.py`
 
@@ -762,7 +781,13 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - Sincronização estrita do `SILVA_SYSTEM_PROMPT` no script com as 36 ferramentas do `config.py`.
     - Diagnóstico pré-treino com checagem de tamanho de tokens por amostra e validação antecipada anti-truncamento.
 13. **Suíte Completa de Testes Automatizados (`silva-agent/tests/`)**:
-    - Suíte com 18 testes automatizados em Python stdlib (`unittest`), cobrindo conformidade de schemas e dataset (`test_contracts.py`), validação de AST, fallback e clima (`test_parser_and_fallback.py`), persistência SQLite FTS5, mocks de hardware e calculadora (`test_tools_and_memory.py`), e servidor HTTP com autenticação PIN e proteção contra traversal (`test_web_server.py`).
+    - Suíte com testes automatizados em Python stdlib (`unittest`), cobrindo conformidade de schemas e dataset (`test_contracts.py`), validação de AST, fallback e clima (`test_parser_and_fallback.py`), persistência SQLite FTS5, mocks de hardware e calculadora (`test_tools_and_memory.py`), e servidor HTTP com autenticação PIN e proteção contra traversal (`test_web_server.py`).
+14. **Reestruturação do Motor de Linguagem Natural com 4 Pilares (`android_agent/nlp/`)**:
+    - Decomposição modular do monolito `intent_fallback.py` em submódulos especializados (`numbers.py`, `colloquial.py`, `router.py`, `__init__.py`).
+    - *Pilar A (Parser Numérico Composto)*: `parse_ptbr_numbers()` traduz números compostos por extenso (`vinte e cinco` → `25`, `dois mil e quinhentos` → `2500`), trata horários contextuais (`meia-noite` → `00:00`, `meia hora` → `30 minutos`), dígitos sequenciais e protege artigos indefinidos (`um`/`uma`).
+    - *Pilar B (Normalizador de Gírias e Typos)*: `normalize_colloquial_ptbr()` converte expressões de nível (`no talo` → `100%`, `no mudo` → `0%`), gírias de apps (`zap` → `whatsapp`, `insta` → `instagram`) e corrige erros de digitação via `difflib.get_close_matches(cutoff=0.82)`.
+    - *Pilar C (Roteador por Pontuação)*: `ScoredIntentRouter` com extratores por domínio ponderados, resolução explícita de ambiguidades (Wi-Fi senha vs scan vs abrir) e bloqueio de perguntas conceituais.
+    - *Pilar D (Splitter Inteligente)*: Divisão de cláusulas encadeadas após a normalização numérica, evitando divisões errôneas de números no conector `" e "`. Suíte expandida para 22 testes com 100% de aprovação.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

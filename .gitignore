@@ -12,6 +12,8 @@ env/
 # Configurações sensíveis e dados dinâmicos
 .env
 android_agent/data/*.json
+android_agent/data/*.db*
+android_agent/data/*.migrated
 !android_agent/data/.gitkeep
 
 # Modelos Pesados (>100MB não permitidos no GitHub direto)

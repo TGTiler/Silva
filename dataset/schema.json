@@ -48,12 +48,17 @@
       "parameters": {}
     },
     "search_google": {
-      "description": "Pesquisa um termo ou pergunta no Google e abre os resultados no navegador do dispositivo.",
+      "description": "Pesquisa um termo ou pergunta no Google e na web, retornando resumo e links, podendo opcionalmente abrir no navegador.",
       "parameters": {
         "query": {
           "type": "string",
           "required": true,
           "description": "Termo de busca ou pergunta a ser pesquisada no Google."
+        },
+        "open_browser": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se verdadeiro, abre a página de resultados no navegador do smartphone."
         }
       }
     },
@@ -383,6 +388,10 @@
     },
     "list_capabilities": {
       "description": "Lista todas as capacidades, ferramentas e comandos suportados pelo Silva de forma organizada e com exemplos práticos.",
+      "parameters": {}
+    },
+    "scan_wifi": {
+      "description": "Escaneia e lista as redes Wi-Fi disponíveis nas proximidades, exibindo intensidade de sinal, frequência e segurança.",
       "parameters": {}
     },
     "none": {

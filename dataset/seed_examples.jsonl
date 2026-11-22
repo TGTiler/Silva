@@ -123,3 +123,11 @@
 {"prompt": "Me mostra a lista de comandos que você sabe executar", "completion": "<call>list_capabilities()</call>"}
 {"prompt": "Quais são as suas capacidades?", "completion": "<call>list_capabilities()</call>"}
 {"prompt": "Silva, ajuda", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "Silva, quais wifis tem por perto?", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Dê-me a lista de todos os WiFis disponíveis por perto.", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Escanear redes wifi", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Buscar redes wi-fi disponíveis nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Quais redes wifi estão disponíveis por perto?", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Me mostra as redes wifi próximas", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Verifique o sinal das redes wi-fi por perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Faz um scan de redes wifi", "completion": "<call>scan_wifi()</call>"}

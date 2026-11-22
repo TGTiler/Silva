@@ -5,12 +5,14 @@ Controle de hardware, chamadas de sistema, sanitização e retornos padronizados
 
 import ast
 import html
+from html.parser import HTMLParser
 import json
 import math
 import os
 import random
 import re
 import shutil
+import sqlite3
 import subprocess
 import tempfile
 import threading
@@ -2053,22 +2055,150 @@ def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]
 
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
-MEMORY_FILE = DATA_DIR / "memory.json"
+MEMORY_DB_PATH = DATA_DIR / "memory.db"
+LEGACY_MEMORY_FILE = DATA_DIR / "memory.json"
+MIGRATED_MEMORY_FILE = DATA_DIR / "memory.json.migrated"
+
+
+def _classify_memory_category(key: str) -> str:
+    """Classifica automaticamente a anotação para fins de organização."""
+    k_norm = _normalize_text(key)
+    if any(w in k_norm for w in ["wifi", "wi-fi", "roteador", "rede", "ip"]):
+        return "wifi"
+    if any(w in k_norm for w in ["senha", "password", "pin", "chave", "login", "acesso"]):
+        return "senha"
+    if any(w in k_norm for w in ["estudo", "faculdade", "curso", "aula", "escola", "livro", "prova"]):
+        return "estudo"
+    if any(w in k_norm for w in ["nome", "aniversario", "cpf", "rg", "nascimento", "casa", "pessoal", "parente"]):
+        return "pessoal"
+    return "geral"
+
+
+def _get_memory_db() -> sqlite3.Connection:
+    """
+    Retorna conexão segura e transacional com o banco SQLite da memória (WAL mode).
+    Cria tabelas e triggers FTS5 automaticamente e executa migração de memory.json se necessário.
+    """
+    conn = sqlite3.connect(str(MEMORY_DB_PATH), timeout=10.0)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+
+    with conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS memories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                category TEXT DEFAULT 'geral',
+                updated_at TEXT NOT NULL
+            );
+        """)
+        conn.execute("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+                key,
+                value,
+                content='memories',
+                content_rowid='id'
+            );
+        """)
+        conn.execute("""
+            CREATE TRIGGER IF NOT EXISTS memories_ai AFTER INSERT ON memories BEGIN
+                INSERT INTO memories_fts(rowid, key, value) VALUES (new.id, new.key, new.value);
+            END;
+        """)
+        conn.execute("""
+            CREATE TRIGGER IF NOT EXISTS memories_ad AFTER DELETE ON memories BEGIN
+                INSERT INTO memories_fts(memories_fts, rowid, key, value) VALUES('delete', old.id, old.key, old.value);
+            END;
+        """)
+        conn.execute("""
+            CREATE TRIGGER IF NOT EXISTS memories_au AFTER UPDATE ON memories BEGIN
+                INSERT INTO memories_fts(memories_fts, rowid, key, value) VALUES('delete', old.id, old.key, old.value);
+                INSERT INTO memories_fts(rowid, key, value) VALUES (new.id, new.key, new.value);
+            END;
+        """)
+
+        # Migração automática zero-loss de memory.json para SQLite
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM memories")
+        count = cur.fetchone()[0]
+        if count == 0 and LEGACY_MEMORY_FILE.is_file():
+            try:
+                with open(LEGACY_MEMORY_FILE, "r", encoding="utf-8") as f:
+                    old_mem = json.load(f)
+                if isinstance(old_mem, dict):
+                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    for k, v_data in old_mem.items():
+                        clean_k = str(k).strip()
+                        if not clean_k:
+                            continue
+                        if isinstance(v_data, dict):
+                            val = str(v_data.get("value", "")).strip()
+                            up_at = v_data.get("timestamp", now_str)
+                        else:
+                            val = str(v_data).strip()
+                            up_at = now_str
+                        cat = _classify_memory_category(clean_k)
+                        cur.execute(
+                            "INSERT OR REPLACE INTO memories (key, value, category, updated_at) VALUES (?, ?, ?, ?)",
+                            (clean_k, val, cat, up_at)
+                        )
+                try:
+                    LEGACY_MEMORY_FILE.rename(MIGRATED_MEMORY_FILE)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+    return conn
 
 
 def _load_memory() -> dict:
-    if not MEMORY_FILE.is_file():
-        return {}
+    """Carrega todas as memórias do banco SQLite em um dicionário para compatibilidade com código legado."""
     with _FILE_LOCK:
         try:
-            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+            conn = _get_memory_db()
+            cur = conn.cursor()
+            cur.execute("SELECT key, value, category, updated_at FROM memories ORDER BY id ASC")
+            res = {}
+            for row in cur.fetchall():
+                res[row["key"]] = {
+                    "value": row["value"],
+                    "category": row["category"],
+                    "timestamp": row["updated_at"]
+                }
+            conn.close()
+            return res
         except Exception:
             return {}
 
 
 def _save_memory(data: dict):
-    _atomic_write_json(MEMORY_FILE, data)
+    """Atualiza memórias no SQLite a partir de um dicionário completo (compatibilidade retroativa)."""
+    with _FILE_LOCK:
+        try:
+            conn = _get_memory_db()
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with conn:
+                for k, v_data in data.items():
+                    clean_k = str(k).strip()
+                    if not clean_k:
+                        continue
+                    if isinstance(v_data, dict):
+                        val = str(v_data.get("value", "")).strip()
+                        up_at = v_data.get("timestamp", now_str)
+                    else:
+                        val = str(v_data).strip()
+                        up_at = now_str
+                    cat = _classify_memory_category(clean_k)
+                    conn.execute(
+                        "INSERT INTO memories (key, value, category, updated_at) VALUES (?, ?, ?, ?) "
+                        "ON CONFLICT(key) DO UPDATE SET value=excluded.value, category=excluded.category, updated_at=excluded.updated_at",
+                        (clean_k, val, cat, up_at)
+                    )
+            conn.close()
+        except Exception:
+            pass
 
 
 def _normalize_text(text: str) -> str:
@@ -2079,65 +2209,134 @@ def _normalize_text(text: str) -> str:
 
 
 def remember_note(key: str, value: str) -> Dict[str, Any]:
-    """Salva/atualiza uma anotação persistente na memória local do Silva."""
+    """
+    Salva, atualiza ou remove uma anotação persistente na memória local do Silva (SQLite FTS5).
+    Se value for vazio ou comando de exclusão ('apagar', 'remover', 'deletar'), a nota é removida.
+    """
     clean_key = str(key).strip()
     clean_val = str(value).strip()
-    if not clean_key or not clean_val:
-        return {"status": "error", "message": "Chave ou valor da anotação não informados."}
+    if not clean_key:
+        return {"status": "error", "message": "Chave da anotação não informada."}
 
     with _FILE_LOCK:
-        mem = _load_memory()
-        mem[clean_key] = {
-            "value": clean_val,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        _save_memory(mem)
-    return {
-        "status": "ok",
-        "message": f"Silva: Anotado: {clean_key} = {clean_val}.",
-        "data": {"key": clean_key, "value": clean_val}
-    }
+        try:
+            conn = _get_memory_db()
+            # Caso de exclusão de anotação
+            if clean_val.lower() in ("", "apagar", "remover", "deletar", "excluir"):
+                with conn:
+                    cur = conn.cursor()
+                    cur.execute("DELETE FROM memories WHERE lower(key) = lower(?)", (clean_key,))
+                    deleted = cur.rowcount > 0
+                conn.close()
+                if deleted:
+                    return {
+                        "status": "ok",
+                        "message": f"Silva: Anotação '{clean_key}' removida da memória.",
+                        "data": {"key": clean_key, "action": "deleted"}
+                    }
+                else:
+                    return {
+                        "status": "ok",
+                        "message": f"Silva: Nenhuma anotação encontrada com a chave '{clean_key}' para remover.",
+                        "data": {"key": clean_key, "action": "not_found"}
+                    }
+
+            # Inserção ou Atualização (UPSERT)
+            category = _classify_memory_category(clean_key)
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with conn:
+                conn.execute(
+                    "INSERT INTO memories (key, value, category, updated_at) VALUES (?, ?, ?, ?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value, category=excluded.category, updated_at=excluded.updated_at",
+                    (clean_key, clean_val, category, now_str)
+                )
+            conn.close()
+
+            return {
+                "status": "ok",
+                "message": f"Silva: Anotado: {clean_key} = {clean_val}.",
+                "data": {"key": clean_key, "value": clean_val, "category": category}
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Erro ao salvar na memória: {str(e)}"}
 
 
 def recall_note(query: str) -> Dict[str, Any]:
-    """Busca anotações e compromissos salvos na memória/agenda local por similaridade semântica e palavras-chave."""
+    """
+    Busca anotações na memória local via SQLite FTS5 (com fallback LIKE) e na agenda local.
+    Retorna os melhores resultados ranqueados.
+    """
     clean_query = str(query).strip()
     if not clean_query:
         return {"status": "error", "message": "Termo de busca não informado."}
 
     norm_query = _normalize_text(clean_query)
-    query_tokens = set(norm_query.split())
+    raw_tokens = norm_query.split()
+    noise_words = {
+        "qual", "onde", "o", "a", "os", "as", "de", "do", "da", "dos", "das",
+        "em", "no", "na", "nos", "nas", "para", "pra", "pro", "que", "e",
+        "me", "lembra", "lembrar", "guarda", "guardei", "salvei", "anotei",
+        "minha", "meu", "minhas", "meus", "voce", "vc", "esta", "estava"
+    }
+    query_tokens = [t for t in raw_tokens if t not in noise_words and len(t) >= 2]
+    if not query_tokens:
+        query_tokens = [t for t in raw_tokens if len(t) >= 2] or raw_tokens
 
-    # 1. Busca em memória (memory.json)
-    mem = _load_memory()
     matches = []
-    if mem:
-        for k, v_data in mem.items():
-            val = v_data.get("value", "") if isinstance(v_data, dict) else str(v_data)
-            norm_k = _normalize_text(k)
-            norm_v = _normalize_text(val)
+    with _FILE_LOCK:
+        try:
+            conn = _get_memory_db()
+            cur = conn.cursor()
 
-            score = 0
-            if norm_query == norm_k:
-                score += 10
-            elif norm_query in norm_k:
-                score += 6
-            elif norm_k in norm_query:
-                score += 5
+            # 1. Busca FTS5 com prefixos '*'
+            fts_query_parts = [f'"{re.sub(r"[^\w]", "", t)}"*' for t in query_tokens if re.sub(r"[^\w]", "", t)]
+            if fts_query_parts:
+                fts_query_str = " OR ".join(fts_query_parts)
+                try:
+                    cur.execute(
+                        "SELECT m.key, m.value, m.category, m.updated_at, bm25(memories_fts) as rank "
+                        "FROM memories_fts f "
+                        "JOIN memories m ON f.rowid = m.id "
+                        "WHERE memories_fts MATCH ? "
+                        "ORDER BY rank ASC "
+                        "LIMIT 5",
+                        (fts_query_str,)
+                    )
+                    for row in cur.fetchall():
+                        matches.append({
+                            "key": row["key"],
+                            "value": row["value"],
+                            "category": row["category"],
+                            "updated_at": row["updated_at"],
+                            "score": -float(row["rank"])
+                        })
+                except Exception:
+                    pass
 
-            # Intersecção de palavras-chave
-            k_tokens = set(norm_k.split())
-            common = query_tokens.intersection(k_tokens)
-            if common:
-                score += len(common) * 2
+            # 2. Fallback LIKE se FTS5 não trouxe nada
+            if not matches:
+                for token in query_tokens:
+                    like_pattern = f"%{token}%"
+                    cur.execute(
+                        "SELECT key, value, category, updated_at FROM memories "
+                        "WHERE key LIKE ? OR value LIKE ? "
+                        "LIMIT 5",
+                        (like_pattern, like_pattern)
+                    )
+                    for row in cur.fetchall():
+                        if not any(m["key"] == row["key"] for m in matches):
+                            matches.append({
+                                "key": row["key"],
+                                "value": row["value"],
+                                "category": row["category"],
+                                "updated_at": row["updated_at"],
+                                "score": 1.0
+                            })
+            conn.close()
+        except Exception:
+            pass
 
-            if norm_query in norm_v:
-                score += 3
-
-            if score > 0:
-                matches.append((score, k, val))
-
-    # 2. Busca em compromissos da agenda (events.json)
+    # 3. Busca em compromissos da agenda (events.json)
     events = _load_events()
     event_matches = []
     if events:
@@ -2147,7 +2346,7 @@ def recall_note(query: str) -> Dict[str, Any]:
             ev_date = ev.get("date", "")
             ev_time = ev.get("time", "")
             norm_title = _normalize_text(ev_title)
-            if is_agenda_query or norm_query in norm_title or norm_title in norm_query or query_tokens.intersection(set(norm_title.split())):
+            if is_agenda_query or norm_query in norm_title or norm_title in norm_query or set(query_tokens).intersection(set(norm_title.split())):
                 event_matches.append(f"'{ev_title}' em {ev_date} às {ev_time}")
 
     if not matches and not event_matches:
@@ -2159,9 +2358,7 @@ def recall_note(query: str) -> Dict[str, Any]:
 
     parts = []
     if matches:
-        matches.sort(key=lambda x: x[0], reverse=True)
-        best_matches = matches[:3]
-        notes_str = "; ".join(f"{k}: {val}" for _, k, val in best_matches)
+        notes_str = "; ".join(f"{m['key']}: {m['value']}" for m in matches[:3])
         parts.append(f"Memória: {notes_str}")
     if event_matches:
         ev_str = "; ".join(event_matches[:4])
@@ -2174,7 +2371,7 @@ def recall_note(query: str) -> Dict[str, Any]:
         "message": msg,
         "data": {
             "found": True,
-            "notes": [{"key": k, "value": v} for _, k, v in matches[:3]] if matches else [],
+            "notes": [{"key": m["key"], "value": m["value"], "category": m.get("category", "geral")} for m in matches[:5]],
             "events": event_matches
         }
     }
@@ -2362,6 +2559,31 @@ class SafeMathEvaluator(ast.NodeVisitor):
         ast.USub: lambda a: -a,
     }
 
+    ALLOWED_FUNCTIONS = {
+        "sqrt": math.sqrt,
+        "cbrt": lambda x: math.pow(x, 1/3) if x >= 0 else -math.pow(-x, 1/3),
+        "sin": math.sin,
+        "cos": math.cos,
+        "tan": math.tan,
+        "asin": math.asin,
+        "acos": math.acos,
+        "atan": math.atan,
+        "log": math.log,
+        "log10": math.log10,
+        "log2": math.log2,
+        "exp": math.exp,
+        "factorial": lambda n: math.factorial(int(n)),
+        "abs": abs,
+        "round": round,
+        "floor": math.floor,
+        "ceil": math.ceil,
+    }
+
+    ALLOWED_CONSTANTS = {
+        "pi": math.pi,
+        "e": math.e,
+    }
+
     def visit(self, node):
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
@@ -2379,6 +2601,11 @@ class SafeMathEvaluator(ast.NodeVisitor):
         if isinstance(node.value, (int, float)):
             return node.value
         raise ValueError("Apenas valores numéricos são permitidos.")
+
+    def visit_Name(self, node):
+        if node.id in self.ALLOWED_CONSTANTS:
+            return self.ALLOWED_CONSTANTS[node.id]
+        raise ValueError(f"Identificador não permitido na calculadora: {node.id}")
 
     def visit_UnaryOp(self, node):
         op_type = type(node.op)
@@ -2403,15 +2630,38 @@ class SafeMathEvaluator(ast.NodeVisitor):
 
         return self.ALLOWED_OPERATORS[op_type](left, right)
 
+    def visit_Call(self, node):
+        if not isinstance(node.func, ast.Name):
+            raise ValueError("Chamada de função dinâmica não permitida.")
+        fn_name = node.func.id
+        if fn_name not in self.ALLOWED_FUNCTIONS:
+            raise ValueError(f"Função matemática não permitida: {fn_name}")
+        if node.keywords:
+            raise ValueError("Argumentos nomeados não são permitidos em funções matemáticas.")
+
+        args = [self.visit(arg) for arg in node.args]
+        if fn_name == "factorial":
+            if len(args) != 1 or args[0] < 0 or args[0] > 170:
+                raise ValueError("Fatorial aceita apenas valores inteiros entre 0 e 170.")
+        elif fn_name == "sqrt":
+            if len(args) != 1 or args[0] < 0:
+                raise ValueError("Raiz quadrada não definida para números negativos nos reais.")
+        elif fn_name in ("log", "log10", "log2"):
+            if len(args) < 1 or args[0] <= 0:
+                raise ValueError("Logaritmo não definido para valores menores ou iguais a zero.")
+
+        return self.ALLOWED_FUNCTIONS[fn_name](*args)
+
 
 def calculate(expression: str) -> Dict[str, Any]:
-    """Calculadora matemática offline segura baseada em AST (sem eval)."""
+    """Calculadora científica e financeira offline segura baseada em AST (sem eval)."""
     expr_clean = str(expression).strip()
     if not expr_clean:
         return {"status": "error", "message": "Expressão matemática vazia."}
 
-    # Normaliza x, ×, ÷ e vírgula decimal
-    normalized = expr_clean.replace("×", "*").replace("÷", "/").replace(",", ".")
+    # Normaliza x, ×, ÷ e vírgula decimal entre números
+    normalized = expr_clean.replace("×", "*").replace("÷", "/")
+    normalized = re.sub(r"(?<=\d),(?=\d)", ".", normalized)
     normalized = re.sub(r"(?<=\d|\))\s*[xX]\s*(?=\d|\()", " * ", normalized)
     normalized = re.sub(r"\b[xX]\b", "*", normalized)
 
@@ -2438,71 +2688,261 @@ def calculate(expression: str) -> Dict[str, Any]:
         return {"status": "error", "message": f"Não foi possível calcular '{expr_clean}': {str(e)}"}
 
 
-def search_google(query: str) -> Dict[str, Any]:
+class DuckDuckGoHTMLParser(HTMLParser):
+    """Parser leve nativo para extrair os 3 primeiros resultados reais do DuckDuckGo HTML Lite."""
+    def __init__(self, max_results: int = 3):
+        super().__init__()
+        self.max_results = max_results
+        self.results = []
+        self._in_title = False
+        self._in_snippet = False
+        self._cur_title = []
+        self._cur_snippet = []
+        self._cur_url = ""
+
+    def handle_starttag(self, tag, attrs):
+        attrs_dict = dict(attrs)
+        classes = attrs_dict.get("class", "").split()
+
+        if tag == "a" and "result__a" in classes:
+            self._in_title = True
+            href = attrs_dict.get("href", "")
+            if "uddg=" in href:
+                m = re.search(r"uddg=([^&]+)", href)
+                self._cur_url = urllib.parse.unquote(m.group(1)) if m else href
+            else:
+                self._cur_url = href
+            self._cur_title = []
+        elif (tag in ("a", "div", "td", "span")) and ("result__snippet" in classes or "snippet" in classes):
+            self._in_snippet = True
+            self._cur_snippet = []
+
+    def handle_endtag(self, tag):
+        if self._in_title and tag == "a":
+            self._in_title = False
+        elif self._in_snippet and tag in ("a", "div", "td", "span"):
+            self._in_snippet = False
+            title_text = " ".join("".join(self._cur_title).split())
+            snip_text = " ".join("".join(self._cur_snippet).split())
+            if title_text and self._cur_url and len(self.results) < self.max_results:
+                self.results.append({
+                    "title": html.unescape(title_text),
+                    "snippet": html.unescape(snip_text),
+                    "url": self._cur_url
+                })
+            self._cur_title = []
+            self._cur_snippet = []
+            self._cur_url = ""
+
+    def handle_data(self, data):
+        if self._in_title:
+            self._cur_title.append(data)
+        elif self._in_snippet:
+            self._cur_snippet.append(data)
+
+
+def _fetch_wikipedia_summary(query: str) -> Optional[Dict[str, str]]:
+    """Consulta a REST API da Wikipédia PT-BR para resumos enciclopédicos."""
+    clean = re.sub(
+        r"(?i)^(?:quem\s+foi|quem\s+[eé]|o\s+que\s+[eé]|o\s+que\s+s[aã]o|qual\s+a\s+hist[oó]ria\s+de|biografia\s+de|hist[oó]ria\s+de|o\s+significado\s+de|significado\s+de|defini[cç][aã]o\s+de|sobre\s+o|sobre\s+a|sobre)\s+",
+        "",
+        query
+    ).strip().rstrip("?!.,;:")
+    if not clean:
+        return None
+
+    # Tenta busca exata do título formatado
+    slug = urllib.parse.quote(clean.replace(" ", "_"))
+    wiki_url = f"https://pt.wikipedia.org/api/rest_v1/page/summary/{slug}"
+    req = urllib.request.Request(
+        wiki_url,
+        headers={"User-Agent": "SilvaAgent/1.0 (Android; Termux; https://github.com/TGTiler/Silva)"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=3.5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("type") == "disambiguation":
+                return None
+            extract = data.get("extract", "").strip()
+            title = data.get("title", clean)
+            page_url = data.get("content_urls", {}).get("desktop", {}).get("page", f"https://pt.wikipedia.org/wiki/{slug}")
+            if extract:
+                return {
+                    "title": title,
+                    "extract": extract,
+                    "url": page_url
+                }
+    except Exception:
+        pass
+    return None
+
+
+def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
     """
-    Pesquisa um termo no Google, abrindo no navegador do celular
-    e retornando um resumo rápido do primeiro resultado se disponível.
+    Pesquisa multi-fonte na web via Wikipédia PT-BR e DuckDuckGo com parsing nativo.
+    Abre o navegador do celular apenas se open_browser=True ou se explicitamente solicitado.
     """
     clean_query = str(query).strip()
     if not clean_query:
         return {"status": "error", "message": "Termo de busca não especificado."}
 
+    # Verifica se o próprio texto da busca pede para abrir no navegador
+    should_open_browser = open_browser or any(
+        w in clean_query.lower() for w in ["abre no navegador", "abrir no navegador", "no chrome", "no browser"]
+    )
+
     encoded_query = urllib.parse.quote_plus(clean_query)
     search_url = f"https://www.google.com/search?q={encoded_query}"
 
+    # Simulação realista quando SIMULATE_HARDWARE=True
     if SIMULATE_HARDWARE:
-        return {
-            "status": "ok",
-            "message": f"Silva: Pesquisando '{clean_query}' no Google: {search_url} [Simulado]",
-            "data": {
-                "query": clean_query,
-                "url": search_url,
-                "snippet": None
+        if "turing" in clean_query.lower():
+            wiki_sim = {
+                "title": "Alan Turing",
+                "extract": (
+                    "Alan Mathison Turing (1912 - 1954) foi um matemático, cientista da computação, lógico, "
+                    "criptoanalista, filósofo e biólogo teórico britânico. Turing foi altamente influente no "
+                    "desenvolvimento da ciência da computação teórica, proporcionando uma formalização dos conceitos "
+                    "de algoritmo e computação com a máquina de Turing."
+                ),
+                "url": "https://pt.wikipedia.org/wiki/Alan_Turing"
             }
-        }
+            msg = (
+                f"Silva: Resultados da pesquisa para '{clean_query}':\n\n"
+                f"[Wikipédia - {wiki_sim['title']}]\n"
+                f"{wiki_sim['extract']}\n"
+                f"Fonte: {wiki_sim['url']}\n\n"
+                f"Link de busca: {search_url}"
+            )
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {
+                    "query": clean_query,
+                    "url": search_url,
+                    "wikipedia": wiki_sim,
+                    "results": [
+                        {"title": "Alan Turing - Wikipédia", "snippet": wiki_sim["extract"][:150], "url": wiki_sim["url"]}
+                    ],
+                    "opened_browser": False
+                }
+            }
+        elif not should_open_browser:
+            return {
+                "status": "ok",
+                "message": (
+                    f"Silva: Resultados da pesquisa para '{clean_query}':\n\n"
+                    f"1. {clean_query} - Informações e Notícias\n"
+                    f"Resultados e artigos informativos sobre {clean_query}.\n"
+                    f"Link: {search_url}"
+                ),
+                "data": {
+                    "query": clean_query,
+                    "url": search_url,
+                    "results": [{"title": clean_query, "snippet": f"Resultados para {clean_query}", "url": search_url}],
+                    "opened_browser": False
+                }
+            }
 
+    # Abre no navegador se solicitado
+    if should_open_browser:
+        try:
+            _run_termux_cmd(["am", "start", "-a", "android.intent.action.VIEW", "-d", search_url], timeout=6)
+        except Exception:
+            pass
+
+    # Cascata Multi-Fonte
+    # 1. Wikipédia PT-BR REST API
+    wiki_res = _fetch_wikipedia_summary(clean_query)
+
+    # 2. DuckDuckGo Instant Answer API
+    ddg_abstract = None
     try:
-        # Dispara Intent nativa para abrir no navegador padrão do Android
-        _run_termux_cmd(["am", "start", "-a", "android.intent.action.VIEW", "-d", search_url], timeout=6)
+        ddg_api_url = f"https://api.duckduckgo.com/?q={encoded_query}&format=json&no_html=1&skip_disambig=1"
+        req_api = urllib.request.Request(ddg_api_url, headers={"User-Agent": "SilvaAgent/1.0"})
+        with urllib.request.urlopen(req_api, timeout=3.0) as resp:
+            api_data = json.loads(resp.read().decode("utf-8"))
+            abs_text = api_data.get("AbstractText", "").strip()
+            if abs_text:
+                ddg_abstract = {
+                    "title": api_data.get("Heading", clean_query),
+                    "snippet": abs_text,
+                    "url": api_data.get("AbstractURL", search_url)
+                }
     except Exception:
         pass
 
-    # Resumo rápido para o chat web via DuckDuckGo HTML lite (best-effort, timeout 3s)
-    snippet = None
+    # 3. DuckDuckGo HTML Lite (POST com parser nativo)
+    web_results = []
     try:
-        ddg_url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
-        req = urllib.request.Request(
-            ddg_url,
+        ddg_html_url = "https://html.duckduckgo.com/html/"
+        post_data = urllib.parse.urlencode({"q": clean_query}).encode("utf-8")
+        req_html = urllib.request.Request(
+            ddg_html_url,
+            data=post_data,
             headers={
-                "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded"
             }
         )
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
+        with urllib.request.urlopen(req_html, timeout=4.0) as resp:
             content = resp.read().decode("utf-8", errors="ignore")
 
-        snippets = re.findall(r'class=[\"\'][^\"\']*result__snippet[^\"\']*[\"\'][^>]*>(.*?)</a>', content, re.DOTALL)
-        if not snippets:
-            snippets = re.findall(r'class=[\"\'][^\"\']*snippet[^\"\']*[\"\'][^>]*>(.*?)</(?:td|div|span|a)>', content, re.DOTALL)
+        parser = DuckDuckGoHTMLParser(max_results=3)
+        parser.feed(content)
+        web_results = parser.results
 
-        if snippets:
-            clean_snip = html.unescape(re.sub(r'<[^>]+>', '', snippets[0])).strip()
-            if clean_snip:
-                snippet = clean_snip[:280]
+        # Fallback de extração via regex caso a estrutura HTML mude
+        if not web_results:
+            raw_links = re.findall(r'<a\s+class="result__url"\s+href="([^"]+)"[^>]*>(.*?)</a>', content)
+            raw_snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', content, re.DOTALL)
+            for idx in range(min(3, len(raw_links), len(raw_snippets))):
+                url = raw_links[idx][0].strip()
+                title = re.sub(r'<[^>]+>', '', raw_links[idx][1]).strip()
+                snip = html.unescape(re.sub(r'<[^>]+>', '', raw_snippets[idx])).strip()
+                if title and url:
+                    web_results.append({"title": title, "snippet": snip, "url": url})
     except Exception:
-        snippet = None
+        pass
 
-    if snippet:
-        msg = f"Silva: Pesquisando '{clean_query}' no Google.\n\n💡 Resumo: {snippet}\n\n{search_url}"
-    else:
-        msg = f"Silva: Pesquisando '{clean_query}' no Google: {search_url}"
+    # Constrói mensagem final combinada
+    message_sections = [f"Silva: Resultados da pesquisa para '{clean_query}':"]
+
+    if wiki_res:
+        message_sections.append(
+            f"\n[Wikipédia - {wiki_res['title']}]\n"
+            f"{wiki_res['extract']}\n"
+            f"Fonte: {wiki_res['url']}"
+        )
+    elif ddg_abstract:
+        message_sections.append(
+            f"\n[Resumo]\n"
+            f"{ddg_abstract['snippet']}\n"
+            f"Fonte: {ddg_abstract['url']}"
+        )
+
+    if web_results:
+        message_sections.append("\nResultados na Web:")
+        for idx, item in enumerate(web_results, start=1):
+            message_sections.append(f"{idx}. {item['title']}\n   {item['snippet']}\n   Link: {item['url']}")
+
+    if not wiki_res and not ddg_abstract and not web_results:
+        if should_open_browser:
+            message_sections.append(f"\nPágina de resultados aberta no navegador:\n{search_url}")
+        else:
+            message_sections.append(f"\nConsulte os resultados completos no Google:\n{search_url}")
+
+    final_msg = "\n".join(message_sections)
 
     return {
         "status": "ok",
-        "message": msg,
+        "message": final_msg,
         "data": {
             "query": clean_query,
             "url": search_url,
-            "snippet": snippet
+            "wikipedia": wiki_res,
+            "results": web_results,
+            "opened_browser": should_open_browser
         }
     }
 
@@ -2517,6 +2957,169 @@ def none() -> Dict[str, Any]:
         ),
         "data": {}
     }
+
+
+def scan_wifi() -> Dict[str, Any]:
+    """
+    Escaneia e lista as redes Wi-Fi disponíveis nas proximidades,
+    exibindo SSID, nível de sinal (dBm e %), frequência (2.4 GHz ou 5 GHz),
+    tipo de segurança (WPA3, WPA2, Aberta) e identificação da rede conectada no momento.
+    """
+    if SIMULATE_HARDWARE:
+        simulated_networks = [
+            {
+                "ssid": "Silva_5G",
+                "bssid": "00:11:22:33:44:55",
+                "rssi": -45,
+                "quality_pct": 100,
+                "band": "5 GHz",
+                "security": "WPA2/WPA3",
+                "is_connected": True
+            },
+            {
+                "ssid": "Casa_2.4G",
+                "bssid": "aa:bb:cc:dd:ee:ff",
+                "rssi": -62,
+                "quality_pct": 76,
+                "band": "2.4 GHz",
+                "security": "WPA2",
+                "is_connected": False
+            },
+            {
+                "ssid": "Vizinho_Fibra",
+                "bssid": "12:34:56:78:9a:bc",
+                "rssi": -78,
+                "quality_pct": 44,
+                "band": "5 GHz",
+                "security": "WPA2",
+                "is_connected": False
+            }
+        ]
+        lines = [f"Silva: Redes Wi-Fi encontradas nas proximidades ({len(simulated_networks)}):"]
+        for idx, net in enumerate(simulated_networks, start=1):
+            conn_tag = " [Conectada]" if net["is_connected"] else ""
+            lines.append(
+                f"{idx}. {net['ssid']}{conn_tag} - Sinal: {net['quality_pct']}% ({net['rssi']} dBm) | {net['band']} | {net['security']}"
+            )
+
+        return {
+            "status": "ok",
+            "message": "\n".join(lines),
+            "data": {
+                "networks": simulated_networks,
+                "total_found": len(simulated_networks),
+                "connected_ssid": "Silva_5G"
+            }
+        }
+
+    # Modo Real Termux
+    try:
+        # 1. Identificar rede conectada atualmente
+        connected_bssid = ""
+        connected_ssid = ""
+        res_conn = _run_termux_cmd(["termux-wifi-connectioninfo"], timeout=6)
+        if res_conn.returncode == 0 and res_conn.stdout.strip():
+            try:
+                conn_info = json.loads(res_conn.stdout)
+                if isinstance(conn_info, dict):
+                    connected_bssid = conn_info.get("bssid", "") or ""
+                    connected_ssid = (conn_info.get("ssid", "") or "").strip('"')
+            except Exception:
+                pass
+
+        # 2. Escanear redes disponíveis
+        res_scan = _run_termux_cmd(["termux-wifi-scaninfo"], timeout=10)
+        if res_scan.returncode != 0:
+            return {
+                "status": "error",
+                "message": f"Silva: Falha ao escanear redes Wi-Fi via Termux: {res_scan.stderr.strip()}",
+                "data": {"networks": []}
+            }
+
+        raw_scan = res_scan.stdout.strip()
+        networks_data = json.loads(raw_scan) if raw_scan else []
+
+        if not networks_data:
+            return {
+                "status": "ok",
+                "message": (
+                    "Silva: Nenhuma rede Wi-Fi encontrada nas proximidades.\n\n"
+                    "Aviso: No Android 10+, o escaneamento de Wi-Fi exige que a Localização (GPS) "
+                    "do smartphone esteja ativada nas configurações do sistema."
+                ),
+                "data": {"networks": [], "total_found": 0, "warning": "gps_required"}
+            }
+
+        cleaned_networks = []
+        for net in networks_data:
+            ssid = str(net.get("ssid", "")).strip().strip('"')
+            if not ssid:
+                continue
+            bssid = str(net.get("bssid", "")).strip()
+            rssi = int(net.get("rssi", -100))
+            quality_pct = max(0, min(100, 2 * (rssi + 100)))
+
+            freq = int(net.get("frequency", 0))
+            band = "5 GHz" if freq >= 4900 else "2.4 GHz"
+
+            capabilities = str(net.get("capabilities", "")).upper()
+            if "WPA3" in capabilities or "SAE" in capabilities:
+                security = "WPA3"
+            elif "WPA2" in capabilities or "PSK" in capabilities:
+                security = "WPA2"
+            elif "WEP" in capabilities:
+                security = "WEP"
+            elif not capabilities or ("ESS" in capabilities and "WPA" not in capabilities):
+                security = "Aberta"
+            else:
+                security = "Protegida"
+
+            is_connected = False
+            if (connected_bssid and bssid and bssid.lower() == connected_bssid.lower()) or (connected_ssid and ssid == connected_ssid):
+                is_connected = True
+
+            cleaned_networks.append({
+                "ssid": ssid,
+                "bssid": bssid,
+                "rssi": rssi,
+                "quality_pct": quality_pct,
+                "band": band,
+                "security": security,
+                "is_connected": is_connected
+            })
+
+        if not cleaned_networks:
+            return {
+                "status": "ok",
+                "message": "Silva: Nenhuma rede Wi-Fi com identificador (SSID) público foi encontrada.",
+                "data": {"networks": [], "total_found": 0}
+            }
+
+        # Ordenar: conectada primeiro (se houver), depois por melhor sinal (rssi decrescente)
+        cleaned_networks.sort(key=lambda x: (not x["is_connected"], -x["rssi"]))
+
+        lines = [f"Silva: Redes Wi-Fi encontradas nas proximidades ({len(cleaned_networks)}):"]
+        for idx, net in enumerate(cleaned_networks, start=1):
+            conn_tag = " [Conectada]" if net["is_connected"] else ""
+            lines.append(
+                f"{idx}. {net['ssid']}{conn_tag} - Sinal: {net['quality_pct']}% ({net['rssi']} dBm) | {net['band']} | {net['security']}"
+            )
+
+        return {
+            "status": "ok",
+            "message": "\n".join(lines),
+            "data": {
+                "networks": cleaned_networks,
+                "total_found": len(cleaned_networks),
+                "connected_ssid": connected_ssid
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Silva: Erro ao escanear Wi-Fi: {str(e)}",
+            "data": {"networks": []}
+        }
 
 
 def _clean_ride_destination(raw_dest: str) -> str:
@@ -2961,7 +3564,8 @@ def list_capabilities() -> Dict[str, Any]:
         "• Comida: \"peça uma pizza no iFood\" ou \"busca açaí no 99 food\"\n\n"
         "🧠 **Memória & Utilidades:**\n"
         "• Memória Offline: \"lembra que guardei a chave na gaveta\" ou \"onde guardei a chave?\"\n"
-        "• Calculadora: \"quanto é 350 * 12?\"\n"
+        "• Wi-Fi: \"quais wifis tem por perto?\" ou \"escanear redes wifi\"\n"
+        "• Calculadora: \"quanto é 350 * 12?\" ou \"raiz quadrada de 144\"\n"
         "• Humor: \"conta uma piada\"\n"
         "• Multi-Ações: \"liga a lanterna e ajusta o volume em 80%\""
     )
@@ -2970,7 +3574,7 @@ def list_capabilities() -> Dict[str, Any]:
         "message": text,
         "data": {
             "categories": [
-                "system", "media", "telephony", "apps", "time", "location", "transport", "utilities"
+                "system", "media", "telephony", "apps", "time", "location", "transport", "utilities", "network"
             ]
         }
     }
@@ -3011,6 +3615,7 @@ AVAILABLE_TOOLS = {
     "order_food": order_food,
     "install_app": install_app,
     "media_control": media_control,
+    "scan_wifi": scan_wifi,
     "list_capabilities": list_capabilities,
     "none": none,
 }

@@ -5460,3 +5460,284 @@
 {"prompt": "silva vai fazer frio amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
 {"prompt": "previsao do tempo p/ depois de amn a noite pfvr", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"noite\", location=\"\")</call>"}
 {"prompt": "ei silva como fica o tempo no domingo de manha?", "completion": "<call>get_weather(day=\"domingo\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "silva ve as redes wifi q tem aqui perto pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "lista os wi-fi disponiveis nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva escaneia os wifi q ta rolando aqui agr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais redes wi-fi tem por perto p/ eu conectar", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva faz um scan dos wifis disponiveis blz", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "mostra td as rede wifi q ta pegando aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva da uma olhada nos wi-fi disponiveis perto de mim", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "escaneia as redes sem fio disponiveis pfvr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva quais wifi tem aqui nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "faz um scan de wi-fi p/ mim agr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva lista td as redes wifi q vc acha aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quero ver os wifi disponiveis nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva escaneia os wifi perto de mim pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "mostra as redes wi-fi q ta disponivel aqui perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva faz o scan das redes wifi disponiveis", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "lista os wifi disponiveis p/ conexao pfvr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva ve quais redes sem fio ta pegando aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "escaneia td as rede wifi disponiveis ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva queria ver os wifi q tem perto daqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "faz um scan de redes wi-fi nas proximidades blz", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva mostra pra mim as redes wifi disponiveis", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais as redes wifi q ta disponivel aqui perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva da um scan nos wifi p/ eu ver", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "lista td os wifi disponiveis nas proximidades pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva escaneia as redes wifi q tem aqui agr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "mostra os wi-fi disponiveis aqui ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva faz um scan das redes sem fio disponiveis", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ve os wifi disponiveis p/ conectar pfvr silva", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "escaneia td as redes wi-fi q ta rolando aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva lista as redes wifi disponiveis nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva quanto e a raiz quadrada de 256 menos 10", "completion": "<call>calculate(expression=\"sqrt(256) - 10\")</call>"}
+{"prompt": "calcula 18% de 1250 p/ mim pfv", "completion": "<call>calculate(expression=\"(18 / 100) * 1250\")</call>"}
+{"prompt": "ei silva quanto da 6 fatorial dividido por 12", "completion": "<call>calculate(expression=\"factorial(6) / 12\")</call>"}
+{"prompt": "quanto e 2500 com desconto de 15% silva", "completion": "<call>calculate(expression=\"2500 * (1 - 15 / 100)\")</call>"}
+{"prompt": "calcula o log10 de 1000 mais 50 pfvr", "completion": "<call>calculate(expression=\"log10(1000) + 50\")</call>"}
+{"prompt": "silva quanto e 2 elevado a 10 menos 100", "completion": "<call>calculate(expression=\"2**10 - 100\")</call>"}
+{"prompt": "calcula o seno de 30 graus vezes 10", "completion": "<call>calculate(expression=\"sin(30 * pi / 180) * 10\")</call>"}
+{"prompt": "ei silva quanto da 750 com aumento de 8%", "completion": "<call>calculate(expression=\"750 * (1 + 8 / 100)\")</call>"}
+{"prompt": "calcula a raiz quadrada de 2 vezes 100 pfv silva", "completion": "<call>calculate(expression=\"sqrt(2) * 100\")</call>"}
+{"prompt": "quanto e 4 fatorial mais 3 elevado a 3", "completion": "<call>calculate(expression=\"factorial(4) + 3**3\")</call>"}
+{"prompt": "silva quanto da 12% de 4800", "completion": "<call>calculate(expression=\"(12 / 100) * 4800\")</call>"}
+{"prompt": "calcula o cosseno de 60 graus vezes 50 pfvr", "completion": "<call>calculate(expression=\"cos(60 * pi / 180) * 50\")</call>"}
+{"prompt": "ei silva quanto e 3 elevado a 4 dividido por 9", "completion": "<call>calculate(expression=\"3**4 / 9\")</call>"}
+{"prompt": "calcula 35% de 920 p/ mim blz", "completion": "<call>calculate(expression=\"(35 / 100) * 920\")</call>"}
+{"prompt": "silva quanto da a raiz quadrada de 625 mais 15", "completion": "<call>calculate(expression=\"sqrt(625) + 15\")</call>"}
+{"prompt": "quanto e 7 fatorial dividido por 5 fatorial", "completion": "<call>calculate(expression=\"factorial(7) / factorial(5)\")</call>"}
+{"prompt": "ei silva calcula 1800 com desconto de 25%", "completion": "<call>calculate(expression=\"1800 * (1 - 25 / 100)\")</call>"}
+{"prompt": "calcula log10 de 10000 menos 3 pfvr silva", "completion": "<call>calculate(expression=\"log10(10000) - 3\")</call>"}
+{"prompt": "quanto da 5 elevado a 3 mais 2 elevado a 5", "completion": "<call>calculate(expression=\"5**3 + 2**5\")</call>"}
+{"prompt": "silva quanto e 22% de 3500", "completion": "<call>calculate(expression=\"(22 / 100) * 3500\")</call>"}
+{"prompt": "calcula a raiz quadrada de 169 vezes 4 pfv", "completion": "<call>calculate(expression=\"sqrt(169) * 4\")</call>"}
+{"prompt": "ei silva quanto da 8 fatorial dividido por 6 fatorial", "completion": "<call>calculate(expression=\"factorial(8) / factorial(6)\")</call>"}
+{"prompt": "calcula o seno de 45 graus vezes 20 pfvr silva", "completion": "<call>calculate(expression=\"sin(45 * pi / 180) * 20\")</call>"}
+{"prompt": "quanto e 4500 com aumento de 12% silva", "completion": "<call>calculate(expression=\"4500 * (1 + 12 / 100)\")</call>"}
+{"prompt": "calcula 9% de 7800 p/ mim pfv", "completion": "<call>calculate(expression=\"(9 / 100) * 7800\")</call>"}
+{"prompt": "ei silva quanto da a raiz quadrada de 400 dividido por 5", "completion": "<call>calculate(expression=\"sqrt(400) / 5\")</call>"}
+{"prompt": "calcula o cosseno de 30 graus vezes 100 pfvr", "completion": "<call>calculate(expression=\"cos(30 * pi / 180) * 100\")</call>"}
+{"prompt": "silva quanto e 2 elevado a 8 dividido por 4", "completion": "<call>calculate(expression=\"2**8 / 4\")</call>"}
+{"prompt": "calcula 45% de 620 p/ mim blz silva", "completion": "<call>calculate(expression=\"(45 / 100) * 620\")</call>"}
+{"prompt": "quanto da 6 elevado a 2 menos a raiz quadrada de 81", "completion": "<call>calculate(expression=\"6**2 - sqrt(81)\")</call>"}
+{"prompt": "silva ve os wifi q tem aqui perto pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "escaneia as redes wi-fi disponiveis nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva lista os wifi disponiveis p/ conectar agr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais redes sem fio ta pegando aqui perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva faz um scan dos wi-fi disponiveis blz", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "mostra td as redes wifi q tem aqui ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva da uma escaneada nos wifi perto de mim", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "lista os wi-fi disponiveis p/ conexao pfvr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva quais redes wifi tem nas proximidades agr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "faz um scan de redes sem fio p/ mim pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva ve td as redes wifi q vc encontra aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quero ver os wifi disponiveis aqui perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva escaneia os wi-fi ao redor pfvr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "mostra as redes wifi q ta disponivel nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva faz o scan das redes wi-fi disponiveis", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "lista os wifi disponiveis aqui p/ conectar pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva ve quais redes sem fio ta rolando aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "escaneia td as redes wifi disponiveis ao redor pfvr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva queria ver os wifi q tem por aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "faz um scan de wi-fi nas proximidades blz", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva mostra as redes wifi disponiveis p/ mim", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais as redes wifi q ta disponivel aqui ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva da um scan nos wifi p/ eu ver pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "lista td os wifi disponiveis nas proximidades blz", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva escaneia as redes wi-fi q tem aqui agr pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "mostra os wi-fi disponiveis aqui perto pfvr", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva faz um scan das redes sem fio aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ve os wifi disponiveis p/ conectar pfvr silva", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "escaneia td as redes wi-fi q ta pegando aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva lista as redes wifi disponiveis aqui ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva quanto e a raiz quadrada de 196 mais 20", "completion": "<call>calculate(expression=\"sqrt(196) + 20\")</call>"}
+{"prompt": "calcula 27% de 1450 p/ mim pfv", "completion": "<call>calculate(expression=\"(27 / 100) * 1450\")</call>"}
+{"prompt": "ei silva quanto da 7 fatorial dividido por 14", "completion": "<call>calculate(expression=\"factorial(7) / 14\")</call>"}
+{"prompt": "quanto e 3200 com desconto de 18% silva", "completion": "<call>calculate(expression=\"3200 * (1 - 18 / 100)\")</call>"}
+{"prompt": "calcula o log10 de 100 mais 75 pfvr", "completion": "<call>calculate(expression=\"log10(100) + 75\")</call>"}
+{"prompt": "silva quanto e 3 elevado a 5 menos 200", "completion": "<call>calculate(expression=\"3**5 - 200\")</call>"}
+{"prompt": "calcula o seno de 60 graus vezes 15", "completion": "<call>calculate(expression=\"sin(60 * pi / 180) * 15\")</call>"}
+{"prompt": "ei silva quanto da 980 com aumento de 7%", "completion": "<call>calculate(expression=\"980 * (1 + 7 / 100)\")</call>"}
+{"prompt": "calcula a raiz quadrada de 3 vezes 50 pfv silva", "completion": "<call>calculate(expression=\"sqrt(3) * 50\")</call>"}
+{"prompt": "quanto e 5 fatorial mais 2 elevado a 4", "completion": "<call>calculate(expression=\"factorial(5) + 2**4\")</call>"}
+{"prompt": "silva quanto da 16% de 5400", "completion": "<call>calculate(expression=\"(16 / 100) * 5400\")</call>"}
+{"prompt": "calcula o cosseno de 45 graus vezes 80 pfvr", "completion": "<call>calculate(expression=\"cos(45 * pi / 180) * 80\")</call>"}
+{"prompt": "ei silva quanto e 4 elevado a 3 dividido por 8", "completion": "<call>calculate(expression=\"4**3 / 8\")</call>"}
+{"prompt": "calcula 38% de 1250 p/ mim blz", "completion": "<call>calculate(expression=\"(38 / 100) * 1250\")</call>"}
+{"prompt": "silva quanto da a raiz quadrada de 729 mais 11", "completion": "<call>calculate(expression=\"sqrt(729) + 11\")</call>"}
+{"prompt": "quanto e 9 fatorial dividido por 7 fatorial", "completion": "<call>calculate(expression=\"factorial(9) / factorial(7)\")</call>"}
+{"prompt": "ei silva calcula 2400 com desconto de 30%", "completion": "<call>calculate(expression=\"2400 * (1 - 30 / 100)\")</call>"}
+{"prompt": "calcula log10 de 100000 menos 8 pfvr silva", "completion": "<call>calculate(expression=\"log10(100000) - 8\")</call>"}
+{"prompt": "quanto da 6 elevado a 3 mais 3 elevado a 4", "completion": "<call>calculate(expression=\"6**3 + 3**4\")</call>"}
+{"prompt": "silva quanto e 31% de 2800", "completion": "<call>calculate(expression=\"(31 / 100) * 2800\")</call>"}
+{"prompt": "calcula a raiz quadrada de 225 vezes 6 pfv", "completion": "<call>calculate(expression=\"sqrt(225) * 6\")</call>"}
+{"prompt": "ei silva quanto da 10 fatorial dividido por 8 fatorial", "completion": "<call>calculate(expression=\"factorial(10) / factorial(8)\")</call>"}
+{"prompt": "calcula o seno de 90 graus vezes 25 pfvr silva", "completion": "<call>calculate(expression=\"sin(90 * pi / 180) * 25\")</call>"}
+{"prompt": "quanto e 5600 com aumento de 9% silva", "completion": "<call>calculate(expression=\"5600 * (1 + 9 / 100)\")</call>"}
+{"prompt": "calcula 11% de 9500 p/ mim pfv", "completion": "<call>calculate(expression=\"(11 / 100) * 9500\")</call>"}
+{"prompt": "ei silva quanto da a raiz quadrada de 484 dividido por 2", "completion": "<call>calculate(expression=\"sqrt(484) / 2\")</call>"}
+{"prompt": "calcula o cosseno de 90 graus vezes 60 pfvr", "completion": "<call>calculate(expression=\"cos(90 * pi / 180) * 60\")</call>"}
+{"prompt": "silva quanto e 3 elevado a 6 dividido por 9", "completion": "<call>calculate(expression=\"3**6 / 9\")</call>"}
+{"prompt": "calcula 42% de 750 p/ mim blz silva", "completion": "<call>calculate(expression=\"(42 / 100) * 750\")</call>"}
+{"prompt": "quanto da 7 elevado a 2 menos a raiz quadrada de 144", "completion": "<call>calculate(expression=\"7**2 - sqrt(144)\")</call>"}
+{"prompt": "silva tem como vc ver os wifi q pega aq no meu ap", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "da um jeito de listar as redes sem fio q tem aq vlw", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva faz aquela parada de escanear wifi p/ mim", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "preciso saber quais wi-fi ta no alcance do celular", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva roda o scan de rede sem fio q eu quero ver", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais os pontos de acesso wifi tem nos arredores", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva deteca as redes wifi disponiveis p/ conexao", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "faz a varredura dos wi-fi q ta pegando aq pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva mapeia os wifi disponiveis na minha area", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "me fala quais redes sem fio da p/ conectar aq", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva procura as rede wifi q tem perto daq", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "queria q vc buscasse os wifi disponiveis ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva executa a busca de redes wifi nas redondezas", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais as opcoes de wi-fi q ta no alcance aq", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva roda a deteccao de wifi p/ eu ver", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "descobre q redes wifi ta disponivel aq p/ mim", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva faz a busca das redes sem fio aqui perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais wifi posso conectar aq nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva verifica as redes wifi q ta no meu raio", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "me mostra os pontos wifi q ta ativo aq perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva localiza as redes wifi disponiveis ao meu redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "faz a varredura das redes sem fio aq pfvr silva", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais as rede wifi q ta funcionando aq perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva procura wifi p/ conectar aq nas proximidades", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quero a relacao de wifi disponiveis aq no local", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva faz a leitura das redes wifi disponiveis aq", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "quais ssid de wifi ta aparecendo aq p/ mim", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "ei silva localiza os wifi q tem nas redondezas pfv", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "roda a busca de rede sem fio nas proximidades blz", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva ve os pontos de acesso wifi q ta ativo aq", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva calcula pra mim a area de um circulo c/ raio 7", "completion": "<call>calculate(expression=\"pi * 7**2\")</call>"}
+{"prompt": "quanto e a hipotenusa de um triangulo c/ catetos 3 e 4", "completion": "<call>calculate(expression=\"sqrt(3**2 + 4**2)\")</call>"}
+{"prompt": "ei silva quanto da 15 fatorial dividido por 13 fatorial", "completion": "<call>calculate(expression=\"factorial(15) / factorial(13)\")</call>"}
+{"prompt": "calcula a media entre 45 62 78 e 90 p/ mim", "completion": "<call>calculate(expression=\"(45 + 62 + 78 + 90) / 4\")</call>"}
+{"prompt": "silva quanto e 12% de 7500 mais 350", "completion": "<call>calculate(expression=\"(12 / 100) * 7500 + 350\")</call>"}
+{"prompt": "calcula o valor de 2 elevado a 0.5 vezes 100", "completion": "<call>calculate(expression=\"2**0.5 * 100\")</call>"}
+{"prompt": "ei silva quanto da a tangente de 45 graus", "completion": "<call>calculate(expression=\"sin(45 * pi / 180) / cos(45 * pi / 180)\")</call>"}
+{"prompt": "calcula o montante de 5000 a 2% ao mes por 6 meses", "completion": "<call>calculate(expression=\"5000 * (1 + 2 / 100)**6\")</call>"}
+{"prompt": "silva quanto e a raiz cubica de 27 vezes 4", "completion": "<call>calculate(expression=\"27**(1/3) * 4\")</call>"}
+{"prompt": "calcula o desconto de 35% sobre 1280 pfvr silva", "completion": "<call>calculate(expression=\"1280 * (1 - 35 / 100)\")</call>"}
+{"prompt": "ei silva quanto da 11 elevado a 2 menos 9 elevado a 2", "completion": "<call>calculate(expression=\"11**2 - 9**2\")</call>"}
+{"prompt": "calcula o log10 de 5000 arredondado p/ 2 casas", "completion": "<call>calculate(expression=\"round(log10(5000), 2)\")</call>"}
+{"prompt": "silva quanto e a soma dos quadrados de 1 a 10", "completion": "<call>calculate(expression=\"sum(i**2 for i in range(1, 11))\")</call>"}
+{"prompt": "calcula juros simples de 2000 a 3% por 8 meses", "completion": "<call>calculate(expression=\"2000 * (3 / 100) * 8\")</call>"}
+{"prompt": "ei silva quanto da o seno de 30 graus ao quadrado", "completion": "<call>calculate(expression=\"sin(30 * pi / 180)**2\")</call>"}
+{"prompt": "calcula a diferenca entre 8 fatorial e 7 fatorial", "completion": "<call>calculate(expression=\"factorial(8) - factorial(7)\")</call>"}
+{"prompt": "silva quanto e 18% de 2500 mais 14% de 1800", "completion": "<call>calculate(expression=\"(18 / 100) * 2500 + (14 / 100) * 1800\")</call>"}
+{"prompt": "calcula a raiz quadrada de 1024 dividido por 4 pfv", "completion": "<call>calculate(expression=\"sqrt(1024) / 4\")</call>"}
+{"prompt": "ei silva quanto da 5 elevado a 4 dividido por 25", "completion": "<call>calculate(expression=\"5**4 / 25\")</call>"}
+{"prompt": "calcula o cosseno de 45 graus ao quadrado vezes 200", "completion": "<call>calculate(expression=\"cos(45 * pi / 180)**2 * 200\")</call>"}
+{"prompt": "silva quanto e a media ponderada de 7 8 e 9 c/ pesos 2 3 e 5", "completion": "<call>calculate(expression=\"(7*2 + 8*3 + 9*5) / (2 + 3 + 5)\")</call>"}
+{"prompt": "calcula 3 elevado a 7 dividido por 3 elevado a 4", "completion": "<call>calculate(expression=\"3**7 / 3**4\")</call>"}
+{"prompt": "ei silva quanto da 40% de 3750 menos 15% de 2000", "completion": "<call>calculate(expression=\"(40 / 100) * 3750 - (15 / 100) * 2000\")</call>"}
+{"prompt": "calcula o volume de uma esfera c/ raio 5 pfvr silva", "completion": "<call>calculate(expression=\"(4/3) * pi * 5**3\")</call>"}
+{"prompt": "quanto e 13 fatorial dividido por 11 fatorial silva", "completion": "<call>calculate(expression=\"factorial(13) / factorial(11)\")</call>"}
+{"prompt": "calcula a expressao 2 vezes 3 mais 4 vezes 5 menos 6", "completion": "<call>calculate(expression=\"2*3 + 4*5 - 6\")</call>"}
+{"prompt": "ei silva quanto da a raiz quadrada de 2 vezes a raiz de 8", "completion": "<call>calculate(expression=\"sqrt(2) * sqrt(8)\")</call>"}
+{"prompt": "calcula o valor futuro de 3000 a 1.5% ao mes por 12 meses", "completion": "<call>calculate(expression=\"3000 * (1 + 1.5 / 100)**12\")</call>"}
+{"prompt": "silva quanto e 65% de 480 mais 25% de 320", "completion": "<call>calculate(expression=\"(65 / 100) * 480 + (25 / 100) * 320\")</call>"}
+{"prompt": "calcula a soma de 1/2 mais 1/3 mais 1/6 pfvr", "completion": "<call>calculate(expression=\"1/2 + 1/3 + 1/6\")</call>"}
+{"prompt": "silva quanto e 17% de 4300 mais 8% de 2100", "completion": "<call>calculate(expression=\"(17 / 100) * 4300 + (8 / 100) * 2100\")</call>"}
+{"prompt": "calcula a raiz quadrada de 576 dividido por 3 pfv", "completion": "<call>calculate(expression=\"sqrt(576) / 3\")</call>"}
+{"prompt": "ei silva quanto da 9 elevado a 3 menos 7 elevado a 3", "completion": "<call>calculate(expression=\"9**3 - 7**3\")</call>"}
+{"prompt": "calcula o log10 de 2500 mais log10 de 400", "completion": "<call>calculate(expression=\"log10(2500) + log10(400)\")</call>"}
+{"prompt": "silva quanto e 14 fatorial dividido por 12 fatorial", "completion": "<call>calculate(expression=\"factorial(14) / factorial(12)\")</call>"}
+{"prompt": "calcula o seno de 30 graus mais o cosseno de 60 graus", "completion": "<call>calculate(expression=\"sin(30 * pi / 180) + cos(60 * pi / 180)\")</call>"}
+{"prompt": "ei silva quanto da 2500 com desconto de 22%", "completion": "<call>calculate(expression=\"2500 * (1 - 22 / 100)\")</call>"}
+{"prompt": "calcula a area de um triangulo c/ base 12 e altura 9", "completion": "<call>calculate(expression=\"(12 * 9) / 2\")</call>"}
+{"prompt": "silva quanto e a raiz quadrada de 1225 mais 35", "completion": "<call>calculate(expression=\"sqrt(1225) + 35\")</call>"}
+{"prompt": "calcula 6 elevado a 4 dividido por 12 pfvr silva", "completion": "<call>calculate(expression=\"6**4 / 12\")</call>"}
+{"prompt": "ei silva quanto da 28% de 6400", "completion": "<call>calculate(expression=\"(28 / 100) * 6400\")</call>"}
+{"prompt": "calcula o montante de 8000 a 1.2% ao mes por 10 meses", "completion": "<call>calculate(expression=\"8000 * (1 + 1.2 / 100)**10\")</call>"}
+{"prompt": "silva quanto e a tangente de 60 graus vezes 50", "completion": "<call>calculate(expression=\"(sin(60 * pi / 180) / cos(60 * pi / 180)) * 50\")</call>"}
+{"prompt": "calcula a media entre 120 135 148 e 160 pfv", "completion": "<call>calculate(expression=\"(120 + 135 + 148 + 160) / 4\")</call>"}
+{"prompt": "ei silva quanto da 4 elevado a 5 dividido por 16", "completion": "<call>calculate(expression=\"4**5 / 16\")</call>"}
+{"prompt": "calcula 33% de 1800 mais 12% de 2500 pfvr silva", "completion": "<call>calculate(expression=\"(33 / 100) * 1800 + (12 / 100) * 2500\")</call>"}
+{"prompt": "silva quanto e a raiz cubica de 64 vezes 5", "completion": "<call>calculate(expression=\"64**(1/3) * 5\")</call>"}
+{"prompt": "calcula o juro simples de 4500 a 2.5% por 12 meses", "completion": "<call>calculate(expression=\"4500 * (2.5 / 100) * 12\")</call>"}
+{"prompt": "ei silva quanto da o cosseno de 30 graus ao quadrado", "completion": "<call>calculate(expression=\"cos(30 * pi / 180)**2\")</call>"}
+{"prompt": "calcula a soma dos quadrados de 1 ate 15 pfv", "completion": "<call>calculate(expression=\"sum(i**2 for i in range(1, 16))\")</call>"}
+{"prompt": "silva quanto e 2 elevado a 12 menos 2 elevado a 10", "completion": "<call>calculate(expression=\"2**12 - 2**10\")</call>"}
+{"prompt": "calcula 19% de 3200 menos 7% de 1500", "completion": "<call>calculate(expression=\"(19 / 100) * 3200 - (7 / 100) * 1500\")</call>"}
+{"prompt": "ei silva quanto da a raiz quadrada de 289 vezes 6", "completion": "<call>calculate(expression=\"sqrt(289) * 6\")</call>"}
+{"prompt": "calcula o log10 de 1000000 menos 15 pfvr silva", "completion": "<call>calculate(expression=\"log10(1000000) - 15\")</call>"}
+{"prompt": "silva quanto e 25 fatorial dividido por 23 fatorial", "completion": "<call>calculate(expression=\"factorial(25) / factorial(23)\")</call>"}
+{"prompt": "calcula o volume de um cubo c/ aresta 7 pfv", "completion": "<call>calculate(expression=\"7**3\")</call>"}
+{"prompt": "ei silva quanto da 3 elevado a 8 dividido por 27", "completion": "<call>calculate(expression=\"3**8 / 27\")</call>"}
+{"prompt": "calcula 48% de 1250 pfvr silva", "completion": "<call>calculate(expression=\"(48 / 100) * 1250\")</call>"}
+{"prompt": "silva quanto e a media ponderada de 6 7 8 e 9 c/ pesos 1 2 3 e 4", "completion": "<call>calculate(expression=\"(6*1 + 7*2 + 8*3 + 9*4) / (1 + 2 + 3 + 4)\")</call>"}
+{"prompt": "calcula a expressao 5 vezes 6 mais 7 vezes 8 menos 9", "completion": "<call>calculate(expression=\"5*6 + 7*8 - 9\")</call>"}
+{"prompt": "ei silva quanto da 15% de 4800 mais 20% de 3600", "completion": "<call>calculate(expression=\"(15 / 100) * 4800 + (20 / 100) * 3600\")</call>"}
+{"prompt": "calcula a raiz quadrada de 441 dividido por 7 pfv", "completion": "<call>calculate(expression=\"sqrt(441) / 7\")</call>"}
+{"prompt": "silva quanto e 7 elevado a 4 dividido por 49", "completion": "<call>calculate(expression=\"7**4 / 49\")</call>"}
+{"prompt": "calcula o seno de 45 graus vezes o cosseno de 45 graus", "completion": "<call>calculate(expression=\"sin(45 * pi / 180) * cos(45 * pi / 180)\")</call>"}
+{"prompt": "ei silva quanto da 3600 com aumento de 18%", "completion": "<call>calculate(expression=\"3600 * (1 + 18 / 100)\")</call>"}
+{"prompt": "calcula a hipotenusa de um triangulo c/ catetos 6 e 8", "completion": "<call>calculate(expression=\"sqrt(6**2 + 8**2)\")</call>"}
+{"prompt": "silva quanto e 16 fatorial dividido por 14 fatorial", "completion": "<call>calculate(expression=\"factorial(16) / factorial(14)\")</call>"}
+{"prompt": "calcula 27% de 5600 menos 9% de 2800 pfvr", "completion": "<call>calculate(expression=\"(27 / 100) * 5600 - (9 / 100) * 2800\")</call>"}
+{"prompt": "ei silva quanto da a raiz quadrada de 169 mais a raiz de 256", "completion": "<call>calculate(expression=\"sqrt(169) + sqrt(256)\")</call>"}
+{"prompt": "calcula o valor presente de 10000 a 2% ao mes por 8 meses", "completion": "<call>calculate(expression=\"10000 / (1 + 2 / 100)**8\")</call>"}
+{"prompt": "silva quanto e 8 elevado a 3 mais 4 elevado a 4", "completion": "<call>calculate(expression=\"8**3 + 4**4\")</call>"}
+{"prompt": "calcula o log10 de 8000 arredondado p/ 3 casas", "completion": "<call>calculate(expression=\"round(log10(8000), 3)\")</call>"}
+{"prompt": "ei silva quanto da 52% de 2100 mais 38% de 1500", "completion": "<call>calculate(expression=\"(52 / 100) * 2100 + (38 / 100) * 1500\")</call>"}
+{"prompt": "calcula a area de um circulo c/ diametro 14 pfvr", "completion": "<call>calculate(expression=\"pi * (14 / 2)**2\")</call>"}
+{"prompt": "silva quanto e 11 fatorial dividido por 9 fatorial", "completion": "<call>calculate(expression=\"factorial(11) / factorial(9)\")</call>"}
+{"prompt": "calcula 5 elevado a 5 dividido por 25 pfvr silva", "completion": "<call>calculate(expression=\"5**5 / 25\")</call>"}
+{"prompt": "ei silva quanto da 72% de 450 menos 18% de 900", "completion": "<call>calculate(expression=\"(72 / 100) * 450 - (18 / 100) * 900\")</call>"}
+{"prompt": "calcula a soma dos cubos de 1 ate 6 pfv", "completion": "<call>calculate(expression=\"sum(i**3 for i in range(1, 7))\")</call>"}
+{"prompt": "silva quanto e a raiz quadrada de 2 vezes a raiz de 18", "completion": "<call>calculate(expression=\"sqrt(2) * sqrt(18)\")</call>"}
+{"prompt": "calcula 3 elevado a 2 mais 4 elevado a 2 mais 5 elevado a 2", "completion": "<call>calculate(expression=\"3**2 + 4**2 + 5**2\")</call>"}
+{"prompt": "ei silva quanto da 42% de 3800", "completion": "<call>calculate(expression=\"(42 / 100) * 3800\")</call>"}
+{"prompt": "calcula o juro composto de 2500 a 3% ao mes por 4 meses", "completion": "<call>calculate(expression=\"2500 * (1 + 3 / 100)**4 - 2500\")</call>"}
+{"prompt": "silva quanto e a tangente de 30 graus vezes 100", "completion": "<call>calculate(expression=\"(sin(30 * pi / 180) / cos(30 * pi / 180)) * 100\")</call>"}
+{"prompt": "calcula a diferenca entre 10 elevado a 3 e 9 elevado a 3", "completion": "<call>calculate(expression=\"10**3 - 9**3\")</call>"}
+{"prompt": "ei silva quanto da a media entre 87 92 78 95 e 88", "completion": "<call>calculate(expression=\"(87 + 92 + 78 + 95 + 88) / 5\")</call>"}
+{"prompt": "calcula 6 elevado a 3 dividido por 9 mais 12 pfvr", "completion": "<call>calculate(expression=\"6**3 / 9 + 12\")</call>"}
+{"prompt": "silva quanto e 64% de 2500 menos 27% de 1200", "completion": "<call>calculate(expression=\"(64 / 100) * 2500 - (27 / 100) * 1200\")</call>"}
+{"prompt": "calcula a raiz quadrada de 900 dividido por 6 pfv silva", "completion": "<call>calculate(expression=\"sqrt(900) / 6\")</call>"}
+{"prompt": "ei silva quanto da 2 elevado a 15 dividido por 2 elevado a 10", "completion": "<call>calculate(expression=\"2**15 / 2**10\")</call>"}
+{"prompt": "calcula o cosseno de 60 graus menos o seno de 30 graus", "completion": "<call>calculate(expression=\"cos(60 * pi / 180) - sin(30 * pi / 180)\")</call>"}
+{"prompt": "silva quanto e 17 fatorial dividido por 15 fatorial mais 5", "completion": "<call>calculate(expression=\"factorial(17) / factorial(15) + 5\")</call>"}
+{"prompt": "silva quanto e 23% de 7800 mais 14% de 4200", "completion": "<call>calculate(expression=\"(23 / 100) * 7800 + (14 / 100) * 4200\")</call>"}
+{"prompt": "calcula a raiz quadrada de 1156 dividido por 4 pfv", "completion": "<call>calculate(expression=\"sqrt(1156) / 4\")</call>"}
+{"prompt": "ei silva quanto da 8 elevado a 4 dividido por 64", "completion": "<call>calculate(expression=\"8**4 / 64\")</call>"}
+{"prompt": "calcula o log10 de 4500 mais log10 de 200", "completion": "<call>calculate(expression=\"log10(4500) + log10(200)\")</call>"}
+{"prompt": "silva quanto e 19 fatorial dividido por 17 fatorial", "completion": "<call>calculate(expression=\"factorial(19) / factorial(17)\")</call>"}
+{"prompt": "calcula o seno de 60 graus mais o cosseno de 30 graus", "completion": "<call>calculate(expression=\"sin(60 * pi / 180) + cos(30 * pi / 180)\")</call>"}
+{"prompt": "ei silva quanto da 7800 com desconto de 27%", "completion": "<call>calculate(expression=\"7800 * (1 - 27 / 100)\")</call>"}
+{"prompt": "calcula a area de um trapezio c/ bases 10 e 16 e altura 8", "completion": "<call>calculate(expression=\"((10 + 16) / 2) * 8\")</call>"}
+{"prompt": "silva quanto e a raiz quadrada de 1764 mais 42", "completion": "<call>calculate(expression=\"sqrt(1764) + 42\")</call>"}
+{"prompt": "calcula 7 elevado a 3 dividido por 49 pfvr silva", "completion": "<call>calculate(expression=\"7**3 / 49\")</call>"}
+{"prompt": "ei silva quanto da 36% de 9500", "completion": "<call>calculate(expression=\"(36 / 100) * 9500\")</call>"}
+{"prompt": "calcula o montante de 12000 a 0.8% ao mes por 18 meses", "completion": "<call>calculate(expression=\"12000 * (1 + 0.8 / 100)**18\")</call>"}
+{"prompt": "silva quanto e a tangente de 45 graus vezes 80", "completion": "<call>calculate(expression=\"(sin(45 * pi / 180) / cos(45 * pi / 180)) * 80\")</call>"}
+{"prompt": "calcula a media entre 210 245 198 e 227 pfv", "completion": "<call>calculate(expression=\"(210 + 245 + 198 + 227) / 4\")</call>"}
+{"prompt": "ei silva quanto da 9 elevado a 4 dividido por 81", "completion": "<call>calculate(expression=\"9**4 / 81\")</call>"}
+{"prompt": "calcula 47% de 2400 mais 13% de 3600 pfvr silva", "completion": "<call>calculate(expression=\"(47 / 100) * 2400 + (13 / 100) * 3600\")</call>"}
+{"prompt": "silva quanto e a raiz cubica de 125 vezes 7", "completion": "<call>calculate(expression=\"125**(1/3) * 7\")</call>"}
+{"prompt": "calcula o juro simples de 6800 a 1.8% por 15 meses", "completion": "<call>calculate(expression=\"6800 * (1.8 / 100) * 15\")</call>"}
+{"prompt": "ei silva quanto da o seno de 60 graus ao quadrado", "completion": "<call>calculate(expression=\"sin(60 * pi / 180)**2\")</call>"}
+{"prompt": "calcula a soma dos quadrados de 1 ate 20 pfv", "completion": "<call>calculate(expression=\"sum(i**2 for i in range(1, 21))\")</call>"}
+{"prompt": "silva quanto e 3 elevado a 10 menos 3 elevado a 8", "completion": "<call>calculate(expression=\"3**10 - 3**8\")</call>"}
+{"prompt": "calcula 26% de 5100 menos 11% de 2300", "completion": "<call>calculate(expression=\"(26 / 100) * 5100 - (11 / 100) * 2300\")</call>"}
+{"prompt": "ei silva quanto da a raiz quadrada de 361 vezes 9", "completion": "<call>calculate(expression=\"sqrt(361) * 9\")</call>"}
+{"prompt": "calcula o log10 de 10000000 menos 22 pfvr silva", "completion": "<call>calculate(expression=\"log10(10000000) - 22\")</call>"}
+{"prompt": "silva quanto e 21 fatorial dividido por 19 fatorial", "completion": "<call>calculate(expression=\"factorial(21) / factorial(19)\")</call>"}
+{"prompt": "calcula o volume de um cilindro c/ raio 4 e altura 10 pfv", "completion": "<call>calculate(expression=\"pi * 4**2 * 10\")</call>"}
+{"prompt": "ei silva quanto da 5 elevado a 6 dividido por 125", "completion": "<call>calculate(expression=\"5**6 / 125\")</call>"}
+{"prompt": "calcula 57% de 1300 pfvr silva", "completion": "<call>calculate(expression=\"(57 / 100) * 1300\")</call>"}
+{"prompt": "silva quanto e a media ponderada de 5 6 7 e 8 c/ pesos 2 3 4 e 5", "completion": "<call>calculate(expression=\"(5*2 + 6*3 + 7*4 + 8*5) / (2 + 3 + 4 + 5)\")</call>"}
+{"prompt": "calcula a expressao 9 vezes 8 mais 7 vezes 6 menos 5", "completion": "<call>calculate(expression=\"9*8 + 7*6 - 5\")</call>"}
+{"prompt": "ei silva quanto da 24% de 6700 mais 31% de 2900", "completion": "<call>calculate(expression=\"(24 / 100) * 6700 + (31 / 100) * 2900\")</call>"}
+{"prompt": "calcula a raiz quadrada de 625 dividido por 5 pfv", "completion": "<call>calculate(expression=\"sqrt(625) / 5\")</call>"}
+{"prompt": "silva quanto e 4 elevado a 7 dividido por 128", "completion": "<call>calculate(expression=\"4**7 / 128\")</call>"}
+{"prompt": "calcula o seno de 90 graus vezes o cosseno de 0 graus", "completion": "<call>calculate(expression=\"sin(90 * pi / 180) * cos(0 * pi / 180)\")</call>"}
+{"prompt": "ei silva quanto da 9200 com aumento de 23%", "completion": "<call>calculate(expression=\"9200 * (1 + 23 / 100)\")</call>"}
+{"prompt": "calcula a hipotenusa de um triangulo c/ catetos 9 e 12", "completion": "<call>calculate(expression=\"sqrt(9**2 + 12**2)\")</call>"}
+{"prompt": "silva quanto e 18 fatorial dividido por 16 fatorial", "completion": "<call>calculate(expression=\"factorial(18) / factorial(16)\")</call>"}
+{"prompt": "calcula 39% de 7200 menos 16% de 3400 pfvr", "completion": "<call>calculate(expression=\"(39 / 100) * 7200 - (16 / 100) * 3400\")</call>"}
+{"prompt": "ei silva quanto da a raiz quadrada de 196 mais a raiz de 324", "completion": "<call>calculate(expression=\"sqrt(196) + sqrt(324)\")</call>"}
+{"prompt": "calcula o valor presente de 15000 a 1.5% ao mes por 12 meses", "completion": "<call>calculate(expression=\"15000 / (1 + 1.5 / 100)**12\")</call>"}

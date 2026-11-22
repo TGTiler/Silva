@@ -63,10 +63,17 @@ def _format_call(func_name: str, **kwargs) -> str:
     return f"<call>{func_name}({', '.join(args)})</call>"
 
 
+ALLOWED_MATH_NAMES = {
+    "sqrt", "cbrt", "sin", "cos", "tan", "asin", "acos", "atan",
+    "log", "log10", "log2", "exp", "factorial", "abs", "round", "floor", "ceil",
+    "pi", "e"
+}
+
+
 def _normalize_math_expression(raw_text: str) -> Optional[str]:
     """
-    Normaliza operadores, símbolos e palavras numéricas em português para uma
-    expressão aritmética Python válida executável pelo SafeMathEvaluator.
+    Normaliza operadores, símbolos, funções científicas e expressões em linguagem natural (PT-BR)
+    para uma expressão aritmética/científica Python válida executável pelo SafeMathEvaluator.
     Retorna a expressão normalizada ou None se não for um cálculo válido.
     """
     if not raw_text:
@@ -79,40 +86,75 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
     # 1. Verifica se há intenção de cálculo ou expressão matemática direta
     math_triggers = [
         "quanto e", "quanto da", "quanto fica", "calcule", "calcular",
-        "calcula", "resultado de", "raiz quadrada", "conta de", "valor de"
+        "calcula", "resultado de", "raiz quadrada", "raiz cubica", "raiz de",
+        "fatorial", "seno", "cosseno", "tangente", "logaritmo", "log",
+        "conta de", "valor de", "ao quadrado", "ao cubo", "elevado a"
     ]
     has_trigger = any(trig in norm for trig in math_triggers)
     has_direct_math = bool(re.search(r"\b\d+\s*(?:[\+\-\*\/÷×\^%]|x|vezes|dividido|mais|menos)\s*\d+\b", norm, re.IGNORECASE))
+    has_math_func = any(f"{fn}(" in lower for fn in ALLOWED_MATH_NAMES)
 
-    if not has_trigger and not has_direct_math:
+    if not has_trigger and not has_direct_math and not has_math_func:
         return None
 
     s = lower
 
-    # 2. Porcentagem: "X% de Y" ou "X por cento de Y" -> "(X / 100) * Y"
+    # 2. Acréscimos e descontos de porcentagem: "X + Y%" -> "X * (1 + Y/100)" e "X - Y%" -> "X * (1 - Y/100)"
+    s = re.sub(
+        r"(\d+(?:[\.,]\d+)?)\s*(?:\+|\bmais\b|\bsomado\s+a\b)\s*(\d+(?:[\.,]\d+)?)\s*(?:%|por\s+cento)",
+        r"\1 * (1 + \2 / 100)",
+        s
+    )
+    s = re.sub(
+        r"(\d+(?:[\.,]\d+)?)\s*(?:\-|\bmenos\b|\bsubtra[ií]do\s+de\b)\s*(\d+(?:[\.,]\d+)?)\s*(?:%|por\s+cento)",
+        r"\1 * (1 - \2 / 100)",
+        s
+    )
+
+    # 3. Porcentagem simples: "X% de Y" ou "X por cento de Y" -> "(X / 100) * Y"
     s = re.sub(
         r"(\d+(?:[\.,]\d+)?)\s*(?:%|por\s+cento)\s+de\s+(\d+(?:[\.,]\d+)?)",
         r"(\1 / 100) * \2",
         s
     )
 
-    # 3. Raiz quadrada: "raiz quadrada de X" -> "X ** 0.5"
-    s = re.sub(r"raiz\s+quadrada\s+de\s+(\d+(?:[\.,]\d+)?)", r"\1 ** 0.5", s)
+    # 4. Frações: "A/B de X" -> "(A / B) * X" e "metade de X" -> "0.5 * X"
+    s = re.sub(r"(\d+)\s*/\s*(\d+)\s+de\s+(\d+(?:[\.,]\d+)?)", r"(\1 / \2) * \3", s)
+    s = re.sub(r"\bmetade\s+de\s+(\d+(?:[\.,]\d+)?)", r"0.5 * \1", s)
 
-    # 4. Potências e expoentes
+    # 5. Raiz quadrada e cúbica
+    s = re.sub(r"raiz\s+c[uú]bica\s+de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"cbrt(\1)", s)
+    s = re.sub(r"raiz\s+(?:quadrada\s+)?de\s+(\d+(?:[\.,]\d+)?|\([^\)]+\))", r"sqrt(\1)", s)
+
+    # 6. Fatorial: "X fatorial" ou "fatorial de X" ou "X!" -> "factorial(X)"
+    s = re.sub(r"fatorial\s+de\s+(\d+)", r"factorial(\1)", s)
+    s = re.sub(r"(\d+)\s*fatorial\b", r"factorial(\1)", s)
+    s = re.sub(r"(\d+)!", r"factorial(\1)", s)
+
+    # 7. Trigonometria (em graus por padrão)
+    s = re.sub(r"seno\s+de\s+(\d+(?:[\.,]\d+)?)\s*(?:graus?|°|º)?", r"sin(\1 * pi / 180)", s)
+    s = re.sub(r"cosseno\s+de\s+(\d+(?:[\.,]\d+)?)\s*(?:graus?|°|º)?", r"cos(\1 * pi / 180)", s)
+    s = re.sub(r"tangente\s+de\s+(\d+(?:[\.,]\d+)?)\s*(?:graus?|°|º)?", r"tan(\1 * pi / 180)", s)
+
+    # 8. Logaritmo
+    s = re.sub(r"logaritmo\s+natural\s+de\s+(\d+(?:[\.,]\d+)?)", r"log(\1)", s)
+    s = re.sub(r"\bln\s+de\s+(\d+(?:[\.,]\d+)?)", r"log(\1)", s)
+    s = re.sub(r"logaritmo\s+de\s+(\d+(?:[\.,]\d+)?)", r"log10(\1)", s)
+    s = re.sub(r"\blog\s+de\s+(\d+(?:[\.,]\d+)?)", r"log10(\1)", s)
+
+    # 9. Potências e expoentes
     s = re.sub(r"\bao\s+quadrado\b", " ** 2", s)
     s = re.sub(r"\bao\s+cubo\b", " ** 3", s)
     s = re.sub(r"\belevado\s+a(?:o|\s+a)?\b", " ** ", s)
 
-    # 5. Converter palavras numéricas em português para dígitos
+    # 10. Converter palavras numéricas em português para dígitos
     for word, digit in sorted(NUM_WORDS_PT.items(), key=lambda item: len(item[0]), reverse=True):
         s = re.sub(rf"\b{word}\b", digit, s)
 
-    # 6. Converter operadores textuais e alternativos
+    # 11. Converter operadores textuais e alternativos
     s = re.sub(r"\bmultiplicado\s+por\b", " * ", s)
     s = re.sub(r"\bvezes\b", " * ", s)
     s = re.sub(r"×", " * ", s)
-    # x como operador de multiplicação entre números ou espaços
     s = re.sub(r"(?<=\d|\))\s*[xX]\s*(?=\d|\()", " * ", s)
     s = re.sub(r"\b[xX]\b", " * ", s)
 
@@ -126,10 +168,10 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
     s = re.sub(r"\bmenos\b", " - ", s)
     s = re.sub(r"\bsubtra[ií]do\s+de\b", " - ", s)
 
-    # 7. Vírgula decimal entre números para ponto
+    # 12. Vírgula decimal entre números para ponto
     s = re.sub(r"(?<=\d),(?=\d)", ".", s)
 
-    # 8. Remover palavras de preenchimento (fillers)
+    # 13. Remover palavras de preenchimento (fillers)
     filler_patterns = [
         r"(?i)\bquanto\s+[eé]\s+(?:o\s+resultado\s+de\s+)?",
         r"(?i)\bquanto\s+d[aá]\s+",
@@ -156,16 +198,19 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
     # Normaliza múltiplos espaços
     s = re.sub(r"\s+", " ", s).strip()
 
-    # 9. Validação estrita
-    if not re.match(r"^[0-9\+\-\*\/\(\)\.\s%]+$", s):
-        return None
-
-    if not re.search(r"[\+\-\*\/\%]", s):
+    # 14. Validação estrita via AST e Whitelist
+    if not re.match(r"^[0-9a-zA-Z_\+\-\*\/\(\)\.\s%,]+$", s):
         return None
 
     try:
         parsed = ast.parse(s, mode="eval")
-        if isinstance(parsed.body, (ast.BinOp, ast.UnaryOp)):
+        # Garante que todo identificador pertença estritamente à whitelist matemática
+        all_names = {node.id for node in ast.walk(parsed) if isinstance(node, ast.Name)}
+        if not all_names.issubset(ALLOWED_MATH_NAMES):
+            return None
+
+        # Deve conter pelo menos uma operação aritmética, chamada de função ou constante
+        if isinstance(parsed.body, (ast.BinOp, ast.UnaryOp, ast.Call)):
             return s
     except Exception:
         return None
@@ -435,6 +480,20 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
     # 2. Bateria (get_battery)
     if any(w in cmd for w in ["bateria", "carga", "porcentagem", "nivel de bateria", "quanta bateria", "status da bateria"]):
         return _format_call("get_battery")
+
+    # 2.1 Redes Wi-Fi disponíveis nas proximidades (scan_wifi)
+    # Garante que perguntas sobre senhas salvas não colidam (vão para recall_note)
+    is_wifi_term = any(w in cmd for w in ["wifi", "wifis", "wi-fi", "wi-fis", "redes sem fio", "rede sem fio"])
+    is_scan_action = any(w in cmd for w in [
+        "disponiveis", "disponivel", "por perto", "proximas", "proxima", "proximo",
+        "redes", "lista", "listar", "escanear", "escaneie", "buscar", "busca",
+        "procurar", "procura", "encontrar", "quais", "ver", "mostre", "mostrar", "tem"
+    ])
+    has_pwd_term = any(w in cmd for w in ["senha", "password", "pin", "chave de acesso"])
+    if is_wifi_term and is_scan_action and not has_pwd_term:
+        return _format_call("scan_wifi")
+    elif any(p in cmd for p in ["scan wifi", "escanear wifi", "escanear redes wifi", "buscar wifi", "procurar wifi", "wifis por perto", "wifis proximas"]) and not has_pwd_term:
+        return _format_call("scan_wifi")
 
     # 3. Vibração (vibrate)
     if any(w in cmd for w in ["vibra", "vibrar", "vibracao", "treme", "tremer"]):

@@ -826,6 +826,9 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - *`set_wifi_state(state)`*: Controle liga/desliga de Wi-Fi via `termux-wifi-enable`, fallback `svc wifi` e fallback assistido em configurações.
     - *Roteamento Determinístico e Desambiguação Estrita*: Separação exata sem colisões entre `connect_wifi` (preservando maiúsculas e caracteres especiais de SSID e senha), `get_wifi_info` (status atual e IP), `set_wifi_state` (ligar/desligar), `scan_wifi` (varredura de redes próximas) e `recall_note` (senhas salvas), com deduplicação de chamadas consecutivas idênticas.
     - *Sincronia Total de Contratos e Dataset*: Schema JSON formal com 39 ferramentas e 46 parâmetros, `SILVA_SYSTEM_PROMPT` em `config.py` e `colab_train_silva.py` sincronizados, dataset consolidado com 6.381 amostras e suíte de 25 testes automatizados com 100% de aprovação.
+21. **Resolução de Falso Negativo de Desconexão e Desambiguação de Wi-Fi vs Memória**:
+    - *Tratamento de SSID Oculto sem GPS (`get_wifi_info`)*: No Android 10+, com localização desativada, `termux-wifi-connectioninfo` retorna `ssid="<unknown ssid>"`. A ferramenta não trata mais isso como desconexão se `supplicant_state == "COMPLETED"` ou se houver IPv4 válido, exibindo `"SSID oculto (ative o GPS para exibir o nome)"`. Adicionado fallback via socket UDP (`8.8.8.8:80`) para obtenção do IP local da LAN caso o comando omita o IP.
+    - *Desambiguação `"qual meu wifi"` vs `"recall_note"`*: Adicionados gatilhos diretos para `get_wifi_info()` (`"qual meu wifi"`, `"qual o meu wifi"`, `"meu wifi"`, etc.), com bloqueio em `extract_memory()` para que perguntas sobre Wi-Fi sem a palavra `"senha"` não sejam capturadas como memória pessoal. Preserva `recall_note(query='senha do wifi')` quando a palavra `"senha"` estiver explicitamente presente.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

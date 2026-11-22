@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 import unicodedata
 import urllib.parse
@@ -32,21 +33,40 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 LAST_LOCATION_FILE = DATA_DIR / "last_location.json"
 EVENTS_FILE = DATA_DIR / "events.json"
 
+_FILE_LOCK = threading.RLock()
+
+
+def _atomic_write_json(path: Path, payload: Any) -> None:
+    """
+    Grava JSON de forma atômica e thread-safe:
+    utiliza threading.Lock, grava em arquivo temporário .tmp no mesmo diretório,
+    executa flush() e os.fsync() para persistência física no disco, e substitui
+    o arquivo original de forma atômica via os.replace().
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(".tmp")
+    with _FILE_LOCK:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path)
+
 
 def _load_events() -> list:
     if not EVENTS_FILE.is_file():
         return []
-    try:
-        with open(EVENTS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
+    with _FILE_LOCK:
+        try:
+            with open(EVENTS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
 
 
 def _save_events(events: list):
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(EVENTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(events, f, ensure_ascii=False, indent=2)
+    _atomic_write_json(EVENTS_FILE, events)
 
 # Mapeamento de nomes amigáveis para pacotes Android conhecidos
 APP_PACKAGES = {
@@ -925,7 +945,7 @@ def get_location() -> Dict[str, Any]:
             "provider": "simulated"
         }
         try:
-            LAST_LOCATION_FILE.write_text(json.dumps(loc_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            _atomic_write_json(LAST_LOCATION_FILE, loc_data)
         except Exception:
             pass
 
@@ -963,7 +983,7 @@ def get_location() -> Dict[str, Any]:
             "provider": data.get("provider", "termux")
         }
         try:
-            LAST_LOCATION_FILE.write_text(json.dumps(loc_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            _atomic_write_json(LAST_LOCATION_FILE, loc_data)
         except Exception:
             pass
 
@@ -1557,7 +1577,7 @@ def set_dnd(state: bool) -> Dict[str, Any]:
                     backup_data[s] = 5
 
             try:
-                backup_file.write_text(json.dumps(backup_data), encoding="utf-8")
+                _atomic_write_json(backup_file, backup_data)
             except Exception:
                 pass
 
@@ -1970,9 +1990,10 @@ def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]
         "timestamp": event_ts,
         "notified": False
     }
-    events = _load_events()
-    events.append(event_record)
-    _save_events(events)
+    with _FILE_LOCK:
+        events = _load_events()
+        events.append(event_record)
+        _save_events(events)
 
     if SIMULATE_HARDWARE:
         return {
@@ -2038,17 +2059,16 @@ MEMORY_FILE = DATA_DIR / "memory.json"
 def _load_memory() -> dict:
     if not MEMORY_FILE.is_file():
         return {}
-    try:
-        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
+    with _FILE_LOCK:
+        try:
+            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
 
 
 def _save_memory(data: dict):
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    _atomic_write_json(MEMORY_FILE, data)
 
 
 def _normalize_text(text: str) -> str:
@@ -2065,12 +2085,13 @@ def remember_note(key: str, value: str) -> Dict[str, Any]:
     if not clean_key or not clean_val:
         return {"status": "error", "message": "Chave ou valor da anotação não informados."}
 
-    mem = _load_memory()
-    mem[clean_key] = {
-        "value": clean_val,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    _save_memory(mem)
+    with _FILE_LOCK:
+        mem = _load_memory()
+        mem[clean_key] = {
+            "value": clean_val,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        _save_memory(mem)
     return {
         "status": "ok",
         "message": f"Silva: Anotado: {clean_key} = {clean_val}.",

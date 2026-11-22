@@ -24,6 +24,44 @@ NUM_WORDS_PT = {
     "noventa": "90", "cem": "100", "cento": "100", "mil": "1000",
 }
 
+COMMAND_VERBS = {
+    "abra", "abre", "abrir", "ligue", "liga", "ligar", "desligue", "desliga", "desligar",
+    "toque", "toca", "tocar", "pause", "pausa", "pausar", "coloque", "coloca", "colocar",
+    "bote", "bota", "botar", "defina", "define", "definir", "configure", "configura", "configurar",
+    "chama", "chame", "chamar", "peça", "peca", "pede", "pedir", "envie", "envia", "enviar",
+    "manda", "mande", "mandar", "lembra", "lembre", "lembrar", "anote", "anota", "anotar",
+    "salve", "salva", "salvar", "pesquise", "pesquisa", "pesquisar", "busque", "busca", "buscar",
+    "baixe", "baixa", "baixar", "instale", "instala", "instalar", "leia", "ler", "mostre", "mostrar",
+    "veja", "ver", "qual", "quais", "quanto", "quantos", "tempo", "clima", "calcula", "calcule",
+    "vibra", "vibrar", "aumenta", "aumentar", "diminui", "diminuir", "tire", "tira", "tirar",
+    "grave", "grava", "gravar", "silencie", "silencia", "muta", "mutar"
+}
+
+
+def _protect_compound_names(text: str) -> str:
+    """Protege termos compostos com conectores 'e' para evitar separação prematura de cláusulas."""
+    return re.sub(r"\bAbreu\s+[eE]\s+Lima\b", "Abreu__E__Lima", text, flags=re.IGNORECASE)
+
+
+def _unprotect_compound_names(text: str) -> str:
+    """Restaura nomes próprios que tiveram seu conector protegido temporariamente."""
+    return text.replace("Abreu__E__Lima", "Abreu e Lima")
+
+
+def _format_call(func_name: str, **kwargs) -> str:
+    """
+    Formata chamada de função garantindo escaping 100% seguro para ast.parse.
+    Strings são representadas com repr(), números e booleanos mantêm seu formato nativo.
+    """
+    args = []
+    for k, v in kwargs.items():
+        if isinstance(v, str):
+            v_clean = _unprotect_compound_names(v)
+            args.append(f"{k}={repr(v_clean)}")
+        else:
+            args.append(f"{k}={v}")
+    return f"<call>{func_name}({', '.join(args)})</call>"
+
 
 def _normalize_math_expression(raw_text: str) -> Optional[str]:
     """
@@ -347,9 +385,26 @@ def _clean_weather_location(raw_loc: str) -> str:
 
 def parse_single_intent(raw_cmd: str) -> Optional[str]:
     """Tenta identificar uma intenção específica e retornar uma tag <call>...</call>."""
+    if not raw_cmd:
+        return None
+
     cmd = normalize_text(raw_cmd)
     if not cmd:
         return None
+
+    # Anti-pergunta conceitual/enciclopédica (deixa para o LLM responder semântico)
+    conceptual_prefixes = (
+        "o que e ", "o que sao ", "o que significa ", "qual a diferenca ",
+        "quem foi ", "quem e ", "me explica ", "me explique ", "explique o que ", "explique "
+    )
+    if cmd.startswith(conceptual_prefixes):
+        is_capabilities_query = any(h in cmd for h in [
+            "o que voce", "o que vc", "suas funco", "suas capacida", "seus comando"
+        ])
+        if not is_capabilities_query:
+            operational_verbs = ("pesquise", "pesquisa", "busque", "busca", "ligue", "liga", "abra", "abre", "baixe", "baixa", "instale", "instala", "toque", "toca")
+            if not any(v in cmd for v in operational_verbs):
+                return None
 
     # 0. Pedido de Ajuda / Lista de Capacidades (list_capabilities)
     cmd_clean = re.sub(r"(?i)^(?:silva,?\s*|ei,?\s*|oi,?\s*|ola,?\s*)?", "", cmd).strip().rstrip("?!.,;:")
@@ -363,24 +418,23 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         "o que você faz", "quais suas funções", "suas funções", "o que você sabe fazer"
     ]
     if any(p in cmd_clean for p in help_phrases) or cmd_clean in ["ajuda", "help", "menu", "comandos", "funcoes", "funções"]:
-        return "<call>list_capabilities()</call>"
+        return _format_call("list_capabilities")
 
     # 0.1 Calculadora matemática com normalização completa (PT-BR)
     if not any(w in cmd for w in ["volume", "brilho", "timer", "alarme", "lembrete"]):
         math_expr = _normalize_math_expression(raw_cmd)
         if math_expr:
-            escaped_expr = math_expr.replace("'", "\\'")
-            return f"<call>calculate(expression='{escaped_expr}')</call>"
+            return _format_call("calculate", expression=math_expr)
 
     # 1. Lanterna (set_torch)
     if "lanterna" in cmd or "torch" in cmd or "flash" in cmd:
         if any(neg in cmd for neg in ["deslig", "desativ", "apag", "off", "fecha", "cort", "tir"]):
-            return "<call>set_torch(state=False)</call>"
-        return "<call>set_torch(state=True)</call>"
+            return _format_call("set_torch", state=False)
+        return _format_call("set_torch", state=True)
 
     # 2. Bateria (get_battery)
     if any(w in cmd for w in ["bateria", "carga", "porcentagem", "nivel de bateria", "quanta bateria", "status da bateria"]):
-        return "<call>get_battery()</call>"
+        return _format_call("get_battery")
 
     # 3. Vibração (vibrate)
     if any(w in cmd for w in ["vibra", "vibrar", "vibracao", "treme", "tremer"]):
@@ -392,23 +446,23 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 duration = val * 1000
             else:
                 duration = val
-        return f"<call>vibrate(duration_ms={duration})</call>"
+        return _format_call("vibrate", duration_ms=duration)
 
     # 4. Não Perturbe / Silencioso (set_dnd)
     if any(w in cmd for w in ["perturbe", "pertube", "dnd", "silencioso", "silenciar", "mutar", "mudo"]):
         if any(neg in cmd for neg in ["desativ", "deslig", "tir", "sair", "off", "cancel", "voltar"]):
-            return "<call>set_dnd(state=False)</call>"
-        return "<call>set_dnd(state=True)</call>"
+            return _format_call("set_dnd", state=False)
+        return _format_call("set_dnd", state=True)
 
     # 5. Captura de Tela / Print (take_screenshot)
     if any(w in cmd for w in ["print", "screenshot", "captura de tela", "capturar tela", "foto da tela"]):
-        return "<call>take_screenshot()</call>"
+        return _format_call("take_screenshot")
 
     # 6. Câmera / Foto (take_photo)
     if any(w in cmd for w in ["foto", "selfie", "retrato", "fotografa"]) and not any(s in cmd for s in ["tela", "screen", "print", "video", "gravar", "filmar"]):
         if any(w in cmd for w in ["frontal", "selfie", "frente", "minha foto", "foto minha"]):
-            return "<call>take_photo(camera_id=1)</call>"
-        return "<call>take_photo(camera_id=0)</call>"
+            return _format_call("take_photo", camera_id=1)
+        return _format_call("take_photo", camera_id=0)
 
     # 6.0 Controle de Mídia (media_control)
     # Não conflitar com volume, brilho, alarme ou timer
@@ -422,7 +476,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             "pular musica", "pula musica", "passa a musica", "passar musica", "proxima cancao",
             "avancar musica", "avanca a musica", "next track", "next song"
         ]) or clean_media_cmd in ["proxima", "proximo", "next", "pula", "passa"]:
-            return '<call>media_control(action="next")</call>'
+            return _format_call("media_control", action="next")
 
         # B) Previous / Anterior
         if any(w in clean_media_cmd for w in [
@@ -430,7 +484,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             "musica anterior", "faixa anterior", "cancao anterior", "retrocede a musica",
             "previous track", "previous song"
         ]) or clean_media_cmd in ["anterior", "volta", "voltar", "previous"]:
-            return '<call>media_control(action="previous")</call>'
+            return _format_call("media_control", action="previous")
 
         # C) Play / Despausa / Continuar
         if any(w in clean_media_cmd for w in [
@@ -439,7 +493,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             "toca a musica", "tocar a musica", "reproduz a musica", "reproduzir a musica",
             "da o play", "dar o play", "dar play", "da play"
         ]) or clean_media_cmd in ["play", "despausa", "despausar", "tocar", "continuar", "retomar"]:
-            return '<call>media_control(action="play")</call>'
+            return _format_call("media_control", action="play")
 
         # D) Pause / Parar
         if any(w in clean_media_cmd for w in [
@@ -447,7 +501,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             "para a musica", "parar a musica", "interrompe a musica", "pausa reproducao",
             "pausar reproducao"
         ]) or clean_media_cmd in ["pause", "pausa", "pausar", "stop"]:
-            return '<call>media_control(action="pause")</call>'
+            return _format_call("media_control", action="pause")
 
     # 6.1 Gravação de Vídeo (record_video)
     if any(w in cmd for w in ["video", "gravar", "grave", "grava", "filmar", "filma", "filme"]) and not any(w in cmd for w in ["youtube", "tiktok", "pausa", "pausar", "retoma", "retomar", "continua", "continuar", "toca", "tocar", "play"]):
@@ -461,7 +515,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 duration = val
         duration = max(3, min(duration, 120))
         camera_id = 1 if any(w in cmd for w in ["frontal", "selfie", "frente", "me film", "me grav", "minha cara"]) else 0
-        return f"<call>record_video(duration={duration}, camera_id={camera_id})</call>"
+        return _format_call("record_video", duration=duration, camera_id=camera_id)
 
     # 6.2 Corrida / Transporte (request_ride)
     if not (cmd.startswith(("abre ", "abra ", "abrir ")) and not any(p in cmd for p in ["para", "pra", "pro", "ate", "até", "p/"])):
@@ -491,7 +545,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 dest = _clean_ride_destination(cleaned)
             if not dest:
                 dest = "destino"
-            return f'<call>request_ride(destination="{dest}", app="{app}")</call>'
+            return _format_call("request_ride", destination=dest, app=app)
 
     # 6.3 Delivery / Pedir Comida (order_food)
     if not (cmd.startswith(("abre ", "abra ", "abrir ")) and not any(f in cmd for f in ["pizza", "lanche", "hamburguer", "hambúrguer", "comida", "sushi", "acai", "açaí", "pastel"])):
@@ -508,7 +562,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             query = _clean_food_query(raw_cmd)
             if not query:
                 query = "comida"
-            return f'<call>order_food(query="{query}", app="{app}")</call>'
+            return _format_call("order_food", query=query, app=app)
 
     # 6.5 Instalação de Aplicativos / Play Store (install_app)
     # Não conflitar com volume, brilho, alarme ou lanterna
@@ -524,7 +578,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         if (has_store_kw or has_install_verb) and not is_only_open_store:
             clean_app = _clean_install_app_name(raw_cmd)
             if clean_app:
-                return f'<call>install_app(app_name="{clean_app}")</call>'
+                return _format_call("install_app", app_name=clean_app)
 
     # 7. Abrir Aplicativo (open_app)
     m_open = re.search(r"(?:abre|abra|abrir|inicia|inicie|iniciar|roda|rode|rodar|executa|execute|executar)\s+(?:o|a)?\s*([a-zA-Z0-9_\-\s]+)", cmd)
@@ -533,7 +587,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         # Remove palavras parasitas no final
         app_name = re.sub(r"\s+(?:pra mim|por favor|agora|rapido)$", "", app_name).strip()
         if app_name:
-            return f'<call>open_app(app_name="{app_name}")</call>'
+            return _format_call("open_app", app_name=app_name)
 
     # 7. Ligação telefônica (make_call)
     m_call = re.search(r"(?:liga|ligar|disca|discar|chama|chamar|telefone|telefonar)\s+(?:para\s+o|para\s+a|para|pro|pra|a)?\s*([^\n\r,\.;]+)", raw_cmd, re.IGNORECASE)
@@ -541,7 +595,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         target = m_call.group(1).strip()
         target = re.sub(r"(?i)\s+(?:pra mim|por favor|agora|rapido)$", "", target).strip()
         if target:
-            return f'<call>make_call(number="{target}")</call>'
+            return _format_call("make_call", number=target)
 
     # 8. Envio de SMS (send_sms)
     m_sms = re.search(
@@ -552,7 +606,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
     if m_sms:
         to_target = m_sms.group(1).strip()
         msg_body = m_sms.group(2).strip()
-        return f'<call>send_sms(number="{to_target}", message="{msg_body}")</call>'
+        return _format_call("send_sms", number=to_target, message=msg_body)
 
     # 9. Leitura de SMS (get_last_sms)
     is_sms_target = bool(re.search(r"\b(?:sms|mensagens?\s+de\s+texto|torpedos?|caixa\s+de\s+entrada|mensagens?)\b", cmd))
@@ -570,30 +624,30 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 limit = 1
             else:
                 limit = 5
-            return f"<call>get_last_sms(limit={limit})</call>"
+            return _format_call("get_last_sms", limit=limit)
 
     # 10. Localização / GPS
     if any(w in cmd for w in ["ultima localizacao", "última localização", "ultimo gps", "onde estive", "onde eu estava", "posicao anterior", "localizacao anterior"]):
-        return "<call>get_last_location()</call>"
+        return _format_call("get_last_location")
 
     if any(w in cmd for w in ["gps", "localizacao"]):
         if any(neg in cmd for neg in ["desativ", "deslig", "desliga", "tirar", "sair", "off", "cancel"]):
-            return "<call>set_location_state(state=False)</call>"
+            return _format_call("set_location_state", state=False)
         if any(pos in cmd for pos in ["ativ", "ligar", "liga ", "habilita", "habilitar", "on"]):
-            return "<call>set_location_state(state=True)</call>"
+            return _format_call("set_location_state", state=True)
 
     if any(w in cmd for w in ["localizacao", "onde estou", "onde eu estou", "gps", "coordenadas", "minha posicao", "minha localizacao"]):
-        return "<call>get_location()</call>"
+        return _format_call("get_location")
 
     # 11. Contar Piada (tell_joke)
     if any(w in cmd for w in ["piada", "engracado", "conta uma piada", "me faz rir"]):
-        return "<call>tell_joke()</call>"
+        return _format_call("tell_joke")
 
     # 12. Área de transferência (get_clipboard / set_clipboard)
     if "clipboard" in cmd or "area de transferencia" in cmd or "o que copiei" in cmd or "copiado" in cmd:
         # Prioriza consulta se contiver palavras interrogativas/de leitura
         if any(q in cmd for q in ["o que", "qual", "ler", "le ", "ver", "mostra", "tem", "copiado", "conteudo", "consulte", "consultar"]):
-            return "<call>get_clipboard()</call>"
+            return _format_call("get_clipboard")
         # Verifica se há verbo de escrita explícito
         if any(w in cmd for w in ["copia ", "copie ", "salva ", "salve ", "coloca ", "coloque ", "define ", "definir "]) or cmd.startswith(("copia", "copie", "salva", "salve", "coloca", "coloque", "define", "definir")):
             m_clip = re.search(r"(?:copia|copie|salva|salve|coloca|coloque|define|definir)\s+(?:no\s+clipboard|na\s+area\s+de\s+transferencia|o\s+texto)?\s*(.+)", raw_cmd, re.IGNORECASE)
@@ -601,8 +655,8 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             text_val = re.sub(r"(?i)^(?:no\s+clipboard|na\s+area\s+de\s+transferencia|o\s+texto)\s*", "", text_val).strip()
             text_val = re.sub(r"(?i)\s+(?:no\s+clipboard|na\s+area\s+de\s+transferencia|para\s+o\s+clipboard)$", "", text_val).strip()
             if text_val:
-                return f'<call>set_clipboard(text="{text_val}")</call>'
-        return "<call>get_clipboard()</call>"
+                return _format_call("set_clipboard", text=text_val)
+        return _format_call("get_clipboard")
 
     # 13. Alarme (set_alarm / cancel_alarm)
     if any(w in cmd for w in ["alarme", "despertador", "desperta", "despertar", "me acorda", "acordar"]):
@@ -611,19 +665,19 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
             t_str = m_time.group(1) if m_time else ""
             if t_str and ":" not in t_str:
                 t_str = f"{int(t_str):02d}:00"
-            return f'<call>cancel_alarm(time="{t_str}", day="", label="")</call>'
+            return _format_call("cancel_alarm", time=t_str, day="", label="")
         else:
             m_time = re.search(r"(\d{1,2}(?::\d{2})?)", cmd)
             t_str = m_time.group(1) if m_time else "07:00"
             if ":" not in t_str:
                 t_str = f"{int(t_str):02d}:00"
-            return f'<call>set_alarm(time="{t_str}", label="Alarme", days=[])</call>'
+            return _format_call("set_alarm", time=t_str, label="Alarme", days=[])
 
     # 14. Timer / Cronômetro (set_timer)
     if any(w in cmd for w in ["timer", "temporizador", "cronometro", "cronômetro"]):
         m_min = re.search(r"(\d+)\s*(?:minutos?|min)?", cmd)
         minutes = int(m_min.group(1)) if m_min else 5
-        return f'<call>set_timer(minutes={minutes}, label="Timer")</call>'
+        return _format_call("set_timer", minutes=minutes, label="Timer")
 
     # 14.1 Agendamentos na Agenda / Calendário (schedule_event)
     triggers_sched = ["agenda", "agende", "agendar", "marca", "marque", "marcar", "compromisso", "reuniao", "lembrete"]
@@ -685,28 +739,31 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 cleaned = re.sub(r'[?!.,;:]+$', '', cleaned).strip()
                 title_val = cleaned or "Compromisso"
 
-        return f'<call>schedule_event(title="{title_val}", date="{date_val}", time="{time_val}")</call>'
+        return _format_call("schedule_event", title=title_val, date=date_val, time=time_val)
 
     # 15. Memória (remember_note / recall_note)
     if any(w in cmd for w in ["lembra que", "lembrar que", "anota que", "salva que", "guarda que"]):
         content = re.sub(r"(?i)^(?:silva,?\s*)?(?:lembra|lembrar|anota|anotar|salva|salvar|guarda|guardar)\s+que\s+", "", raw_cmd).strip()
         if "=" in content:
             k, v = content.split("=", 1)
-        elif " e " in content:
-            parts = content.split(" e ", 1)
+        elif re.search(r"\s+[eé]\s*:\s*", content, re.IGNORECASE):
+            parts = re.split(r"\s+[eé]\s*:\s*", content, maxsplit=1, flags=re.IGNORECASE)
             k, v = parts[0], parts[1]
-        elif " e: " in content or ":" in content:
+        elif re.search(r"\s+[eé]\s+", content, re.IGNORECASE):
+            parts = re.split(r"\s+[eé]\s+", content, maxsplit=1, flags=re.IGNORECASE)
+            k, v = parts[0], parts[1]
+        elif ":" in content:
             parts = content.split(":", 1)
             k, v = parts[0], parts[1]
         else:
             k, v = "nota", content
-        return f'<call>remember_note(key="{k.strip()}", value="{v.strip()}")</call>'
+        return _format_call("remember_note", key=k.strip(), value=v.strip())
 
     if any(w in cmd for w in ["o que voce lembra", "qual a senha", "onde guardei", "lembra de", "lembra do", "lembra da"]) or (
         any(w in cmd for w in ["qual o", "qual a"]) and not any(w in cmd for w in ["bateria", "clima", "tempo", "previsao", "temperatura", "localizacao", "hora", "clipboard", "foto", "print"])
     ):
         q = re.sub(r"(?i)^(?:silva,?\s*)?(?:qual|onde|o que|lembra)\s+(?:voce\s+lembra\s+)?(?:de|do|da|o|a)?\s*", "", raw_cmd).strip().rstrip("?")
-        return f'<call>recall_note(query="{q}")</call>'
+        return _format_call("recall_note", query=q)
 
     # 16. Notificações (get_notifications)
     if any(w in cmd for w in ["notificacoes", "notificacao", "notificacoes do"]):
@@ -714,25 +771,24 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         app_filter = m_app.group(1).strip() if m_app else ""
         if app_filter in ["celular", "meu", "sistema"]:
             app_filter = ""
-        return f'<call>get_notifications(app="{app_filter}")</call>'
+        return _format_call("get_notifications", app=app_filter)
 
     # 17. Volume (set_volume)
     if "volume" in cmd:
         m_vol = re.search(r"(\d+)\s*(?:%|porcento)?", cmd)
         level = int(m_vol.group(1)) if m_vol else 50
-        return f'<call>set_volume(stream="music", level={level})</call>'
+        return _format_call("set_volume", stream="music", level=level)
 
     # 18. Brilho (set_brightness)
     if "brilho" in cmd:
         m_bri = re.search(r"(\d+)\s*(?:%|porcento)?", cmd)
         level = int(m_bri.group(1)) if m_bri else 50
-        return f"<call>set_brightness(level={level})</call>"
+        return _format_call("set_brightness", level=level)
 
     # 19. Calculadora (calculate)
     math_expr = _normalize_math_expression(raw_cmd)
     if math_expr:
-        escaped_expr = math_expr.replace("'", "\\'")
-        return f"<call>calculate(expression='{escaped_expr}')</call>"
+        return _format_call("calculate", expression=math_expr)
 
     # 20. Previsão do tempo / Clima (get_weather)
     if any(w in cmd for w in ["clima", "previsao", "tempo", "chover", "chuva", "temperatura"]) and not any(w in cmd for w in ["no google", "pesquisa no google"]):
@@ -770,7 +826,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
                 loc = c
                 break
 
-        return f"<call>get_weather(day='{day}', time='{time_val}', location='{loc}')</call>"
+        return _format_call("get_weather", day=day, time=time_val, location=loc)
 
     # 21. Pesquisa no Google (search_google)
     if any(w in cmd for w in ["pesquisa", "pesquise", "busca", "busque", "procura", "procure", "google", "no google"]):
@@ -787,7 +843,7 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
         q = re.sub(r"(?i)\s+(?:no\s+google|pelo\s+google)?\s*(?:por\s+favor|pra\s+mim|agora)?$", "", q).strip().rstrip("?")
         q = re.sub(r"(?i)\s+(?:no\s+google|pelo\s+google)$", "", q).strip().rstrip("?")
         if q:
-            return f'<call>search_google(query="{q}")</call>'
+            return _format_call("search_google", query=q)
 
     return None
 
@@ -808,14 +864,37 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
         if single:
             return single
 
-    # Tenta quebrar em cláusulas sequenciais para multi-call
-    # Divide por " e ", " e também ", " depois ", ou ";"
-    delimiters = r"\s+(?:e\s+tambem|depois|em\s+seguida|e)\s+|;"
-    sub_clauses = [c.strip() for c in re.split(delimiters, clean_prompt, flags=re.IGNORECASE) if c.strip()]
+    # Protege nomes compostos como "Abreu e Lima"
+    protected_prompt = _protect_compound_names(clean_prompt)
+
+    # Divisão primária por separadores fortes
+    strong_delims = r";|\s+(?:e\s+tamb[eé]m|depois|em\s+seguida)\s+"
+    primary_parts = [p.strip() for p in re.split(strong_delims, protected_prompt, flags=re.IGNORECASE) if p.strip()]
+
+    clauses = []
+    for part in primary_parts:
+        # Divide por ' e ' apenas se o trecho seguinte iniciar com verbo de comando
+        tokens = re.split(r"(\s+[eE]\s+)", part)
+        current_chunk = tokens[0]
+        i = 1
+        while i < len(tokens):
+            connector = tokens[i]
+            next_chunk = tokens[i + 1] if i + 1 < len(tokens) else ""
+            words = next_chunk.strip().split()
+            first_word = normalize_text(words[0]) if words else ""
+
+            if first_word in COMMAND_VERBS:
+                clauses.append(current_chunk.strip())
+                current_chunk = next_chunk
+            else:
+                current_chunk += connector + next_chunk
+            i += 2
+        if current_chunk.strip():
+            clauses.append(current_chunk.strip())
 
     matched_calls = []
-    if len(sub_clauses) > 1:
-        for clause in sub_clauses:
+    if len(clauses) > 1:
+        for clause in clauses:
             call = parse_single_intent(clause)
             if call:
                 matched_calls.append(call)
@@ -825,4 +904,4 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
         return "".join(matched_calls)
 
     # Tenta frase inteira como comando único
-    return parse_single_intent(clean_prompt)
+    return parse_single_intent(protected_prompt)

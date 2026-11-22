@@ -67,7 +67,7 @@ def validate_args(tool_name: str, args: dict, tool_def: dict) -> list[str]:
         if p in args:
             val = args[p]
             expected = meta.get("type")
-            if expected == "integer" and not isinstance(val, int):
+            if expected == "integer" and not (isinstance(val, int) and not isinstance(val, bool)):
                 errors.append(f"'{p}' deve ser int, recebido {type(val).__name__}.")
             elif expected == "boolean" and not isinstance(val, bool):
                 errors.append(f"'{p}' deve ser bool, recebido {type(val).__name__}.")

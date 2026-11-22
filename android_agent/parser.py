@@ -154,8 +154,16 @@ def execute_call(model_output: str) -> Dict[str, Any]:
     consolidated_message = "\n".join(messages)
     consolidated_raw_call = "".join(raw_calls)
 
+    statuses = [d.get("status") for d in executed_details]
+    if statuses and all(s == "error" for s in statuses):
+        root_status = "error"
+    elif any(s == "error" for s in statuses):
+        root_status = "partial_error"
+    else:
+        root_status = "ok"
+
     return {
-        "status": "ok",
+        "status": root_status,
         "message": consolidated_message,
         "raw_call": consolidated_raw_call,
         "func_name": calls[0][0] if len(calls) == 1 else "multi_call",

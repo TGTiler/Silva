@@ -8,7 +8,14 @@ import threading
 import time
 from pathlib import Path
 
-from tools import _load_events, _save_events, _run_termux_cmd, SIMULATE_HARDWARE
+try:
+    from tools import _load_events, _save_events, _run_termux_cmd, SIMULATE_HARDWARE
+except ImportError:
+    from android_agent.tools import _load_events, _save_events, _run_termux_cmd, SIMULATE_HARDWARE
+
+_SCHEDULER_STARTED = False
+_SCHEDULER_THREAD = None
+_SCHEDULER_LOCK = threading.Lock()
 
 
 def check_and_notify_events():
@@ -51,13 +58,26 @@ def _events_scheduler_loop(interval_sec: int = 30):
         time.sleep(interval_sec)
 
 
-def start_events_scheduler(interval_sec: int = 30):
-    """Inicia a thread daemon leve de verificação de lembretes."""
-    t = threading.Thread(
-        target=_events_scheduler_loop,
-        args=(interval_sec,),
-        daemon=True,
-        name="SilvaEventsScheduler"
-    )
-    t.start()
-    return t
+def start_scheduler(interval_sec: int = 30):
+    """
+    Inicia a thread daemon leve de verificação de lembretes e compromissos apenas uma vez (idempotente).
+    Protegida por flag global _SCHEDULER_STARTED e _SCHEDULER_LOCK.
+    """
+    global _SCHEDULER_STARTED, _SCHEDULER_THREAD
+    with _SCHEDULER_LOCK:
+        if _SCHEDULER_STARTED and _SCHEDULER_THREAD is not None and _SCHEDULER_THREAD.is_alive():
+            return _SCHEDULER_THREAD
+        t = threading.Thread(
+            target=_events_scheduler_loop,
+            args=(interval_sec,),
+            daemon=True,
+            name="SilvaEventsScheduler"
+        )
+        t.start()
+        _SCHEDULER_STARTED = True
+        _SCHEDULER_THREAD = t
+        return t
+
+
+start_events_scheduler = start_scheduler
+

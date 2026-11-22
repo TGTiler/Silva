@@ -4,6 +4,7 @@ Utiliza apenas a biblioteca padrão (urllib) para rodar com zero dependências e
 """
 
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -84,33 +85,35 @@ class SilvaLLMClient:
                 resp_json = json.loads(raw_body)
                 content = resp_json.get("content", "").strip()
 
-                # Reconstitui a tag se o modelo completou a partir do prefixo '<call>'
+                # Reconstitui o texto se o modelo completou a partir do prefixo '<call>'
                 if not content.startswith("<call>"):
-                    full_output = f"<call>{content}"
+                    raw_text = f"<call>{content}"
                 else:
-                    full_output = content
+                    raw_text = content
 
-                if not full_output.endswith("</call>"):
-                    if "</call>" in full_output:
-                        full_output = full_output.split("</call>")[0] + "</call>"
-                    else:
-                        full_output = f"{full_output}</call>"
+                if "</call>" not in raw_text:
+                    raw_text = f"{raw_text}</call>"
 
-                # Valida se a chamada corresponde a alguma ferramenta na whitelist
-                has_valid_tool = False
-                for tool_name in AVAILABLE_TOOLS:
-                    if tool_name != "none" and (f"<{tool_name}(" in full_output or f"<call>{tool_name}(" in full_output):
-                        has_valid_tool = True
-                        break
+                # Extrai todas as tags <call>...</call>
+                call_contents = re.findall(r"<call>(.*?)</call>", raw_text, re.DOTALL)
+                valid_calls = []
 
-                if not has_valid_tool:
+                for inner in call_contents:
+                    inner_clean = inner.strip()
+                    func_name = inner_clean.split("(")[0].strip()
+                    if func_name in AVAILABLE_TOOLS and func_name != "none":
+                        valid_calls.append(f"<call>{inner_clean}</call>")
+
+                if valid_calls:
+                    full_output = "".join(valid_calls)
+                else:
                     full_output = "<call>none()</call>"
 
                 return full_output, round(latency_ms, 2), None
 
         except urllib.error.URLError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
-            return "<call>none()</call>", round(latency_ms, 2), None
+            return "<call>none()</call>", round(latency_ms, 2), f"LLM indisponível (conexão): {e}"
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
-            return "<call>none()</call>", round(latency_ms, 2), None
+            return "<call>none()</call>", round(latency_ms, 2), f"LLM indisponível: {e}"

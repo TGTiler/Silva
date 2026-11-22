@@ -8,10 +8,18 @@ import argparse
 import sys
 import os
 
-from config import WEB_HOST, WEB_PORT, ACCESS_PIN, LLAMA_SERVER_URL, SIMULATE_HARDWARE
-from llm_client import SilvaLLMClient
-from parser import execute_call
-import web_server
+try:
+    from config import WEB_HOST, WEB_PORT, ACCESS_PIN, LLAMA_SERVER_URL, SIMULATE_HARDWARE
+    from llm_client import SilvaLLMClient
+    from parser import execute_call
+    import web_server
+    import scheduler
+except ImportError:
+    from android_agent.config import WEB_HOST, WEB_PORT, ACCESS_PIN, LLAMA_SERVER_URL, SIMULATE_HARDWARE
+    from android_agent.llm_client import SilvaLLMClient
+    from android_agent.parser import execute_call
+    from android_agent import web_server
+    from android_agent import scheduler
 
 
 def print_banner():
@@ -27,10 +35,12 @@ def print_banner():
     print(banner)
     print(f" • LLM Local: {LLAMA_SERVER_URL}")
     print(f" • Simulação de Hardware: {'Ativa' if SIMULATE_HARDWARE else 'Desativada (Termux:API Nativo)'}")
+    print(" • Agendador de Lembretes: Ativo em segundo plano (verificação a cada 30s)")
     print("-" * 55)
 
 
 def run_cli_mode():
+    scheduler.start_scheduler()
     print_banner()
     print("[*] Modo CLI interativo iniciado. Digite 'sair' ou Ctrl+C para encerrar.")
     print("[*] Dica: Você pode digitar perguntas normais ou chamadas diretas como <call>get_battery()</call>\n")

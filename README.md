@@ -4,7 +4,7 @@ O **Silva** é um micro-agente de Inteligência Artificial **100% offline, priva
 
 Diferente de assistentes convencionais dependentes de nuvem ou bots de mensagens externas, o Silva opera diretamente na borda (*edge computing*) utilizando um micro-modelo de linguagem quantizado em formato **GGUF** de **~105 MB** (`Q5_K_M`), atuando estritamente como um **roteador semântico de *Function Calling***: ele interpreta comandos de voz/texto em linguagem natural (Português do Brasil) e emite chamadas de função tipadas `<call>funcao(args)</call>` para orquestrar o hardware, aplicativos e sensores do dispositivo com latência de milissegundos.
 
-O sistema conta com um **servidor web nativo** com interface moderna *dark mode* (tons de roxo e estética *glassmorphism*), **100% offline (sem CDNs externos)**, acessível tanto no navegador do próprio celular (`http://localhost:5000`) quanto em computadores na mesma rede Wi-Fi (`http://<IP-DO-CELULAR>:5000`).
+O sistema conta com um **servidor web nativo** com interface moderna inspirada em assistentes como Claude, ChatGPT e DeepSeek (design minimalista, tema escuro refinado, sidebar retrátil com histórico de conversas em `localStorage` e badges de telemetria), **100% offline (sem CDNs externos)**, acessível tanto no navegador do próprio celular (`http://localhost:5000`) quanto em computadores na mesma rede Wi-Fi (`http://<IP-DO-CELULAR>:5000`).
 
 ---
 
@@ -56,7 +56,7 @@ O sistema conta com um **servidor web nativo** com interface moderna *dark mode*
 
 ---
 
-## 🛠️ Catálogo Completo das 32 Ferramentas
+## 🛠️ Catálogo Completo das 35 Ferramentas
 
 O Silva possui 35 ferramentas implementadas em `android_agent/tools.py` e catalogadas formalmente em `dataset/schema.json`:
 
@@ -149,14 +149,15 @@ silva-agent/
 
 #### 1. Módulo `android_agent/` (Execução no Celular)
 - **`main.py`**: Gerencia os argumentos de linha de comando. Permite iniciar o agente no modo `--web` (padrão) para abrir o servidor de rede local ou `--cli` para interagir diretamente pelo terminal do Termux.
-- **`web_server.py`**: Construído sobre o `ThreadingHTTPServer` nativo do Python (sem frameworks pesados como Flask/FastAPI para economizar RAM). Trata requisições para a API `/api/chat`, valida o cabeçalho de segurança `X-Access-Pin`, serve arquivos estáticos e mapeia arquivos multimídia da pasta `captures/`.
+- **`web_server.py`**: Construído sobre `ReusableThreadingHTTPServer` com `SO_REUSEADDR` e threads daemon, garantindo reutilização imediata de portas e encerramento limpo via `SIGINT`/`SIGTERM`. Possui fallback automático de porta (`port` a `port+5`) caso a porta configurada esteja ocupada. Trata requisições para a API `/api/chat`, valida o cabeçalho de segurança `X-Access-Pin`, serve arquivos estáticos e mapeia arquivos multimídia da pasta `captures/`.
+- **`start_silva.sh`**: Script de boot resiliente e idempotente. Executa limpeza cirúrgica de instâncias órfãs antigas do `llama-server` e `main.py`, gerencia PIDs via `data/llama.pid` e `data/web.pid`, respeita a variável `WEB_PORT` do `.env` e implementa `trap cleanup EXIT INT TERM` unificado.
 - **`scheduler.py`**: Thread daemon em background que monitora compromissos salvos localmente (`events.json`) a cada 30 segundos, disparando notificações nativas (`termux-notification`) e vibração no horário exato do lembrete.
 - **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
-- **`intent_fallback.py`**: Motor de regras determinísticas de alta velocidade para controle de hardware crítico (ligar lanterna, silenciar, pedir localização, previsão do tempo, corridas Uber/99 e delivery iFood) garantindo resposta instantânea mesmo se o processador estiver sob carga.
+- **`intent_fallback.py`**: Motor determinístico de alta velocidade para controle de hardware crítico, previsão do tempo inteligente (com preposições `de/em/no/na/para/pra`, limpeza de ruídos temporais e capitalização de cidades), normalizador matemático com tradução de operadores e números por extenso em PT-BR, corridas Uber/99 e delivery iFood.
 - **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código e checa se a função chamada pertence à lista de permissões (`AVAILABLE_TOOLS`).
-- **`tools.py`**: Conector entre a inteligência e o Android. Executa comandos como `termux-battery-status`, `termux-camera-photo`, `termux-location`, deep links de transporte (`request_ride`) e delivery (`order_food`), chamadas de telefone (`am start -a android.intent.action.CALL`), controle de volume e consultas à API do Open-Meteo.
+- **`tools.py`**: Conector entre a inteligência e o Android. Executa 35 ferramentas nativas incluindo: consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo (com prioridade Brasil, desempate por UF e eliminação rigorosa de falsos positivos de chuva), deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e calculadora segura via AST.
 - **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), e o `SILVA_SYSTEM_PROMPT` sincronizado.
-- **`static/index.html`**: Chat moderno com estética Dark Purple & Liquid Glass, sidebar desktop de 2 colunas com telemetria em tempo real, ribbon mobile horizontal, zero `innerHTML` (100% seguro contra XSS) e zero dependências externas.
+- **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, sidebar retrátil com histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
 
 #### 2. Módulo `dataset/` (Dados de Treinamento)
 - **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 35 ferramentas.

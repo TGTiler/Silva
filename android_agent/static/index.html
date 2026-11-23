@@ -662,6 +662,22 @@
       white-space: pre-wrap;
     }
 
+    /* Links Markdown Ocultos em Bolhas de Texto */
+    .bubble-md-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      color: #C77DFF;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-weight: 500;
+      word-break: break-word;
+      transition: color 0.15s;
+    }
+    .bubble-md-link:hover {
+      color: #E0AAFF;
+    }
+
     /* Cards Visuais de Busca Web (.search-card) */
     .search-card {
       margin-top: 10px;
@@ -671,12 +687,12 @@
       width: 100%;
       background: rgba(14, 10, 24, 0.9);
       border: 1px solid rgba(157, 78, 221, 0.3);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 12px;
       box-sizing: border-box;
     }
     .wiki-block {
-      background: rgba(26, 18, 48, 0.6);
+      background: rgba(26, 18, 48, 0.65);
       border-left: 3px solid var(--purple-accent);
       border-radius: 0 8px 8px 0;
       padding: 10px 12px;
@@ -691,7 +707,7 @@
       gap: 8px;
     }
     .wiki-title-wrap {
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: #fff;
       display: flex;
@@ -702,24 +718,30 @@
       font-size: 0.68rem;
       font-family: var(--font-mono);
       color: var(--purple-accent);
-      background: rgba(157, 78, 221, 0.15);
-      border: 1px solid rgba(157, 78, 221, 0.25);
-      padding: 1px 6px;
+      background: rgba(157, 78, 221, 0.18);
+      border: 1px solid rgba(157, 78, 221, 0.3);
+      padding: 1px 7px;
       border-radius: 4px;
     }
     .wiki-summary {
-      font-size: 0.82rem;
+      font-size: 0.83rem;
       color: var(--text-primary);
       line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .wiki-link {
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       color: var(--purple-accent);
       text-decoration: none;
       align-self: flex-start;
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      font-weight: 500;
+      margin-top: 2px;
     }
     .wiki-link:hover {
       text-decoration: underline;
@@ -731,31 +753,34 @@
     }
     .search-result-item {
       background: rgba(22, 16, 38, 0.6);
-      border: 1px solid rgba(157, 78, 221, 0.15);
+      border: 1px solid rgba(157, 78, 221, 0.18);
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 9px 12px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
       text-decoration: none;
       transition: background 0.2s, border-color 0.2s;
     }
     .search-result-item:hover {
-      background: rgba(157, 78, 221, 0.12);
-      border-color: rgba(157, 78, 221, 0.35);
+      background: rgba(157, 78, 221, 0.14);
+      border-color: rgba(157, 78, 221, 0.4);
     }
     .result-title {
-      font-size: 0.82rem;
+      font-size: 0.84rem;
       font-weight: 600;
       color: #f0f0ff;
       line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .result-meta {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       color: var(--text-dim);
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 6px;
     }
     .result-source {
@@ -773,19 +798,21 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 7px 12px;
-      font-size: 0.76rem;
+      padding: 7px 15px;
+      font-size: 0.78rem;
       font-weight: 600;
       color: #ffffff;
-      background: linear-gradient(135deg, rgba(157, 78, 221, 0.35), rgba(114, 9, 183, 0.35));
-      border: 1px solid rgba(157, 78, 221, 0.45);
-      border-radius: 6px;
+      background: linear-gradient(135deg, #5A189A, #7B1FA2);
+      border: 1px solid rgba(199, 125, 255, 0.4);
+      border-radius: 20px;
       text-decoration: none;
+      box-shadow: 0 2px 8px rgba(90, 24, 154, 0.35);
       transition: all 0.2s ease;
     }
     .search-action-btn:hover {
-      background: linear-gradient(135deg, rgba(157, 78, 221, 0.55), rgba(114, 9, 183, 0.55));
-      border-color: var(--purple-accent);
+      background: linear-gradient(135deg, #7B1FA2, #9D4EDD);
+      border-color: #E0AAFF;
+      box-shadow: 0 4px 12px rgba(123, 31, 162, 0.5);
       color: #ffffff;
     }
 
@@ -1594,7 +1621,7 @@
             if (m.role === "user") {
               appendUserMessageDOM(m.text);
             } else {
-              appendSilvaMessageDOM(m.text, m.raw_call, m.latency_ms, m.image_url, m.video_url, m.data, m.media_items);
+              appendSilvaMessageDOM(m.text, m.raw_call, m.latency_ms, m.image_url, m.video_url, m.data, m.media_items, m.tool_data);
             }
           });
           scrollToBottom();
@@ -1746,12 +1773,12 @@
         });
       }
 
-      // Formatação inline segura: **negrito**, `código` e links https://
+      // Formatação inline segura: links Markdown [texto](url), URLs cruas, **negrito** e `código`
       function formatInlineMarkdown(container, text) {
         if (!text) return;
 
-        // Regex para capturar URLs, **negrito** e `código`
-        const pattern = /(https?:\/\/[^\s<>"'\)]+)|\*\*([^*]+)\*\*|`([^`]+)`/g;
+        // Regex para capturar links Markdown [texto](url), URLs cruas, **negrito** e `código`
+        const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)|(https?:\/\/[^\s<>"'\)]+)|\*\*([^*]+)\*\*|`([^`]+)`/g;
         let lastIndex = 0;
         let match;
 
@@ -1761,24 +1788,63 @@
             container.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
           }
 
-          if (match[1]) {
-            // URL detectada
-            const url = match[1];
+          if (match[1] && match[2]) {
+            // [Texto](URL) detectado - Link Markdown Oculto
+            const label = match[1];
+            const url = match[2];
+            const a = document.createElement("a");
+            a.href = url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.className = "bubble-md-link";
+            a.textContent = label;
+
+            const extSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            extSvg.setAttribute("width", "11");
+            extSvg.setAttribute("height", "11");
+            extSvg.setAttribute("viewBox", "0 0 24 24");
+            extSvg.setAttribute("fill", "none");
+            extSvg.setAttribute("stroke", "currentColor");
+            extSvg.setAttribute("stroke-width", "2");
+            extSvg.setAttribute("stroke-linecap", "round");
+            extSvg.setAttribute("stroke-linejoin", "round");
+            extSvg.style.marginLeft = "3px";
+            extSvg.style.verticalAlign = "middle";
+            extSvg.style.opacity = "0.8";
+
+            const extPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            extPath.setAttribute("d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
+            const extPoly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            extPoly.setAttribute("points", "15 3 21 3 21 9");
+            const extLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            extLine.setAttribute("x1", "10");
+            extLine.setAttribute("y1", "14");
+            extLine.setAttribute("x2", "21");
+            extLine.setAttribute("y2", "3");
+
+            extSvg.appendChild(extPath);
+            extSvg.appendChild(extPoly);
+            extSvg.appendChild(extLine);
+            a.appendChild(extSvg);
+            container.appendChild(a);
+          } else if (match[3]) {
+            // URL crua detectada
+            const url = match[3];
             const a = document.createElement("a");
             a.href = url;
             a.target = "_blank";
             a.rel = "noopener noreferrer";
             a.textContent = url;
             container.appendChild(a);
-          } else if (match[2]) {
+          } else if (match[4]) {
             // **negrito** detectado
             const strong = document.createElement("strong");
-            strong.textContent = match[2];
+            strong.textContent = match[4];
             container.appendChild(strong);
-          } else if (match[3]) {
+          } else if (match[5]) {
             // `código` detectado
             const code = document.createElement("code");
-            code.textContent = match[3];
+            code.textContent = match[5];
             container.appendChild(code);
           }
 
@@ -1810,7 +1876,7 @@
       }
 
       // 10. Renderização de Mensagem do Silva (com suporte a Multi-Mídia e PIN)
-      function appendSilvaMessageDOM(msg, rawCall, latencyMs, imageUrl, videoUrl, data, mediaItems) {
+      function appendSilvaMessageDOM(msg, rawCall, latencyMs, imageUrl, videoUrl, data, mediaItems, toolData) {
         const row = document.createElement("div");
         row.className = "msg-row silva";
 
@@ -1834,9 +1900,31 @@
         const wrap = document.createElement("div");
         wrap.className = "msg-content-wrap";
 
+        // Identifica se há dados estruturados de Pesquisa Web
+        let searchData = null;
+        const candidateData = toolData || (Array.isArray(data) ? data[0] : data);
+        if (candidateData && candidateData.google_url && (candidateData.wiki || (Array.isArray(candidateData.results) && candidateData.results.length > 0))) {
+          searchData = candidateData;
+        } else if (Array.isArray(data)) {
+          for (let i = 0; i < data.length; i++) {
+            const item = data[i];
+            if (item && item.google_url && (item.wiki || (Array.isArray(item.results) && item.results.length > 0))) {
+              searchData = item;
+              break;
+            }
+          }
+        }
+
         const bubble = document.createElement("div");
         bubble.className = "bubble silva";
-        renderSafeMarkdown(bubble, msg);
+
+        if (searchData) {
+          const qName = searchData.query ? searchData.query.trim() : "";
+          const headerTxt = qName ? `Resultados para "${qName}"` : "Resultados da pesquisa";
+          renderSafeMarkdown(bubble, headerTxt);
+        } else {
+          renderSafeMarkdown(bubble, msg);
+        }
 
         // Renderização de cards de SMS se disponível
         if (data && Array.isArray(data) && data.length > 0 && (data[0].sender || data[0].number) && data[0].body) {
@@ -1892,25 +1980,12 @@
           bubble.appendChild(smsContainer);
         }
 
-        // Renderização de Card de Busca Web (.search-card)
-        let searchData = null;
-        if (Array.isArray(data)) {
-          for (let i = 0; i < data.length; i++) {
-            const item = data[i];
-            if (item && (item.google_url || item.wiki || (Array.isArray(item.results) && item.results.length > 0))) {
-              searchData = item;
-              break;
-            }
-          }
-        } else if (data && (data.google_url || data.wiki || (Array.isArray(data.results) && data.results.length > 0))) {
-          searchData = data;
-        }
-
+        // Renderização de Card Visual Dedicado para Pesquisa Web (.search-card)
         if (searchData) {
           const searchCard = document.createElement("div");
           searchCard.className = "search-card";
 
-          // Bloco de Resumo (se wiki existir)
+          // Card Wikipédia (se existir)
           if (searchData.wiki && searchData.wiki.title) {
             const wikiBlock = document.createElement("div");
             wikiBlock.className = "wiki-block";
@@ -1937,7 +2012,7 @@
             bookSvg.appendChild(bookPath1);
             bookSvg.appendChild(bookPath2);
 
-            const titleText = document.createElement("span");
+            const titleText = document.createElement("strong");
             titleText.textContent = searchData.wiki.title;
 
             wikiTitleWrap.appendChild(bookSvg);
@@ -1965,7 +2040,7 @@
               wikiLink.target = "_blank";
               wikiLink.rel = "noopener noreferrer";
 
-              const linkText = document.createTextNode("Ler na Wikipédia");
+              const linkText = document.createTextNode("Ler artigo completo na Wikipédia ");
               const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
               arrowSvg.setAttribute("width", "12");
               arrowSvg.setAttribute("height", "12");
@@ -1975,18 +2050,15 @@
               arrowSvg.setAttribute("stroke-width", "2");
               arrowSvg.setAttribute("stroke-linecap", "round");
               arrowSvg.setAttribute("stroke-linejoin", "round");
-              const arrowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-              arrowPath.setAttribute("d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
-              const arrowPoly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-              arrowPoly.setAttribute("points", "15 3 21 3 21 9");
               const arrowLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-              arrowLine.setAttribute("x1", "10");
-              arrowLine.setAttribute("y1", "14");
-              arrowLine.setAttribute("x2", "21");
-              arrowLine.setAttribute("y2", "3");
-              arrowSvg.appendChild(arrowPath);
-              arrowSvg.appendChild(arrowPoly);
+              arrowLine.setAttribute("x1", "5");
+              arrowLine.setAttribute("y1", "12");
+              arrowLine.setAttribute("x2", "19");
+              arrowLine.setAttribute("y2", "12");
+              const arrowPoly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+              arrowPoly.setAttribute("points", "12 5 19 12 12 19");
               arrowSvg.appendChild(arrowLine);
+              arrowSvg.appendChild(arrowPoly);
 
               wikiLink.appendChild(linkText);
               wikiLink.appendChild(arrowSvg);
@@ -1996,7 +2068,7 @@
             searchCard.appendChild(wikiBlock);
           }
 
-          // Lista de Resultados / Notícias (results)
+          // Lista de Notícias (results)
           if (Array.isArray(searchData.results) && searchData.results.length > 0) {
             const listWrap = document.createElement("div");
             listWrap.className = "search-results-list";
@@ -2024,11 +2096,11 @@
               srcSpan.textContent = res.source || "Web";
               metaRow.appendChild(srcSpan);
 
-              if (res.snippet && !res.snippet.startsWith("Fonte:")) {
-                const snipSpan = document.createElement("span");
-                snipSpan.className = "result-snippet-text";
-                snipSpan.textContent = res.snippet;
-                metaRow.appendChild(snipSpan);
+              if (res.date) {
+                const dateSpan = document.createElement("span");
+                dateSpan.className = "result-date";
+                dateSpan.textContent = "• " + res.date;
+                metaRow.appendChild(dateSpan);
               }
 
               itemEl.appendChild(metaRow);
@@ -2038,7 +2110,7 @@
             searchCard.appendChild(listWrap);
           }
 
-          // Botão de Ação: Abrir resultados completos no Google
+          // Botão Inferior: Pílula roxa sutil "Abrir pesquisa no Google ↗"
           const googleUrl = searchData.google_url || searchData.url;
           if (googleUrl) {
             const actionBtn = document.createElement("a");
@@ -2047,30 +2119,23 @@
             actionBtn.target = "_blank";
             actionBtn.rel = "noopener noreferrer";
 
-            const searchSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            searchSvg.setAttribute("width", "13");
-            searchSvg.setAttribute("height", "13");
-            searchSvg.setAttribute("viewBox", "0 0 24 24");
-            searchSvg.setAttribute("fill", "none");
-            searchSvg.setAttribute("stroke", "currentColor");
-            searchSvg.setAttribute("stroke-width", "2");
-            searchSvg.setAttribute("stroke-linecap", "round");
-            searchSvg.setAttribute("stroke-linejoin", "round");
-            const sCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            sCircle.setAttribute("cx", "11");
-            sCircle.setAttribute("cy", "11");
-            sCircle.setAttribute("r", "8");
-            const sLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            sLine.setAttribute("x1", "21");
-            sLine.setAttribute("y1", "21");
-            sLine.setAttribute("x2", "16.65");
-            sLine.setAttribute("y2", "16.65");
-            searchSvg.appendChild(sCircle);
-            searchSvg.appendChild(sLine);
-
-            const btnText = document.createTextNode("Abrir resultados completos no Google");
-            actionBtn.appendChild(searchSvg);
+            const btnText = document.createTextNode("Abrir pesquisa no Google");
             actionBtn.appendChild(btnText);
+
+            const arrowExtSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            arrowExtSvg.setAttribute("width", "13");
+            arrowExtSvg.setAttribute("height", "13");
+            arrowExtSvg.setAttribute("viewBox", "0 0 24 24");
+            arrowExtSvg.setAttribute("fill", "none");
+            arrowExtSvg.setAttribute("stroke", "currentColor");
+            arrowExtSvg.setAttribute("stroke-width", "2");
+            arrowExtSvg.setAttribute("stroke-linecap", "round");
+            arrowExtSvg.setAttribute("stroke-linejoin", "round");
+            const aPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            aPath.setAttribute("d", "M7 17l9.2-9.2M17 17V8H8");
+            arrowExtSvg.appendChild(aPath);
+
+            actionBtn.appendChild(arrowExtSvg);
             searchCard.appendChild(actionBtn);
           }
 
@@ -2221,6 +2286,7 @@
           }
 
           let mediaItems = data.media_items || [];
+          let toolData = data.tool_data || (Array.isArray(data.data) ? data.data[0] : data.data) || null;
 
           if (latency !== undefined) {
             latencyInfo.textContent = latency + " ms";
@@ -2234,11 +2300,12 @@
             image_url: imgUrl,
             video_url: vidUrl,
             media_items: mediaItems,
-            data: resData
+            data: resData,
+            tool_data: toolData
           });
           saveSessions();
 
-          appendSilvaMessageDOM(replyMsg, rawCall, latency, imgUrl, vidUrl, resData, mediaItems);
+          appendSilvaMessageDOM(replyMsg, rawCall, latency, imgUrl, vidUrl, resData, mediaItems, toolData);
 
         } catch (err) {
           const errMsg = "Erro de conexão ao servidor Silva: " + err.message;

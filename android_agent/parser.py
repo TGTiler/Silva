@@ -165,6 +165,13 @@ def execute_call(model_output: str) -> Dict[str, Any]:
     else:
         root_status = "ok"
 
+    primary_tool_data = None
+    if executed_details:
+        for d in executed_details:
+            if d.get("data") is not None:
+                primary_tool_data = d["data"]
+                break
+
     return {
         "status": root_status,
         "message": consolidated_message,
@@ -172,6 +179,7 @@ def execute_call(model_output: str) -> Dict[str, Any]:
         "func_name": calls[0][0] if len(calls) == 1 else "multi_call",
         "calls": executed_details,
         "data": [d.get("data") for d in executed_details if d.get("data") is not None],
+        "tool_data": primary_tool_data,
         "image_url": latest_image_url,
         "video_url": latest_video_url,
         "media_items": media_items

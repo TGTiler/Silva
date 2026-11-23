@@ -404,6 +404,14 @@ def _clean_weather_location(raw_loc: str) -> str:
     return ", ".join(cleaned_parts)
 
 
+def _strip_leading_articles(q: str) -> str:
+    """Remove artigos definidos e indefinidos isolados no início da query e pontuações finais."""
+    if not q:
+        return ""
+    cleaned = re.sub(r"(?i)^\s*(?:o|a|os|as|um|uma|uns|umas)\s+", "", q.strip())
+    return re.sub(r"[\s\.\?!,;:~—–-]+$", "", cleaned).strip()
+
+
 def _clean_search_query(raw_query: str) -> str:
     """
     Limpa e normaliza termos de pesquisa na web:
@@ -474,9 +482,7 @@ def _clean_search_query(raw_query: str) -> str:
     q = re.sub(r"[?!.,;\s]+$", "", q).strip()
 
     # Remove artigos definidos e indefinidos no início da query
-    q = re.sub(r"(?i)^(?:o|a|os|as|um|uma|uns|umas)\s+", "", q).strip()
-
-    return re.sub(r"[?!.,;\s]+$", "", q).strip()
+    return _strip_leading_articles(q)
 
 
 # ==============================================================================

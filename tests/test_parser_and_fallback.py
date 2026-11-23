@@ -249,16 +249,38 @@ class TestParserAndFallback(unittest.TestCase):
         call = match_intent_fallback("pesquise sobre o GTA 6 no google")
         self.assertEqual(call, "<call>search_google(query='GTA 6')</call>")
 
+        call_v = match_intent_fallback("pesquise sobre o GTA V")
+        self.assertEqual(call_v, "<call>search_google(query='GTA V')</call>")
+
         call_dot = match_intent_fallback("pesquisar por um hotel em SP no google por favor.")
         self.assertEqual(call_dot, "<call>search_google(query='hotel em SP')</call>")
 
         from android_agent.tools import search_google
+        from android_agent.parser import execute_call
+
+        # Testa sanitização de artigos na própria função search_google
+        res_o = search_google("o GTA V", open_browser=False)
+        self.assertEqual(res_o["data"]["query"], "GTA V")
+
         res = search_google("GTA 6", open_browser=False)
         self.assertEqual(res["status"], "ok")
         self.assertIn("google_url", res["data"])
         self.assertIn("wiki", res["data"])
         self.assertIn("results", res["data"])
         self.assertNotIn("\n\n\n", res["message"])
+
+        # Valida que não há URLs cruas e sim links Markdown no message
+        self.assertIn("[Ler artigo completo na Wikipédia]", res["message"])
+        self.assertIn("[Ver todos os resultados no Google]", res["message"])
+        self.assertNotIn("Link: https://", res["message"])
+        self.assertNotIn("Fonte: https://", res["message"])
+        self.assertNotIn("Pesquisar no Google: https://", res["message"])
+
+        # Valida propagação de tool_data em execute_call
+        exec_res = execute_call("<call>search_google(query='GTA V')</call>")
+        self.assertIn("tool_data", exec_res)
+        self.assertIsNotNone(exec_res["tool_data"])
+        self.assertEqual(exec_res["tool_data"]["query"], "GTA V")
 
     def test_dictation_battery_and_punctuation_fallback(self):
         """Testa frases de ditado por voz do teclado com pontuação terminal e termos coloquiais de bateria."""

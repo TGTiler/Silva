@@ -187,12 +187,27 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                     "latency_ms": latency_ms,
                     "image_url": None,
                     "video_url": None,
-                    "data": None
+                    "data": None,
+                    "tool_data": None
                 })
 
             # Execução segura através do parser
             result = execute_call(raw_call)
             result["latency_ms"] = latency_ms
+
+            if "tool_data" not in result:
+                primary_tool_data = None
+                if result.get("calls"):
+                    for c in result["calls"]:
+                        if c.get("data") is not None:
+                            primary_tool_data = c["data"]
+                            break
+                if primary_tool_data is None and result.get("data"):
+                    if isinstance(result["data"], list) and len(result["data"]) > 0:
+                        primary_tool_data = result["data"][0]
+                    elif isinstance(result["data"], dict):
+                        primary_tool_data = result["data"]
+                result["tool_data"] = primary_tool_data
 
             return self._send_json(result)
 

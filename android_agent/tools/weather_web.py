@@ -839,7 +839,8 @@ def _fetch_google_news_rss(clean_query: str) -> list[Dict[str, str]]:
                     "title": item_title,
                     "snippet": snippet,
                     "source": source,
-                    "url": link
+                    "url": link,
+                    "date": date_str
                 })
     except Exception:
         pass
@@ -882,12 +883,21 @@ def _fetch_duckduckgo_lite(clean_query: str) -> list[Dict[str, str]]:
                 "title": title,
                 "snippet": snip or f"Resultado para {clean_query}",
                 "source": "DuckDuckGo",
-                "url": url
+                "url": url,
+                "date": ""
             })
     except Exception:
         pass
 
     return results
+
+
+def _strip_leading_articles(q: str) -> str:
+    """Remove artigos definidos e indefinidos isolados no início da query e pontuações finais."""
+    if not q:
+        return ""
+    cleaned = re.sub(r"(?i)^\s*(?:o|a|os|as|um|uma|uns|umas)\s+", "", q.strip())
+    return re.sub(r"[\s\.\?!,;:~—–-]+$", "", cleaned).strip()
 
 
 def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
@@ -898,7 +908,7 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
     3. DuckDuckGo Lite (Fallback orgânico via POST)
     Abre o navegador se open_browser=True ou se solicitado explicitamente no texto.
     """
-    clean_query = str(query).strip()
+    clean_query = _strip_leading_articles(str(query))
     if not clean_query:
         return {"status": "error", "message": "Termo de busca não especificado.", "data": None}
 
@@ -936,15 +946,16 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
                 "title": f"Últimas atualizações sobre {clean_query}",
                 "snippet": f"Notícia recente e desenvolvimentos sobre {clean_query}.",
                 "source": "Portal de Notícias",
-                "url": search_url
+                "url": search_url,
+                "date": "20/11/2026"
             }
         ]
 
         sections = [
             f"Silva: Resultados da pesquisa para '{clean_query}':",
-            f"[Wikipédia - {wiki_sim['title']}]\n{wiki_sim['summary']}\nFonte: {wiki_sim['url']}",
-            f"Principais Notícias e Artigos:\n1. {news_sim[0]['title']} ({news_sim[0]['source']})\n   {news_sim[0]['snippet']}\n   Link: {news_sim[0]['url']}",
-            f"Pesquisar no Google: {search_url}"
+            f"[Wikipédia — {wiki_sim['title']}]\n{wiki_sim['summary']}\n[Ler artigo completo na Wikipédia]({wiki_sim['url']})",
+            f"Principais Notícias e Artigos:\n1. [{news_sim[0]['title']}]({news_sim[0]['url']}) — {news_sim[0]['source']} ({news_sim[0]['date']})",
+            f"[Ver todos os resultados no Google]({search_url})"
         ]
 
         return {
@@ -982,25 +993,28 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
         if ddg_results:
             results = ddg_results
 
-    # Formatação Limpa da Resposta (zero linhas em branco vazias)
+    # Formatação Limpa da Resposta (zero linhas em branco vazias, links ocultos Markdown)
     sections = [f"Silva: Resultados da pesquisa para '{clean_query}':"]
 
     if wiki_res:
+        wiki_url = wiki_res.get("url", search_url)
         sections.append(
-            f"[Wikipédia - {wiki_res['title']}]\n"
+            f"[Wikipédia — {wiki_res['title']}]\n"
             f"{wiki_res['summary']}\n"
-            f"Fonte: {wiki_res['url']}"
+            f"[Ler artigo completo na Wikipédia]({wiki_url})"
         )
 
     if results:
         items_txt = []
         for idx, item in enumerate(results, start=1):
-            src = f" ({item['source']})" if item.get("source") else ""
-            snip = f"\n   {item['snippet']}" if item.get("snippet") else ""
-            items_txt.append(f"{idx}. {item['title']}{src}{snip}\n   Link: {item['url']}")
+            title = item.get("title", "").strip()
+            url = item.get("url", search_url)
+            source = item.get("source", "Web").strip()
+            date_info = f" ({item['date']})" if item.get("date") else ""
+            items_txt.append(f"{idx}. [{title}]({url}) — {source}{date_info}")
         sections.append("Principais Notícias e Artigos:\n" + "\n".join(items_txt))
 
-    sections.append(f"Pesquisar no Google: {search_url}")
+    sections.append(f"[Ver todos os resultados no Google]({search_url})")
 
     final_msg = "\n\n".join(sections)
 

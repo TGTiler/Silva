@@ -18,6 +18,7 @@ try:
         _clean_install_app_name,
         _clean_weather_location,
         _clean_search_query,
+        _strip_leading_articles,
         ALLOWED_MATH_NAMES,
     )
 except ImportError:
@@ -35,6 +36,7 @@ except ImportError:
         _clean_install_app_name,
         _clean_weather_location,
         _clean_search_query,
+        _strip_leading_articles,
         ALLOWED_MATH_NAMES,
     )
 
@@ -53,5 +55,6 @@ __all__ = [
     "_clean_install_app_name",
     "_clean_weather_location",
     "_clean_search_query",
+    "_strip_leading_articles",
     "ALLOWED_MATH_NAMES",
 ]

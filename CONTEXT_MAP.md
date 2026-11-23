@@ -837,6 +837,12 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
       3. *DuckDuckGo Lite*: Fallback via POST orgânico caso as fontes anteriores não retornem resultados.
       4. *Formatação Consistente*: Resposta textual limpa sem linhas em branco vazias e metadados estruturados (`google_url`, `wiki`, `results`).
     - *Card Visual no Frontend (`static/index.html`)*: Renderização de `.search-card` seguro contra XSS (`document.createElement`), com ícones SVG inline (zero emojis), bloco de resumo enciclopédico, notícias clicáveis e botão de ação `"Abrir resultados completos no Google"`. Suíte com 26 testes unitários com 100% de aprovação.
+23. **Modo Opcional de Comando de Voz Offline (`whisper.cpp` + Notificação Persistente 24/7)**:
+    - *Controlador Autônomo (`voice_assistant.py`)*: Máquina de estados desacoplada que gerencia o ciclo de gravação, conversão de áudio, transcrição e despacho para a API local sem acoplar o runtime web central.
+    - *Notificação Persistente 24/7 do Termux (`--id silva_voice`)*: Notificação fixa na barra de status com botões interativos 'Falar' (`--action start`) e 'Parar' (`--action stop`), feedback tátil instantâneo (vibração de 80ms) e atualização visual dinâmica do status da requisição e do resumo retornado pelo Silva.
+    - *Pipeline de Áudio Offline*: Gravação nativa via `termux-microphone-record` (limite de segurança de 60s), conversão para PCM WAV 16kHz Mono via `ffmpeg`, transcrição offline via `whisper.cpp` (`whisper-cli -m models/ggml-base.bin -l pt -nt`), limpeza de ruídos e despacho HTTP para `/api/chat` com header `X-Access-Pin`.
+    - *Privacidade e TTS Opcional*: Remoção obrigatória e imediata de arquivos temporários (`voice_raw.m4a`, `voice_input.wav`) e síntese opcional de voz via `termux-tts-speak` (`ENABLE_VOICE_TTS=true`).
+    - *Configuração Opcional e Boot*: Variáveis opcionais em `.env.example` e `config.py` (`ENABLE_VOICE_MODE`, `WHISPER_BIN_PATH`, `WHISPER_MODEL_PATH`, `WHISPER_LANGUAGE`, `ENABLE_VOICE_TTS`), inicialização via flag `--voice` em `start_silva.sh` e limpeza no `trap` de saída (`--action stop-service`). Suíte expandida para 31 testes automatizados passando 100%.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

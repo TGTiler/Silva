@@ -32,6 +32,21 @@ if [ -n "$ENV_PATH" ]; then
     fi
 fi
 
+# Verifica se modo de voz foi solicitado via flag --voice ou no .env
+VOICE_MODE=false
+for arg in "$@"; do
+    if [ "$arg" == "--voice" ] || [ "$arg" == "-v" ]; then
+        VOICE_MODE=true
+    fi
+done
+
+if [ "$VOICE_MODE" != "true" ] && [ -n "$ENV_PATH" ]; then
+    PARSED_VOICE=$(grep -E '^\s*ENABLE_VOICE_MODE\s*=' "$ENV_PATH" | head -n 1 | cut -d'=' -f2 | tr -d ' "\r\n' || true)
+    if [ "$PARSED_VOICE" == "true" ] || [ "$PARSED_VOICE" == "1" ]; then
+        VOICE_MODE=true
+    fi
+fi
+
 mkdir -p data
 
 echo "[*] Verificando e limpando eventuais processos órfãos anteriores..."
@@ -98,6 +113,11 @@ cleanup() {
             kill "$PID_FILE_WEB" 2>/dev/null || true
         fi
         rm -f data/web.pid
+    fi
+
+    if [ "$VOICE_MODE" == "true" ] || [ -f "data/voice_state.json" ]; then
+        echo "[*] Encerrando serviço de voz e removendo notificação persistente..."
+        python3 voice_assistant.py --action stop-service >/dev/null 2>&1 || true
     fi
     exit 0
 }
@@ -173,4 +193,11 @@ echo ""
 python3 main.py --web --port "$PORT" &
 WEB_PID=$!
 echo "$WEB_PID" > data/web.pid
+
+# 4. Inicia o Modo de Voz se solicitado
+if [ "$VOICE_MODE" == "true" ]; then
+    echo "[*] Ativando Modo de Comando por Voz Offline (Notificação Persistente)..."
+    python3 voice_assistant.py --action init >/dev/null 2>&1 &
+fi
+
 wait "$WEB_PID" || true

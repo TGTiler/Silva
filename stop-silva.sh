@@ -142,8 +142,8 @@ fi
 log_info "${CYAN}[3/3] Liberando wake-lock do sistema e notificações Android...${RESET}"
 
 termux-wake-unlock 2>/dev/null || true
-termux-notification-remove --id silva_voice 2>/dev/null || true
-termux-notification-remove --id silva_status 2>/dev/null || true
+termux-notification-remove silva_voice 2>/dev/null || true
+termux-notification-remove silva_status 2>/dev/null || true
 
 log_info "${GREEN}[OK] Silva Agent encerrado com sucesso.${RESET}"
 exit 0

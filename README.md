@@ -16,9 +16,9 @@ O sistema conta com um **servidor web nativo** com interface moderna inspirada e
 | **Quantização Móvel** | **Q5_K_M (Medium)** | ~105 MB de tamanho em disco, ideal para dispositivos ARM64 |
 | **Janela de Contexto** | **2.048 tokens** | Espaço amplo para System Prompt completo + histórico de ações |
 | **Vocabulário** | **49.152 tokens** | Tokenizador ChatML nativo |
-| **Ferramentas Nativas (Tools)** | **36 ferramentas** | Controle de hardware, utilitários, sensores, mobilidade, delivery, mídia, redes Wi-Fi, apps e ajuda |
-| **Parâmetros de Ferramentas** | **41 parâmetros formais** | Catalogados e tipados estritamente no `dataset/schema.json` |
-| **Base de Dados de Treino** | **6.094 amostras limpas** | 100% validadas por analisador sintático AST em PT-BR (0 erros) |
+| **Ferramentas Nativas (Tools)** | **39 ferramentas** | Controle de hardware, utilitários, sensores, mobilidade, delivery, mídia, redes Wi-Fi, apps e ajuda |
+| **Parâmetros de Ferramentas** | **44 parâmetros formais** | Catalogados e tipados estritamente no `dataset/schema.json` |
+| **Base de Dados de Treino** | **6.381 amostras limpas** | 100% validadas por analisador sintático AST em PT-BR (0 erros) |
 
 ---
 
@@ -56,11 +56,11 @@ O sistema conta com um **servidor web nativo** com interface moderna inspirada e
 
 ---
 
-## 🛠️ Catálogo Completo das 36 Ferramentas
+## 🛠️ Catálogo Completo das 39 Ferramentas
 
-O Silva possui 36 ferramentas implementadas no pacote modular `android_agent/tools/` e catalogadas formalmente em `dataset/schema.json`:
+O Silva possui 39 ferramentas implementadas no pacote modular `android_agent/tools/` e catalogadas formalmente em `dataset/schema.json`:
 
-| # | Ferramenta | Parâmetros (41 no total) | Descrição do Hardware / Função |
+| # | Ferramenta | Parâmetros (44 no total) | Descrição do Hardware / Função |
 | :-: | :--- | :--- | :--- |
 | **1** | `get_battery()` | *Nenhum* | Consulta status, porcentagem, temperatura e saúde da bateria. |
 | **2** | `get_last_sms(limit)` | `limit` (int, padrão: 5) | Lê as últimas mensagens SMS recebidas na caixa de entrada. |
@@ -125,10 +125,11 @@ silva-agent/
 │   │   ├── colloquial.py          # Pilar B: Normalizador de gírias, níveis ("no talo", "total") e typos com difflib
 │   │   └── router.py              # Pilar C: Roteador por pontuação (ScoredIntentRouter) com tolerância a typos matemáticos e recall restrito
 │   ├── parser.py                  # Analisador sintático AST seguro, validador de whitelist e propagação de status
-│   ├── tools/                     # Pacote modular das 36 ferramentas (core, hardware, media, comms, etc)
-│   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 36 tools
+│   ├── voice_assistant.py         # Módulo opcional de voz offline (whisper.cpp + notificação persistente 24/7)
+│   ├── tools/                     # Pacote modular das 39 ferramentas auditado via AST (core, hardware, media, comms, etc)
+│   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 39 tools
 │   ├── setup_termux.sh            # Instalação automática de dependências e build do llama.cpp
-│   ├── start_silva.sh             # Script de inicialização (llama-server + web_server)
+│   ├── start_silva.sh             # Script de inicialização (llama-server + web_server + voz opcional)
 │   ├── captures/                  # Armazena fotos, vídeos, prints e mapas gerados
 │   ├── data/                      # Persistência: banco relacional SQLite FTS5 (memory.db), events.json e localização
 │   ├── models/                    # Pasta onde reside o micro-modelo silva-135m.gguf
@@ -136,15 +137,22 @@ silva-agent/
 │       └── index.html             # Interface web responsiva (Desktop/Mobile, dark mode, zero CDNs)
 │
 ├── dataset/                       # ENGENHARIA DE DADOS E VALIDAÇÃO
-│   ├── schema.json                # Especificação JSON Schema formal das 36 ferramentas
+│   ├── schema.json                # Especificação JSON Schema formal das 39 ferramentas
 │   ├── seed_examples.jsonl        # 133 exemplos canônicos de referência em PT-BR
 │   ├── train.jsonl                # Dataset de treino consolidado
 │   ├── train_clean.jsonl          # 95% do dataset limpo para fine-tuning supervisionado (5.790)
 │   ├── eval_clean.jsonl           # 5% do dataset para avaliação e validação de perda (304)
-│   ├── silva_colab_dataset.jsonl  # 6.094 amostras consolidadas para treino no Google Colab
+│   ├── silva_colab_dataset.jsonl  # 6.381 amostras consolidadas para treino no Google Colab
 │   ├── validate_dataset.py        # Validador sintático AST e verificador de schema estrito
 │   ├── prepare_final_dataset.py   # Gerador de contatos sintéticos, balanceador e divisor
 │   └── repair_train_dataset.py    # Corretor automático de inconsistências e desbalanceamento
+│
+├── tests/                         # SUÍTE DE TESTES AUTOMATIZADOS (32 TESTES 100% PASSANDO)
+│   ├── test_contracts.py          # Sincronização de schema (39 tools), prompt e conformidade do dataset
+│   ├── test_parser_and_fallback.py# Testes de AST, whitelist, fallback e tolerância a typos/sinônimos
+│   ├── test_tools_and_memory.py   # Testes de SQLite FTS5, calculadora e smoke test de todas as 39 ferramentas
+│   ├── test_voice_assistant.py    # Testes do assistente de voz offline, estados e notificações
+│   └── test_web_server.py         # Testes HTTP, autenticação por PIN e proteção Path Traversal
 │
 └── pc_training/                   # PIPELINE DE FINE-TUNING E QUANTIZAÇÃO GGUF
     ├── colab_train_silva.py       # Script autônomo completo para Google Colab (GPU T4)
@@ -161,18 +169,18 @@ silva-agent/
 - **`start_silva.sh`**: Script de boot resiliente e idempotente. Executa limpeza cirúrgica de instâncias órfãs antigas do `llama-server` e `main.py`, gerencia PIDs via `data/llama.pid` e `data/web.pid`, respeita a variável `WEB_PORT` do `.env` e implementa `trap cleanup EXIT INT TERM` unificado.
 - **`scheduler.py`**: Thread daemon em background que monitora compromissos salvos localmente (`events.json`) a cada 30 segundos, disparando notificações nativas (`termux-notification`) e vibração no horário exato do lembrete.
 - **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
-- **`intent_fallback.py` e `nlp/`**: Motor determinístico de alta velocidade (<2ms) reestruturado em 4 pilares: Parser Numérico Composto (`parse_ptbr_numbers`), Normalizador de Gírias e Typos (`normalize_colloquial_ptbr`), Roteador por Pontuação (`ScoredIntentRouter`) cobrindo as 36 ferramentas e Splitter Inteligente de cláusulas compostas. Trata números por extenso de zero a milhões, gírias de celular ("no talo", "zap", "insta"), erros de digitação ("baterria", "lanterana"), previsão do tempo inteligente, cálculo científico e desambiguação estrita de Wi-Fi.
+- **`intent_fallback.py` e `nlp/`**: Motor determinístico de alta velocidade (<2ms) reestruturado em 4 pilares: Parser Numérico Composto (`parse_ptbr_numbers`), Normalizador de Gírias e Typos (`normalize_colloquial_ptbr`), Roteador por Pontuação (`ScoredIntentRouter`) cobrindo as 39 ferramentas e Splitter Inteligente de cláusulas compostas. Trata números por extenso de zero a milhões, gírias de celular ("no talo", "zap", "insta"), erros de digitação ("baterria", "lanterana"), previsão do tempo inteligente, cálculo científico e ecossistema Wi-Fi completo.
 - **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código, checa a whitelist de permissões (`AVAILABLE_TOOLS`) e propaga o status real das chamadas (`ok`, `partial_error`, `error`).
-- **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 36 ferramentas nativas divididas em domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`), incluindo: varredura de Wi-Fi (`scan_wifi`) com ordenação por sinal, identificação de banda (2.4/5GHz), segurança e tratamento resiliente de permissão/GPS no Android, memória persistente com SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
+- **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 39 ferramentas nativas divididas em 8 domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. Inclui: varredura de Wi-Fi (`scan_wifi`), conexão com salvamento seguro (`connect_wifi`), telemetria de rede (`get_wifi_info`), toggle Wi-Fi (`set_wifi_state`), memória persistente SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
 - **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), parâmetros opcionais de voz (`ENABLE_VOICE_MODE`, `WHISPER_BIN_PATH`, etc.) e o `SILVA_SYSTEM_PROMPT` sincronizado para as 39 ferramentas.
 - **`voice_assistant.py`**: Módulo opcional de comando por voz offline. Controla a máquina de estados através de notificação persistente 24/7 do Termux com botões 'Falar' e 'Parar', captura áudio com limite de segurança, converte via `ffmpeg`, transcreve localmente via `whisper.cpp` (modelo base), despacha para `/api/chat` e limpa os arquivos temporários ao final.
 - **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, sidebar retrátil com histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
 
 #### 2. Módulo `dataset/` (Dados de Treinamento)
-- **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 36 ferramentas.
+- **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 39 ferramentas (44 parâmetros).
 - **`validate_dataset.py`**: Analisa arquivos `.jsonl` linha por linha, extrai chamadas via regex, compila os argumentos via AST e emite relatórios de conformidade estrita e proporção percentual de classes (com validação estrita de tipos inteiros).
 - **`prepare_final_dataset.py`**: Enriquece a base com variações naturais de contatos humanos (ex: *"Mãe"*, *"Amor"*, *"Doutor Carlos"*), remove duplicatas e gera a divisão treino (95%) e validação (5%).
-- **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 6.094 exemplos prontos para upload e treino no Colab (100% válidos contra o schema das 36 ferramentas).
+- **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 6.381 exemplos prontos para upload e treino no Colab (100% válidos contra o schema das 39 ferramentas).
 - **`PASSO_A_PASSO.md`**: Guia prático passo a passo para o usuário adicionar novos exemplos, recriar os datasets e validar a integridade sintática de forma 100% autônoma.
 
 #### 3. Módulo `pc_training/` (Treino e Conversão)

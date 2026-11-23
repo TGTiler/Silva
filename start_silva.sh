@@ -65,24 +65,12 @@ termux-wake-lock 2>/dev/null || true
 # ------------------------------------------------------------------------------
 echo -e "${CYAN}[*] Verificando e liberando portas e processos anteriores...${RESET}"
 
-if [ -f "$DATA_DIR/llama.pid" ]; then
-    OLD_LLAMA="$(cat "$DATA_DIR/llama.pid" 2>/dev/null || true)"
-    if [ -n "$OLD_LLAMA" ] && kill -0 "$OLD_LLAMA" 2>/dev/null; then
-        kill "$OLD_LLAMA" 2>/dev/null || true
-    fi
-    rm -f "$DATA_DIR/llama.pid"
-fi
-
-pkill -f "llama-server" >/dev/null 2>&1 || true
-pkill -f "android_agent/main.py" >/dev/null 2>&1 || true
-pkill -f "python3.*main.py.*--web" >/dev/null 2>&1 || true
-
-if command -v fuser >/dev/null 2>&1; then
-    fuser -k "${WEB_PORT}/tcp" >/dev/null 2>&1 || true
-    fuser -k "${LLM_PORT}/tcp" >/dev/null 2>&1 || true
-elif command -v lsof >/dev/null 2>&1; then
-    lsof -ti :"${WEB_PORT}" 2>/dev/null | xargs -r kill -9 >/dev/null 2>&1 || true
-    lsof -ti :"${LLM_PORT}" 2>/dev/null | xargs -r kill -9 >/dev/null 2>&1 || true
+if [ -x "$SCRIPT_DIR/stop-silva.sh" ]; then
+    "$SCRIPT_DIR/stop-silva.sh" --quiet
+else
+    pkill -f "llama-server" >/dev/null 2>&1 || true
+    pkill -f "android_agent/main.py" >/dev/null 2>&1 || true
+    pkill -f "python3.*main.py.*--web" >/dev/null 2>&1 || true
 fi
 
 sleep 1
@@ -91,17 +79,21 @@ sleep 1
 # 3. Gerenciamento de Ciclo de Vida e Sinais (Trap)
 # ------------------------------------------------------------------------------
 LLAMA_PID=""
+PIDS_FILE="$DATA_DIR/runtime.pids"
 
 cleanup() {
     trap - EXIT INT TERM
     echo ""
     echo -e "${YELLOW}[*] Encerrando Silva Agent e serviços acoplados...${RESET}"
-    if [ -n "$LLAMA_PID" ] && kill -0 "$LLAMA_PID" 2>/dev/null; then
-        echo "    -> Finalizando llama-server (PID: $LLAMA_PID)..."
-        kill "$LLAMA_PID" 2>/dev/null || true
+    if [ -x "$SCRIPT_DIR/stop-silva.sh" ]; then
+        "$SCRIPT_DIR/stop-silva.sh" --quiet
+    else
+        if [ -n "$LLAMA_PID" ] && kill -0 "$LLAMA_PID" 2>/dev/null; then
+            kill "$LLAMA_PID" 2>/dev/null || true
+        fi
+        rm -f "$DATA_DIR/llama.pid" "$PIDS_FILE" 2>/dev/null || true
+        termux-wake-unlock 2>/dev/null || true
     fi
-    rm -f "$DATA_DIR/llama.pid" 2>/dev/null || true
-    termux-wake-unlock 2>/dev/null || true
     echo -e "${GREEN}[OK] Serviços encerrados com segurança. Até logo!${RESET}"
     exit 0
 }
@@ -153,6 +145,7 @@ elif [ -n "$LLAMA_BIN" ] && [ -x "$LLAMA_BIN" ] && [ -n "$TARGET_MODEL" ] && [ -
     echo -e "${CYAN}[*] Iniciando llama-server local com modelo: ${MODEL_NAME}...${RESET}"
     "$LLAMA_BIN" -m "$TARGET_MODEL" --host 127.0.0.1 --port "$LLM_PORT" -c 1024 -t 4 > "$LOG_DIR/llama_server.log" 2>&1 &
     LLAMA_PID=$!
+    echo "$LLAMA_PID" > "$PIDS_FILE"
     echo "$LLAMA_PID" > "$DATA_DIR/llama.pid"
 
     echo -n "    Aguardando inicialização do llama-server"
@@ -211,6 +204,7 @@ echo -e "  PIN de Segurança:  ${BOLD}${PIN_DISPLAY}${RESET}"
 echo -e "  Arquivo de Logs:   ${SCRIPT_DIR}/android_agent/logs/llama_server.log"
 echo -e "${BOLD}========================================================${RESET}"
 echo -e "  Pressione ${RED}Ctrl+C${RESET} a qualquer momento para encerrar."
+echo -e "  Para encerrar em segundo plano: ${CYAN}./stop-silva.sh${RESET}"
 echo -e "${BOLD}--------------------------------------------------------${RESET}"
 echo ""
 
@@ -218,4 +212,7 @@ echo ""
 # 6. Execução do Servidor Web
 # ------------------------------------------------------------------------------
 cd "$SCRIPT_DIR/android_agent"
-python3 main.py --web --port "$WEB_PORT"
+python3 main.py --web --port "$WEB_PORT" &
+WEB_PID=$!
+echo "$WEB_PID" >> "$PIDS_FILE"
+wait "$WEB_PID"

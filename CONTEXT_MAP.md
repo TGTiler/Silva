@@ -40,9 +40,10 @@ Silva/
     ├── .env.example                         # autoral: template de configuração do runtime
     ├── .gitignore                           # autoral: exclusões de dados, modelos e caches
     ├── README.md                            # autoral: documentação de arquitetura, uso e treinamento
-    ├── install-silva.sh                     # autoral: [1/3] instalador completo e idempotente para Termux e Linux
-    ├── config-silva.sh                      # autoral: [2/3] assistente interativo CLI para configuração (PIN, porta, TTS, cidade)
-    ├── start_silva.sh                       # autoral: [3/3] inicializador unificado (llama-server + web_server + wake-lock)
+    ├── install-silva.sh                     # autoral: instalador completo e idempotente para Termux e Linux
+    ├── config-silva.sh                      # autoral: assistente interativo CLI para configuração (PIN, porta, TTS, cidade)
+    ├── start_silva.sh                       # autoral: inicializador unificado (llama-server + web_server + wake-lock + PIDs)
+    ├── stop-silva.sh                        # autoral: encerramento seguro e completo (PIDs, processos, portas e wake-unlock)
     ├── .git/                                # artefato gerado: metadados e objetos do Git
     ├── android_agent/                       # runtime de produção no Termux
     │   ├── config.py                        # autoral: configuração, paths e prompt do LLM
@@ -52,6 +53,7 @@ Silva/
     │   ├── parser.py                        # autoral: parser AST, whitelist e executor de calls
     │   ├── scheduler.py                     # autoral: daemon background que monitora compromissos locais e dispara alertas
     │   ├── start_silva.sh                   # autoral: wrapper de compatibilidade delegando para ../start_silva.sh
+    │   ├── stop-silva.sh                    # autoral: wrapper de compatibilidade delegando para ../stop-silva.sh
     │   ├── tools/                           # autoral: pacote modular das 39 ferramentas Android auditado via AST
     │   │   ├── __init__.py                  # re-export retrocompatível e AVAILABLE_TOOLS
     │   │   ├── core.py                      # paths, locks, processos, telefones e apps
@@ -124,9 +126,10 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/.env.example` (20 linhas) | Contrato de variáveis de ambiente. |
 | `silva-agent/.gitignore` (41 linhas) | Exclusões de secrets, mídia, modelos, caches e backups. |
 | `silva-agent/README.md` (255 linhas) | Documentação principal com arquitetura, fluxo Plug & Play, catálogo das 39 ferramentas e guias de uso. |
-| `silva-agent/install-silva.sh` (251 linhas) | [1/3] Instalador completo e idempotente (Termux/Desktop): dependências base, llama-server, diretórios e .env. |
-| `silva-agent/config-silva.sh` (240 linhas) | [2/3] Assistente interativo CLI para configuração de PIN, porta web, TTS, hardware e cidade padrão no .env. |
-| `silva-agent/start_silva.sh` (200 linhas) | [3/3] Inicializador unificado com auto-setup, wake-lock, liberação de portas, background llama-server e web server. |
+| `silva-agent/install-silva.sh` (251 linhas) | Instalador completo e idempotente (Termux/Desktop): dependências base, llama-server, diretórios e .env. |
+| `silva-agent/config-silva.sh` (240 linhas) | Assistente interativo CLI para configuração de PIN, porta web, TTS, hardware e cidade padrão no .env. |
+| `silva-agent/start_silva.sh` (215 linhas) | Inicializador unificado com auto-setup, wake-lock, liberação de portas, background llama-server, tracking de PIDs e web server. |
+| `silva-agent/stop-silva.sh` (130 linhas) | Encerramento seguro e cirúrgico de instâncias via runtime.pids (SIGTERM/SIGKILL), liberação de portas e wake-unlock. |
 | `silva-agent/android_agent/config.py` (70 linhas) | Configuração, paths e prompt de function calling. |
 | `silva-agent/android_agent/intent_fallback.py` (966 linhas) | Regras determinísticas de intents (39 tools), normalizador matemático/científico, ecossistema Wi-Fi e sanitização de cidades. |
 | `silva-agent/android_agent/llm_client.py` (119 linhas) | Cliente HTTP do `llama-server`. |
@@ -134,6 +137,7 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/android_agent/parser.py` (174 linhas) | Parser AST, whitelist de 39 ferramentas, execução e propagação de status real (`ok`, `partial_error`, `error`). |
 | `silva-agent/android_agent/scheduler.py` (83 linhas) | Daemon em background thread-safe e reentrante para monitoramento de eventos e alarmes locais. |
 | `silva-agent/android_agent/start_silva.sh` (5 linhas) | Wrapper leve de compatibilidade que delega a execução para `../start_silva.sh`. |
+| `silva-agent/android_agent/stop-silva.sh` (5 linhas) | Wrapper leve de compatibilidade que delega o encerramento para `../stop-silva.sh`. |
 | `silva-agent/android_agent/tools/` (3.922 linhas totais) | Pacote modular das 39 ferramentas em 8 módulos (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. |
 | `silva-agent/android_agent/web_server.py` (265 linhas) | Servidor HTTP com SO_REUSEADDR, autenticação por PIN no chat e em `/captures/*`, proteção anti-path traversal e fallback de porta. |
 | `silva-agent/android_agent/static/index.html` (1.803 linhas) | Frontend responsivo estilo Claude/DeepSeek com multi-mídia segura e zero emojis. |

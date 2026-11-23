@@ -1,254 +1,319 @@
 # 🤖 Silva — Micro-Agente Autônomo Offline para Android
 
-O **Silva** é um micro-agente de Inteligência Artificial **100% offline, privado e ultraleve**, projetado para rodar nativamente em smartphones Android utilizando o **Termux** e a **Termux:API**.
+O **Silva** é um micro-agente de Inteligência Artificial **100% offline, privado e ultraleve**, desenvolvido para operar nativamente na borda (*edge computing*) em smartphones Android através do ambiente **Termux** e da **Termux:API**.
 
-Diferente de assistentes convencionais dependentes de nuvem ou bots de mensagens externas, o Silva opera diretamente na borda (*edge computing*) utilizando um micro-modelo de linguagem quantizado em formato **GGUF** de **~105 MB** (`Q5_K_M`), atuando estritamente como um **roteador semântico de *Function Calling***: ele interpreta comandos de voz/texto em linguagem natural (Português do Brasil) e emite chamadas de função tipadas `<call>funcao(args)</call>` para orquestrar o hardware, aplicativos e sensores do dispositivo com latência de milissegundos.
-
-O sistema conta com um **servidor web nativo** com interface moderna inspirada em assistentes como Claude, ChatGPT e DeepSeek (design minimalista, tema escuro refinado, sidebar retrátil com histórico de conversas em `localStorage` e badges de telemetria), **100% offline (sem CDNs externos)**, acessível tanto no navegador do próprio celular (`http://localhost:5000`) quanto em computadores na mesma rede Wi-Fi (`http://<IP-DO-CELULAR>:5000`).
+Sem depender de nuvem, APIs pagas ou conexões de internet para raciocinar, o Silva une o que há de melhor em **IA determinística ultra-rápida** e **modelos de linguagem generativos locais (SLM - Small Language Models)**, orquestrando hardware, conectividade, aplicativos e automações do dispositivo em milissegundos.
 
 ---
 
-## ⚡ Início Rápido Plug & Play (Apenas 3 Scripts na Raiz)
+## 🏛️ 1. Apresentação e Arquitetura Híbrida
 
-Para instalar, configurar e rodar o Silva no Android (Termux) ou no Linux desktop, você só precisa de **3 comandos principais** na raiz do projeto:
-
-```bash
-# 1. Instalação e verificação de ambiente (idempotente e automática)
-./install-silva.sh
-
-# 2. (Opcional) Assistente interativo de configuração (PIN, porta, TTS, cidade padrão)
-./config-silva.sh
-
-# 3. Inicialização unificada (llama-server + web server com wake-lock)
-./start_silva.sh
-```
-
----
-
-## 📊 Estatísticas e Parâmetros do Projeto
-
-| Dimensão | Especificação | Detalhes |
-| :--- | :--- | :--- |
-| **Parâmetros do Modelo (LLM)** | **134.515.008 parâmetros** (~134.5M) | Arquitetura baseada em `HuggingFaceTB/SmolLM2-135M-Instruct` |
-| **Quantização Móvel** | **Q5_K_M (Medium)** | ~105 MB de tamanho em disco, ideal para dispositivos ARM64 |
-| **Janela de Contexto** | **2.048 tokens** | Espaço amplo para System Prompt completo + histórico de ações |
-| **Vocabulário** | **49.152 tokens** | Tokenizador ChatML nativo |
-| **Ferramentas Nativas (Tools)** | **39 ferramentas** | Controle de hardware, utilitários, sensores, mobilidade, delivery, mídia, redes Wi-Fi, apps e ajuda |
-| **Parâmetros de Ferramentas** | **44 parâmetros formais** | Catalogados e tipados estritamente no `dataset/schema.json` |
-| **Base de Dados de Treino** | **6.381 amostras limpas** | 100% validadas por analisador sintático AST em PT-BR (0 erros) |
-
----
-
-## 🏛️ Arquitetura do Sistema
+O grande diferencial do Silva é a sua **Arquitetura Híbrida em Dois Estágios**, projetada para aliar **latência instantânea** e **baixo consumo de bateria**:
 
 ```text
                                   ┌──────────────────────────────┐
                                   │      Usuário (Mobile/PC)     │
                                   │   Interface Web / Terminal   │
                                   └──────────────┬───────────────┘
-                                                 │ HTTP /api/chat (X-Access-Pin)
+                                                 │ Entrada (Texto / "Segure para falar")
                                                  ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                             Ambiente Android (Termux)                            │
+│                            AMBILENTE ANDROID (TERMUX)                            │
 │                                                                                  │
-│   ┌─────────────────────────┐               ┌────────────────────────────────┐   │
-│   │   Web Server (Python)   │──────────────▶│   Silva LLM Client (urllib)    │   │
-│   │   ThreadingHTTPServer   │               └───────────────┬────────────────┘   │
-│   └────────────┬────────────┘                               │ POST /completion   │
-│                │                                            ▼                    │
-│                │                             ┌───────────────────────────────┐   │
-│                │                             │  llama-server (porta 8080)    │   │
-│                │                             │  silva-135m.gguf (Q5_K_M)     │   │
-│                │                             └──────────────┬────────────────┘   │
-│                │                                            │ <call>func()</call>│
-│                ▼                                            ▼                    │
-│   ┌─────────────────────────┐               ┌────────────────────────────────┐   │
-│   │   Tools.py (Termux:API) │◀──────────────│   Parser AST & Whitelist       │   │
-│   └────────────┬────────────┘               └────────────────────────────────┘   │
-│                │                                                                 │
-│                ▼ Subprocessos seguros e Intent Viewers                            │
-│   [GPS/Mapa] [Câmera/Vídeo] [Clima] [Bateria] [Lanterna] [SMS] [Chamadas]       │
+│   ┌──────────────────────────────────────────────────────────────────────────┐   │
+│   │ ESTÁGIO 1: Roteador Determinístico & NLP PT-BR (intent_fallback / nlp/)  │   │
+│   │ • Normalização fonética e coloquial ("bateria", "lanterna", "no talo")  │   │
+│   │ • Parser numérico composto ("trinta e cinco", "meia hora")               │   │
+│   │ • Sanitização de quebras de linha e argumentos semânticos                │   │
+│   │ • Latência: ~1.5 milissegundos | RAM: < 35 MB | CPU: < 1%                │   │
+│   └───────────────────────┬──────────────────────────┬───────────────────────┘   │
+│                           │ Intenção Reconhecida     │ Entrada Complexa / Livre  │
+│                           ▼                          ▼                           │
+│   ┌─────────────────────────────────┐   ┌────────────────────────────────────┐   │
+│   │   Execução Direta de Funções    │   │ ESTÁGIO 2: Motor Local GGUF        │   │
+│   │   <call>ferramenta(args)</call> │   │ • llama-server (porta 8080)        │   │
+│   │   Parser AST & Whitelist Segura │   │ • silva-135m.gguf (SmolLM2 Q5_K_M) │   │
+│   └───────────────┬─────────────────┘   │ • Function Calling ChatML          │   │
+│                   │                     └─────────────────┬──────────────────┘   │
+│                   │                                       │                      │
+│                   ▼                                       ▼                      │
+│   ┌──────────────────────────────────────────────────────────────────────────┐   │
+│   │ Pacote Modular de Ferramentas Nativas (39 Tools em android_agent/tools/) │   │
+│   │ Hardware • Câmera • GPS • Wi-Fi • Volume • SMS • Memória SQLite FTS5     │   │
+│   └──────────────────────────────────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
+### Os 4 Pilares da Engenharia do Silva:
 
-## 🛠️ Catálogo Completo das 39 Ferramentas
-
-O Silva possui 39 ferramentas implementadas no pacote modular `android_agent/tools/` e catalogadas formalmente em `dataset/schema.json`:
-
-| # | Ferramenta | Parâmetros (44 no total) | Descrição do Hardware / Função |
-| :-: | :--- | :--- | :--- |
-| **1** | `get_battery()` | *Nenhum* | Consulta status, porcentagem, temperatura e saúde da bateria. |
-| **2** | `get_last_sms(limit)` | `limit` (int, padrão: 5) | Lê as últimas mensagens SMS recebidas na caixa de entrada. |
-| **3** | `send_sms(number, message)` | `number` (str, obrigatório), `message` (str, obrigatório) | Envia SMS para número com DDD ou contato da agenda. |
-| **4** | `take_photo(camera_id)` | `camera_id` (int: 0=traseira, 1=frontal) | Tira foto com câmera traseira ou frontal (selfie). |
-| **5** | `record_video(duration, camera_id)` | `duration` (int: 3 a 120s), `camera_id` (int: 0 ou 1) | Grava vídeo nativo e disponibiliza player no chat. |
-| **6** | `take_screenshot()` | *Nenhum* | Tira print da tela do celular via ADB local, Shizuku ou keyevent nativo. |
-| **7** | `open_app(app_name)` | `app_name` (str, obrigatório) | Abre aplicativos pelo nome popular (WhatsApp, TikTok, etc.). |
-| **8** | `make_call(number)` | `number` (str, obrigatório) | Realiza chamada telefônica direta via discador nativo. |
-| **9** | `get_location()` | *Nenhum* | Obtém coordenadas GPS atuais e renderiza card visual de mapa. |
-| **10** | `get_last_location()` | *Nenhum* | Consulta a última localização salva offline mesmo com GPS desligado. |
-| **11** | `set_location_state(state)` | `state` (bool, obrigatório) | Liga ou desliga o serviço de GPS/localização do aparelho. |
-| **12** | `get_weather(day, time, location)` | `day` (str), `time` (str), `location` (str) | Previsão do tempo detalhada via Open-Meteo (PT-BR). |
-| **13** | `search_google(query, open_browser)` | `query` (str, obrigatório), `open_browser` (bool, padrão: False) | Pesquisa multi-fonte em cascata real na web (Wikipédia PT-BR semântica + Google News RSS nativo + DuckDuckGo Lite) com card visual estruturado no chat e abertura opcional no navegador. |
-| **14** | `set_torch(state)` | `state` (bool, obrigatório) | Liga (`True`) ou desliga (`False`) a lanterna traseira. |
-| **15** | `set_dnd(state)` | `state` (bool, obrigatório) | Ativa ou desativa modo Não Perturbe / Silencioso. |
-| **16** | `vibrate(duration_ms)` | `duration_ms` (int, padrão: 500) | Aciona vibração háptica no aparelho pelo tempo informado. |
-| **17** | `get_clipboard()` | *Nenhum* | Lê o conteúdo textual copiado na área de transferência. |
-| **18** | `set_clipboard(text)` | `text` (str, obrigatório) | Copia texto especificado para a área de transferência. |
-| **19** | `tell_joke()` | *Nenhum* | Retorna piada divertida do banco offline em PT-BR. |
-| **20** | `set_alarm(time, label, days)` | `time` (str, obrigatório), `label` (str), `days` (str) | Agenda alarme no relógio nativo do Android. |
-| **21** | `cancel_alarm(time, day, label)` | `time` (str), `day` (str), `label` (str) | Cancela ou descarta alarme configurado. |
-| **22** | `schedule_event(title, date, time)`| `title` (str, obrigatório), `date` (str), `time` (str) | Cria compromisso na agenda local + Intent direta no Calendário Samsung. |
-| **23** | `remember_note(key, value)` | `key` (str, obrigatório), `value` (str, obrigatório) | Salva/atualiza notas na memória relacional SQLite FTS5 (ou remove se valor for vazio). |
-| **24** | `recall_note(query)` | `query` (str, obrigatório) | Busca híbrida (FTS5 BM25 + LIKE) de anotações e compromissos passados. |
-| **25** | `get_notifications(app)` | `app` (str, opcional) | Lê notificações recentes da barra de status do Android. |
-| **26** | `set_volume(stream, level)` | `stream` (str: media/ring/alarm), `level` (int: 0-100) | Ajusta volume por canal de áudio em porcentagem. |
-| **27** | `set_brightness(level)` | `level` (int: 0 a 100, obrigatório) | Ajusta o brilho da tela do smartphone de 0% a 100%. |
-| **28** | `set_timer(minutes, label)` | `minutes` (int, obrigatório), `label` (str) | Inicia timer ou cronômetro no relógio do Android. |
-| **29** | `calculate(expression)` | `expression` (str, obrigatório) | Calculadora científica e financeira AST (raízes, trigonométricas, log, fatorial, porcentagem). |
-| **30** | `request_ride(destination, app)` | `destination` (str, obrigatório), `app` (str, padrão: "uber") | Abre app de transporte (Uber ou 99) com o destino configurado a partir da localização atual. |
-| **31** | `order_food(query, app)` | `query` (str, obrigatório), `app` (str, padrão: "ifood") | Abre app de delivery (iFood ou 99) buscando o prato, restaurante ou item pedido. |
-| **32** | `install_app(app_name)` | `app_name` (str, obrigatório) | Abre a Google Play Store diretamente na página de instalação ou pesquisa do app. |
-| **33** | `media_control(action)` | `action` (str, obrigatório: play/pause/next/previous) | Controla a reprodução de mídia nativamente (`cmd media_session` e KeyEvents). |
-| **34** | `scan_wifi()` | *Nenhum* | Escaneia redes Wi-Fi próximas, identificando sinal (dBm e %), frequência, segurança e rede conectada. |
-| **35** | `connect_wifi(ssid, password)` | `ssid` (str, obrigatório), `password` (str, opcional) | Conecta a uma rede Wi-Fi direta ou via fallback seguro com cópia de credencial e salvamento em SQLite. |
-| **36** | `get_wifi_info()` | *Nenhum* | Obtém informações detalhadas da conexão Wi-Fi atual (SSID, IP local, sinal %, dBm e link web). |
-| **37** | `set_wifi_state(state)` | `state` (bool, obrigatório) | Ativa ou desativa a interface Wi-Fi do smartphone via Termux:API e fallback svc. |
-| **38** | `list_capabilities()` | *Nenhum* | Retorna guia organizado de todas as funções e comandos do Silva com exemplos práticos. |
-| **39** | `none()` | *Nenhum* | Emissão neutra para saudações e conversas gerais. |
+1. **Roteador Determinístico com Regex + NLP em Português (~1.5ms):**
+   Antes de acionar qualquer rede neural pesada, o texto do usuário passa pelo pacote `android_agent/nlp/` (`numbers.py`, `colloquial.py`, `router.py`). Ele interpreta gírias brasileiras, números por extenso de zero a milhões, variações fonéticas e erros comuns de digitação ("baterria", "ligar lanterana"). Se a intenção for clara, a ferramenta é disparada imediatamente sem aquecer o processador.
+2. **Motor Local LLM (GGUF ~135M via `llama.cpp`):**
+   Para diálogos abertos, perguntas gerais e intenções complexas, entra em ação o micro-modelo local `silva-135m.gguf` (treinado sobre `SmolLM2-135M-Instruct` e quantizado em `Q5_K_M` com apenas ~105 MB). Ele roda sobre o `llama-server` nativo compilado para ARM64.
+3. **39 Ferramentas Nativas com Whitelist e AST Estrito:**
+   O agente possui acesso controlado a 39 ferramentas que cobrem o ecossistema do smartphone: sensores, câmera frontal/traseira, lanterna, Wi-Fi completo (busca, conexão e telemetria), volume granular, discagem, SMS, deep links para Uber/iFood e banco de notas indexado com SQLite FTS5. Todas as chamadas de função passam por um analisador de sintaxe abstrata (`ast`) contra qualquer injeção de código.
+4. **Web UI Mobile Moderna com "Segure para falar":**
+   Interface escura com visual futurista em roxo/neon (`#5A189A` / `#7B1FA2`), 100% responsiva, sem qualquer framework pesado ou CDN externo (totalmente offline-ready). Inclui botão de alternância para o modo **"Segure para falar"** com visualizador de ondas sonoras em tempo real via Web Audio API e gesto de deslizar para cancelar.
 
 ---
 
-## 📁 Estrutura Detalhada dos Arquivos do Projeto
+## ⚠️ 2. Pré-Requisitos no Android (Aviso Crítico)
 
-Abaixo está a documentação explicativa de cada componente do repositório:
+> [!CAUTION]
+> ### 🛑 NUNCA INSTALE O TERMUX OU O TERMUX:API PELA GOOGLE PLAY STORE!
+> **As versões do Termux publicadas na Google Play Store estão DESCONTINUADAS E OBSOLETAS desde 2020** devido a restrições de permissões introduzidas pelo Google no Android 10+.
+> Se você instalar pela Play Store, os repositórios oficiais falharão com erros críticos como `403 Forbidden` ou `Repository under maintenance` durante a execução de `pkg update`.
 
-```text
-silva-agent/
-├── README.md                      # Documentação completa, arquitetura e guias
-├── install-silva.sh               # [1/3] Instalador completo e idempotente (Termux/Desktop)
-├── config-silva.sh                # [2/3] Assistente interativo de configuração (PIN, porta, TTS, cidade)
-├── start_silva.sh                 # [3/3] Inicializador unificado (llama-server + web server + wake-lock)
-├── .gitignore                     # Protege o Git contra uploads pesados (>100MB)
-├── .env.example                   # Template de variáveis de ambiente e portas
-│
-├── android_agent/                 # RUNTIME DE PRODUÇÃO NO SMARTPHONE (TERMUX)
-│   ├── main.py                    # Ponto de entrada (CLI para terminal ou Web Server)
-│   ├── web_server.py              # Servidor HTTP multithread nativo com endpoints REST
-│   ├── scheduler.py               # Agendador daemon em background para lembretes de agenda
-│   ├── llm_client.py              # Cliente HTTP para o llama-server local com fallback
-│   ├── intent_fallback.py         # Roteador determinístico de ultra-baixa latência (<2ms)
-│   ├── nlp/                       # Pacote de Processamento de Linguagem Natural (PT-BR)
-│   │   ├── numbers.py             # Pilar A: Parser numérico composto (centenas, multiplicadores, horários)
-│   │   ├── colloquial.py          # Pilar B: Normalizador de gírias, níveis ("no talo", "total") e typos com difflib
-│   │   └── router.py              # Pilar C: Roteador por pontuação (ScoredIntentRouter) com tolerância a typos matemáticos e recall restrito
-│   ├── parser.py                  # Analisador sintático AST seguro, validador de whitelist e propagação de status
-│   ├── tools/                     # Pacote modular das 39 ferramentas auditado via AST (core, hardware, media, comms, etc)
-│   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 39 tools
-│   ├── start_silva.sh             # Wrapper de compatibilidade que delega para ../start_silva.sh
-│   ├── captures/                  # Armazena fotos, vídeos, prints e mapas gerados
-│   ├── data/                      # Persistência: banco relacional SQLite FTS5 (memory.db), events.json e localização
-│   ├── logs/                      # Arquivos de log de execução (llama_server.log)
-│   ├── models/                    # Pasta onde reside o micro-modelo silva-135m.gguf
-│   └── static/
-│       └── index.html             # Interface web responsiva com "Segure para falar" (dark mode, zero CDNs)
-│
-├── dataset/                       # ENGENHARIA DE DADOS E VALIDAÇÃO
-│   ├── schema.json                # Especificação JSON Schema formal das 39 ferramentas
-│   ├── seed_examples.jsonl        # 133 exemplos canônicos de referência em PT-BR
-│   ├── train.jsonl                # Dataset de treino consolidado
-│   ├── train_clean.jsonl          # 95% do dataset limpo para fine-tuning supervisionado (5.790)
-│   ├── eval_clean.jsonl           # 5% do dataset para avaliação e validação de perda (304)
-│   ├── silva_colab_dataset.jsonl  # 6.381 amostras consolidadas para treino no Google Colab
-│   ├── validate_dataset.py        # Validador sintático AST e verificador de schema estrito
-│   ├── prepare_final_dataset.py   # Gerador de contatos sintéticos, balanceador e divisor
-│   └── repair_train_dataset.py    # Corretor automático de inconsistências e desbalanceamento
-│
-├── tests/                         # SUÍTE DE TESTES AUTOMATIZADOS (32 TESTES 100% PASSANDO)
-│   ├── test_contracts.py          # Sincronização de schema (39 tools), prompt e conformidade do dataset
-│   ├── test_parser_and_fallback.py# Testes de AST, whitelist, fallback e tolerância a typos/sinônimos
-│   ├── test_tools_and_memory.py   # Testes de SQLite FTS5, calculadora e smoke test de todas as 39 ferramentas
-│   └── test_web_server.py         # Testes HTTP, autenticação por PIN e proteção Path Traversal
-│
-└── pc_training/                   # PIPELINE DE FINE-TUNING E QUANTIZAÇÃO GGUF
-    ├── colab_train_silva.py       # Script autônomo completo para Google Colab (GPU T4)
-    ├── train_sft.py               # Fine-tuning supervisionado local (CPU FP32 / DirectML)
-    ├── export_gguf.py             # Fusão de pesos LoRA e conversão para GGUF quantizado
-    └── requirements_pc.txt        # Dependências Python para máquinas de treino
-```
+### Onde Baixar Corretamente:
+Baixe os aplicativos oficiais através do **F-Droid** ou das **Releases do GitHub**. Ambos os aplicativos **DEVEM** ser instalados a partir da mesma fonte para compartilharem a mesma assinatura criptográfica de APK:
 
-### Detalhamento por Módulo:
+* **Termux App:** [Baixar no F-Droid](https://f-droid.org/packages/com.termux/) ou [GitHub Releases](https://github.com/termux/termux-app/releases)
+* **Termux:API:** [Baixar no F-Droid](https://f-droid.org/packages/com.termux.api/) ou [GitHub Releases](https://github.com/termux/termux-api/releases)
 
-#### 1. Módulo `android_agent/` (Execução no Celular)
-- **`main.py`**: Gerencia os argumentos de linha de comando. Permite iniciar o agente no modo `--web` (padrão) para abrir o servidor de rede local ou `--cli` para interagir diretamente pelo terminal do Termux.
-- **`web_server.py`**: Construído sobre `ReusableThreadingHTTPServer` com `SO_REUSEADDR` e threads daemon, garantindo reutilização imediata de portas e encerramento limpo via `SIGINT`/`SIGTERM`. Possui fallback automático de porta (`port` a `port+5`) caso a porta configurada esteja ocupada. Trata requisições para a API `/api/chat`, valida o cabeçalho de segurança `X-Access-Pin`, serve arquivos estáticos e mapeia arquivos multimídia da pasta `captures/`.
-- **`start_silva.sh`**: Wrapper fino que delega a execução para o script central da raiz (`../start_silva.sh`).
-- **`scheduler.py`**: Thread daemon em background que monitora compromissos salvos localmente (`events.json`) a cada 30 segundos, disparando notificações nativas (`termux-notification`) e vibração no horário exato do lembrete.
-- **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
-- **`intent_fallback.py` e `nlp/`**: Motor determinístico de alta velocidade (<2ms) reestruturado em 4 pilares: Parser Numérico Composto (`parse_ptbr_numbers`), Normalizador de Gírias e Typos (`normalize_colloquial_ptbr`), Roteador por Pontuação (`ScoredIntentRouter`) cobrindo as 39 ferramentas e Splitter Inteligente de cláusulas compostas. Trata números por extenso de zero a milhões, gírias de celular ("no talo", "zap", "insta"), erros de digitação ("baterria", "lanterana"), previsão do tempo inteligente, cálculo científico e ecossistema Wi-Fi completo.
-- **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código, checa a whitelist de permissões (`AVAILABLE_TOOLS`) e propaga o status real das chamadas (`ok`, `partial_error`, `error`).
-- **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 39 ferramentas nativas divididas em 8 domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. Inclui: varredura de Wi-Fi (`scan_wifi`), conexão com salvamento seguro (`connect_wifi`), telemetria de rede (`get_wifi_info`), toggle Wi-Fi (`set_wifi_state`), memória persistente SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
-- **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), parâmetros opcionais de áudio e o `SILVA_SYSTEM_PROMPT` sincronizado para as 39 ferramentas.
-- **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, modo de voz "Segure para falar" com visualizador de ondas sonoras e gesto de arrastar para cancelar, histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
+### Permissões Necessárias no Android:
+Após instalar o aplicativo **Termux:API**, abra as **Configurações do Android** > **Aplicativos** > **Termux:API** > **Permissões** e conceda:
+* **Câmera:** para fotos (`take_photo`) e controle da lanterna (`set_torch`).
+* **Localização (Precisa / Sempre):** obrigatória no Android para ler dados de Wi-Fi (`scan_wifi`, `get_wifi_info`) e clima local (`get_location`, `get_weather`).
+* **Telefone e Contatos:** para efetuar chamadas (`make_call`).
+* **SMS:** para envio e leitura de mensagens (`send_sms`, `get_last_sms`).
+* **Microfone:** para o reconhecimento de voz nativo e Web Speech API.
 
-#### 2. Módulo `dataset/` (Dados de Treinamento)
-- **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 39 ferramentas (44 parâmetros).
-- **`validate_dataset.py`**: Analisa arquivos `.jsonl` linha por linha, extrai chamadas via regex, compila os argumentos via AST e emite relatórios de conformidade estrita e proporção percentual de classes (com validação estrita de tipos inteiros).
-- **`prepare_final_dataset.py`**: Enriquece a base com variações naturais de contatos humanos (ex: *"Mãe"*, *"Amor"*, *"Doutor Carlos"*), remove duplicatas e gera a divisão treino (95%) e validação (5%).
-- **`silva_colab_dataset.jsonl`**: Arquivo final consolidado com 6.381 exemplos prontos para upload e treino no Colab (100% válidos contra o schema das 39 ferramentas).
-- **`PASSO_A_PASSO.md`**: Guia prático passo a passo para o usuário adicionar novos exemplos, recriar os datasets e validar a integridade sintática de forma 100% autônoma.
-
-#### 3. Módulo `pc_training/` (Treino e Conversão)
-- **`colab_train_silva.py`**: Pipeline tudo-em-um para o Google Colab: desinstala pacotes conflitantes, atualiza Hugging Face, clona e compila `llama-quantize` no `llama.cpp`, realiza fine-tuning LoRA calibrado (4 épocas, janela 1024 tokens, batch micro 4 com 8 acumulações = 32 efetivo, `gradient_checkpointing=True`, `learning_rate=3e-4`, split determinístico 95/5, mascaramento manual de prompt `labels=-100`, separação estrita `pad_token != eos_token`, `DataCollatorForSeq2Seq` e `load_best_model_at_end=True`), valida 10 cenários de inferência via ChatML, funde pesos no modelo SmolLM2-135M, quantiza em `Q5_K_M` e dispara o download automático de `silva-135m.gguf`.
+> [!TIP]
+> **Desative a Otimização de Bateria:** Vá em *Configurações > Aplicativos > Termux > Bateria* e selecione **"Irrestrito"** (ou "Não otimizar"). Isso impede que o Android encerre o servidor em segundo plano quando a tela for bloqueada.
 
 ---
 
-## 🚀 Como Executar o Silva no Android (Termux)
+## ⚡ 3. Tabela dos 4 Comandos Oficiais
 
-### 1. Preparação no Celular
-1. Instale o **Termux** e o **Termux:API** pelo [F-Droid](https://f-droid.org/).
-2. Abra as configurações do Android > Aplicativos > **Termux:API** > Permissões e conceda acesso para: **Câmera**, **Localização**, **SMS**, **Telefone** e **Armazenamento**.
+Todo o gerenciamento do projeto foi consolidado em **4 scripts principais** localizados na raiz de `silva-agent/`:
 
-### 2. Instalação Plug & Play
-No terminal do Termux, clone o repositório e execute o instalador unificado:
+| Script Oficial | Papel e Responsabilidade | Modo de Execução Recomendado |
+| :--- | :--- | :--- |
+| **`./install-silva.sh`** | Instalador automático, idempotente e resiliente. Instala pacotes essenciais do Termux (`python`, `termux-api`, `clang`, `cmake`, `git`), cria ambiente virtual (`venv`), compila o `llama-server` nativamente em ARM64 com `-j2` e baixa o modelo `silva-135m.gguf`. | Executar na 1ª instalação ou após atualizações de sistema. |
+| **`./config-silva.sh`** | Assistente interativo de configuração. Permite alterar o PIN de segurança, portas de rede (Web e LLM), caminho do modelo GGUF, cidade padrão e opções de síntese de voz (TTS). | Opcional, sempre que desejar alterar configurações. |
+| **`./start_silva.sh`** | Inicializador unificado do ecossistema. Executa pré-limpeza, aciona wake-lock para manter CPU ativa, sobe o `llama-server` (porta 8080), salva os PIDs em `runtime.pids`, exibe o painel de telemetria com URLs e inicia a Web UI (porta 5000). | Uso diário para colocar a IA em operação. |
+| **`./stop-silva.sh`** | Encerramento seguro e completo. Finaliza com precisão os processos via `android_agent/data/runtime.pids` (SIGTERM e SIGKILL gracioso), faz varredura de instâncias presas, libera as portas 5000/8080 e desativa o wake-lock do Android. | Uso diário para desligar o agente e poupar bateria. |
+
+---
+
+## 🚀 4. Guia Passo a Passo de Instalação e Primeira Execução
+
+Abra o aplicativo **Termux** no seu celular e execute os comandos abaixo sequencialmente:
+
+### Passo 1: Atualizar pacotes base e clonar o repositório
 ```bash
+pkg update -y && pkg install -y git
 git clone https://github.com/TGTiler/Silva.git
 cd Silva/silva-agent
-./install-silva.sh
 ```
 
-### 3. (Opcional) Personalização das Configurações
-Caso queira alterar o PIN de segurança, a porta HTTP, a cidade padrão ou ativar TTS, execute:
+### Passo 2: Executar o instalador automático
+```bash
+chmod +x install-silva.sh config-silva.sh start_silva.sh stop-silva.sh
+./install-silva.sh
+```
+*O instalador detectará seu ambiente Android Termux, instalará as dependências necessárias, preparará o binário do `llama.cpp` e configurará o modelo `silva-135m.gguf`.*
+
+### Passo 3: (Opcional) Ajustar preferências
 ```bash
 ./config-silva.sh
 ```
+*Configure seu PIN de segurança pessoal (padrão: `1234`) e sua cidade padrão para previsão do tempo.*
 
-### 4. Inicialização do Agente
-Coloque o modelo `silva-135m.gguf` em `models/` (se disponível) e inicie o Silva:
+### Passo 4: Iniciar o Silva Agent
 ```bash
 ./start_silva.sh
 ```
+Ao iniciar, o terminal exibirá o banner informativo:
+```text
+========================================================
+         SILVA AGENT - SISTEMA EM OPERAÇÃO              
+========================================================
+  Motor LLM:         [OK] Online (llama-server ativo na porta 8080)
+  Acesso no Celular: http://127.0.0.1:5000
+  Acesso na Rede:    http://192.168.0.106:5000
+  PIN de Segurança:  1234
+  Arquivo de Logs:   silva-agent/android_agent/logs/llama_server.log
+========================================================
+  Pressione Ctrl+C a qualquer momento para encerrar.
+  Para encerrar em segundo plano: ./stop-silva.sh
+--------------------------------------------------------
+```
 
-O terminal exibirá o painel de status com o link de acesso:
-- **No próprio celular:** `http://localhost:5000` (ou `http://127.0.0.1:5000`)
-- **No computador (mesmo Wi-Fi):** `http://<IP-DO-CELULAR>:5000`
-- **PIN de Segurança:** Definido durante a instalação (ou configurável via `./config-silva.sh`)
+### Como Acessar a Interface:
+* **No próprio celular:** Abra o Chrome ou qualquer navegador e acerte em: `http://localhost:5000` (ou `http://127.0.0.1:5000`).
+* **A partir de um PC ou tablet no mesmo Wi-Fi:** Acesse `http://<IP_DO_CELULAR>:5000` (o IP local é exibido diretamente no banner).
+* **Para encerrar a qualquer momento:** Pressione `Ctrl+C` no terminal ou execute `./stop-silva.sh`.
 
 ---
 
-## ⚡ Como Treinar Novamente no Google Colab
+## 🔧 5. Guia Completo de Solução de Problemas (Troubleshooting)
 
-1. Acesse o [Google Colab](https://colab.research.google.com/) e ative um ambiente com **GPU T4** (*Ambiente de execução > Alterar tipo de ambiente de execução > GPU T4*).
-2. Cole e execute o código de [colab_train_silva.py](pc_training/colab_train_silva.py).
-3. Na etapa de upload, envie o arquivo [silva_colab_dataset.jsonl](dataset/silva_colab_dataset.jsonl).
-4. O notebook treinará o modelo, converterá e baixará automaticamente o novo arquivo `silva-135m.gguf`.
+Abaixo estão os 8 problemas reais mais comuns documentados em ambientes Termux com suas respectivas causas e comandos de correção imediata:
 
 ---
 
-## 🔒 Privacidade e Segurança
+### 1. Erro de Repositório no Termux (`403 Forbidden` ou `Repository under maintenance`)
+* **Sintoma:** Ao rodar `pkg update`, surgem erros `Repository under maintenance` ou `403 Forbidden` nos repositórios Bintray.
+* **Causa:** O Termux foi baixado pela Google Play Store (versão abandonada desde 2020).
+* **Solução:** Desinstale o Termux e o Termux:API da Play Store e instale as versões mais recentes a partir do **F-Droid** ou GitHub. Caso já esteja no F-Droid e apenas o espelho esteja fora do ar, troque o mirror com:
+```bash
+termux-change-repo
+```
 
-- **100% Offline:** Nenhuma gravação de áudio, imagem capturada, SMS ou coordenada sai do dispositivo para servidores externos.
-- **PIN de Acesso Local:** Proteção no cabeçalho HTTP contra acessos não autorizados por outros aparelhos na mesma rede local.
-- **Execução Sandboxed:** Todas as chamadas de função são validadas por parser AST estrito antes da execução em subprocesso seguro.
+---
+
+### 2. `llama-server: command not found` ou erro ao carregar `libllama.so`
+* **Sintoma:** O banner acusa motor LLM offline e a inicialização falha procurando o binário `llama-server` ou acusando biblioteca dinâmica ausente.
+* **Causa:** O pacote oficial do `llama-cpp` não foi instalado ou a compilação local foi interrompida.
+* **Solução:** Instale o pacote pré-compilado oficial do repositório Termux ou force a compilação:
+```bash
+pkg install -y llama-cpp
+# ou reexecute o instalador automático
+./install-silva.sh
+```
+
+---
+
+### 3. Motor LLM Offline no Banner (`Timeout de 15s` ou `Connection refused (Errno 111)`)
+* **Sintoma:** O banner do `./start_silva.sh` avisa que o motor está offline após 15 segundos de espera.
+* **Causa:** O arquivo `silva-135m.gguf` não está na pasta `models/` ou a quantidade de memória RAM do aparelho rejeitou o contexto.
+* **Solução:** Verifique o log detalhado de inicialização do motor e reconfigure o modelo:
+```bash
+cat android_agent/logs/llama_server.log
+./config-silva.sh
+```
+
+---
+
+### 4. `Address already in use (Errno 98)` na porta 5000 ou 8080
+* **Sintoma:** Ao iniciar o `./start_silva.sh`, surge erro em Python: `OSError: [Errno 98] Address already in use`.
+* **Causa:** Uma sessão anterior do `web_server.py` ou do `llama-server` continuou em execução em segundo plano.
+* **Solução:** Execute o script oficial de desligamento para varrer os processos e liberar as portas:
+```bash
+./stop-silva.sh
+```
+
+---
+
+### 5. Área de Transferência Vazia (`get_clipboard` retorna vazio)
+* **Sintoma:** O comando `"O que tem no meu clipboard?"` retorna que a área de transferência está vazia ou bloqueada.
+* **Causa:** O Android 10+ bloqueia a leitura da área de transferência por processos em segundo plano por motivos de privacidade.
+* **Solução:** Traga o aplicativo Termux para o primeiro plano ou envie a mensagem diretamente pela interface web aberta no navegador do celular.
+
+---
+
+### 6. Nome da Rede Wi-Fi Oculto ou Indisponível no `scan_wifi` / `get_wifi_info`
+* **Sintoma:** A ferramenta de varredura ou status do Wi-Fi não exibe o SSID da rede conectada (retorna `[Oculto/Sem Permissão]`).
+* **Causa:** O serviço de Localização (GPS) do smartphone está desativado ou o Termux:API não possui permissão de Localização Precisa. O Android exige GPS ativo para ler nomes de redes Wi-Fi.
+* **Solução:** Ligue a Localização (GPS) no painel de notificações do Android e conceda permissão de Localização Precisa ao aplicativo Termux:API:
+```bash
+# Teste se a API consegue ler os dados de Wi-Fi:
+termux-wifi-connectioninfo
+```
+
+---
+
+### 7. Reconhecimento de Voz Não Funciona ("Segure para falar")
+* **Sintoma:** Ao pressionar o botão de microfone na Web UI, o navegador recusa a captura ou exibe aviso de permissão de áudio.
+* **Causa:** Os navegadores móveis (Chrome, Firefox) restringem a Web Speech API e a Web Audio API a **Contextos Seguros** (`https://` ou `localhost`). Ao acessar pelo IP de rede (`192.168.x.x`) sem certificado SSL, o navegador desativa o microfone.
+* **Solução:** No próprio celular, acesse sempre pelo endereço local que é considerado seguro nativamente pelo navegador:
+```text
+http://localhost:5000  (ou http://127.0.0.1:5000)
+```
+
+---
+
+### 8. Compilação do llama.cpp Trava o Celular (OOM Killer)
+* **Sintoma:** Durante a compilação do `llama.cpp` pelo `install-silva.sh`, o Termux fecha repentinamente ou o terminal exibe `Killed`.
+* **Causa:** O compilador utilizou todos os núcleos da CPU (`-j$(nproc)`), esgotando a memória RAM do smartphone e acionando o Out-Of-Memory Killer do kernel Linux.
+* **Solução:** Limite a compilação a no máximo 2 threads paralelas com o comando otimizado:
+```bash
+cd ~/llama.cpp && cmake --build build -j2
+```
+
+---
+
+## 🛠️ 6. Catálogo Completo das 39 Ferramentas Nativas
+
+O Silva implementa **39 ferramentas nativas** divididas em 5 domínios funcionais. Todas foram extensivamente testadas com frases reais do cotidiano em Português do Brasil:
+
+### 📱 1. Hardware, Sensores & Mídia (15 Ferramentas)
+
+| Nome da Ferramenta | Descrição Técnica | Exemplo de Frase em Português (Testada) |
+| :--- | :--- | :--- |
+| `get_battery()` | Consulta nível percentual, saúde, temperatura e carregamento da bateria. | *"Quantos por cento tá a minha bateria?"* |
+| `set_torch(state)` | Liga (`True`) ou desliga (`False`) a lanterna traseira do dispositivo. | *"Liga a lanterna"* / *"Desliga o flash"* |
+| `vibrate(duration_ms)` | Aciona vibração háptica no aparelho pelo tempo especificado em milissegundos. | *"Faz o celular vibrar por 2 segundos"* |
+| `take_photo(camera_id)` | Captura foto com a câmera traseira (`0`) ou frontal (`1` selfie) e exibe no chat. | *"Tira uma selfie"* / *"Tira uma foto com a traseira"* |
+| `record_video(duration, camera_id)` | Grava vídeo nativo pelo tempo indicado e gera player inline na conversa. | *"Grava um vídeo de 10 segundos"* |
+| `take_screenshot()` | Captura print da tela do smartphone e disponibiliza imagem no chat. | *"Tira um print da tela"* / *"Captura a tela"* |
+| `get_location()` | Obtém coordenadas GPS atuais e renderiza card visual de mapa estático. | *"Onde eu estou agora?"* / *"Pega minha localização"* |
+| `get_last_location()` | Retorna a última localização registrada em cache offline mesmo com GPS desligado. | *"Qual foi minha última localização conhecida?"* |
+| `set_location_state(state)` | Ativa ou desativa o serviço de GPS do aparelho. | *"Liga o GPS"* / *"Desativa o sensor de localização"* |
+| `get_clipboard()` | Lê o texto atualmente copiado na área de transferência do dispositivo. | *"O que está copiado no meu celular?"* |
+| `set_clipboard(text)` | Copia texto especificado para a área de transferência do sistema. | *"Copia o código 4892 para o clipboard"* |
+| `set_volume(stream, level)` | Ajusta volume de canais de áudio (`media`, `ring`, `alarm`) de 0% a 100%. | *"Coloca o volume de mídia no 80"* / *"Volume no talo"* |
+| `set_brightness(level)` | Ajusta o brilho da tela do smartphone de 0% a 100%. | *"Aumenta o brilho da tela para 70%"* |
+| `set_dnd(state)` | Ativa ou desativa o modo Não Perturbe / Silencioso do Android. | *"Ativa o modo não perturbe"* / *"Modo silencioso"* |
+| `media_control(action)` | Controla reprodução de mídia (`play`, `pause`, `next`, `previous`). | *"Pausa a música"* / *"Avança para a próxima faixa"* |
+
+---
+
+### 🌐 2. Conectividade & Redes Wi-Fi (4 Ferramentas)
+
+| Nome da Ferramenta | Descrição Técnica | Exemplo de Frase em Português (Testada) |
+| :--- | :--- | :--- |
+| `scan_wifi()` | Escaneia redes Wi-Fi próximas exibindo SSID, sinal (dBm e %), frequência e proteção. | *"Quais redes Wi-Fi tem ao meu redor?"* |
+| `connect_wifi(ssid, password)` | Conecta a uma rede Wi-Fi específica com cópia segura e fallback em SQLite. | *"Se conecte ao wifi HENRIQUE_NET//SENHA123"* |
+| `get_wifi_info()` | Exibe telemetria da conexão atual (SSID, IP local, sinal % e velocidade de link). | *"Qual Wi-Fi estou conectado?"* / *"Info do Wi-Fi"* |
+| `set_wifi_state(state)` | Liga ou desliga a interface Wi-Fi do smartphone via Termux:API e fallback svc. | *"Liga o Wi-Fi"* / *"Desconecta da internet sem fio"* |
+
+---
+
+### 📲 3. Aplicativos & Sistema Android (6 Ferramentas)
+
+| Nome da Ferramenta | Descrição Técnica | Exemplo de Frase em Português (Testada) |
+| :--- | :--- | :--- |
+| `open_app(app_name)` | Abre aplicativos instalados pelo nome popular ou pacote oficial. | *"Abre o WhatsApp"* / *"Inicia o YouTube"* |
+| `install_app(app_name)` | Abre a Google Play Store na página de instalação do app solicitado. | *"Instala o aplicativo do Duolingo"* |
+| `make_call(number)` | Inicia chamada telefônica para número informado ou contato. | *"Liga para 11999998888"* / *"Chama o João"* |
+| `send_sms(number, message)` | Envia mensagem SMS para número com DDD ou contato da agenda. | *"Manda um SMS para 11988887777 dizendo Cheguei"* |
+| `get_last_sms(limit)` | Lê as últimas mensagens SMS recebidas na caixa de entrada do aparelho. | *"Lê as últimas 3 mensagens de SMS"* |
+| `get_notifications(app)` | Consulta notificações ativas recentes na barra de status do Android. | *"Quais notificações chegaram agora?"* |
+
+---
+
+### 🔍 4. Automação, Web, Clima & Utilitários (10 Ferramentas)
+
+| Nome da Ferramenta | Descrição Técnica | Exemplo de Frase em Português (Testada) |
+| :--- | :--- | :--- |
+| `search_google(query, open_browser)` | Pesquisa multi-fonte em cascata (Wikipédia PT-BR + Google News RSS) com card visual. | *"Pesquise sobre a história do GTA V"* |
+| `get_weather(day, time, location)` | Previsão do tempo detalhada via Open-Meteo sem necessidade de chave de API. | *"Vai chover amanhã em São Paulo?"* |
+| `order_food(query, app)` | Abre app de delivery (iFood ou 99 Food) buscando o prato ou restaurante desejado. | *"Pede uma pizza de calabresa no iFood"* |
+| `request_ride(destination, app)` | Abre aplicativo de transporte (Uber ou 99) configurando o destino desejado. | *"Chama um Uber até a Avenida Paulista"* |
+| `set_timer(minutes, label)` | Inicia timer ou contagem regressiva no relógio nativo do Android. | *"Coloca um timer de meia hora para o bolo"* |
+| `set_alarm(time, label, days)` | Cria alarme no relógio nativo para o horário informado com rótulo. | *"Acorda às 7 da manhã amanhã"* |
+| `cancel_alarm(time, day, label)` | Descarta ou desativa alarmes programados no relógio do sistema. | *"Cancela o alarme das 7 horas"* |
+| `schedule_event(title, date, time)` | Cria compromisso na agenda local e no Calendário nativo do smartphone. | *"Marca dentista amanhã às 15 horas"* |
+| `calculate(expression)` | Calculadora científica, aritmética e financeira segura processada via AST. | *"Quanto é 15 por cento de 350 reais?"* |
+| `tell_joke()` | Retorna uma piada bem-humorada do banco offline em português. | *"Me conta uma piada"* |
+
+---
+
+### 🧠 5. Memória de Longo Prazo, Ajuda & Conversação (4 Ferramentas)
+
+| Nome da Ferramenta | Descrição Técnica | Exemplo de Frase em Português (Testada) |
+| :--- | :--- | :--- |
+| `remember_note(key, value)` | Salva informações permanentes no banco relacional SQLite com indexação FTS5. | *"Lembra que o aniversário da Maria é 20 de outubro"* |
+| `recall_note(query)` | Busca híbrida (BM25 + LIKE) de notas e memórias salvas anteriormente. | *"Quando é o aniversário da Maria?"* / *"Qual a anotação..."* |
+| `list_capabilities()` | Apresenta resumo estruturado com todas as capacidades e comandos do agente. | *"O que você sabe fazer?"* / *"Quais seus comandos?"* |
+| `none()` | Emissão neutra para interações sociais cotidianas e saudações. | *"Olá, bom dia!"* / *"Como você está?"* |
+
+---
+
+## 🔒 7. Privacidade, Segurança e Modo de Uso
+
+* **100% On-Device:** Nenhum dado pessoal, áudio gravado, captura de câmera, SMS ou coordenada sai do seu telefone para servidores externos.
+* **Autenticação Local por PIN:** A API REST do servidor web exige validação do cabeçalho `X-Access-Pin` em todas as rotas operacionais, garantindo que terceiros na sua rede Wi-Fi não possam controlar o aparelho sem a chave configurada em `./config-silva.sh`.
+* **Segurança de Execução:** Todas as funções acionadas passam pelo compilador AST do Python (`parser.py`), bloqueando qualquer tentativa de injeção arbitrária de comandos ou execução de funções fora da lista estrita de permissões.

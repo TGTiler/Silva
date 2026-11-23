@@ -542,8 +542,21 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     5. open_app: abrir configurações de Wi-Fi
     6. scan_wifi: escanear redes próximas
     """
-    is_wifi = any(w in norm for w in ["wifi", "wifis", "wi-fi", "wi-fis", "rede sem fio", "redes sem fio", "ip"])
-    if not is_wifi:
+    has_wifi_kw = any(w in norm for w in ["wifi", "wifis", "wi-fi", "wi-fis", "rede sem fio", "redes sem fio", "ip"])
+    has_network_kw = (
+        any(w in norm for w in [
+            "redes ao redor", "rede ao redor", "redes por aqui", "rede por aqui",
+            "redes disponiveis", "rede disponivel", "redes proximas", "rede proxima",
+            "redes perto", "rede perto", "buscar redes", "busca redes",
+            "escanear redes", "escaneie redes", "listar redes", "lista redes", "scanear redes",
+            "quais redes", "ver redes", "mostre redes", "mostrar redes", "procurar redes"
+        ])
+        or bool(re.search(r"\b(?:qual|em\s+qual|que|o\s+que)\s+rede\b", norm))
+        or bool(re.search(r"\b(?:rede|conexao)\s+(?:conectad[oa]|atual)\b", norm))
+        or bool(re.search(r"\b(?:estou|to|conectado\s+em|conectado\s+na)\s+rede\b", norm))
+    )
+
+    if not (has_wifi_kw or has_network_kw):
         return 0.0, None
 
     # Verificação prévia de menção a senha
@@ -558,9 +571,19 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     has_connect_verbs = any(re.search(p, norm) for p in connect_patterns)
 
     # Caso 1: get_wifi_info (informações da conexão atual, IP)
+    connected_info_patterns = [
+        r"\b(?:qual|em\s+qual|que)\s+(?:o\s+|a\s+)?(?:wi-?fi|rede|conexao)\b.*\b(?:conectad[oa]|estou|to|ta|esta)\b",
+        r"\b(?:qual|em\s+qual)\s+(?:o\s+|a\s+)?(?:wi-?fi|rede|conexao)\s+(?:conectad[oa])\b",
+        r"\b(?:wi-?fi|rede|conexao)\s+(?:conectad[oa]|atual)\b",
+        r"\b(?:estou|to|ta|esta)\s+conectad[oa]\s+(?:em|no|na)\s+(?:qual|que)?\s*(?:wi-?fi|rede)\b",
+        r"\b(?:estou|to)\s+conectad[oa]\b",
+    ]
+    is_connected_info = any(re.search(p, norm) for p in connected_info_patterns)
+
     info_triggers = [
         "qual wifi estou", "qual wi-fi estou", "qual wifi eu to", "qual wifi to",
         "qual rede estou", "qual rede eu to", "qual rede to", "qual rede que estou",
+        "qual wifi conectado", "qual wi-fi conectado", "qual rede conectado", "qual rede conectada",
         "rede que estou", "wifi que estou", "rede atual", "wifi atual", "conexao atual",
         "qual conexao", "qual meu ip", "meu ip", "qual o ip", "qual e o ip",
         "ip do celular", "ip do telefone", "ip do aparelho", "ip da rede", "ip local",
@@ -570,7 +593,7 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         "qual meu wi-fi", "qual o meu wi-fi", "qual e o meu wi-fi", "qual e meu wi-fi",
         "meu wifi", "o meu wifi", "meu wi-fi", "o meu wi-fi"
     ]
-    if any(t in norm for t in info_triggers) and not has_connect_verbs and not has_pwd:
+    if (is_connected_info or any(t in norm for t in info_triggers)) and not has_connect_verbs and not has_pwd:
         return 0.96, _format_call("get_wifi_info")
 
     # Caso 2: set_wifi_state (liga / desliga wifi)
@@ -628,8 +651,9 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
     # Caso 6: Escanear redes próximas -> scan_wifi
     scan_triggers = [
-        "escanear", "escaneie", "listar", "lista", "proximas", "proxima", "perto",
-        "disponiveis", "disponivel", "redes", "quais", "ver", "mostre", "mostrar", "tem", "buscar", "busca", "scan"
+        "escanear", "escaneie", "escaneia", "listar", "lista", "proximas", "proxima", "perto",
+        "disponiveis", "disponivel", "redes", "quais", "ver", "mostre", "mostrar", "tem", "buscar", "busca",
+        "scan", "scanear", "rastrear", "procurar", "procura", "ao redor", "redor", "por aqui"
     ]
     if any(t in norm for t in scan_triggers):
         return 0.95, _format_call("scan_wifi")

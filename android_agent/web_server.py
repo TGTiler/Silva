@@ -173,9 +173,16 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                 raw_call, latency_ms, err_llm = llm_client.generate_call(user_message)
 
             if err_llm:
+                if "Não reconheci esse comando no modo rápido" in err_llm:
+                    msg = err_llm
+                elif any(ref in err_llm for ref in ["111", "Connection refused", "ConnectionRefusedError", "Failed to connect"]):
+                    msg = "Não reconheci esse comando no modo rápido (o servidor do modelo local está offline no momento). Tente reformular o pedido ou inicie o llama-server."
+                else:
+                    msg = f"Silva (LLM Offline): {err_llm}"
+
                 return self._send_json({
                     "status": "error",
-                    "message": f"Silva (LLM Offline): {err_llm}",
+                    "message": msg,
                     "raw_call": None,
                     "latency_ms": latency_ms,
                     "image_url": None,

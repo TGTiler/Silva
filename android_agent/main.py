@@ -68,7 +68,10 @@ def run_cli_mode():
                 raw_call, latency, err = client.generate_call(user_input)
 
             if err:
-                print(f"\n[Silva Erro]: {err}\n")
+                if "Não reconheci esse comando no modo rápido" in err:
+                    print(f"\nSilva: {err}\n")
+                else:
+                    print(f"\n[Silva Erro]: {err}\n")
                 continue
 
             result = execute_call(raw_call)

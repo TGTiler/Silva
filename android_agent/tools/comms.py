@@ -150,10 +150,15 @@ def get_clipboard() -> Dict[str, Any]:
         if res.returncode != 0:
             return {"status": "error", "message": f"Falha ao ler clipboard: {res.stderr.strip()}"}
         content = res.stdout
-        preview = (content[:80] + "...") if len(content) > 80 else content
+        clean_content = content.strip() if content else ""
+        if clean_content:
+            preview = (clean_content[:80] + "...") if len(clean_content) > 80 else clean_content
+            msg = f"Silva: Área de transferência: '{preview}'"
+        else:
+            msg = "Silva: Área de transferência vazia (ou bloqueada em segundo plano pelo Android — libere READ_CLIPBOARD via ADB para o Termux:API)."
         return {
             "status": "ok",
-            "message": f"Silva: Área de transferência: '{preview}'" if preview else "Silva: Área de transferência vazia.",
+            "message": msg,
             "data": {"clipboard": content}
         }
     except Exception as e:

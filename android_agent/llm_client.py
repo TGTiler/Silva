@@ -113,7 +113,20 @@ class SilvaLLMClient:
 
         except urllib.error.URLError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
-            return "<call>none()</call>", round(latency_ms, 2), f"LLM indisponível (conexão): {e}"
+            err_str = str(e)
+            if "111" in err_str or "Connection refused" in err_str or isinstance(getattr(e, "reason", None), (ConnectionRefusedError, ConnectionError)):
+                err_msg = "Não reconheci esse comando no modo rápido (o servidor do modelo local está offline no momento). Tente reformular o pedido ou inicie o llama-server."
+            else:
+                err_msg = f"LLM indisponível (conexão): {e}"
+            return "<call>none()</call>", round(latency_ms, 2), err_msg
+        except (ConnectionRefusedError, ConnectionError):
+            latency_ms = (time.perf_counter() - start_time) * 1000.0
+            return "<call>none()</call>", round(latency_ms, 2), "Não reconheci esse comando no modo rápido (o servidor do modelo local está offline no momento). Tente reformular o pedido ou inicie o llama-server."
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
-            return "<call>none()</call>", round(latency_ms, 2), f"LLM indisponível: {e}"
+            err_str = str(e)
+            if "111" in err_str or "Connection refused" in err_str:
+                err_msg = "Não reconheci esse comando no modo rápido (o servidor do modelo local está offline no momento). Tente reformular o pedido ou inicie o llama-server."
+            else:
+                err_msg = f"LLM indisponível: {e}"
+            return "<call>none()</call>", round(latency_ms, 2), err_msg

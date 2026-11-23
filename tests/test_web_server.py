@@ -91,6 +91,32 @@ class TestWebServer(unittest.TestCase):
             self.assertEqual(res_data.get("status"), "ok")
             self.assertIn("calls", res_data)
 
+    def test_llm_offline_clean_error_message(self):
+        """Testa se erro de llama-server offline retorna mensagem limpa sem stack trace ou Errno 111."""
+        from unittest.mock import patch
+        url = f"{self.base_url}/api/chat"
+        payload = json.dumps({"message": "uma pergunta complexa que nao tem regra no fallback deterministico"}).encode("utf-8")
+
+        with patch.object(ws.llm_client, "generate_call") as mock_gen:
+            mock_gen.return_value = (
+                "<call>none()</call>",
+                5.0,
+                "Não reconheci esse comando no modo rápido (o servidor do modelo local está offline no momento). Tente reformular o pedido ou inicie o llama-server."
+            )
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={"Content-Type": "application/json", "X-Access-Pin": ACCESS_PIN}
+            )
+            with urllib.request.urlopen(req) as resp:
+                self.assertEqual(resp.status, 200)
+                res_data = json.loads(resp.read().decode("utf-8"))
+                self.assertEqual(res_data.get("status"), "error")
+                self.assertEqual(
+                    res_data.get("message"),
+                    "Não reconheci esse comando no modo rápido (o servidor do modelo local está offline no momento). Tente reformular o pedido ou inicie o llama-server."
+                )
+
     def test_captures_pin_and_path_traversal(self):
         """Testa restrição de PIN e bloqueio de path traversal na rota /captures/*."""
         filename = self.dummy_file.name

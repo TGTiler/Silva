@@ -82,6 +82,24 @@ class TestParserAndFallback(unittest.TestCase):
             self.assertIsNotNone(call, f"Deveria detectar Wi-Fi para: {p}")
             self.assertIn("scan_wifi()", call)
 
+    def test_fallback_wifi_expanded_rules(self):
+        """Valida novas regras expandidas de scan_wifi e get_wifi_info com variações coloquiais."""
+        # 1. scan_wifi()
+        self.assertEqual(match_intent_fallback("Quais wifi tem ao meu redor"), "<call>scan_wifi()</call>")
+        self.assertEqual(match_intent_fallback("Quais redes wifi tem por aqui"), "<call>scan_wifi()</call>")
+        self.assertEqual(match_intent_fallback("wifis ao meu redor"), "<call>scan_wifi()</call>")
+        self.assertEqual(match_intent_fallback("redes ao redor"), "<call>scan_wifi()</call>")
+        self.assertEqual(match_intent_fallback("wifis por aqui"), "<call>scan_wifi()</call>")
+        self.assertEqual(match_intent_fallback("redes disponiveis"), "<call>scan_wifi()</call>")
+        self.assertEqual(match_intent_fallback("buscar redes wifi"), "<call>scan_wifi()</call>")
+
+        # 2. get_wifi_info()
+        self.assertEqual(match_intent_fallback("Qual wifi estou conectado"), "<call>get_wifi_info()</call>")
+        self.assertEqual(match_intent_fallback("qual wifi to conectado"), "<call>get_wifi_info()</call>")
+        self.assertEqual(match_intent_fallback("qual rede estou conectado"), "<call>get_wifi_info()</call>")
+        self.assertEqual(match_intent_fallback("em qual wifi estou conectado"), "<call>get_wifi_info()</call>")
+        self.assertEqual(match_intent_fallback("qual wifi conectado"), "<call>get_wifi_info()</call>")
+
     def test_fallback_math_scientific_and_words(self):
         """Testa fallback para expressões matemáticas por extenso e científicas."""
         # Operações por extenso

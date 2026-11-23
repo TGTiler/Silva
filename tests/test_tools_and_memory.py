@@ -9,6 +9,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -185,6 +186,26 @@ class TestToolsAndMemory(unittest.TestCase):
         r_off = tools.set_wifi_state(state=False)
         self.assertEqual(r_off["status"], "ok")
         self.assertFalse(r_off["data"]["state"])
+
+    def test_get_clipboard_feedback(self):
+        """Testa feedback detalhado de get_clipboard quando vazio/bloqueado e quando preenchido."""
+        # 1. Com conteúdo
+        with patch.object(tools_comms, "SIMULATE_HARDWARE", False):
+            with patch.object(tools_comms, "_run_termux_cmd") as mock_cmd:
+                mock_cmd.return_value = MagicMock(returncode=0, stdout="texto copiado de teste", stderr="")
+                res_filled = tools_comms.get_clipboard()
+                self.assertEqual(res_filled["status"], "ok")
+                self.assertIn("texto copiado de teste", res_filled["message"])
+                self.assertEqual(res_filled["data"]["clipboard"], "texto copiado de teste")
+
+        # 2. Vazio ou bloqueado pelo Android 10+
+        with patch.object(tools_comms, "SIMULATE_HARDWARE", False):
+            with patch.object(tools_comms, "_run_termux_cmd") as mock_cmd:
+                mock_cmd.return_value = MagicMock(returncode=0, stdout="", stderr="")
+                res_empty = tools_comms.get_clipboard()
+                self.assertEqual(res_empty["status"], "ok")
+                self.assertIn("Área de transferência vazia (ou bloqueada em segundo plano pelo Android — libere READ_CLIPBOARD via ADB para o Termux:API).", res_empty["message"])
+                self.assertEqual(res_empty["data"]["clipboard"], "")
 
     def test_all_39_tools_smoke_execution(self):
         """Testa a execução smoke de todas as 39 ferramentas do catálogo em modo simulado."""

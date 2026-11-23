@@ -12,23 +12,33 @@ echo "========================================================"
 echo "         INICIANDO SILVA AGENT (EDGE RUNTIME)          "
 echo "========================================================"
 
-# Carrega WEB_PORT do .env (com fallback para 5000)
-WEB_PORT="5000"
+mkdir -p data logs
+
+# 1. Carrega variáveis de ambiente do .env antes de checar binários e portas
 ENV_PATH=""
-if [ -f "../.env" ]; then
-    ENV_PATH="../.env"
-elif [ -f "./.env" ]; then
+if [ -f "./.env" ]; then
     ENV_PATH="./.env"
-elif [ -f "../.env.example" ]; then
-    ENV_PATH="../.env.example"
+elif [ -f "../.env" ]; then
+    ENV_PATH="../.env"
 elif [ -f "./.env.example" ]; then
     ENV_PATH="./.env.example"
+elif [ -f "../.env.example" ]; then
+    ENV_PATH="../.env.example"
 fi
 
 if [ -n "$ENV_PATH" ]; then
-    PARSED_PORT=$(grep -E '^\s*WEB_PORT\s*=' "$ENV_PATH" | head -n 1 | cut -d'=' -f2 | tr -d ' "\r\n' || true)
-    if [ -n "$PARSED_PORT" ]; then
-        WEB_PORT="$PARSED_PORT"
+    set -a
+    # shellcheck disable=SC1090
+    source "$ENV_PATH" 2>/dev/null || true
+    set +a
+fi
+
+WEB_PORT="${WEB_PORT:-5000}"
+LLM_PORT="8080"
+if [ -n "$LLAMA_SERVER_URL" ]; then
+    PARSED_LLM_PORT=$(echo "$LLAMA_SERVER_URL" | grep -oE ':[0-9]+' | tr -d ':' || true)
+    if [ -n "$PARSED_LLM_PORT" ]; then
+        LLM_PORT="$PARSED_LLM_PORT"
     fi
 fi
 
@@ -40,14 +50,11 @@ for arg in "$@"; do
     fi
 done
 
-if [ "$VOICE_MODE" != "true" ] && [ -n "$ENV_PATH" ]; then
-    PARSED_VOICE=$(grep -E '^\s*ENABLE_VOICE_MODE\s*=' "$ENV_PATH" | head -n 1 | cut -d'=' -f2 | tr -d ' "\r\n' || true)
-    if [ "$PARSED_VOICE" == "true" ] || [ "$PARSED_VOICE" == "1" ]; then
+if [ "$VOICE_MODE" != "true" ]; then
+    if [ "${ENABLE_VOICE_MODE:-false}" == "true" ] || [ "${ENABLE_VOICE_MODE:-false}" == "1" ]; then
         VOICE_MODE=true
     fi
 fi
-
-mkdir -p data
 
 echo "[*] Verificando e limpando eventuais processos órfãos anteriores..."
 if [ -f "data/llama.pid" ]; then
@@ -123,47 +130,85 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-LLAMA_BIN=""
-if [ -x "./llama-server" ]; then
-    LLAMA_BIN="./llama-server"
-elif [ -x "./llama.cpp/build/bin/llama-server" ]; then
-    LLAMA_BIN="./llama.cpp/build/bin/llama-server"
-elif [ -x "./llama.cpp/build/llama-server" ]; then
-    LLAMA_BIN="./llama.cpp/build/llama-server"
-elif command -v llama-server >/dev/null 2>&1; then
-    LLAMA_BIN=$(command -v llama-server)
+# Localização e auto-detecção do binário llama-server
+LLAMA_BIN="${LLAMA_SERVER_BIN:-}"
+if [ -z "$LLAMA_BIN" ] || [ ! -x "$LLAMA_BIN" ]; then
+    if command -v llama-server >/dev/null 2>&1; then
+        LLAMA_BIN=$(command -v llama-server)
+    elif [ -n "$PREFIX" ] && [ -x "$PREFIX/bin/llama-server" ]; then
+        LLAMA_BIN="$PREFIX/bin/llama-server"
+    elif [ -x "$HOME/llama.cpp/build/bin/llama-server" ]; then
+        LLAMA_BIN="$HOME/llama.cpp/build/bin/llama-server"
+    elif [ -x "./llama-server" ]; then
+        LLAMA_BIN="./llama-server"
+    elif [ -x "./llama.cpp/build/bin/llama-server" ]; then
+        LLAMA_BIN="./llama.cpp/build/bin/llama-server"
+    elif [ -x "./llama.cpp/build/llama-server" ]; then
+        LLAMA_BIN="./llama.cpp/build/llama-server"
+    fi
 fi
 
 # Localiza arquivo de modelo GGUF (prioriza silva-135m.gguf)
-MODEL_PATH=""
-if [ -f "./models/silva-135m.gguf" ]; then
-    MODEL_PATH="./models/silva-135m.gguf"
-elif [ -d "./models" ]; then
-    MODEL_PATH=$(find ./models -maxdepth 1 -name "*.gguf" 2>/dev/null | head -n 1 || true)
+MODEL_PATH="${LLAMA_MODEL_PATH:-}"
+if [ -z "$MODEL_PATH" ] || [ ! -f "$MODEL_PATH" ]; then
+    if [ -f "./models/silva-135m.gguf" ]; then
+        MODEL_PATH="./models/silva-135m.gguf"
+    elif [ -d "./models" ]; then
+        MODEL_PATH=$(find ./models -maxdepth 1 -name "*.gguf" 2>/dev/null | head -n 1 || true)
+    fi
 fi
 
-# Verifica se 127.0.0.1:8080 já está respondendo
+# Verifica se llama-server já está respondendo
 is_llama_online() {
     if command -v curl >/dev/null 2>&1; then
-        curl -s -m 1 http://127.0.0.1:8080/health >/dev/null 2>&1 || curl -s -m 1 http://127.0.0.1:8080/ >/dev/null 2>&1
+        curl -s -m 1 "http://127.0.0.1:${LLM_PORT}/health" >/dev/null 2>&1 || curl -s -m 1 "http://127.0.0.1:${LLM_PORT}/" >/dev/null 2>&1
     else
-        python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=1)" >/dev/null 2>&1
+        python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${LLM_PORT}/health', timeout=1)" >/dev/null 2>&1
     fi
 }
 
 # 1. Inicia o llama-server se disponível e não estiver respondendo
 if is_llama_online; then
-    echo "[*] llama-server já está ativo e respondendo em 127.0.0.1:8080 (reutilizando serviço existente)."
+    echo "[*] llama-server já está ativo e respondendo em 127.0.0.1:${LLM_PORT} (reutilizando serviço existente)."
 elif [ -n "$LLAMA_BIN" ] && [ -n "$MODEL_PATH" ] && [ -f "$MODEL_PATH" ]; then
     MODEL_NAME=$(basename "$MODEL_PATH")
     echo "[*] Modelo GGUF detectado e ativo: $MODEL_NAME"
     echo "    -> Caminho completo: $MODEL_PATH"
-    echo "[*] Subindo llama-server na porta 8080 (background)..."
-    $LLAMA_BIN -m "$MODEL_PATH" --host 127.0.0.1 --port 8080 -c 2048 -t 4 --log-disable > /dev/null 2>&1 &
+    echo "[*] Subindo llama-server na porta $LLM_PORT (background)..."
+    
+    # Flags universais compatíveis com builds recentes do llama.cpp
+    $LLAMA_BIN -m "$MODEL_PATH" --host 127.0.0.1 --port "$LLM_PORT" -c 512 -t 4 > logs/llama_server.log 2>&1 &
     LLAMA_PID=$!
     echo "$LLAMA_PID" > data/llama.pid
-    echo "[*] llama-server em execução (PID: $LLAMA_PID, Modelo: $MODEL_NAME)"
-    sleep 1
+    echo "[*] llama-server em inicialização (PID: $LLAMA_PID, Modelo: $MODEL_NAME)"
+    
+    echo -n "[*] Aguardando llama-server responder em http://127.0.0.1:${LLM_PORT}/health"
+    LLAMA_READY=false
+    for i in $(seq 1 15); do
+        if is_llama_online; then
+            LLAMA_READY=true
+            break
+        fi
+        if ! kill -0 "$LLAMA_PID" 2>/dev/null; then
+            echo ""
+            echo "[!] llama-server encerrou inesperadamente!"
+            break
+        fi
+        sleep 1
+        echo -n "."
+    done
+    echo ""
+    
+    if [ "$LLAMA_READY" == "true" ]; then
+        echo "[OK] llama-server pronto e respondendo em http://127.0.0.1:${LLM_PORT}/health!"
+    else
+        echo "[AVISO] Falha ao conectar ao llama-server em 15s."
+        if [ -f "logs/llama_server.log" ]; then
+            echo "--- Conteúdo de logs/llama_server.log ---"
+            tail -n 25 logs/llama_server.log
+            echo "----------------------------------------"
+        fi
+    fi
 else
     echo "[AVISO] Binário llama-server ou modelo .gguf em ./models/ não encontrado."
     echo "        O Silva Web Server será iniciado no modo simulação/fallback."
@@ -178,6 +223,29 @@ fi
 PORT="$WEB_PORT"
 echo ""
 echo "========================================================"
+echo "    SILVA WEB PRONTO PARA INTERAÇÃO!                    "
+echo "========================================================"
+echo "  • No navegador do smartphone:"
+echo "    http://localhost:$PORT"
+if [ -n "$LOCAL_IP" ]; then
+    echo "  • No navegador do PC (mesmo Wi-Fi):"
+    echo "    http://$LOCAL_IP:$PORT"
+fi
+echo "========================================================"
+echo ""
+
+# 3. Executa o servidor web do Silva
+python3 main.py --web --port "$PORT" &
+WEB_PID=$!
+echo "$WEB_PID" > data/web.pid
+
+# 4. Inicia o Modo de Voz se solicitado
+if [ "$VOICE_MODE" == "true" ]; then
+    echo "[*] Ativando Modo de Comando por Voz Offline (Notificação Persistente)..."
+    python3 voice_assistant.py --action init >/dev/null 2>&1 &
+fi
+
+wait "$WEB_PID" || true
 echo "    SILVA WEB PRONTO PARA INTERAÇÃO!                    "
 echo "========================================================"
 echo "  • No navegador do smartphone:"

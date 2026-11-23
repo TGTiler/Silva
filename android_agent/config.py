@@ -48,11 +48,8 @@ CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
 HAS_TERMUX = bool(shutil.which("termux-battery-status"))
 SIMULATE_HARDWARE = os.getenv("SIMULATE_HARDWARE", "false").lower() in ("1", "true", "yes") or not HAS_TERMUX
 
-# Modo Opcional de Comando de Voz Offline (whisper.cpp + notificação persistente)
+# Modo Opcional de Comando de Voz Offline (termux-speech-to-text nativo + notificação persistente)
 ENABLE_VOICE_MODE = os.getenv("ENABLE_VOICE_MODE", "false").lower() in ("1", "true", "yes")
-WHISPER_BIN_PATH = os.getenv("WHISPER_BIN_PATH", "").strip()
-WHISPER_MODEL_PATH = os.getenv("WHISPER_MODEL_PATH", "models/ggml-base.bin").strip()
-WHISPER_LANGUAGE = os.getenv("WHISPER_LANGUAGE", "pt").strip()
 ENABLE_VOICE_TTS = os.getenv("ENABLE_VOICE_TTS", "false").lower() in ("1", "true", "yes")
 
 # System Prompt estrito do Silva para Function Calling

@@ -50,7 +50,7 @@ Silva/
     │   ├── scheduler.py                     # autoral: daemon background que monitora compromissos locais e dispara alertas
     │   ├── setup_termux.sh                  # autoral: instala Termux, dependências e llama.cpp
     │   ├── start_silva.sh                   # autoral: boot resiliente, limpeza cirúrgica de órfãos e gestão de PIDs
-    │   ├── voice_assistant.py               # autoral: módulo opcional de voz offline (whisper.cpp + notificação persistente 24/7)
+    │   ├── voice_assistant.py               # autoral: módulo opcional de voz offline (termux-speech-to-text nativo + notificação persistente 24/7)
     │   ├── tools/                           # autoral: pacote modular das 39 ferramentas Android auditado via AST
     │   │   ├── __init__.py                  # re-export retrocompatível e AVAILABLE_TOOLS
     │   │   ├── core.py                      # paths, locks, processos, telefones e apps
@@ -132,7 +132,7 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/android_agent/scheduler.py` (83 linhas) | Daemon em background thread-safe e reentrante para monitoramento de eventos e alarmes locais. |
 | `silva-agent/android_agent/setup_termux.sh` (48 linhas) | Setup de dependências e build do `llama-server`. |
 | `silva-agent/android_agent/start_silva.sh` (176 linhas) | Orquestração de inicialização idempotente, limpeza de processos e gestão de PIDs. |
-| `silva-agent/android_agent/voice_assistant.py` (270 linhas) | Módulo opcional de voz offline com whisper.cpp e notificação persistente 24/7. |
+| `silva-agent/android_agent/voice_assistant.py` (160 linhas) | Módulo opcional de voz offline nativo (termux-speech-to-text) e notificação persistente 24/7. |
 | `silva-agent/android_agent/tools/` (3.922 linhas totais) | Pacote modular das 39 ferramentas em 8 módulos (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. |
 | `silva-agent/android_agent/web_server.py` (265 linhas) | Servidor HTTP com SO_REUSEADDR, autenticação por PIN no chat e em `/captures/*`, proteção anti-path traversal e fallback de porta. |
 | `silva-agent/android_agent/static/index.html` (1.803 linhas) | Frontend responsivo estilo Claude/DeepSeek com multi-mídia segura e zero emojis. |
@@ -854,6 +854,12 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - *Correções de Imports e Constantes*: Resolução imediata de `NameError` em `open_app` adicionando `import unicodedata`, migração das constantes de mídia (`MEDIA_ACTION_SYNONYMS`, `MEDIA_KEYEVENTS`, `MEDIA_CONFIRMATIONS`) para `media.py`, `MONTHS_PTBR` para `memory_schedule.py`, `JOKES_PTBR` para `apps_mobility.py`, e inclusão de `import shutil` em `media.py`, `import subprocess` em `comms.py` e `import uuid` em `memory_schedule.py`.
     - *Smoke Test Automatizado*: Adicionado teste `test_all_39_tools_smoke_execution` em `tests/test_tools_and_memory.py`, executando em modo simulado cada uma das 39 ferramentas do catálogo com argumentos mínimos válidos, garantindo zero exceções. Suíte expandida para 32 testes unitários 100% aprovados.
     - *Validação Real em Produção*: Pacote atualizado via ADB e testado em hardware real no smartphone via API HTTP (`open_app` com YouTube executado com status `ok` em 1.5ms).
+
+25. **Migração do Modo de Voz para o Transcritor Offline Nativo do Android (`termux-speech-to-text`)**:
+    - *Descarte do Pipeline Pesado*: Eliminação completa do pipeline lento e complexo de gravação (`termux-microphone-record`), conversão de áudio (`ffmpeg`) e inferência pesada de modelo Whisper (`whisper.cpp` + download de 142 MB de `ggml-base.bin`), economizando espaço em disco e eliminando compilações lentas em `setup_termux.sh`.
+    - *Toque Único com Auto-Detecção de Silêncio (`--action listen`)*: A notificação persistente 24/7 (`--id silva_voice`) foi simplificada para conter apenas um botão interativo (`--button1 "Falar"` direcionado a `--action listen`). O `SpeechRecognizer` nativo do Android detecta automaticamente o fim da fala e finaliza a escuta sem exigir intervenção manual ou botão de parada.
+    - *Feedback Háptico e Despacho Direto*: Feedback tátil instantâneo via `termux-vibrate -d 60`, atualização dinâmica da notificação (`"Silva — Ouvindo..."` e `"Silva — Pronto"` com status do comando), despacho direto para `/api/chat` com header `X-Access-Pin` e síntese de voz opcional (`termux-tts-speak -l pt-BR`).
+    - *Tratamento Resiliente e Suíte Unitária*: Cancelamento limpo sem chamada à API em caso de fala vazia ou cancelada. Cobertura completa de testes automatizados com mocks em `tests/test_voice_assistant.py` e validação de 33 testes unitários com 100% de aprovação.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

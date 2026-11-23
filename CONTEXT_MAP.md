@@ -50,7 +50,7 @@ Silva/
     │   ├── scheduler.py                     # autoral: daemon background que monitora compromissos locais e dispara alertas
     │   ├── setup_termux.sh                  # autoral: instala Termux, dependências e llama.cpp
     │   ├── start_silva.sh                   # autoral: boot resiliente, limpeza cirúrgica de órfãos e gestão de PIDs
-    │   ├── voice_assistant.py               # autoral: módulo opcional de voz offline (termux-speech-to-text nativo + notificação persistente 24/7)
+    │   ├── voice_assistant.py               # autoral: módulo opcional de voz offline (Vosk vosk-model-small-pt-0.3 + notificação persistente 24/7)
     │   ├── tools/                           # autoral: pacote modular das 39 ferramentas Android auditado via AST
     │   │   ├── __init__.py                  # re-export retrocompatível e AVAILABLE_TOOLS
     │   │   ├── core.py                      # paths, locks, processos, telefones e apps
@@ -132,7 +132,7 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/android_agent/scheduler.py` (83 linhas) | Daemon em background thread-safe e reentrante para monitoramento de eventos e alarmes locais. |
 | `silva-agent/android_agent/setup_termux.sh` (48 linhas) | Setup de dependências e build do `llama-server`. |
 | `silva-agent/android_agent/start_silva.sh` (176 linhas) | Orquestração de inicialização idempotente, limpeza de processos e gestão de PIDs. |
-| `silva-agent/android_agent/voice_assistant.py` (160 linhas) | Módulo opcional de voz offline nativo (termux-speech-to-text) e notificação persistente 24/7. |
+| `silva-agent/android_agent/voice_assistant.py` (290 linhas) | Módulo opcional de voz offline com Vosk (vosk-model-small-pt-0.3), gramática das 39 tools e notificação 24/7. |
 | `silva-agent/android_agent/tools/` (3.922 linhas totais) | Pacote modular das 39 ferramentas em 8 módulos (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. |
 | `silva-agent/android_agent/web_server.py` (265 linhas) | Servidor HTTP com SO_REUSEADDR, autenticação por PIN no chat e em `/captures/*`, proteção anti-path traversal e fallback de porta. |
 | `silva-agent/android_agent/static/index.html` (1.803 linhas) | Frontend responsivo estilo Claude/DeepSeek com multi-mídia segura e zero emojis. |
@@ -860,6 +860,12 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - *Toque Único com Auto-Detecção de Silêncio (`--action listen`)*: A notificação persistente 24/7 (`--id silva_voice`) foi simplificada para conter apenas um botão interativo (`--button1 "Falar"` direcionado a `--action listen`). O `SpeechRecognizer` nativo do Android detecta automaticamente o fim da fala e finaliza a escuta sem exigir intervenção manual ou botão de parada.
     - *Feedback Háptico e Despacho Direto*: Feedback tátil instantâneo via `termux-vibrate -d 60`, atualização dinâmica da notificação (`"Silva — Ouvindo..."` e `"Silva — Pronto"` com status do comando), despacho direto para `/api/chat` com header `X-Access-Pin` e síntese de voz opcional (`termux-tts-speak -l pt-BR`).
     - *Tratamento Resiliente e Suíte Unitária*: Cancelamento limpo sem chamada à API em caso de fala vazia ou cancelada. Cobertura completa de testes automatizados com mocks em `tests/test_voice_assistant.py` e validação de 33 testes unitários com 100% de aprovação.
+
+26. **Migração do Modo de Voz para Vosk Offline (`vosk-model-small-pt-0.3`) com Gramática das 39 Tools**:
+    - *Substituição Silenciosa sem Janela Pop-up*: Eliminação definitiva da janela pop-up lenta da One UI 7.0 (`termux-speech-to-text`), substituindo-a pelo motor offline do Vosk em segundo plano com controle manual de início e parada (`Falar` / `Parar`) na notificação persistente 24/7 (`--id silva_voice`).
+    - *Vocabulário e Gramática Prioritária (`SILVA_VOSK_GRAMMAR`)*: Configuração de lista estruturada de palavras-chave e comandos em português cobrindo todas as 39 ferramentas do Silva, verbos de ação, aplicativos populares e numerais PT-BR, com token aberto `[unk]` para termos livres e higienizador `_clean_vosk_text` para remover ruídos.
+    - *Pipeline de Áudio Otimizado*: Gravação em segundo plano via `termux-microphone-record` (limite 60s), conversão via `ffmpeg` para PCM WAV 16kHz Mono e transcrição rápida com `KaldiRecognizer`.
+    - *Instalação Nativa ARM64 no Smartphone via ADB*: Diagnóstico de incompatibilidade de plataforma no Termux Android (`sys.platform == "android"` vs manylinux), patch do loader ctypes com a biblioteca nativa `libvosk.so` (Android NDK arm64-v8a bionic libc), download do modelo leve (~31MB) com validação de `final.mdl` e suíte automatizada de 34 testes unitários com 100% de aprovação.
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

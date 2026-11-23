@@ -48,8 +48,9 @@ CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
 HAS_TERMUX = bool(shutil.which("termux-battery-status"))
 SIMULATE_HARDWARE = os.getenv("SIMULATE_HARDWARE", "false").lower() in ("1", "true", "yes") or not HAS_TERMUX
 
-# Modo Opcional de Comando de Voz Offline (termux-speech-to-text nativo + notificação persistente)
+# Modo Opcional de Comando de Voz Offline (Vosk + notificação persistente)
 ENABLE_VOICE_MODE = os.getenv("ENABLE_VOICE_MODE", "false").lower() in ("1", "true", "yes")
+VOSK_MODEL_PATH = os.getenv("VOSK_MODEL_PATH", "models/vosk-model-small-pt-0.3").strip()
 ENABLE_VOICE_TTS = os.getenv("ENABLE_VOICE_TTS", "false").lower() in ("1", "true", "yes")
 
 # System Prompt estrito do Silva para Function Calling

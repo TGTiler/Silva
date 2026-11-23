@@ -11,8 +11,8 @@ echo "[1/4] Atualizando repositórios do Termux..."
 pkg update -y || apt-get update -y
 
 # 2. Instalação das dependências e do llama-cpp oficial
-echo "[2/4] Instalando dependências (python, termux-api, llama-cpp)..."
-pkg install -y python termux-api || apt-get install -y python termux-api
+echo "[2/4] Instalando dependências (python, termux-api, ffmpeg, llama-cpp)..."
+pkg install -y python termux-api ffmpeg || apt-get install -y python termux-api ffmpeg
 
 # Tenta instalar pacote oficial do llama-cpp do repositório Termux
 if pkg install -y llama-cpp 2>/dev/null || apt-get install -y llama-cpp 2>/dev/null; then
@@ -32,6 +32,20 @@ else
     elif [ -f "llama.cpp/build/llama-server" ]; then
         cp llama.cpp/build/llama-server ./llama-server
     fi
+fi
+
+# Instalação opcional/recomendada do Vosk e modelo offline PT-BR
+echo "[*] Verificando Vosk e modelo de voz offline PT-BR..."
+pkg install -y python-pip unzip curl || apt-get install -y python3-pip unzip curl || true
+pip install --upgrade vosk 2>/dev/null || true
+
+mkdir -p models
+if [ ! -d "models/vosk-model-small-pt-0.3" ]; then
+    echo "[*] Baixando modelo vosk-model-small-pt-0.3 (~31MB)..."
+    curl -L -o models/vosk-model-small-pt-0.3.zip https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip
+    unzip -q models/vosk-model-small-pt-0.3.zip -d models/
+    rm -f models/vosk-model-small-pt-0.3.zip
+    echo "[OK] Modelo Vosk instalado com sucesso!"
 fi
 
 # 3. Criação de pastas necessárias

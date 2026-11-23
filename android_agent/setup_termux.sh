@@ -11,8 +11,8 @@ echo "[1/4] Atualizando repositórios do Termux..."
 pkg update -y || apt-get update -y
 
 # 2. Instalação das dependências e do llama-cpp oficial
-echo "[2/4] Instalando dependências (python, termux-api, ffmpeg, llama-cpp)..."
-pkg install -y python termux-api ffmpeg || apt-get install -y python termux-api ffmpeg
+echo "[2/4] Instalando dependências (python, termux-api, llama-cpp)..."
+pkg install -y python termux-api || apt-get install -y python termux-api
 
 # Tenta instalar pacote oficial do llama-cpp do repositório Termux
 if pkg install -y llama-cpp 2>/dev/null || apt-get install -y llama-cpp 2>/dev/null; then

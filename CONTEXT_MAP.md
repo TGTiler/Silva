@@ -40,6 +40,9 @@ Silva/
     ├── .env.example                         # autoral: template de configuração do runtime
     ├── .gitignore                           # autoral: exclusões de dados, modelos e caches
     ├── README.md                            # autoral: documentação de arquitetura, uso e treinamento
+    ├── install-silva.sh                     # autoral: [1/3] instalador completo e idempotente para Termux e Linux
+    ├── config-silva.sh                      # autoral: [2/3] assistente interativo CLI para configuração (PIN, porta, TTS, cidade)
+    ├── start_silva.sh                       # autoral: [3/3] inicializador unificado (llama-server + web_server + wake-lock)
     ├── .git/                                # artefato gerado: metadados e objetos do Git
     ├── android_agent/                       # runtime de produção no Termux
     │   ├── config.py                        # autoral: configuração, paths e prompt do LLM
@@ -48,9 +51,7 @@ Silva/
     │   ├── main.py                          # autoral: entrypoint CLI/Web
     │   ├── parser.py                        # autoral: parser AST, whitelist e executor de calls
     │   ├── scheduler.py                     # autoral: daemon background que monitora compromissos locais e dispara alertas
-    │   ├── setup_termux.sh                  # autoral: instala Termux, dependências e llama.cpp
-    │   ├── start_silva.sh                   # autoral: boot resiliente, limpeza cirúrgica de órfãos e gestão de PIDs
-    │   ├── voice_assistant.py               # autoral: módulo opcional de voz offline (Vosk vosk-model-small-pt-0.3 + notificação persistente 24/7)
+    │   ├── start_silva.sh                   # autoral: wrapper de compatibilidade delegando para ../start_silva.sh
     │   ├── tools/                           # autoral: pacote modular das 39 ferramentas Android auditado via AST
     │   │   ├── __init__.py                  # re-export retrocompatível e AVAILABLE_TOOLS
     │   │   ├── core.py                      # paths, locks, processos, telefones e apps
@@ -104,7 +105,6 @@ Silva/
         ├── test_contracts.py                # validação de schemas (39 tools), tools e prompts sincronizados
         ├── test_parser_and_fallback.py      # testes de AST, whitelist, fallback e tolerâncias
         ├── test_tools_and_memory.py         # testes de FTS5, calculadora e smoke test das 39 ferramentas
-        ├── test_voice_assistant.py          # testes da máquina de estados e notificação de voz offline
         └── test_web_server.py               # testes HTTP, autenticação PIN e proteção contra Path Traversal
 ```
 
@@ -123,16 +123,17 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `update_direct.sh` (31 linhas) | Sincronização direta via ADB e reinício controlado no Termux. |
 | `silva-agent/.env.example` (20 linhas) | Contrato de variáveis de ambiente. |
 | `silva-agent/.gitignore` (41 linhas) | Exclusões de secrets, mídia, modelos, caches e backups. |
-| `silva-agent/README.md` (230 linhas) | Documentação principal com arquitetura, catálogo das 39 ferramentas e guia de execução. |
+| `silva-agent/README.md` (255 linhas) | Documentação principal com arquitetura, fluxo Plug & Play, catálogo das 39 ferramentas e guias de uso. |
+| `silva-agent/install-silva.sh` (251 linhas) | [1/3] Instalador completo e idempotente (Termux/Desktop): dependências base, llama-server, diretórios e .env. |
+| `silva-agent/config-silva.sh` (240 linhas) | [2/3] Assistente interativo CLI para configuração de PIN, porta web, TTS, hardware e cidade padrão no .env. |
+| `silva-agent/start_silva.sh` (200 linhas) | [3/3] Inicializador unificado com auto-setup, wake-lock, liberação de portas, background llama-server e web server. |
 | `silva-agent/android_agent/config.py` (70 linhas) | Configuração, paths e prompt de function calling. |
 | `silva-agent/android_agent/intent_fallback.py` (966 linhas) | Regras determinísticas de intents (39 tools), normalizador matemático/científico, ecossistema Wi-Fi e sanitização de cidades. |
 | `silva-agent/android_agent/llm_client.py` (119 linhas) | Cliente HTTP do `llama-server`. |
 | `silva-agent/android_agent/main.py` (114 linhas) | Entry point CLI/Web com inicialização segura do daemon `scheduler`. |
 | `silva-agent/android_agent/parser.py` (174 linhas) | Parser AST, whitelist de 39 ferramentas, execução e propagação de status real (`ok`, `partial_error`, `error`). |
 | `silva-agent/android_agent/scheduler.py` (83 linhas) | Daemon em background thread-safe e reentrante para monitoramento de eventos e alarmes locais. |
-| `silva-agent/android_agent/setup_termux.sh` (48 linhas) | Setup de dependências e build do `llama-server`. |
-| `silva-agent/android_agent/start_silva.sh` (176 linhas) | Orquestração de inicialização idempotente, limpeza de processos e gestão de PIDs. |
-| `silva-agent/android_agent/voice_assistant.py` (290 linhas) | Módulo opcional de voz offline com Vosk (vosk-model-small-pt-0.3), gramática das 39 tools e notificação 24/7. |
+| `silva-agent/android_agent/start_silva.sh` (5 linhas) | Wrapper leve de compatibilidade que delega a execução para `../start_silva.sh`. |
 | `silva-agent/android_agent/tools/` (3.922 linhas totais) | Pacote modular das 39 ferramentas em 8 módulos (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. |
 | `silva-agent/android_agent/web_server.py` (265 linhas) | Servidor HTTP com SO_REUSEADDR, autenticação por PIN no chat e em `/captures/*`, proteção anti-path traversal e fallback de porta. |
 | `silva-agent/android_agent/static/index.html` (1.803 linhas) | Frontend responsivo estilo Claude/DeepSeek com multi-mídia segura e zero emojis. |
@@ -517,8 +518,10 @@ Pipeline autônomo completo para Google Colab (GPU T4):
 
 | Arquivo | Operação e efeitos |
 |---|---|
-| `silva-agent/android_agent/setup_termux.sh` | Atualiza índices, instala `python`, `termux-api` e toolchain; constrói `llama-server`; cria `captures/`/`models/` (`silva-agent/android_agent/setup_termux.sh:10-44`). |
-| `silva-agent/android_agent/start_silva.sh` | Localiza servidor/modelo, instala trap, inicia `llama-server` e `main.py --web --port 5000` (`silva-agent/android_agent/start_silva.sh:6-83`). |
+| `silva-agent/install-silva.sh` | [1/3] Instalador completo e idempotente: atualiza índices Termux, instala dependências base (`python`, `termux-api`, `curl`, `git`, `cmake`, `clang`), localiza ou instala `llama-server`, organiza pastas e gera `.env` seguro com PIN de 6 dígitos. |
+| `silva-agent/config-silva.sh` | [2/3] Assistente CLI interativo: menu para ajuste de PIN (`ACCESS_PIN`), porta web (`WEB_PORT`), áudio TTS, simulação de hardware, auto-detecção de LLM/modelos GGUF e cidade padrão, atualizando `.env` atomicamente. |
+| `silva-agent/start_silva.sh` | [3/3] Inicializador unificado: auto-setup, wake-lock no Android, liberação de portas (`5000` e `8080`), subida em background do `llama-server` (`-c 1024 -t 4`), monitoramento `/health`, trap de sinais e execução de `python3 main.py --web`. |
+| `silva-agent/android_agent/start_silva.sh` | Wrapper de compatibilidade retroativa: repassa a invocação diretamente para `../start_silva.sh`. |
 | `start_silva_bootstrap.sh` | Extrai `silva_deploy.tar.gz`, executa setup e start (`start_silva_bootstrap.sh:3-17`). |
 | `update_and_restart.sh` | Extrai `silva_update.tar.gz`, mata APIs Python e reinicia (`update_and_restart.sh:1-10`). |
 | `apply_tools_update.sh` | Copia `tools.py`, mata processos e reinicia (`apply_tools_update.sh:1-10`). |
@@ -637,12 +640,13 @@ Parâmetros SFT/LoRA no Colab: `r=16`, `lora_alpha=32`, `lora_dropout=0.05`, mó
 
 ### 4.8 Fluxo de boot
 
-1. `start_silva.sh` entra no diretório do runtime e solicita wake lock (`silva-agent/android_agent/start_silva.sh:6-9`).
-2. Localiza `llama-server` e GGUF (`silva-agent/android_agent/start_silva.sh:15-32`).
-3. Instala trap de cleanup unificada (`silva-agent/android_agent/start_silva.sh:35-45`).
-4. Inicia `llama-server` em `127.0.0.1:8080`, contexto 2048 e 4 threads (`silva-agent/android_agent/start_silva.sh:47-56`).
-5. Executa `python3 main.py --web --port 5000` (`silva-agent/android_agent/start_silva.sh:83`).
-6. Se a flag `--voice` for passada (ou `ENABLE_VOICE_MODE=true`), inicia o `voice_assistant.py` com notificação persistente 24/7.
+1. `./start_silva.sh` na raiz verifica a existência de `.env`; se ausente, executa automaticamente `./install-silva.sh`.
+2. Carrega variáveis de ambiente, obtém `WEB_PORT` (padrão 5000) e solicita wake lock no Android via `termux-wake-lock`.
+3. Limpa processos órfãos (`llama-server`, `main.py`) e libera portas ocupadas (`WEB_PORT` e `8080`) via `fuser -k` ou `lsof`.
+4. Instala trap de encerramento seguro (`cleanup` em `EXIT INT TERM`) para finalizar subprocessos e liberar o wake lock.
+5. Inicia o `llama-server` em `127.0.0.1:8080` com `-c 1024 -t 4` em background, monitorando `/health` por até 15s.
+6. Detecta IP local da rede Wi-Fi via socket UDP e exibe painel de status formatado no terminal.
+7. Entra no diretório `android_agent/` e executa `python3 main.py --web --port "$WEB_PORT"`.
 
 ### 4.9 Fluxo HTTP de chat
 
@@ -866,6 +870,17 @@ Design System com tema escuro refinado (`#18181b` / `#09090b`):
     - *Vocabulário e Gramática Prioritária (`SILVA_VOSK_GRAMMAR`)*: Configuração de lista estruturada de palavras-chave e comandos em português cobrindo todas as 39 ferramentas do Silva, verbos de ação, aplicativos populares e numerais PT-BR, com token aberto `[unk]` para termos livres e higienizador `_clean_vosk_text` para remover ruídos.
     - *Pipeline de Áudio Otimizado*: Gravação em segundo plano via `termux-microphone-record` (limite 60s), conversão via `ffmpeg` para PCM WAV 16kHz Mono e transcrição rápida com `KaldiRecognizer`.
     - *Instalação Nativa ARM64 no Smartphone via ADB*: Diagnóstico de incompatibilidade de plataforma no Termux Android (`sys.platform == "android"` vs manylinux), patch do loader ctypes com a biblioteca nativa `libvosk.so` (Android NDK arm64-v8a bionic libc), download do modelo leve (~31MB) com validação de `final.mdl` e suíte automatizada de 34 testes unitários com 100% de aprovação.
+
+27. **Padronização Operacional Plug & Play em 3 Scripts Raiz e Limpeza de Dependências Obsoletas**:
+    - *Três Scripts Principais na Raiz (`silva-agent/`)*:
+      1. `install-silva.sh`: Instalador unificado e idempotente para Termux e Linux desktop com auto-detecção de ambiente, instalação de dependências essenciais (`python`, `termux-api`, `curl`, `git`, `cmake`, `clang`), detecção/instalação de `llama-server`, organização de diretórios (`models`, `data`, `logs`, `captures`), geração segura de `.env` com PIN aleatório de 6 dígitos e sincronização atômica.
+      2. `config-silva.sh`: Assistente interativo CLI para configuração de PIN (`ACCESS_PIN`), porta web (`WEB_PORT`), alternância de TTS (`ENABLE_VOICE_TTS`), alternância de simulação (`SIMULATE_HARDWARE`), auto-detecção de motor LLM e modelo GGUF, e configuração de cidade padrão para clima (`DEFAULT_CITY`), com sincronização atômica direta no `.env`.
+      3. `start_silva.sh`: Inicializador central com auto-setup preventivo, liberação de portas e encerramento cirúrgico de instâncias zumbis, `termux-wake-lock`, inicialização do `llama-server` em background com `-c 1024 -t 4`, healthcheck de até 15s com fallback inteligente, captura unificada de sinais (`trap cleanup EXIT INT TERM`), detecção de IP local da LAN e banner de telemetria no terminal.
+    - *Limpeza Estrutural e Remoção de Obsoletos*:
+      - Remoção de arquivos legados de voz e scripts redundantes: `android_agent/setup_termux.sh`, `android_agent/voice_assistant.py` e `tests/test_voice_assistant.py` (voz interativa migrada para modo Web "Segure para falar" com Web Speech API / ditado nativo do teclado).
+      - Transformação de `android_agent/start_silva.sh` em wrapper leve delegando para `../start_silva.sh`.
+      - Atualização do script de sincronização `update_direct.sh` e documentação técnica no `README.md`.
+      - Suíte de testes automatizados com 32 testes unitários 100% aprovados (`Ran 32 tests in 1.83s, OK`) e validação em hardware real no smartphone via ADB (`192.168.0.106:5000`).
 
 ### 7.2 Pontos de Atenção e Acoplamentos Restantes
 

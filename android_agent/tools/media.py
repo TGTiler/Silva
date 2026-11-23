@@ -3,6 +3,7 @@ Módulo Mídia do Silva: Foto, Screenshot, Vídeo e Controle de Mídia.
 """
 
 import os
+import shutil
 import subprocess
 import time
 from datetime import datetime
@@ -284,6 +285,69 @@ def record_video(duration: int = 10, camera_id: int = 0) -> Dict[str, Any]:
     except Exception as e:
         return {"status": "error", "message": f"Erro na gravação de vídeo: {str(e)}"}
 
+
+
+MEDIA_ACTION_SYNONYMS = {
+    # pause
+    "pause": "pause",
+    "pausa": "pause",
+    "pausar": "pause",
+    "parar": "pause",
+    "para": "pause",
+    "pare": "pause",
+    "interromper": "pause",
+    "stop": "pause",
+    # play
+    "play": "play",
+    "tocar": "play",
+    "toca": "play",
+    "toque": "play",
+    "reproduzir": "play",
+    "reproduz": "play",
+    "continuar": "play",
+    "continua": "play",
+    "retomar": "play",
+    "retoma": "play",
+    "despausar": "play",
+    "despausa": "play",
+    # next
+    "next": "next",
+    "proxima": "next",
+    "próxima": "next",
+    "proximo": "next",
+    "próximo": "next",
+    "avancar": "next",
+    "avançar": "next",
+    "avanca": "next",
+    "avança": "next",
+    "pular": "next",
+    "pula": "next",
+    "pule": "next",
+    "passar": "next",
+    "passa": "next",
+    "passe": "next",
+    # previous
+    "previous": "previous",
+    "anterior": "previous",
+    "voltar": "previous",
+    "volta": "previous",
+    "retroceder": "previous",
+    "retrocede": "previous",
+}
+
+MEDIA_KEYEVENTS = {
+    "play": 126,
+    "pause": 127,
+    "next": 87,
+    "previous": 88,
+}
+
+MEDIA_CONFIRMATIONS = {
+    "pause": "Mídia pausada.",
+    "play": "Reprodução retomada.",
+    "next": "Avançando para a próxima faixa.",
+    "previous": "Voltando para a mídia anterior.",
+}
 
 
 def media_control(action: str) -> Dict[str, Any]:

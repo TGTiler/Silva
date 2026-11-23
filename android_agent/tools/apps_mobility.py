@@ -5,6 +5,7 @@ Módulo Apps, Mobilidade e Utilidades do Silva: Abertura de Apps, Uber/99, iFood
 import os
 import random
 import re
+import unicodedata
 import urllib.parse
 from typing import Any, Dict, Optional
 
@@ -15,8 +16,40 @@ from .core import (
     _run_termux_cmd,
     _exec_android_intent,
 )
+from .comms import set_clipboard
+from .memory_schedule import _load_memory, _normalize_text
 
-_LAST_JOKE: Optional[int] = None
+JOKES_PTBR = [
+    "Por que o computador foi ao médico? Porque ele estava com um vírus!",
+    "Existem 10 tipos de pessoas no mundo: as que entendem binário e as que não entendem.",
+    "O que o botão zero disse para o botão um? 'Você está no meu espaço!'.",
+    "Por que os programadores preferem o modo escuro? Porque a luz atrai bugs!",
+    "Qual é o café favorito do desenvolvedor? O Java.",
+    "O que a chave de fenda foi fazer no baile? Foi desenroscar os passos.",
+    "Por que o livro de matemática ficou triste? Porque tinha problemas demais.",
+    "O que uma impressora disse para a outra? 'Essa folha é sua ou é impressão minha?'.",
+    "Qual é o cúmulo da paciência? Jogar xadrez contra o espelho e esperar a jogada do adversário.",
+    "Por que o JavaScript foi ao psicólogo? Porque ele tinha problemas de escopo e não se sentia definido.",
+    "O que o pato disse para a pata? 'Vem quá!'.",
+    "Qual é o peixe que caiu do décimo andar? Aaaaatum!",
+    "O que o zero disse para o oito? 'Belo cinto!'",
+    "Por que o esqueleto não brigou com ninguém? Porque ele não tinha estômago para isso.",
+    "Qual é o animal que não vale mais nada? O javali.",
+    "Por que o desenvolvedor não gosta de florestas? Tem muitos bugs e pouca memória ram.",
+    "O que o tomate foi fazer no banco? Foi tirar o extrato.",
+    "Como as estrelas lavam o cabelo? Com Milky Way.",
+    "Por que o alarme do celular tocou feliz hoje? Porque acordou com disposição!",
+    "O que o Wi-Fi disse para o smartphone? 'Sinto uma forte conexão entre nós'.",
+    "Qual a fórmula da água benta? H Deus O.",
+    "Por que a aranha é o animal mais conectado do mundo? Porque vive na web.",
+    "O que o ponto de exclamação falou pro de interrogação? 'Nossa, que cara curioso você é!'.",
+    "Como se chama uma cobra que resolve equações? Uma píton (Python) matemática.",
+    "Por que o banco de dados terminou o namoro? Porque não aguentava mais queries e relacionamentos complicados.",
+    "O que um algoritmo disse para o outro? 'Siga meus passos!'.",
+    "Qual é a cidade que não tem táxi? Uberlândia."
+]
+
+_LAST_JOKE: Optional[str] = None
 
 def open_app(app_name: str) -> Dict[str, Any]:
     """Abre um aplicativo pelo nome ou pacote Android."""
@@ -96,22 +129,6 @@ def tell_joke() -> Dict[str, Any]:
         "message": f"Silva: {chosen}",
         "data": {"joke": chosen}
     }
-
-
-MONTHS_PTBR = {
-    "janeiro": 1, "jan": 1,
-    "fevereiro": 2, "fev": 2,
-    "março": 3, "marco": 3, "mar": 3,
-    "abril": 4, "abr": 4,
-    "maio": 5, "mai": 5,
-    "junho": 6, "jun": 6,
-    "julho": 7, "jul": 7,
-    "agosto": 8, "ago": 8,
-    "setembro": 9, "set": 9,
-    "outubro": 10, "out": 10,
-    "novembro": 11, "nov": 11,
-    "dezembro": 12, "dez": 12,
-}
 
 
 
@@ -434,69 +451,6 @@ def install_app(app_name: str) -> Dict[str, Any]:
             "message": f"Pesquisando '{clean_name}' na Play Store.",
             "data": {"app_name": clean_name, "query": clean_name, "url": url}
         }
-
-
-MEDIA_ACTION_SYNONYMS = {
-    # pause
-    "pause": "pause",
-    "pausa": "pause",
-    "pausar": "pause",
-    "parar": "pause",
-    "para": "pause",
-    "pare": "pause",
-    "interromper": "pause",
-    "stop": "pause",
-    # play
-    "play": "play",
-    "tocar": "play",
-    "toca": "play",
-    "toque": "play",
-    "reproduzir": "play",
-    "reproduz": "play",
-    "continuar": "play",
-    "continua": "play",
-    "retomar": "play",
-    "retoma": "play",
-    "despausar": "play",
-    "despausa": "play",
-    # next
-    "next": "next",
-    "proxima": "next",
-    "próxima": "next",
-    "proximo": "next",
-    "próximo": "next",
-    "avancar": "next",
-    "avançar": "next",
-    "avanca": "next",
-    "avança": "next",
-    "pular": "next",
-    "pula": "next",
-    "pule": "next",
-    "passar": "next",
-    "passa": "next",
-    "passe": "next",
-    # previous
-    "previous": "previous",
-    "anterior": "previous",
-    "voltar": "previous",
-    "volta": "previous",
-    "retroceder": "previous",
-    "retrocede": "previous",
-}
-
-MEDIA_KEYEVENTS = {
-    "play": 126,
-    "pause": 127,
-    "next": 87,
-    "previous": 88,
-}
-
-MEDIA_CONFIRMATIONS = {
-    "pause": "Mídia pausada.",
-    "play": "Reprodução retomada.",
-    "next": "Avançando para a próxima faixa.",
-    "previous": "Voltando para a mídia anterior.",
-}
 
 
 

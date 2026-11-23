@@ -130,10 +130,10 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/android_agent/scheduler.py` (83 linhas) | Daemon em background thread-safe e reentrante para monitoramento de eventos e alarmes locais. |
 | `silva-agent/android_agent/setup_termux.sh` (48 linhas) | Setup de dependências e build do `llama-server`. |
 | `silva-agent/android_agent/start_silva.sh` (176 linhas) | Orquestração de inicialização idempotente, limpeza de processos e gestão de PIDs. |
-| `silva-agent/android_agent/tools/` (3.922 linhas totais) | Pacote modular das 36 ferramentas em 8 módulos (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`). |
+| `silva-agent/android_agent/tools/` (3.922 linhas totais) | Pacote modular das 39 ferramentas em 8 módulos (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. |
 | `silva-agent/android_agent/web_server.py` (265 linhas) | Servidor HTTP com SO_REUSEADDR, autenticação por PIN no chat e em `/captures/*`, proteção anti-path traversal e fallback de porta. |
 | `silva-agent/android_agent/static/index.html` (1.803 linhas) | Frontend responsivo estilo Claude/DeepSeek com multi-mídia segura e zero emojis. |
-| `silva-agent/tests/` (480 linhas totais) | Suíte de testes automatizados unitários e de integração (18 testes 100% passando). |
+| `silva-agent/tests/` (650 linhas totais) | Suíte de testes automatizados unitários e de integração (32 testes 100% passando, incluindo smoke test das 39 ferramentas). |
 | `silva-agent/dataset/schema.json` (402 linhas) | Contrato estrito de 36 ferramentas e 41 parâmetros. |
 | `silva-agent/dataset/prepare_final_dataset.py` (383 linhas) | Preparação e split do dataset final. |
 | `silva-agent/dataset/repair_train_dataset.py` (572 linhas) | Reparo/enriquecimento do dataset de treino. |

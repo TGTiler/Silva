@@ -19,6 +19,9 @@ import android_agent.tools as tools
 import android_agent.tools.core as tools_core
 import android_agent.tools.memory_schedule as tools_mem
 import android_agent.tools.hardware as tools_hw
+import android_agent.tools.media as tools_media
+import android_agent.tools.comms as tools_comms
+import android_agent.tools.apps_mobility as tools_apps
 import android_agent.tools.weather_web as tools_weather
 
 
@@ -40,9 +43,9 @@ class TestToolsAndMemory(unittest.TestCase):
         tools_core.DATA_DIR = self.tmp_path
         tools_mem.DATA_DIR = self.tmp_path
         tools_hw.DATA_DIR = self.tmp_path
-        tools_core.SIMULATE_HARDWARE = True
-        tools_hw.SIMULATE_HARDWARE = True
-        tools_weather.SIMULATE_HARDWARE = True
+        for mod in (tools_core, tools_hw, tools_media, tools_comms, tools_weather, tools_apps, tools_mem):
+            if hasattr(mod, "SIMULATE_HARDWARE"):
+                mod.SIMULATE_HARDWARE = True
 
     def tearDown(self):
         # Restaura caminhos originais
@@ -182,6 +185,64 @@ class TestToolsAndMemory(unittest.TestCase):
         r_off = tools.set_wifi_state(state=False)
         self.assertEqual(r_off["status"], "ok")
         self.assertFalse(r_off["data"]["state"])
+
+    def test_all_39_tools_smoke_execution(self):
+        """Testa a execução smoke de todas as 39 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 39, "O catálogo formal deve conter exatamente 39 ferramentas.")
+
+        sample_args = {
+            "calculate": {"expression": "2 + 2"},
+            "cancel_alarm": {"time": "07:00"},
+            "connect_wifi": {"ssid": "TesteNet", "password": "123"},
+            "get_battery": {},
+            "get_clipboard": {},
+            "get_last_location": {},
+            "get_last_sms": {"limit": 3},
+            "get_location": {},
+            "get_notifications": {"app": "whatsapp"},
+            "get_weather": {"day": "hoje", "location": "Recife"},
+            "get_wifi_info": {},
+            "install_app": {"app_name": "spotify"},
+            "list_capabilities": {},
+            "make_call": {"number": "11999999999"},
+            "media_control": {"action": "play"},
+            "none": {},
+            "open_app": {"app_name": "YouTube"},
+            "order_food": {"query": "pizza"},
+            "recall_note": {"query": "teste"},
+            "record_video": {"duration": 5, "camera_id": 0},
+            "remember_note": {"key": "teste", "value": "123"},
+            "request_ride": {"destination": "Shopping"},
+            "scan_wifi": {},
+            "schedule_event": {"title": "Reuniao", "date": "amanha", "time": "14:00"},
+            "search_google": {"query": "Python", "open_browser": False},
+            "send_sms": {"number": "11999999999", "message": "ola"},
+            "set_alarm": {"time": "07:00", "label": "Acordar"},
+            "set_brightness": {"level": 50},
+            "set_clipboard": {"text": "conteudo de teste"},
+            "set_dnd": {"state": True},
+            "set_location_state": {"state": True},
+            "set_timer": {"minutes": 10},
+            "set_torch": {"state": True},
+            "set_volume": {"stream": "music", "level": 50},
+            "set_wifi_state": {"state": True},
+            "take_photo": {"camera_id": 0},
+            "take_screenshot": {},
+            "tell_joke": {},
+            "vibrate": {"duration_ms": 500},
+        }
+
+        for tool_name, fn in tools.AVAILABLE_TOOLS.items():
+            args = sample_args.get(tool_name, {})
+            with self.subTest(tool=tool_name):
+                try:
+                    res = fn(**args)
+                except Exception as err:
+                    self.fail(f"Ferramenta '{tool_name}' lançou exceção inesperada: {type(err).__name__}: {err}")
+
+                self.assertIsInstance(res, dict, f"Ferramenta '{tool_name}' deve retornar um dict.")
+                self.assertIn("status", res, f"Ferramenta '{tool_name}' deve retornar campo 'status'.")
+                self.assertEqual(res["status"], "ok", f"Ferramenta '{tool_name}' falhou: {res.get('message')}")
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ Módulo Comunicação do Silva: SMS, Chamadas, Notificações e Clipboard.
 
 import json
 import re
+import subprocess
 from typing import Any, Dict, Optional
 
 from .core import (
@@ -187,39 +188,6 @@ def set_clipboard(text: str) -> Dict[str, Any]:
         }
     except Exception as e:
         return {"status": "error", "message": f"Erro ao copiar para clipboard: {str(e)}"}
-
-
-JOKES_PTBR = [
-    "Por que o computador foi ao médico? Porque ele estava com um vírus!",
-    "Existem 10 tipos de pessoas no mundo: as que entendem binário e as que não entendem.",
-    "O que o botão zero disse para o botão um? 'Você está no meu espaço!'.",
-    "Por que os programadores preferem o modo escuro? Porque a luz atrai bugs!",
-    "Qual é o café favorito do desenvolvedor? O Java.",
-    "O que a chave de fenda foi fazer no baile? Foi desenroscar os passos.",
-    "Por que o livro de matemática ficou triste? Porque tinha problemas demais.",
-    "O que uma impressora disse para a outra? 'Essa folha é sua ou é impressão minha?'.",
-    "Qual é o cúmulo da paciência? Jogar xadrez contra o espelho e esperar a jogada do adversário.",
-    "Por que o JavaScript foi ao psicólogo? Porque ele tinha problemas de escopo e não se sentia definido.",
-    "O que o pato disse para a pata? 'Vem quá!'.",
-    "Qual é o peixe que caiu do décimo andar? Aaaaatum!",
-    "O que o zero disse para o oito? 'Belo cinto!'",
-    "Por que o esqueleto não brigou com ninguém? Porque ele não tinha estômago para isso.",
-    "Qual é o animal que não vale mais nada? O javali.",
-    "Por que o desenvolvedor não gosta de florestas? Tem muitos bugs e pouca memória ram.",
-    "O que o tomate foi fazer no banco? Foi tirar o extrato.",
-    "Como as estrelas lavam o cabelo? Com Milky Way.",
-    "Por que o alarme do celular tocou feliz hoje? Porque acordou com disposição!",
-    "O que o Wi-Fi disse para o smartphone? 'Sinto uma forte conexão entre nós'.",
-    "Qual a fórmula da água benta? H Deus O.",
-    "Por que a aranha é o animal mais conectado do mundo? Porque vive na web.",
-    "O que o ponto de exclamação falou pro de interrogação? 'Nossa, que cara curioso você é!'.",
-    "Como se chama uma cobra que resolve equações? Uma píton (Python) matemática.",
-    "Por que o banco de dados terminou o namoro? Porque não aguentava mais queries e relacionamentos complicados.",
-    "O que um algoritmo disse para o outro? 'Siga meus passos!'.",
-    "Qual é a cidade que não tem táxi? Uberlândia."
-]
-
-_LAST_JOKE: Optional[str] = None
 
 
 

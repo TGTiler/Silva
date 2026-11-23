@@ -945,6 +945,9 @@
       align-items: center;
       width: 100%;
       gap: 8px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
 
     .voice-hold-action {
@@ -1378,8 +1381,8 @@
     <!-- Composer Fixo na Base -->
     <div class="composer-dock">
       <!-- Overlay de Gravação por Voz (Ondas Sonoras e Gesto de Cancelar) -->
-      <div id="voiceOverlay" class="voice-overlay" style="display: none;">
-        <div id="voiceLivePreview" class="voice-live-preview">Ouvindo...</div>
+      <div id="voice-overlay" class="voice-overlay" style="display: none;">
+        <div id="voice-live-preview" class="voice-live-preview">Ouvindo...</div>
         <div id="voiceWaveContainer" class="voice-wave-container">
           <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
           <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
@@ -1406,7 +1409,7 @@
         </div>
 
         <!-- Modo Segure para Falar -->
-        <div id="voiceHoldBar" class="voice-hold-bar" style="display: none;">
+        <div id="voice-hold-bar" class="voice-hold-bar" style="display: none;">
           <button type="button" id="toggleTextModeBtn" class="mode-toggle-btn" title="Alternar para modo teclado">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
@@ -2312,12 +2315,12 @@
       // 14. Modo de Voz Interativo ("Segure para falar" & Ondas Sonoras)
       const composerTextRow = document.getElementById("composerTextRow");
       const composerBottomRow = document.getElementById("composerBottomRow");
-      const voiceHoldBar = document.getElementById("voiceHoldBar");
+      const voiceHoldBar = document.getElementById("voice-hold-bar") || document.getElementById("voiceHoldBar");
       const voiceHoldAction = document.getElementById("voiceHoldAction");
       const toggleVoiceModeBtn = document.getElementById("toggleVoiceModeBtn");
       const toggleTextModeBtn = document.getElementById("toggleTextModeBtn");
-      const voiceOverlay = document.getElementById("voiceOverlay");
-      const voiceLivePreview = document.getElementById("voiceLivePreview");
+      const voiceOverlay = document.getElementById("voice-overlay") || document.getElementById("voiceOverlay");
+      const voiceLivePreview = document.getElementById("voice-live-preview") || document.getElementById("voiceLivePreview");
       const voiceWaveContainer = document.getElementById("voiceWaveContainer");
       const voiceStatusHint = document.getElementById("voiceStatusHint");
 

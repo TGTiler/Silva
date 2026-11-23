@@ -31,6 +31,7 @@ try:
         ENABLE_VOICE_TTS,
         SIMULATE_HARDWARE,
         VOSK_MODEL_PATH,
+        VOSK_USE_GRAMMAR,
         WEB_HOST,
         WEB_PORT,
     )
@@ -42,6 +43,7 @@ except ImportError:
             ENABLE_VOICE_TTS,
             SIMULATE_HARDWARE,
             VOSK_MODEL_PATH,
+            VOSK_USE_GRAMMAR,
             WEB_HOST,
             WEB_PORT,
         )
@@ -52,6 +54,7 @@ except ImportError:
         SIMULATE_HARDWARE = os.getenv("SIMULATE_HARDWARE", "false").lower() in ("1", "true", "yes")
         ENABLE_VOICE_MODE = os.getenv("ENABLE_VOICE_MODE", "false").lower() in ("1", "true", "yes")
         VOSK_MODEL_PATH = os.getenv("VOSK_MODEL_PATH", "models/vosk-model-small-pt-0.3").strip()
+        VOSK_USE_GRAMMAR = os.getenv("VOSK_USE_GRAMMAR", "false").lower() in ("1", "true", "yes")
         ENABLE_VOICE_TTS = os.getenv("ENABLE_VOICE_TTS", "false").lower() in ("1", "true", "yes")
 
 # Fallback seguro para vosk em ambientes desktop sem o pacote instalado
@@ -81,6 +84,13 @@ WAV_AUDIO_FILE = DATA_DIR / "voice_input.wav"
 # Vocabulário / Gramática Inteligente do Silva (39 Tools + Apps + Numerais)
 # ==============================================================================
 SILVA_VOSK_GRAMMAR: List[str] = [
+    # Artigos, contrações, preposições e conectivos do português
+    "o", "a", "os", "as", "um", "uma", "uns", "umas",
+    "de", "do", "da", "dos", "das", "no", "na", "nos", "nas",
+    "em", "num", "numa", "por", "para", "pro", "pra",
+    "com", "sem", "e", "ou", "que", "me", "se", "te",
+    "ao", "aos", "à", "às",
+
     # Ativação e cortesia
     "silva", "ei silva", "por favor", "agora", "hoje", "amanha", "depois de amanha",
     
@@ -128,6 +138,25 @@ def _clean_vosk_text(raw_text: str) -> str:
     t = re.sub(r"\[unk\]|<unk>", " ", raw_text, flags=re.IGNORECASE)
     cleaned = " ".join(t.split()).strip()
     return cleaned
+
+
+def _postprocess_transcript(text: str) -> str:
+    """Corrige confusões fonéticas comuns do Vosk PT-BR em nomes de apps e termos frequentes."""
+    if not text:
+        return ""
+    t = text.lower()
+    replacements = [
+        (r"\b(you\s*tube|io\s*tube|iutube)\b", "youtube"),
+        (r"\b(whats\s*app|uatisapi|what\s*zap|uatsap|uats\s*app)\b", "whatsapp"),
+        (r"\b(instagran|insta\s*gram)\b", "instagram"),
+        (r"\b(uai\s*fai|wi\s*fi|way\s*fay)\b", "wifi"),
+        (r"\b(tik\s*tok)\b", "tiktok"),
+        (r"\b(i\s*food)\b", "ifood"),
+        (r"\b(play\s*store)\b", "play store"),
+    ]
+    for pattern, rep in replacements:
+        t = re.sub(pattern, rep, t, flags=re.IGNORECASE)
+    return " ".join(t.split()).strip()
 
 
 def get_voice_state() -> Dict[str, any]:
@@ -257,7 +286,7 @@ def handle_action_start():
     if shutil.which("termux-microphone-record") and not SIMULATE_HARDWARE:
         try:
             subprocess.run(
-                ["termux-microphone-record", "-f", str(RAW_AUDIO_FILE), "-l", "60"],
+                ["termux-microphone-record", "-f", str(RAW_AUDIO_FILE), "-e", "aac", "-r", "16000", "-b", "64000", "-l", "60"],
                 capture_output=True,
                 timeout=5
             )
@@ -297,13 +326,14 @@ def handle_action_stop():
             update_voice_notification("Silva — Pronto", "Nenhum áudio gravado. Toque em Falar.")
             return
 
-        # 2. Converte para PCM WAV 16kHz Mono via FFmpeg
+        # 2. Converte para PCM WAV 16kHz Mono via FFmpeg com filtro dynaudnorm/highpass
         if shutil.which("ffmpeg"):
             cmd_ffmpeg = [
                 "ffmpeg", "-y",
                 "-i", str(RAW_AUDIO_FILE),
                 "-ar", "16000",
                 "-ac", "1",
+                "-af", "highpass=f=80,dynaudnorm",
                 "-c:a", "pcm_s16le",
                 str(WAV_AUDIO_FILE)
             ]
@@ -320,8 +350,11 @@ def handle_action_stop():
                 model = Model(model_dir)
                 if WAV_AUDIO_FILE.is_file():
                     with wave.open(str(WAV_AUDIO_FILE), "rb") as wf:
-                        grammar_json = json.dumps(SILVA_VOSK_GRAMMAR, ensure_ascii=False)
-                        rec = KaldiRecognizer(model, wf.getframerate(), grammar_json)
+                        if VOSK_USE_GRAMMAR:
+                            grammar_json = json.dumps(SILVA_VOSK_GRAMMAR, ensure_ascii=False)
+                            rec = KaldiRecognizer(model, wf.getframerate(), grammar_json)
+                        else:
+                            rec = KaldiRecognizer(model, wf.getframerate())
                         while True:
                             data = wf.readframes(4000)
                             if len(data) == 0:
@@ -335,6 +368,7 @@ def handle_action_stop():
             transcribed_text = "abra o youtube"
 
         transcribed_text = _clean_vosk_text(transcribed_text)
+        transcribed_text = _postprocess_transcript(transcribed_text)
 
         if not transcribed_text:
             update_voice_notification("Silva — Pronto", "Nenhuma fala reconhecida. Toque em Falar.")

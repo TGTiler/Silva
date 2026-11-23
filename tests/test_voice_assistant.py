@@ -69,13 +69,26 @@ class TestVoiceAssistantVosk(unittest.TestCase):
         self.assertIn("[unk]", grammar)
         self.assertEqual(grammar[-1], "[unk]", "O token [unk] deve ser o último da gramática Vosk")
 
-        # Verifica ferramentas essenciais
+        # Verifica ferramentas essenciais e conectivos PT-BR
         required_tools_terms = [
             "silva", "bateria", "foto", "lanterna", "wifi", "clima", "alarme",
-            "calcula", "youtube", "whatsapp", "volume", "brilho", "uber", "ifood"
+            "calcula", "youtube", "whatsapp", "volume", "brilho", "uber", "ifood",
+            "o", "a", "de", "do", "da", "para", "pra", "pro", "com", "sem"
         ]
         for term in required_tools_terms:
             self.assertIn(term, grammar, f"Termo '{term}' deve estar presente na gramática")
+
+    def test_postprocess_transcript(self):
+        """Testa pós-processamento de correções fonéticas comuns do Vosk PT-BR."""
+        self.assertEqual(va._postprocess_transcript("abra o you tube"), "abra o youtube")
+        self.assertEqual(va._postprocess_transcript("abre o iutube"), "abre o youtube")
+        self.assertEqual(va._postprocess_transcript("manda no uatisapi"), "manda no whatsapp")
+        self.assertEqual(va._postprocess_transcript("entra no whats app"), "entra no whatsapp")
+        self.assertEqual(va._postprocess_transcript("abre o instagran"), "abre o instagram")
+        self.assertEqual(va._postprocess_transcript("liga o uai fai"), "liga o wifi")
+        self.assertEqual(va._postprocess_transcript("conecta no wi fi"), "conecta no wifi")
+        self.assertEqual(va._postprocess_transcript(""), "")
+        self.assertEqual(va._postprocess_transcript(None), "")
 
     @patch("shutil.which")
     @patch("subprocess.run")
@@ -142,9 +155,16 @@ class TestVoiceAssistantVosk(unittest.TestCase):
 
         calls = [c[0][0] for c in mock_subproc.call_args_list]
         has_vibrate = any(c[0] == "termux-vibrate" and "-d" in c and "70" in c for c in calls)
-        has_record = any(c[0] == "termux-microphone-record" and "-l" in c and "60" in c for c in calls)
+        has_record = any(
+            c[0] == "termux-microphone-record"
+            and "-e" in c and "aac" in c
+            and "-r" in c and "16000" in c
+            and "-b" in c and "64000" in c
+            and "-l" in c and "60" in c
+            for c in calls
+        )
         self.assertTrue(has_vibrate, "Deve disparar vibração de 70ms")
-        self.assertTrue(has_record, "Deve iniciar gravação termux-microphone-record")
+        self.assertTrue(has_record, "Deve iniciar gravação termux-microphone-record em 16kHz")
 
     @patch("urllib.request.urlopen")
     @patch("wave.open")
@@ -200,7 +220,7 @@ class TestVoiceAssistantVosk(unittest.TestCase):
              patch("os.path.isdir", return_value=True):
             va.handle_action_stop()
 
-        # 1. Verifica chamada ao ffmpeg para conversão WAV 16kHz mono
+        # 1. Verifica chamada ao ffmpeg para conversão WAV 16kHz mono com filtro dynaudnorm
         calls = [c[0][0] for c in mock_subproc.call_args_list]
         ffmpeg_call = next((c for c in calls if c[0] == "ffmpeg"), None)
         self.assertIsNotNone(ffmpeg_call, "FFmpeg deve ser chamado para converter o áudio")
@@ -208,6 +228,8 @@ class TestVoiceAssistantVosk(unittest.TestCase):
         self.assertIn("16000", ffmpeg_call)
         self.assertIn("-ac", ffmpeg_call)
         self.assertIn("1", ffmpeg_call)
+        self.assertIn("-af", ffmpeg_call)
+        self.assertIn("highpass=f=80,dynaudnorm", ffmpeg_call)
         self.assertIn("pcm_s16le", ffmpeg_call)
 
         # 2. Verifica envio para /api/chat
@@ -283,6 +305,57 @@ class TestVoiceAssistantVosk(unittest.TestCase):
         # Arquivos temporários removidos
         self.assertFalse(va.RAW_AUDIO_FILE.exists())
         self.assertFalse(va.WAV_AUDIO_FILE.exists())
+
+    @patch("urllib.request.urlopen")
+    @patch("wave.open")
+    @patch("shutil.which")
+    @patch("subprocess.run")
+    def test_action_stop_vosk_grammar_toggle(self, mock_subproc, mock_which, mock_wave_open, mock_urlopen):
+        """Testa se KaldiRecognizer é instanciado com ou sem gramática conforme VOSK_USE_GRAMMAR."""
+        mock_which.side_effect = lambda cmd: f"/bin/{cmd}"
+        mock_subproc.side_effect = lambda cmd, **kwargs: MagicMock(returncode=0)
+
+        mock_wf = MagicMock()
+        mock_wf.getframerate.return_value = 16000
+        mock_wf.readframes.side_effect = [b"audio", b""]
+        mock_wave_open.return_value.__enter__.return_value = mock_wf
+
+        mock_rec = MagicMock()
+        mock_rec.AcceptWaveform.return_value = True
+        mock_rec.FinalResult.return_value = json.dumps({"text": "silva bateria"})
+        mock_rec_cls = MagicMock(return_value=mock_rec)
+
+        # 1. Com VOSK_USE_GRAMMAR = False (padrão)
+        va.VOSK_USE_GRAMMAR = False
+        va.RAW_AUDIO_FILE.write_bytes(b"dummy")
+        va.WAV_AUDIO_FILE.write_bytes(b"dummy")
+
+        with patch("android_agent.voice_assistant.Model", MagicMock()), \
+             patch("android_agent.voice_assistant.KaldiRecognizer", mock_rec_cls), \
+             patch("os.path.isdir", return_value=True):
+            va.handle_action_stop()
+
+        self.assertEqual(mock_rec_cls.call_count, 1)
+        args, kwargs = mock_rec_cls.call_args
+        self.assertEqual(len(args), 2, "Sem gramática deve passar apenas model e framerate")
+
+        # 2. Com VOSK_USE_GRAMMAR = True
+        mock_rec_cls.reset_mock()
+        mock_wf.readframes.side_effect = [b"audio", b""]
+        va.VOSK_USE_GRAMMAR = True
+        va.RAW_AUDIO_FILE.write_bytes(b"dummy")
+        va.WAV_AUDIO_FILE.write_bytes(b"dummy")
+
+        with patch("android_agent.voice_assistant.Model", MagicMock()), \
+             patch("android_agent.voice_assistant.KaldiRecognizer", mock_rec_cls), \
+             patch("os.path.isdir", return_value=True):
+            va.handle_action_stop()
+
+        self.assertEqual(mock_rec_cls.call_count, 1)
+        args, kwargs = mock_rec_cls.call_args
+        self.assertEqual(len(args), 3, "Com gramática deve passar model, framerate e JSON da gramática")
+        self.assertIn("silva", args[2])
+        self.assertIn("[unk]", args[2])
 
 
 if __name__ == "__main__":

@@ -51,6 +51,7 @@ SIMULATE_HARDWARE = os.getenv("SIMULATE_HARDWARE", "false").lower() in ("1", "tr
 # Modo Opcional de Comando de Voz Offline (Vosk + notificação persistente)
 ENABLE_VOICE_MODE = os.getenv("ENABLE_VOICE_MODE", "false").lower() in ("1", "true", "yes")
 VOSK_MODEL_PATH = os.getenv("VOSK_MODEL_PATH", "models/vosk-model-small-pt-0.3").strip()
+VOSK_USE_GRAMMAR = os.getenv("VOSK_USE_GRAMMAR", "false").lower() in ("1", "true", "yes")
 ENABLE_VOICE_TTS = os.getenv("ENABLE_VOICE_TTS", "false").lower() in ("1", "true", "yes")
 
 # System Prompt estrito do Silva para Function Calling

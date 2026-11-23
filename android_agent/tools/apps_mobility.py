@@ -2,6 +2,7 @@
 Módulo Apps, Mobilidade e Utilidades do Silva: Abertura de Apps, Uber/99, iFood, Play Store, Piadas e Capacidades.
 """
 
+import difflib
 import os
 import random
 import re
@@ -51,12 +52,60 @@ JOKES_PTBR = [
 
 _LAST_JOKE: Optional[str] = None
 
+APP_NOISE_WORDS = {
+    "o", "a", "os", "as", "um", "uma", "uns", "umas",
+    "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+    "pra", "para", "pro", "com", "sem",
+    "app", "aplicativo", "abra", "abrir", "abre",
+    "hoje", "agora", "por favor", "pfv", "silva", "ei silva", "ai", "aí"
+}
+
 def open_app(app_name: str) -> Dict[str, Any]:
-    """Abre um aplicativo pelo nome ou pacote Android."""
-    key = str(app_name).strip().lower()
-    # Normaliza removendo acentos para casar 'calendário' com 'calendario', etc.
-    key_unaccent = unicodedata.normalize("NFKD", key).encode("ASCII", "ignore").decode("utf-8")
-    package = APP_PACKAGES.get(key) or APP_PACKAGES.get(key_unaccent) or key
+    """Abre um aplicativo pelo nome ou pacote Android com tolerância a ruído e fuzzy matching."""
+    raw_key = str(app_name).strip().lower()
+
+    # 1. Limpeza de termos de cortesia/tempo/ruído nas bordas
+    tokens = raw_key.split()
+    while tokens and tokens[0] in APP_NOISE_WORDS:
+        tokens.pop(0)
+    while tokens and tokens[-1] in APP_NOISE_WORDS:
+        tokens.pop()
+
+    clean_key = " ".join(tokens) if tokens else raw_key
+    clean_key_unaccent = unicodedata.normalize("NFKD", clean_key).encode("ASCII", "ignore").decode("utf-8").strip()
+    raw_key_unaccent = unicodedata.normalize("NFKD", raw_key).encode("ASCII", "ignore").decode("utf-8").strip()
+
+    # 2. Resolução do pacote
+    package = None
+    matched_app = None
+
+    # 2a. Busca direta no APP_PACKAGES
+    for candidate in [clean_key, clean_key_unaccent, raw_key, raw_key_unaccent]:
+        if candidate in APP_PACKAGES:
+            matched_app = candidate
+            package = APP_PACKAGES[candidate]
+            break
+
+    # 2b. Verificação de substring caso ainda não tenha encontrado
+    if not package:
+        for app_k, pkg in APP_PACKAGES.items():
+            app_k_unaccent = unicodedata.normalize("NFKD", app_k).encode("ASCII", "ignore").decode("utf-8").strip()
+            if clean_key_unaccent and (app_k_unaccent == clean_key_unaccent or app_k_unaccent in clean_key_unaccent or clean_key_unaccent in app_k_unaccent):
+                matched_app = app_k
+                package = pkg
+                break
+
+    # 2c. Fuzzy matching com difflib (cutoff=0.72)
+    if not package and clean_key_unaccent:
+        all_app_keys = list(APP_PACKAGES.keys())
+        close_matches = difflib.get_close_matches(clean_key_unaccent, all_app_keys, n=1, cutoff=0.72)
+        if close_matches:
+            matched_app = close_matches[0]
+            package = APP_PACKAGES[matched_app]
+
+    key = matched_app if matched_app else (clean_key or raw_key)
+    if not package:
+        package = key
 
     packages_to_try = [package]
     if key == "tiktok" or package in ("com.zhiliaoapp.musically", "com.ss.android.ugc.trill"):

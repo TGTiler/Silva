@@ -244,6 +244,33 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertIn("status", res, f"Ferramenta '{tool_name}' deve retornar campo 'status'.")
                 self.assertEqual(res["status"], "ok", f"Ferramenta '{tool_name}' falhou: {res.get('message')}")
 
+    def test_open_app_resilience_and_fuzzy(self):
+        """Testa remoção de ruídos (hoje, o, agora, app) e fuzzy matching em open_app."""
+        # 1. Ruído de tempo/fala: 'hoje youtube'
+        r1 = tools.open_app("hoje youtube")
+        self.assertEqual(r1["status"], "ok")
+        self.assertEqual(r1["data"]["package"], "com.google.android.youtube")
+
+        # 2. Artigo definido: 'o youtube'
+        r2 = tools.open_app("o youtube")
+        self.assertEqual(r2["status"], "ok")
+        self.assertEqual(r2["data"]["package"], "com.google.android.youtube")
+
+        # 3. Sufixo temporal: 'youtube agora'
+        r3 = tools.open_app("youtube agora")
+        self.assertEqual(r3["status"], "ok")
+        self.assertEqual(r3["data"]["package"], "com.google.android.youtube")
+
+        # 4. Prefixo e sufixo de cortesia: 'app whatsapp por favor'
+        r4 = tools.open_app("app whatsapp por favor")
+        self.assertEqual(r4["status"], "ok")
+        self.assertEqual(r4["data"]["package"], "com.whatsapp")
+
+        # 5. Fuzzy match para digitação/fonética próxima: 'iutube'
+        r5 = tools.open_app("iutube")
+        self.assertEqual(r5["status"], "ok")
+        self.assertEqual(r5["data"]["package"], "com.google.android.youtube")
+
 
 if __name__ == "__main__":
     unittest.main()

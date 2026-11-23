@@ -72,7 +72,7 @@ def normalize_colloquial_ptbr(text: str) -> str:
 
     # 'yt' e 'tubo' para youtube em contexto claro
     s = re.sub(r"\b(?:no|no\s+app|abre\s+o|no)\s+yt\b", " no youtube", s, flags=re.IGNORECASE)
-    s = re.sub(r"\byoutube\b|\byt\b", "youtube", s, flags=re.IGNORECASE)
+    s = re.sub(r"\byt\b", "youtube", s, flags=re.IGNORECASE)
     s = re.sub(r"\b(?:no|pelo)\s+tubo\b", "no youtube", s, flags=re.IGNORECASE)
 
     # 3. Ditado por voz e contrações coloquiais

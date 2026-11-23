@@ -16,6 +16,9 @@ try:
         normalize_colloquial_ptbr,
         ScoredIntentRouter,
         normalize_text,
+        _strip_accents,
+        _prepare_texts,
+        _sanitize_entity_arg,
         _format_call,
         _protect_compound_names,
         _unprotect_compound_names,
@@ -34,6 +37,9 @@ except ImportError:
         normalize_colloquial_ptbr,
         ScoredIntentRouter,
         normalize_text,
+        _strip_accents,
+        _prepare_texts,
+        _sanitize_entity_arg,
         _format_call,
         _protect_compound_names,
         _unprotect_compound_names,
@@ -82,18 +88,17 @@ _ROUTER = ScoredIntentRouter()
 def parse_single_intent(raw_cmd: str) -> Optional[str]:
     """
     Tenta identificar uma intenção única e retornar uma tag <call>...</call>.
-    Aplica pré-processamento de números compostos, normalização de gírias e pontuação ponderada.
+    Aplica normalização estrutural de espaços/quebras de linha,
+    números compostos, normalização de gírias e pontuação ponderada.
     """
     if not raw_cmd or not raw_cmd.strip():
         return None
 
-    # Remove pontuações finais automáticas de ditado por voz (?, !, ., etc.)
-    clean_cmd = re.sub(r"[\s\.\?!,;:~—–-]+$", "", raw_cmd.strip()).strip()
-    if not clean_cmd:
+    raw_clean, _ = _prepare_texts(raw_cmd)
+    if not raw_clean:
         return None
 
-    # Aplica normalização numérica e de gírias na cláusula única se ainda não foi feito
-    parsed_cmd = parse_ptbr_numbers(clean_cmd)
+    parsed_cmd = parse_ptbr_numbers(raw_clean)
     normalized_cmd = normalize_colloquial_ptbr(parsed_cmd)
 
     return _ROUTER.route(normalized_cmd)
@@ -101,37 +106,39 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
 
 def match_intent_fallback(user_prompt: str) -> Optional[str]:
     """
-    Roteador de intenções composto (Pilar D).
-    1. Protege nomes de cidades e expressões compostas com 'e'.
-    2. Converte números compostos ('vinte e cinco' -> '25') antes do splitter de frases.
-    3. Normaliza gírias de celular ('no talo' -> '100%', 'zap' -> 'whatsapp') e corrige typos.
-    4. Divide cláusulas encadeadas por conectores fortes e 'e' condicional a verbos.
-    5. Concatena chamadas múltiplas ou retorna intenção única.
+    Roteador de intenções composto (Pilar D) com blindagem universal contra erros de formatação.
+    1. Normalização Estrutural Única: unifica \n, \r, tabs e múltiplos espaços em um único espaço,
+       preservando maiúsculas e símbolos técnicos.
+    2. Protege nomes de cidades e expressões compostas com 'e'.
+    3. Converte números compostos ('vinte e cinco' -> '25') antes do splitter de frases.
+    4. Normaliza gírias de celular ('no talo' -> '100%', 'zap' -> 'whatsapp') e corrige typos.
+    5. Divide cláusulas encadeadas por conectores fortes e 'e' condicional a verbos.
+    6. Concatena chamadas múltiplas ou retorna intenção única.
     """
     if not user_prompt:
         return None
 
-    # Remove pontuações finais inseridas automaticamente pelo ditado por voz do teclado (?, !, ., etc.)
-    clean_prompt = re.sub(r"[\s\.\?!,;:~—–-]+$", "", user_prompt.strip()).strip()
-    if not clean_prompt:
+    # 1. Normalização Estrutural Única na Entrada: unifica quebras de linha e espaços múltiplos
+    raw_clean, _ = _prepare_texts(user_prompt)
+    if not raw_clean:
         return None
 
     # Caso especial: Instalação ou busca combinada na Play Store
-    if re.search(r"(?i)\babre\s+(?:a|o)?\s*(?:play\s*store|playstore|google\s+play)\s+e\s+(?:baixa|instala|procura|pesquisa|busca)\b", clean_prompt):
-        single = parse_single_intent(clean_prompt)
+    if re.search(r"(?i)\babre\s+(?:a|o)?\s*(?:play\s*store|playstore|google\s+play)\s+e\s+(?:baixa|instala|procura|pesquisa|busca)\b", raw_clean):
+        single = parse_single_intent(raw_clean)
         if single:
             return single
 
-    # 1. Protege nomes compostos como "Abreu e Lima"
-    protected = _protect_compound_names(clean_prompt)
+    # 2. Protege nomes compostos como "Abreu e Lima"
+    protected = _protect_compound_names(raw_clean)
 
-    # 2. Converte números compostos (Pilar A) ANTES do splitter de frases
+    # 3. Converte números compostos (Pilar A) ANTES do splitter de frases
     num_normalized = parse_ptbr_numbers(protected)
 
-    # 3. Normaliza gírias e erros de digitação (Pilar B)
+    # 4. Normaliza gírias e erros de digitação (Pilar B)
     colloquial_normalized = normalize_colloquial_ptbr(num_normalized)
 
-    # 4. Divisão primária por separadores fortes
+    # 5. Divisão primária por separadores fortes
     strong_delims = r";|\s+(?:e\s+tamb[eé]m|depois|em\s+seguida)\s+"
     primary_parts = [p.strip() for p in re.split(strong_delims, colloquial_normalized, flags=re.IGNORECASE) if p.strip()]
 
@@ -175,5 +182,5 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
     if len(unique_calls) == 1 and len(matched_calls) >= 2:
         return unique_calls[0]
 
-    # Caso não seja comando composto, avalia o prompt inteiro como comando único
+    # Caso não seja comando composto, avalia o prompt normalizado
     return _ROUTER.route(colloquial_normalized)

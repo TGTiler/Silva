@@ -19,6 +19,73 @@ def normalize_text(text: str) -> str:
     return " ".join(text_clean.split()).strip()
 
 
+def _strip_accents(text: str) -> str:
+    """Remove acentos preservando caixa e caracteres especiais."""
+    if not text:
+        return ""
+    nfkd = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def _prepare_texts(user_text: str) -> Tuple[str, str]:
+    """
+    Normalização estrutural única na entrada:
+    1. raw_clean: unifica quebras de linha (\n, \r), tabs e espaços duplos em um único espaço,
+       preservando 100% das letras maiúsculas e símbolos técnicos (HENRIQUE_NET//FERNANDA, @, #, !, etc).
+    2. norm_clean: normaliza acentos e caixa baixa para detecção de intenção.
+    """
+    raw_clean = re.sub(r"\s+", " ", user_text or "").strip()
+    norm_clean = normalize_text(raw_clean)
+    return raw_clean, norm_clean
+
+
+def _sanitize_entity_arg(value: str, strip_articles: bool = True) -> str:
+    """
+    Sanitizador obrigatório antes de montar chamadas com entidades:
+    1. Remove pontuações de borda (?, !, ., ,, :, ;, aspas soltas).
+    2. Remove prefixos residuais de comando/cortesia e próclises (se/me conecta, abra, etc.).
+    3. Remove preposições e artigos de ligação no início se strip_articles=True.
+    4. Remove sufixos de cortesia no final (por favor, pfv, agora, silva, etc.).
+    """
+    if not value:
+        return ""
+
+    s = str(value).strip()
+    border_punct = r"""^[\s\.\?!,;:~—–"'`«»]+|[\s\.\?!,;:~—–"'`«»]+$"""
+
+    prefix_cmd_pat = (
+        r"^(?:ei\s+)?(?:silva[,\s]+)?(?:por\s+favor\s+|pfv\s+|pfvr\s+)?"
+        r"(?:se\s+|me\s+)?"
+        r"(?:conecte(?:-se)?|conectar(?:-se)?|conecta(?:r)?|conecte|entra(?:r)?|entre|acesse?|acessa(?:r)?|loga(?:r)?|logue|"
+        r"abra|abre|abrir|inicia|inicie|iniciar|roda|rode|rodar|executa|execute|executar|"
+        r"pesquise|pesquisa(?:r)?|busque|busca(?:r)?|procure|procura(?:r)?|"
+        r"instale|instala(?:r)?|baixe|baixa(?:r)?|chame|chama(?:r)?|pede|pedir|peça|peca)\s+"
+    )
+
+    prefix_articles_pat = (
+        r"^(?:ao|aos|à|às|no|na|nos|nas|em|de|do|da|dos|das|sobre|por|para|pro|pra|o|a|os|as|um|uma|uns|umas)\s+"
+    )
+
+    suffix_cortesia_pat = (
+        r"\s+(?:por\s+favor|pfv|pfvr|agora|agr|blz|vlw|valeu|silva|obrigad[oa])$"
+    )
+
+    for _ in range(8):
+        prev = s
+        s = re.sub(border_punct, "", s).strip()
+        s = re.sub(suffix_cortesia_pat, "", s, flags=re.IGNORECASE).strip()
+        s = re.sub(border_punct, "", s).strip()
+        s = re.sub(prefix_cmd_pat, "", s, flags=re.IGNORECASE).strip()
+        s = re.sub(border_punct, "", s).strip()
+        if strip_articles:
+            s = re.sub(prefix_articles_pat, "", s, flags=re.IGNORECASE).strip()
+            s = re.sub(border_punct, "", s).strip()
+        if s == prev:
+            break
+
+    return s.strip()
+
+
 def _protect_compound_names(text: str) -> str:
     """Protege termos compostos com conectores 'e' para evitar separação prematura de cláusulas."""
     text = re.sub(r"\bAbreu\s+[eE]\s+Lima\b", "Abreu__E__Lima", text, flags=re.IGNORECASE)
@@ -256,7 +323,7 @@ def _clean_ride_destination(raw_dest: str) -> str:
 
     text = re.sub(suffix_pat, "", text).strip()
     text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
-    return text.strip()
+    return _sanitize_entity_arg(text, strip_articles=True)
 
 
 def _clean_food_query(raw_query: str) -> str:
@@ -295,7 +362,7 @@ def _clean_food_query(raw_query: str) -> str:
 
     text = re.sub(suffix_pat, "", text).strip()
     text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
-    return text.strip()
+    return _sanitize_entity_arg(text, strip_articles=True)
 
 
 def _clean_install_app_name(raw_name: str) -> str:
@@ -332,7 +399,7 @@ def _clean_install_app_name(raw_name: str) -> str:
 
     text = re.sub(suffix_pat, "", text).strip()
     text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
-    return text.strip()
+    return _sanitize_entity_arg(text, strip_articles=True)
 
 
 def _clean_weather_location(raw_loc: str) -> str:
@@ -340,6 +407,9 @@ def _clean_weather_location(raw_loc: str) -> str:
     s = _unprotect_compound_names(raw_loc.strip())
     if not s:
         return ""
+
+    # Remove resíduos de perguntas de clima como "previsao do tempo em", "clima de"
+    s = re.sub(r"(?i)^(?:previs[aã]o\s+d[oa]\s+tempo\s+|previs[aã]o\s+|clima\s+|tempo\s+)(?:em|para|pra|no|na|de)?\s*", "", s).strip()
 
     time_noise_tokens = [
         r"depois de amanh[aã]",
@@ -374,6 +444,7 @@ def _clean_weather_location(raw_loc: str) -> str:
     s = re.sub(r"^[?!.,;\s]+|[?!.,;\s]+$", "", s).strip()
     s = re.sub(r"^(?:em|para|pra|no|na|de)\s+", "", s, flags=re.IGNORECASE).strip()
     s = re.sub(r"\s+(?:em|para|pra|no|na|de)$", "", s, flags=re.IGNORECASE).strip()
+    s = _sanitize_entity_arg(s, strip_articles=True)
 
     if not s:
         return ""
@@ -418,11 +489,11 @@ def _clean_search_query(raw_query: str) -> str:
     1. Remove comandos imperativos e preposições (pesquise, busca, sobre, por, a respeito de, etc.)
     2. Remove sufixos de plataforma e cortesia (no google, no chrome, na internet, por favor, etc.)
     3. Remove artigos definidos e indefinidos no início (o, a, os, as, um, uma, uns, umas)
-    4. Remove pontuações e caracteres residuais.
+    4. Remove pontuações e caracteres residuais via _sanitize_entity_arg.
     """
     if not raw_query:
         return ""
-    q = raw_query.strip()
+    q = re.sub(r"\s+", " ", raw_query).strip()
     q = re.sub(r"(?i)^(?:silva,?\s*)?", "", q).strip()
 
     cmd_prefixes = [
@@ -479,10 +550,8 @@ def _clean_search_query(raw_query: str) -> str:
                 q = new_q
                 changed = True
 
-    q = re.sub(r"[?!.,;\s]+$", "", q).strip()
-
-    # Remove artigos definidos e indefinidos no início da query
-    return _strip_leading_articles(q)
+    # Aplica sanitizador universal
+    return _sanitize_entity_arg(q, strip_articles=True)
 
 
 # ==============================================================================
@@ -568,11 +637,9 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     # Verificação prévia de menção a senha
     has_pwd = any(w in norm for w in ["senha", "password", "pass", "codigo", "chave", "passe"])
 
-    # Verbos imperativos de conexão
+    # Verbos imperativos de conexão (cobrindo próclise e ênclise)
     connect_patterns = [
-        r"\bconecte-se\b", r"\bconectar-se\b", r"\bconecta\b", r"\bconecte\b",
-        r"\bconectar\b", r"\bentrar\s+n[ao]\b", r"\bentra\s+n[ao]\b", r"\bentre\s+n[ao]\b",
-        r"\bacessar\s+(?:o|a)?\b", r"\bacessa\s+(?:o|a)?\b"
+        r"\b(?:se\s+|me\s+)?(?:conecte(?:-se)?|conectar(?:-se)?|conecta|conecte|conectar|entra|entre|entrar|acessa|acesse|acessar|loga|logar|logue)\b",
     ]
     has_connect_verbs = any(re.search(p, norm) for p in connect_patterns)
 
@@ -619,25 +686,54 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
     # Caso 3: connect_wifi (conectar a rede com SSID e senha opcional)
     if has_connect_verbs:
-        clean_text = re.sub(r"^(?:silva,?\s*)", "", raw, flags=re.IGNORECASE).strip().rstrip("?!.,;:")
-        pwd_pat = r"\s+(?:com\s+a\s+senha|com\s+senha|senha|com\s+a\s+chave|com\s+chave|chave|password|pass)(?:\s*[:=]?\s*|\s+)(.+)$"
-        m_pwd = re.search(pwd_pat, clean_text, re.IGNORECASE)
-        if m_pwd:
-            prefix_and_ssid = clean_text[:m_pwd.start()].strip()
-            pwd = m_pwd.group(1).strip()
-        else:
-            prefix_and_ssid = clean_text
-            pwd = ""
+        clean_raw = re.sub(r"(?i)^(?:silva,?\s*)", "", raw).strip()
 
-        curr = prefix_and_ssid.strip()
-        curr = re.sub(r"^(?:por\s+favor,?\s*|pfv,?\s*)", "", curr, flags=re.IGNORECASE).strip()
-        curr = re.sub(r"^(?:conecte-se|conectar-se|conecta|conecte|conectar|entra|entre|entrar|acesse|acessa|acessar)\b", "", curr, flags=re.IGNORECASE).strip()
-        curr = re.sub(r"^(?:ao|a\s+o|no|na|a|o|em|de|da|do|pra|para)\b\s*", "", curr, flags=re.IGNORECASE).strip()
-        curr = re.sub(r"^(?:rede(?:\s+sem\s+fio)?\s*(?:wi-?fi)?|wi-?fi)\b\s*", "", curr, flags=re.IGNORECASE).strip()
-        curr = re.sub(r"^(?:ao|no|na|a|o)?\s*(?:wi-?fi|rede(?:\s+sem\s+fio)?)\b\s*", "", curr, flags=re.IGNORECASE).strip()
-        ssid = curr.strip("\"'")
-        pwd = pwd.strip("\"'")
-        if ssid:
+        # 1. Ancoragem: Com Senha
+        pat_with_pwd = (
+            r"(?:(?:rede\s+(?:sem\s+fio\s+)?(?:de\s+)?|conex[aã]o\s+)?(?:wi-?fi|wifi)|rede\s+(?:sem\s+fio)?)\s+"
+            r"(?:chamad[oa]\s+|de\s+nome\s+)?"
+            r"(?P<ssid>.+?)\s+"
+            r"(?:com\s+(?:a\s+)?)?(?:senha|chave|pass(?:word)?)\s*[:=]?\s*"
+            r"(?P<password>\S+)"
+        )
+        m_with_pwd = re.search(pat_with_pwd, clean_raw, re.IGNORECASE | re.DOTALL)
+
+        # 2. Ancoragem: Sem Senha / Rede Aberta
+        pat_no_pwd = (
+            r"(?:(?:rede\s+(?:sem\s+fio\s+)?(?:de\s+)?|conex[aã]o\s+)?(?:wi-?fi|wifi)|rede\s+(?:sem\s+fio)?)\s+"
+            r"(?:chamad[oa]\s+|de\s+nome\s+)?"
+            r"(?P<ssid>.+?)"
+            r"(?:\s+(?:aberta|sem\s+senha))?$"
+        )
+        m_no_pwd = re.search(pat_no_pwd, clean_raw, re.IGNORECASE | re.DOTALL) if not m_with_pwd else None
+
+        ssid = ""
+        pwd = ""
+
+        if m_with_pwd:
+            raw_ssid = m_with_pwd.group("ssid")
+            pwd = m_with_pwd.group("password").strip("\"'")
+            ssid = _sanitize_entity_arg(raw_ssid, strip_articles=True)
+        elif m_no_pwd:
+            raw_ssid = m_no_pwd.group("ssid")
+            ssid = _sanitize_entity_arg(raw_ssid, strip_articles=True)
+        else:
+            pat_fallback = (
+                r"(?:\b(?:se\s+|me\s+)?(?:conecte(?:-se)?|conectar(?:-se)?|conecta|conecte|conectar|entra|entre|entrar|acessa|acesse|acessar)\b)\s+"
+                r"(?:ao|a\s+o|no|na|a|o|em|pro|pra)?\s*"
+                r"(?P<ssid>.+?)"
+                r"(?:\s+(?:com\s+(?:a\s+)?)?(?:senha|chave|pass(?:word)?)\s*[:=]?\s*(?P<password>\S+)|$)"
+            )
+            m_fb = re.search(pat_fallback, clean_raw, re.IGNORECASE | re.DOTALL)
+            if m_fb:
+                raw_ssid = m_fb.group("ssid")
+                if m_fb.group("password"):
+                    pwd = m_fb.group("password").strip("\"'")
+                ssid = _sanitize_entity_arg(raw_ssid, strip_articles=True)
+
+        invalid_ssids = {"wifi", "wi-fi", "wifis", "wi-fis", "rede", "redes", "conexao", "conexão", "internet"}
+        norm_ssid = normalize_text(ssid)
+        if ssid and norm_ssid not in invalid_ssids and norm_ssid != normalize_text(clean_raw):
             return 0.96, _format_call("connect_wifi", ssid=ssid, password=pwd)
 
     # Caso 4: Senha de Wi-Fi salva -> recall_note
@@ -847,11 +943,21 @@ def extract_install_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 def extract_open_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Abertura de aplicativos."""
-    m_open = re.search(r"(?:abre|abra|abrir|inicia|inicie|iniciar|roda|rode|rodar|executa|execute|executar)\s+(?:o|a)?\s*([a-zA-Z0-9_\-\s]+)", norm)
-    if m_open and not any(w in norm for w in ["lanterna", "camera", "foto", "timer", "alarme", "print", "screenshot", "tela"]):
-        app_name = m_open.group(1).strip()
-        app_name = re.sub(r"\s+(?:pra mim|por favor|agora|rapido)$", "", app_name).strip()
-        if app_name:
+    m_open = re.search(
+        r"\b(?:abre|abra|abrir|inicia|inicie|iniciar|roda|rode|rodar|executa|execute|executar)\s+(?:o|a)?\s*(?:o\s+app\s+|o\s+aplicativo\s+|app\s+|aplicativo\s+)?([^\n\r,\.;?!]+)",
+        raw,
+        re.IGNORECASE | re.DOTALL
+    )
+    if m_open:
+        app_raw = m_open.group(1).strip()
+        app_name = _sanitize_entity_arg(app_raw, strip_articles=True)
+        app_name = re.sub(r"(?i)^(?:o\s+app\s+|o\s+aplicativo\s+|app\s+|aplicativo\s+)", "", app_name).strip()
+        norm_app = normalize_text(app_name)
+        system_tools = {
+            "lanterna", "camera", "foto", "timer", "alarme", "print", "screenshot", "tela",
+            "volume", "brilho", "wifi", "wi-fi", "bluetooth", "gps", "localizacao", "localização"
+        }
+        if app_name and norm_app not in system_tools:
             return 0.88, _format_call("open_app", app_name=app_name)
     return 0.0, None
 
@@ -1300,8 +1406,8 @@ class ScoredIntentRouter:
         if not raw_cmd or not raw_cmd.strip():
             return None
 
-        norm_cmd = normalize_text(raw_cmd)
-        if not norm_cmd:
+        raw_clean, norm_cmd = _prepare_texts(raw_cmd)
+        if not raw_clean or not norm_cmd:
             return None
 
         # Bloqueia perguntas conceituais para que o LLM responda
@@ -1313,7 +1419,7 @@ class ScoredIntentRouter:
 
         for extractor in self.extractors:
             try:
-                score, call_str = extractor(raw_cmd, norm_cmd)
+                score, call_str = extractor(raw_clean, norm_cmd)
                 if score > best_score and call_str:
                     best_score = score
                     best_call = call_str

@@ -15,7 +15,8 @@ def normalize_text(text: str) -> str:
     """Remove acentos, converte para minúsculas e remove pontuação excessiva."""
     nfkd = unicodedata.normalize("NFKD", text.lower())
     text_clean = "".join([c for c in nfkd if not unicodedata.combining(c)])
-    return text_clean.strip()
+    text_clean = re.sub(r"[?!.,;:~—–]+", " ", text_clean)
+    return " ".join(text_clean.split()).strip()
 
 
 def _protect_compound_names(text: str) -> str:
@@ -517,9 +518,17 @@ def extract_torch(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 
 def extract_battery(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Consulta de nível da bateria."""
-    if any(w in norm for w in ["bateria", "carga", "porcentagem", "nivel de bateria", "quanta bateria", "status da bateria"]):
+    """Consulta de nível da bateria e carga do aparelho com suporte a ditado coloquial."""
+    clean_norm = norm.rstrip("?!.,;:")
+    # Construções coloquiais explícitas de ditado por voz e termos-chave de bateria/carga
+    if any(w in clean_norm for w in ["bateria", "carga"]):
         return 0.95, _format_call("get_battery")
+
+    # Frases de porcentagem ou nível associadas ao aparelho/celular
+    if any(p in clean_norm for p in ["por cento", "porcento", "porcentagem", "nivel"]):
+        if any(dev in clean_norm for dev in ["celular", "telefone", "aparelho", "smartphone", "dispositivo"]):
+            return 0.95, _format_call("get_battery")
+
     return 0.0, None
 
 

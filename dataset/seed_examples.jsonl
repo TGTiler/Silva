@@ -137,3 +137,8 @@
 {"prompt": "Qual o meu ip local e status do wifi?", "completion": "<call>get_wifi_info()</call>"}
 {"prompt": "Silva, liga o wifi do celular", "completion": "<call>set_wifi_state(state=True)</call>"}
 {"prompt": "Desativa o wi-fi por favor", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "Quantos por cento está minha bateria?", "completion": "<call>get_battery()</call>"}
+{"prompt": "Quantos porcento tá minha bateria?", "completion": "<call>get_battery()</call>"}
+{"prompt": "Qual é a porcentagem da bateria agora?", "completion": "<call>get_battery()</call>"}
+{"prompt": "Por favor, como está a previsão do tempo para hoje?", "completion": "<call>get_weather(day=\"hoje\")</call>"}
+{"prompt": "Silva, abre o WhatsApp por favor.", "completion": "<call>open_app(app_name=\"whatsapp\")</call>"}

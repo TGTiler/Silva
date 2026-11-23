@@ -75,7 +75,15 @@ def normalize_colloquial_ptbr(text: str) -> str:
     s = re.sub(r"\byoutube\b|\byt\b", "youtube", s, flags=re.IGNORECASE)
     s = re.sub(r"\b(?:no|pelo)\s+tubo\b", "no youtube", s, flags=re.IGNORECASE)
 
-    # 3. Correção Fuzzy Leve via difflib para palavras de comando com erros de digitação
+    # 3. Ditado por voz e contrações coloquiais
+    dictation_slang = [
+        (r"\bporcento\b", "por cento"),
+        (r"\b(?:ta|tá)\b", "está"),
+    ]
+    for pat, repl in dictation_slang:
+        s = re.sub(pat, repl, s, flags=re.IGNORECASE)
+
+    # 4. Correção Fuzzy Leve via difflib para palavras de comando com erros de digitação
     # Ex: 'baterria' -> 'bateria', 'lanterana' -> 'lanterna', 'calcura' -> 'calcula'
     tokens = re.findall(r"\w+|[^\w\s]|\s+", s)
     result_tokens = []

@@ -85,8 +85,13 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
     if not raw_cmd or not raw_cmd.strip():
         return None
 
+    # Remove pontuações finais automáticas de ditado por voz (?, !, ., etc.)
+    clean_cmd = re.sub(r"[\s\.\?!,;:~—–-]+$", "", raw_cmd.strip()).strip()
+    if not clean_cmd:
+        return None
+
     # Aplica normalização numérica e de gírias na cláusula única se ainda não foi feito
-    parsed_cmd = parse_ptbr_numbers(raw_cmd)
+    parsed_cmd = parse_ptbr_numbers(clean_cmd)
     normalized_cmd = normalize_colloquial_ptbr(parsed_cmd)
 
     return _ROUTER.route(normalized_cmd)
@@ -101,7 +106,11 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
     4. Divide cláusulas encadeadas por conectores fortes e 'e' condicional a verbos.
     5. Concatena chamadas múltiplas ou retorna intenção única.
     """
-    clean_prompt = user_prompt.strip()
+    if not user_prompt:
+        return None
+
+    # Remove pontuações finais inseridas automaticamente pelo ditado por voz do teclado (?, !, ., etc.)
+    clean_prompt = re.sub(r"[\s\.\?!,;:~—–-]+$", "", user_prompt.strip()).strip()
     if not clean_prompt:
         return None
 

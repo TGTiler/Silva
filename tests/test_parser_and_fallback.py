@@ -242,6 +242,33 @@ class TestParserAndFallback(unittest.TestCase):
         self.assertIn("results", res["data"])
         self.assertNotIn("\n\n\n", res["message"])
 
+    def test_dictation_battery_and_punctuation_fallback(self):
+        """Testa frases de ditado por voz do teclado com pontuação terminal e termos coloquiais de bateria."""
+        # 1. Teste explícito obrigatório
+        self.assertEqual(
+            match_intent_fallback("Quantos por cento está minha bateria?"),
+            "<call>get_battery()</call>"
+        )
+
+        # 2. Variações coloquiais de ditado
+        variations = [
+            ("quantos porcento ta minha bateria", "<call>get_battery()</call>"),
+            ("quantos porcento ta minha bateria?", "<call>get_battery()</call>"),
+            ("porcentagem da bateria", "<call>get_battery()</call>"),
+            ("porcentagem de bateria", "<call>get_battery()</call>"),
+            ("quanto tem de bateria", "<call>get_battery()</call>"),
+            ("quanto sobrou de bateria", "<call>get_battery()</call>"),
+            ("como esta a bateria", "<call>get_battery()</call>"),
+            ("como esta a bateria?", "<call>get_battery()</call>"),
+            ("nivel da bateria", "<call>get_battery()</call>"),
+            ("quanto ta a bateria?", "<call>get_battery()</call>"),
+            ("quanto sobrou de carga?", "<call>get_battery()</call>"),
+            ("qual o nivel da bateria?", "<call>get_battery()</call>"),
+        ]
+        for query, expected in variations:
+            with self.subTest(query=query):
+                self.assertEqual(match_intent_fallback(query), expected)
+
 
 if __name__ == "__main__":
     unittest.main()

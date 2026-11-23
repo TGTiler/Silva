@@ -8,6 +8,23 @@ O sistema conta com um **servidor web nativo** com interface moderna inspirada e
 
 ---
 
+## ⚡ Início Rápido Plug & Play (Apenas 3 Scripts na Raiz)
+
+Para instalar, configurar e rodar o Silva no Android (Termux) ou no Linux desktop, você só precisa de **3 comandos principais** na raiz do projeto:
+
+```bash
+# 1. Instalação e verificação de ambiente (idempotente e automática)
+./install-silva.sh
+
+# 2. (Opcional) Assistente interativo de configuração (PIN, porta, TTS, cidade padrão)
+./config-silva.sh
+
+# 3. Inicialização unificada (llama-server + web server com wake-lock)
+./start_silva.sh
+```
+
+---
+
 ## 📊 Estatísticas e Parâmetros do Projeto
 
 | Dimensão | Especificação | Detalhes |
@@ -111,6 +128,9 @@ Abaixo está a documentação explicativa de cada componente do repositório:
 ```text
 silva-agent/
 ├── README.md                      # Documentação completa, arquitetura e guias
+├── install-silva.sh               # [1/3] Instalador completo e idempotente (Termux/Desktop)
+├── config-silva.sh                # [2/3] Assistente interativo de configuração (PIN, porta, TTS, cidade)
+├── start_silva.sh                 # [3/3] Inicializador unificado (llama-server + web server + wake-lock)
 ├── .gitignore                     # Protege o Git contra uploads pesados (>100MB)
 ├── .env.example                   # Template de variáveis de ambiente e portas
 │
@@ -125,16 +145,15 @@ silva-agent/
 │   │   ├── colloquial.py          # Pilar B: Normalizador de gírias, níveis ("no talo", "total") e typos com difflib
 │   │   └── router.py              # Pilar C: Roteador por pontuação (ScoredIntentRouter) com tolerância a typos matemáticos e recall restrito
 │   ├── parser.py                  # Analisador sintático AST seguro, validador de whitelist e propagação de status
-│   ├── voice_assistant.py         # Módulo opcional de voz offline (Vosk vosk-model-small-pt-0.3 + notificação 24/7)
 │   ├── tools/                     # Pacote modular das 39 ferramentas auditado via AST (core, hardware, media, comms, etc)
 │   ├── config.py                  # Configurações globais, portas, PIN e System Prompt das 39 tools
-│   ├── setup_termux.sh            # Instalação automática de dependências e build do llama.cpp
-│   ├── start_silva.sh             # Script de inicialização (llama-server + web_server + voz opcional)
+│   ├── start_silva.sh             # Wrapper de compatibilidade que delega para ../start_silva.sh
 │   ├── captures/                  # Armazena fotos, vídeos, prints e mapas gerados
 │   ├── data/                      # Persistência: banco relacional SQLite FTS5 (memory.db), events.json e localização
+│   ├── logs/                      # Arquivos de log de execução (llama_server.log)
 │   ├── models/                    # Pasta onde reside o micro-modelo silva-135m.gguf
 │   └── static/
-│       └── index.html             # Interface web responsiva (Desktop/Mobile, dark mode, zero CDNs)
+│       └── index.html             # Interface web responsiva com "Segure para falar" (dark mode, zero CDNs)
 │
 ├── dataset/                       # ENGENHARIA DE DADOS E VALIDAÇÃO
 │   ├── schema.json                # Especificação JSON Schema formal das 39 ferramentas
@@ -151,7 +170,6 @@ silva-agent/
 │   ├── test_contracts.py          # Sincronização de schema (39 tools), prompt e conformidade do dataset
 │   ├── test_parser_and_fallback.py# Testes de AST, whitelist, fallback e tolerância a typos/sinônimos
 │   ├── test_tools_and_memory.py   # Testes de SQLite FTS5, calculadora e smoke test de todas as 39 ferramentas
-│   ├── test_voice_assistant.py    # Testes do assistente de voz offline, estados e notificações
 │   └── test_web_server.py         # Testes HTTP, autenticação por PIN e proteção Path Traversal
 │
 └── pc_training/                   # PIPELINE DE FINE-TUNING E QUANTIZAÇÃO GGUF
@@ -166,15 +184,14 @@ silva-agent/
 #### 1. Módulo `android_agent/` (Execução no Celular)
 - **`main.py`**: Gerencia os argumentos de linha de comando. Permite iniciar o agente no modo `--web` (padrão) para abrir o servidor de rede local ou `--cli` para interagir diretamente pelo terminal do Termux.
 - **`web_server.py`**: Construído sobre `ReusableThreadingHTTPServer` com `SO_REUSEADDR` e threads daemon, garantindo reutilização imediata de portas e encerramento limpo via `SIGINT`/`SIGTERM`. Possui fallback automático de porta (`port` a `port+5`) caso a porta configurada esteja ocupada. Trata requisições para a API `/api/chat`, valida o cabeçalho de segurança `X-Access-Pin`, serve arquivos estáticos e mapeia arquivos multimídia da pasta `captures/`.
-- **`start_silva.sh`**: Script de boot resiliente e idempotente. Executa limpeza cirúrgica de instâncias órfãs antigas do `llama-server` e `main.py`, gerencia PIDs via `data/llama.pid` e `data/web.pid`, respeita a variável `WEB_PORT` do `.env` e implementa `trap cleanup EXIT INT TERM` unificado.
+- **`start_silva.sh`**: Wrapper fino que delega a execução para o script central da raiz (`../start_silva.sh`).
 - **`scheduler.py`**: Thread daemon em background que monitora compromissos salvos localmente (`events.json`) a cada 30 segundos, disparando notificações nativas (`termux-notification`) e vibração no horário exato do lembrete.
 - **`llm_client.py`**: Interage com o `llama-server` rodando em `127.0.0.1:8080`. Se o modelo demorar ou antes mesmo da chamada, o `match_intent_fallback` processa intenções imediatas em menos de 2 milissegundos.
 - **`intent_fallback.py` e `nlp/`**: Motor determinístico de alta velocidade (<2ms) reestruturado em 4 pilares: Parser Numérico Composto (`parse_ptbr_numbers`), Normalizador de Gírias e Typos (`normalize_colloquial_ptbr`), Roteador por Pontuação (`ScoredIntentRouter`) cobrindo as 39 ferramentas e Splitter Inteligente de cláusulas compostas. Trata números por extenso de zero a milhões, gírias de celular ("no talo", "zap", "insta"), erros de digitação ("baterria", "lanterana"), previsão do tempo inteligente, cálculo científico e ecossistema Wi-Fi completo.
 - **`parser.py`**: Utiliza o módulo `ast` (Abstract Syntax Tree) para validar e inspecionar os argumentos emitidos na tag `<call>`. Evita injeção de código, checa a whitelist de permissões (`AVAILABLE_TOOLS`) e propaga o status real das chamadas (`ok`, `partial_error`, `error`).
 - **`tools/`**: Conector entre a inteligência e o Android. Pacote modular que executa 39 ferramentas nativas divididas em 8 domínios (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. Inclui: varredura de Wi-Fi (`scan_wifi`), conexão com salvamento seguro (`connect_wifi`), telemetria de rede (`get_wifi_info`), toggle Wi-Fi (`set_wifi_state`), memória persistente SQLite FTS5 (`remember_note`/`recall_note`), calculadora científica segura via AST (`calculate`), busca web multi-fonte (`search_google`), consultas à bateria, câmera, GPS com mapa Pillow, previsão do tempo Open-Meteo, deep links de transporte (`request_ride`) e delivery (`order_food`), discador nativo, controle de volume/mídia e lanterna.
-- **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), parâmetros opcionais de voz (`ENABLE_VOICE_MODE`, `WHISPER_BIN_PATH`, etc.) e o `SILVA_SYSTEM_PROMPT` sincronizado para as 39 ferramentas.
-- **`voice_assistant.py`**: Módulo opcional de comando por voz offline. Opera em segundo plano através de notificação persistente 24/7 do Termux (`--id silva_voice`) com botões 'Falar' (`--action start`) e 'Parar' (`--action stop`), gravação local via `termux-microphone-record`, conversão via `ffmpeg`, reconhecimento local de alta precisão via **Vosk (`vosk-model-small-pt-0.3`)** otimizado com vocabulário/gramática prioritária das **39 ferramentas**, aplicativos e numerais PT-BR, despacho direto para `/api/chat` com `X-Access-Pin`, atualização dinâmica da notificação e leitura opcional em voz alta via `termux-tts-speak`.
-- **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, sidebar retrátil com histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
+- **`config.py`**: Centraliza os parâmetros de configuração: porta do servidor (padrão `5000`), PIN de autenticação (`1234`), parâmetros opcionais de áudio e o `SILVA_SYSTEM_PROMPT` sincronizado para as 39 ferramentas.
+- **`static/index.html`**: Interface web inspirada no Claude/ChatGPT/DeepSeek com design minimalista dark mode, modo de voz "Segure para falar" com visualizador de ondas sonoras e gesto de arrastar para cancelar, histórico de chats persistido em `localStorage`, telemetria de latência e status do modelo/hardware, cards de ações rápidas, visualizador de mídia integrado e 100% offline (zero CDNs).
 
 #### 2. Módulo `dataset/` (Dados de Treinamento)
 - **`schema.json`**: Contrato estrito que rege a estrutura do micro-agente. Define formalmente parâmetros obrigatórios, opcionais e tipos (string, integer, boolean) para as 39 ferramentas (44 parâmetros).
@@ -194,25 +211,30 @@ silva-agent/
 1. Instale o **Termux** e o **Termux:API** pelo [F-Droid](https://f-droid.org/).
 2. Abra as configurações do Android > Aplicativos > **Termux:API** > Permissões e conceda acesso para: **Câmera**, **Localização**, **SMS**, **Telefone** e **Armazenamento**.
 
-### 2. Instalação
-No terminal do Termux, clone o repositório:
+### 2. Instalação Plug & Play
+No terminal do Termux, clone o repositório e execute o instalador unificado:
 ```bash
 git clone https://github.com/TGTiler/Silva.git
-cd Silva/silva-agent/android_agent
-chmod +x setup_termux.sh start_silva.sh
-./setup_termux.sh
+cd Silva/silva-agent
+./install-silva.sh
 ```
 
-### 3. Inserção do Modelo e Inicialização
-Coloque o arquivo `silva-135m.gguf` dentro de `android_agent/models/` (diretamente no celular ou via ADB do PC com `adb push silva-135m.gguf /sdcard/Download/`) e execute:
+### 3. (Opcional) Personalização das Configurações
+Caso queira alterar o PIN de segurança, a porta HTTP, a cidade padrão ou ativar TTS, execute:
+```bash
+./config-silva.sh
+```
+
+### 4. Inicialização do Agente
+Coloque o modelo `silva-135m.gguf` em `models/` (se disponível) e inicie o Silva:
 ```bash
 ./start_silva.sh
 ```
 
-O terminal exibirá o endereço para acesso no navegador:
-- **No celular:** `http://localhost:5000`
+O terminal exibirá o painel de status com o link de acesso:
+- **No próprio celular:** `http://localhost:5000` (ou `http://127.0.0.1:5000`)
 - **No computador (mesmo Wi-Fi):** `http://<IP-DO-CELULAR>:5000`
-- **PIN de Acesso Padrão:** `1234`
+- **PIN de Segurança:** Definido durante a instalação (ou configurável via `./config-silva.sh`)
 
 ---
 

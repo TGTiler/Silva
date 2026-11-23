@@ -177,7 +177,7 @@ elif [ -n "$LLAMA_BIN" ] && [ -n "$MODEL_PATH" ] && [ -f "$MODEL_PATH" ]; then
     echo "[*] Subindo llama-server na porta $LLM_PORT (background)..."
     
     # Flags universais compatíveis com builds recentes do llama.cpp
-    $LLAMA_BIN -m "$MODEL_PATH" --host 127.0.0.1 --port "$LLM_PORT" -c 512 -t 4 > logs/llama_server.log 2>&1 &
+    $LLAMA_BIN -m "$MODEL_PATH" --host 127.0.0.1 --port "$LLM_PORT" -c 1024 -t 4 > logs/llama_server.log 2>&1 &
     LLAMA_PID=$!
     echo "$LLAMA_PID" > data/llama.pid
     echo "[*] llama-server em inicialização (PID: $LLAMA_PID, Modelo: $MODEL_NAME)"

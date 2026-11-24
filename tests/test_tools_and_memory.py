@@ -405,6 +405,34 @@ class TestToolsAndMemory(unittest.TestCase):
             self.assertEqual(r4["status"], "ok")
             self.assertEqual(r4["data"]["number"], "11999998888")
 
+    def test_order_food_99food_deeplink_and_taxis99_fallback(self):
+        """Testa order_food com app='99food', fallback de pacote com.taxis99 e cópia para clipboard."""
+        import subprocess
+
+        intent_calls = []
+
+        def fake_exec_intent(cmd_str, timeout=6):
+            intent_calls.append(cmd_str)
+            if "taxis99://food/search" in cmd_str:
+                return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="ActivityNotFoundException")
+            if "com.taxis99" in cmd_str:
+                return subprocess.CompletedProcess(args=[cmd_str], returncode=0, stdout="Starting: Intent", stderr="")
+            return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="Error")
+
+        with patch.object(tools_apps, "SIMULATE_HARDWARE", False), \
+             patch.object(tools_apps, "_exec_android_intent", side_effect=fake_exec_intent), \
+             patch.object(tools_apps, "set_clipboard") as mock_clip:
+
+            res = tools_apps.order_food(query="pizza", app="99food")
+            self.assertEqual(res["status"], "ok")
+            self.assertEqual(res["data"]["app"], "99food")
+            self.assertEqual(res["data"]["package"], "com.taxis99")
+            self.assertEqual(res["data"]["method"], "package_fallback")
+            self.assertIn("Abrindo 99 (aba Delivery) para buscar 'pizza'", res["message"])
+            mock_clip.assert_called_once_with("pizza")
+            self.assertTrue(any("taxis99://food/search?q=pizza" in c for c in intent_calls))
+            self.assertTrue(any("com.taxis99" in c for c in intent_calls))
+
 
 if __name__ == "__main__":
     unittest.main()

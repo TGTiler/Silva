@@ -149,3 +149,15 @@
 {"prompt": "Qual é a porcentagem da bateria agora?", "completion": "<call>get_battery()</call>"}
 {"prompt": "Por favor, como está a previsão do tempo para hoje?", "completion": "<call>get_weather(day=\"hoje\")</call>"}
 {"prompt": "Silva, abre o WhatsApp por favor.", "completion": "<call>open_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "Pede um 99 para o aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"99\")</call>"}
+{"prompt": "Pede um açaí na 99", "completion": "<call>order_food(query=\"açaí\", app=\"99food\")</call>"}
+{"prompt": "Chama um 99 pra casa", "completion": "<call>request_ride(destination=\"casa\", app=\"99\")</call>"}
+{"prompt": "Pede uma marmita pelo 99", "completion": "<call>order_food(query=\"marmita\", app=\"99food\")</call>"}
+{"prompt": "Pede um 99 pro shopping", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
+{"prompt": "Pede uma pizza na 99", "completion": "<call>order_food(query=\"pizza\", app=\"99food\")</call>"}
+{"prompt": "Chama um 99 para o centro", "completion": "<call>request_ride(destination=\"centro\", app=\"99\")</call>"}
+{"prompt": "Pede um hambúrguer na 99", "completion": "<call>order_food(query=\"hambúrguer\", app=\"99food\")</call>"}
+{"prompt": "Silva, pede um 99 até a rodoviária", "completion": "<call>request_ride(destination=\"rodoviária\", app=\"99\")</call>"}
+{"prompt": "Pede comida pelo 99", "completion": "<call>order_food(query=\"comida\", app=\"99food\")</call>"}
+{"prompt": "Solicita uma corrida na 99 pro trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"99\")</call>"}
+{"prompt": "Pede um sushi no 99food", "completion": "<call>order_food(query=\"sushi\", app=\"99food\")</call>"}

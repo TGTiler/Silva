@@ -332,7 +332,7 @@ def _clean_food_query(raw_query: str) -> str:
     text = str(raw_query).strip()
 
     # 1. Sufixos de app e cortesia no final (repetidos até limpar)
-    suffix_pat = r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99|no\s+99|no\s+99\s*food|pelo\s+99|pelo\s+99\s*food|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
+    suffix_pat = r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99\s*food|no\s+99\s*food|pela\s+99\s*food|pelo\s+99\s*food|na\s+99|no\s+99|pela\s+99|pelo\s+99|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
     for _ in range(5):
         prev = text
         text = re.sub(suffix_pat, "", text).strip()
@@ -347,9 +347,9 @@ def _clean_food_query(raw_query: str) -> str:
         r"(?i)^(?:abre\s+o\s+99\s+e\s+pede|abre\s+a\s+99\s+e\s+pede)\b\s*",
         r"(?i)^(?:quero\s+pedir|quero|gostaria\s+de\s+pedir|gostaria\s+de|me\s+vê|me\s+ve)\b\s*",
         r"(?i)^(?:peça|peca|pede|pedir|compra|comprar|compre|busca|busque|buscar|procura|procure|procurar|acha|achar|pesquisa|pesquisar)\b\s*",
+        r"(?i)^(?:no\s+ifood|pelo\s+ifood|na\s+99\s*food|no\s+99\s*food|pela\s+99\s*food|pelo\s+99\s*food|na\s+99|no\s+99|pela\s+99|pelo\s+99)\b\s*",
         r"(?i)^(?:delivery\s+de|delivery)\b\s*",
         r"(?i)^(?:um|uma|uns|umas)\b\s*",
-        r"(?i)^(?:comida|lanche)\b\s*",
         r"(?i)^(?:o|a|os|as)\b\s*",
         r"(?i)^(?:de)\b\s*",
     ]
@@ -407,13 +407,46 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
         }
 
     elif app_target in ("99", "99food", "99 food"):
+        app_norm = "99food"
         set_clipboard(clean_query)
-        if not SIMULATE_HARDWARE:
-            open_app("99")
+        url_deep = f"taxis99://food/search?q={encoded_query}"
+
+        if SIMULATE_HARDWARE:
+            return {
+                "status": "ok",
+                "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência). [Simulado]",
+                "data": {"query": clean_query, "app": app_norm, "url": url_deep}
+            }
+
+        # 1. Tentativa via Deep Link nativo do super-app da 99
+        cmd_deep = f'am start -a android.intent.action.VIEW -d "{url_deep}"'
+        res1 = _exec_android_intent(cmd_deep)
+        if res1.returncode == 0 and "Error:" not in res1.stderr and "ActivityNotFound" not in res1.stderr and "does not exist" not in res1.stderr:
+            return {
+                "status": "ok",
+                "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência).",
+                "data": {"query": clean_query, "app": app_norm, "url": url_deep, "method": "deep_link"}
+            }
+
+        # 2. Fallback: abrir pacote principal do super-app da 99 / 99Food
+        for pkg in ("com.taxis99", "com.xiaojukeji.didi.brazil.passenger", "com.didi.brazil.food"):
+            if pkg in RESOLVED_APP_ACTIVITIES:
+                res_pkg = _exec_android_intent(f"am start -n {RESOLVED_APP_ACTIVITIES[pkg]}")
+            else:
+                res_pkg = _exec_android_intent(f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1")
+            combined_out = (res_pkg.stdout or "") + (res_pkg.stderr or "")
+            if res_pkg.returncode == 0 and "Error:" not in combined_out and "No activities found" not in combined_out:
+                return {
+                    "status": "ok",
+                    "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência).",
+                    "data": {"query": clean_query, "app": app_norm, "package": pkg, "method": "package_fallback"}
+                }
+
+        open_app("99")
         return {
             "status": "ok",
-            "message": f"Buscando '{clean_query}' no 99 (termo copiado para a área de transferência).",
-            "data": {"query": clean_query, "app": "99"}
+            "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência).",
+            "data": {"query": clean_query, "app": app_norm, "method": "open_app_fallback"}
         }
     else:
         set_clipboard(clean_query)

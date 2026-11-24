@@ -296,7 +296,7 @@ def _clean_ride_destination(raw_dest: str) -> str:
     if not raw_dest:
         return ""
     text = str(raw_dest).strip()
-    suffix_pat = r"(?i)\s+(?:por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|de\s+uber|de\s+99|no\s+uber|na\s+99|pelo\s+uber|pela\s+99|obrigad[oa]|vlw|valeu)$"
+    suffix_pat = r"(?i)\s+(?:por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|de\s+uber|de\s+99|no\s+uber|na\s+99|no\s+99|na\s+99\s*pop|no\s+99\s*pop|pelo\s+uber|pela\s+99|pelo\s+99|obrigad[oa]|vlw|valeu)$"
     for _ in range(5):
         prev = text
         text = re.sub(suffix_pat, "", text).strip()
@@ -331,7 +331,7 @@ def _clean_food_query(raw_query: str) -> str:
     if not raw_query:
         return ""
     text = str(raw_query).strip()
-    suffix_pat = r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99|no\s+99|no\s+99\s*food|pelo\s+99|pelo\s+99\s*food|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
+    suffix_pat = r"(?i)\s+(?:no\s+ifood|pelo\s+ifood|na\s+99\s*food|no\s+99\s*food|pela\s+99\s*food|pelo\s+99\s*food|na\s+99|no\s+99|pela\s+99|pelo\s+99|pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|obrigad[oa]|vlw|valeu)$"
     for _ in range(5):
         prev = text
         text = re.sub(suffix_pat, "", text).strip()
@@ -345,9 +345,9 @@ def _clean_food_query(raw_query: str) -> str:
         r"(?i)^(?:abre\s+o\s+99\s+e\s+pede|abre\s+a\s+99\s+e\s+pede)\b\s*",
         r"(?i)^(?:quero\s+pedir|quero|gostaria\s+de\s+pedir|gostaria\s+de|me\s+vê|me\s+ve)\b\s*",
         r"(?i)^(?:peça|peca|pede|pedir|compra|comprar|compre|busca|busque|buscar|procura|procure|procurar|acha|achar|pesquisa|pesquisar)\b\s*",
+        r"(?i)^(?:no\s+ifood|pelo\s+ifood|na\s+99\s*food|no\s+99\s*food|pela\s+99\s*food|pelo\s+99\s*food|na\s+99|no\s+99|pela\s+99|pelo\s+99)\b\s*",
         r"(?i)^(?:delivery\s+de|delivery)\b\s*",
         r"(?i)^(?:um|uma|uns|umas)\b\s*",
-        r"(?i)^(?:comida|lanche)\b\s*",
         r"(?i)^(?:o|a|os|as)\b\s*",
         r"(?i)^(?:de)\b\s*",
     ]
@@ -874,24 +874,43 @@ def extract_record_video(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+FOOD_KEYWORDS = (
+    "comida", "lanche", "pizza", "hamburguer", "hamburgueres", "sushi", "acai",
+    "marmita", "almoco", "jantar", "cafe", "esfiha", "pastel", "pasteis",
+    "sorvete", "bebida", "refrigerante", "combo", "restaurante", "lanchonete",
+    "pizzaria", "fome", "comer", "salgado", "doce", "sobremesa",
+)
+
+RIDE_KEYWORDS = (
+    "corrida", "carro", "motorista", "viagem", "carona", "embarque", "destino",
+    "me leva", "me levar", "ir para", "ir pro", "ir pra", "taxi",
+)
+
+_FOOD_KW_RE = re.compile(r"\b(?:" + "|".join(FOOD_KEYWORDS) + r")(?:s)?\b")
+_FOOD_APP_RE = re.compile(r"\b(?:ifood|99\s*food)\b")
+
+
+def _has_food_domain(norm: str) -> bool:
+    """Retorna True se a frase pertence ao domínio semântico de comida/delivery."""
+    return bool(_FOOD_KW_RE.search(norm) or _FOOD_APP_RE.search(norm) or "delivery" in norm)
+
+
 def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Solicitação de transporte (Uber / 99)."""
-    if norm.startswith(("abre ", "abra ", "abrir ")) and not any(p in norm for p in ["para", "pra", "pro", "ate", "p/"]):
+    """Solicitação de transporte (Uber / 99) governada por vocabulário de mobilidade/trajeto."""
+    if _has_food_domain(norm):
+        return 0.0, None
+
+    has_direction_prep = bool(re.search(r"\b(?:para|pra|pro|ate|p/)\s+\S+", norm))
+    has_ride_kw = any(k in norm for k in RIDE_KEYWORDS)
+    if norm.startswith(("abre ", "abra ", "abrir ")) and not has_direction_prep and not has_ride_kw:
         return 0.0, None
 
     ride_verbs = ["peca", "pede", "pedir", "chama", "chamar", "solicita", "solicitar", "solicite", "peco", "quero", "preciso", "consegue"]
     has_ride_verb = any(v in norm for v in ride_verbs)
     is_uber = "uber" in norm
-    is_99 = "99" in norm
-    ride_triggers = [
-        "uber", "corrida", "chama um carro", "chamar um carro", "chama carro", "chamar carro",
-        "pede um carro", "pedir um carro", "pede carro", "pedir carro", "chama corrida",
-        "chamar corrida", "pede corrida", "pedir corrida", "solicita um carro", "solicitar um carro"
-    ]
-    is_99_ride = (is_99 and (any(w in norm for w in ["carro", "corrida", "chama", "pede", "pedir", "motorista", "viagem", "taxi"]) or has_ride_verb)
-                  and not any(f in norm for f in ["food", "comida", "lanche", "pizza", "almoco", "pastel"]))
+    is_99 = bool(re.search(r"\b99\b|noventa\s+e\s+nove", norm))
 
-    if any(t in norm for t in ride_triggers) or is_99_ride or ((is_uber or is_99) and has_ride_verb):
+    if is_uber or has_ride_kw or (is_99 and (has_direction_prep or has_ride_verb)):
         app = "99" if is_99 else "uber"
         dest = ""
         m_dest = re.search(r"(?:para|pra|pro|ate|até|p/)\s+([^\n\r,\.;]+)", raw, re.IGNORECASE)
@@ -912,23 +931,24 @@ def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 
 def extract_food(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Pedido de comida e delivery (iFood / 99 Food)."""
-    if norm.startswith(("abre ", "abra ", "abrir ")) and not any(f in norm for f in ["pizza", "lanche", "hamburguer", "comida", "sushi", "acai", "pastel"]):
+    """Pedido de comida e delivery (iFood / 99Food) com precedência semântica de alimentos."""
+    has_food_kw = bool(_FOOD_KW_RE.search(norm))
+    is_food_app = bool(_FOOD_APP_RE.search(norm))
+    is_delivery = "delivery" in norm
+    is_99 = bool(re.search(r"\b99\b|99\s*food|noventa\s+e\s+nove", norm))
+
+    if norm.startswith(("abre ", "abra ", "abrir ")) and not has_food_kw:
         return 0.0, None
 
-    food_triggers = ["ifood", "99 food", "99food", "pedir comida", "pede comida", "peca comida", "pedir lanche", "pede lanche", "delivery"]
-    food_items = ["pizza", "hamburguer", "lanche", "comida", "sushi", "acai", "marmita", "almoco", "jantar", "pastel", "salgado", "doce", "sobremesa"]
-    has_food_item = any(f in norm for f in food_items)
-    food_verbs = ["pede", "pedir", "peca", "quero", "compra", "comprar", "compre", "busca", "buscar", "procura", "me ve"]
+    food_verbs = ["pede", "pedir", "peca", "quero", "compra", "comprar", "compre", "busca", "buscar", "procura", "me ve", "chama", "chamar", "traz", "manda"]
     has_food_verb = any(v in norm for v in food_verbs)
-    is_food_app = "ifood" in norm or "99 food" in norm or "99food" in norm
 
-    if any(t in norm for t in food_triggers) or (has_food_item and has_food_verb) or (has_food_item and is_food_app) or is_food_app:
-        app = "99" if ("99" in norm and "ifood" not in norm) else "ifood"
+    if (has_food_kw and (has_food_verb or is_food_app or is_99 or is_delivery or "fome" in norm or "comer" in norm)) or is_food_app or is_delivery:
+        app = "99food" if (is_99 and "ifood" not in norm) else "ifood"
         query = _clean_food_query(raw)
         if not query:
             query = "comida"
-        return 0.92, _format_call("order_food", query=query, app=app)
+        return 0.94, _format_call("order_food", query=query, app=app)
 
     return 0.0, None
 

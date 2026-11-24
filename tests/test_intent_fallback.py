@@ -108,6 +108,37 @@ class TestFormattingResilience(unittest.TestCase):
             "<call>set_wifi_state(state=True)</call>"
         )
 
+    def test_99_ride_vs_food_semantic_separation(self):
+        """Valida separação semântica estrita entre 99 Corridas (request_ride) e 99Food (order_food)."""
+        self.assertEqual(
+            match_intent_fallback("Pede um 99 pro centro"),
+            "<call>request_ride(destination='centro', app='99')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede um 99 pro shopping"),
+            "<call>request_ride(destination='shopping', app='99')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Chama um 99 pra casa"),
+            "<call>request_ride(destination='casa', app='99')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede uma pizza na 99"),
+            "<call>order_food(query='pizza', app='99food')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede um hambúrguer na 99"),
+            "<call>order_food(query='hambúrguer', app='99food')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede comida pelo 99"),
+            "<call>order_food(query='comida', app='99food')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede um açaí na 99"),
+            "<call>order_food(query='açaí', app='99food')</call>"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

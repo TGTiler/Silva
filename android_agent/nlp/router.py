@@ -292,12 +292,17 @@ def _normalize_math_expression(raw_text: str) -> Optional[str]:
 
 
 def _clean_ride_destination(raw_dest: str) -> str:
-    """Limpa destino de corrida de transporte."""
+    """Limpa destino de corrida de transporte removendo ruídos coloquiais de origem, beneficiário e urgência."""
     if not raw_dest:
         return ""
     text = str(raw_dest).strip()
-    suffix_pat = r"(?i)\s+(?:por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|de\s+uber|de\s+99|no\s+uber|na\s+99|no\s+99|na\s+99\s*pop|no\s+99\s*pop|pelo\s+uber|pela\s+99|pelo\s+99|obrigad[oa]|vlw|valeu)$"
-    for _ in range(5):
+    suffix_pat = (
+        r"(?i)\s+(?:pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|rapidinho|r[aá]pido|"
+        r"aqui|blz|beleza|valeu|vlw|obrigad[oa]|silva|logo|j[aá]|aí|ai|"
+        r"de\s+uber|de\s+99|no\s+uber|na\s+99|no\s+99|na\s+99\s*pop|no\s+99\s*pop|"
+        r"pelo\s+uber|pela\s+99|pelo\s+99)$"
+    )
+    for _ in range(6):
         prev = text
         text = re.sub(suffix_pat, "", text).strip()
         text = re.sub(r"[?!.,;:]+$", "", text).strip()
@@ -305,14 +310,16 @@ def _clean_ride_destination(raw_dest: str) -> str:
             break
 
     prefix_patterns = [
+        r"(?i)^(?:de\s+onde\s+estou|daqui|aqui)\b\s*",
+        r"(?i)^(?:pra\s+mim|para\s+mim|mim|eu|gente|nós|nos)\b\s*",
+        r"(?i)^(?:por\s+favor|pfv|pfvr|rapidinho|r[aá]pido|agora|agr|j[aá]|logo)\b\s*",
         r"(?i)^(?:me\s+levar|me\s+leva|me\s+leve|levar|leva|leve|chegar|voltar|ir)\b\s*",
         r"(?i)^(?:para|pra|pro|pras|pros)\b\s*",
         r"(?i)^p/\s*",
-        r"(?i)^(?:mim|eu|gente|nós|nos)\b\s*",
         r"(?i)^(?:ao|aos|à|às|no|na|nos|nas|em|até|ate)\b\s*",
         r"(?i)^(?:o|a|os|as)\b\s*",
     ]
-    for _ in range(10):
+    for _ in range(12):
         prev = text
         text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
         for pat in prefix_patterns:
@@ -321,8 +328,12 @@ def _clean_ride_destination(raw_dest: str) -> str:
         if text == prev:
             break
 
-    text = re.sub(suffix_pat, "", text).strip()
-    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    for _ in range(6):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+        if text == prev:
+            break
     return _sanitize_entity_arg(text, strip_articles=True)
 
 
@@ -896,7 +907,7 @@ def _has_food_domain(norm: str) -> bool:
 
 
 def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Solicitação de transporte (Uber / 99) governada por vocabulário de mobilidade/trajeto."""
+    """Solicitação de transporte (Uber / 99) governada por vocabulário de mobilidade/trajeto e verbos coloquiais."""
     if _has_food_domain(norm):
         return 0.0, None
 
@@ -905,7 +916,15 @@ def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     if norm.startswith(("abre ", "abra ", "abrir ")) and not has_direction_prep and not has_ride_kw:
         return 0.0, None
 
-    ride_verbs = ["peca", "pede", "pedir", "chama", "chamar", "solicita", "solicitar", "solicite", "peco", "quero", "preciso", "consegue"]
+    ride_verbs = [
+        "peca", "pede", "pedir", "chama", "chamar", "solicita", "solicitar", "solicite",
+        "peco", "quero", "preciso", "consegue",
+        "bota", "botar", "bote", "solta", "soltar", "solte",
+        "manda", "mandar", "mande", "pega", "pegar", "pegue",
+        "joga", "jogar", "jogue", "ve", "ver", "veja",
+        "cota", "cotar", "cote", "faz", "fazer", "faca",
+        "quanto ta", "quanto custa", "quanto fica", "qual o valor",
+    ]
     has_ride_verb = any(v in norm for v in ride_verbs)
     is_uber = "uber" in norm
     is_99 = bool(re.search(r"\b99\b|noventa\s+e\s+nove", norm))
@@ -913,19 +932,26 @@ def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     if is_uber or has_ride_kw or (is_99 and (has_direction_prep or has_ride_verb)):
         app = "99" if is_99 else "uber"
         dest = ""
-        m_dest = re.search(r"(?:para|pra|pro|ate|até|p/)\s+([^\n\r,\.;]+)", raw, re.IGNORECASE)
+        m_dest = re.search(r"\b(?:para|pra|pro|ate|até|p/)\s+([^\n\r,\.;?!]+)", raw, re.IGNORECASE)
         if m_dest:
             dest = _clean_ride_destination(m_dest.group(1))
         if not dest:
-            m_alt = re.search(r"(?:uber|99|carro|corrida|taxi)\s+([^\n\r,\.;]+)", raw, re.IGNORECASE)
+            m_alt = re.search(r"\b(?:uber|99|noventa\s+e\s+nove|carro|corrida|taxi)\s+([^\n\r,\.;?!]+)", raw, re.IGNORECASE)
             if m_alt:
                 dest = _clean_ride_destination(m_alt.group(1))
         if not dest:
-            cleaned = re.sub(r"(?i)^(?:silva,?\s*)?(?:peça|peca|pede|pedir|chama|chamar|solicita|solicitar|quero|preciso\s+de)?\s*(?:um\s+|uma\s+)?(?:uber|99|carro|corrida|motorista|taxi)?\s*", "", raw)
+            cleaned = re.sub(
+                r"(?i)^(?:silva,?\s*)?(?:peça|peca|pede|pedir|chama|chamar|solicita|solicitar|"
+                r"bota|botar|solta|soltar|manda|mandar|pega|pegar|joga|jogar|ver|vê|ve|cota|cotar|"
+                r"faz|fazer|quero|preciso\s+de|quanto\s+t[aá]|quanto\s+custa)?\s*"
+                r"(?:um\s+|uma\s+)?(?:uber|99|carro|corrida|motorista|taxi)?\s*",
+                "",
+                raw,
+            )
             dest = _clean_ride_destination(cleaned)
         if not dest:
             dest = "destino"
-        return 0.93, _format_call("request_ride", destination=dest, app=app)
+        return 0.95, _format_call("request_ride", destination=dest, app=app)
 
     return 0.0, None
 
@@ -948,7 +974,7 @@ def extract_food(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         query = _clean_food_query(raw)
         if not query:
             query = "comida"
-        return 0.94, _format_call("order_food", query=query, app=app)
+        return 0.96, _format_call("order_food", query=query, app=app)
 
     return 0.0, None
 
@@ -996,6 +1022,10 @@ def extract_open_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Chamada telefônica prioritária sobre lanterna/Wi-Fi quando acompanhada de alvo humano ou numérico."""
+    # Nunca rotear pedidos de corrida/transporte (Uber, 99, carro, corrida) para make_call
+    if any(w in norm for w in ["uber", "corrida", "carro"]) or re.search(r"\b99\b|noventa\s+e\s+nove", norm):
+        return 0.0, None
+
     system_devices = {
         "lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth",
         "alarme", "timer", "volume", "som", "brilho", "gps", "camera", "tela",

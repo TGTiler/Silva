@@ -139,6 +139,41 @@ class TestFormattingResilience(unittest.TestCase):
             "<call>order_food(query='açaí', app='99food')</call>"
         )
 
+    def test_colloquial_ride_expressions_and_priority_over_call(self):
+        """Valida gírias brasileiras de corrida, destino sem preposição, limpeza de ruídos e prioridade sobre make_call."""
+        self.assertEqual(
+            match_intent_fallback("Bota um Uber pra casa"),
+            "<call>request_ride(destination='casa', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Solta um Uber aqui pro shopping"),
+            "<call>request_ride(destination='shopping', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pega um Uber pra mim até o aeroporto"),
+            "<call>request_ride(destination='aeroporto', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Quanto tá um Uber pro centro?"),
+            "<call>request_ride(destination='centro', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Chama um Uber Arena Castelão"),
+            "<call>request_ride(destination='Arena Castelão', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Uber Shopping Recife"),
+            "<call>request_ride(destination='Shopping Recife', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede um Uber aqui pra mim pra casa da minha mãe agora por favor"),
+            "<call>request_ride(destination='casa da minha mãe', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Chama um Uber pra casa do Pedro"),
+            "<call>request_ride(destination='casa do Pedro', app='uber')</call>"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

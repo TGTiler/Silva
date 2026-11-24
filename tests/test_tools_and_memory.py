@@ -433,6 +433,36 @@ class TestToolsAndMemory(unittest.TestCase):
             self.assertTrue(any("taxis99://food/search?q=pizza" in c for c in intent_calls))
             self.assertTrue(any("com.taxis99" in c for c in intent_calls))
 
+    def test_geocode_destination_viewbox_bias(self):
+        """Valida envio do viewbox geográfico (bounded=0) baseado em last_location.json no Nominatim."""
+        captured_urls = []
+
+        class FakeResp:
+            def __init__(self, payload):
+                self._payload = payload
+            def read(self):
+                return json.dumps(self._payload).encode("utf-8")
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+
+        def fake_urlopen(req, timeout=4):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            captured_urls.append(url)
+            return FakeResp([{"lat": "-7.9450", "lon": "-34.8800", "display_name": "Shopping Paulista"}])
+
+        with patch.object(tools_apps, "load_last_location", return_value={"latitude": -7.9408, "longitude": -34.8730}), \
+             patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            geo = tools_apps._geocode_destination("Shopping")
+            self.assertIsNotNone(geo)
+            self.assertEqual(geo["display_name"], "Shopping Paulista")
+            self.assertEqual(len(captured_urls), 1)
+            self.assertIn("viewbox=", captured_urls[0])
+            self.assertIn("bounded=0", captured_urls[0])
+            self.assertIn("-35.223000", captured_urls[0])
+            self.assertIn("-7.590800", captured_urls[0])
+
 
 if __name__ == "__main__":
     unittest.main()

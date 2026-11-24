@@ -161,3 +161,13 @@
 {"prompt": "Pede comida pelo 99", "completion": "<call>order_food(query=\"comida\", app=\"99food\")</call>"}
 {"prompt": "Solicita uma corrida na 99 pro trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"99\")</call>"}
 {"prompt": "Pede um sushi no 99food", "completion": "<call>order_food(query=\"sushi\", app=\"99food\")</call>"}
+{"prompt": "Bota um Uber pra casa", "completion": "<call>request_ride(destination=\"casa\", app=\"uber\")</call>"}
+{"prompt": "Solta um Uber aqui pro shopping", "completion": "<call>request_ride(destination=\"shopping\", app=\"uber\")</call>"}
+{"prompt": "Pega um Uber pra mim até o aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "Quanto tá um Uber pro centro?", "completion": "<call>request_ride(destination=\"centro\", app=\"uber\")</call>"}
+{"prompt": "Chama um Uber Arena Castelão", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "Uber Shopping Recife", "completion": "<call>request_ride(destination=\"Shopping Recife\", app=\"uber\")</call>"}
+{"prompt": "Pede um Uber aqui pra mim pra casa da minha mãe agora por favor", "completion": "<call>request_ride(destination=\"casa da minha mãe\", app=\"uber\")</call>"}
+{"prompt": "Chama um Uber pra casa do Pedro", "completion": "<call>request_ride(destination=\"casa do Pedro\", app=\"uber\")</call>"}
+{"prompt": "Joga um 99 pro terminal", "completion": "<call>request_ride(destination=\"terminal\", app=\"99\")</call>"}
+{"prompt": "Manda um Uber rapidinho pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}

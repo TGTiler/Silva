@@ -3,11 +3,13 @@ Módulo Apps, Mobilidade e Utilidades do Silva: Abertura de Apps, Uber/99, iFood
 """
 
 import difflib
+import json
 import os
 import random
 import re
 import unicodedata
 import urllib.parse
+import urllib.request
 from typing import Any, Dict, Optional
 
 from .core import (
@@ -16,9 +18,10 @@ from .core import (
     SIMULATE_HARDWARE,
     _run_termux_cmd,
     _exec_android_intent,
+    load_last_location,
 )
 from .comms import set_clipboard
-from .memory_schedule import _load_memory, _normalize_text
+from .memory_schedule import _load_memory, _normalize_text, recall_note
 
 JOKES_PTBR = [
     "Por que o computador foi ao médico? Porque ele estava com um vírus!",
@@ -200,15 +203,20 @@ def _clean_ride_destination(raw_dest: str) -> str:
     Exemplos:
       "mim ir ao Shopping Recife" -> "Shopping Recife"
       "eu ir pro aeroporto pfv" -> "aeroporto"
-      "ir na casa da minha tia" -> "casa da minha tia"
+      "aqui pra mim pra casa da minha mãe agora por favor" -> "casa da minha mãe"
     """
     if not raw_dest:
         return ""
     text = str(raw_dest).strip()
 
     # 1. Sufixos de cortesia e ruídos no final
-    suffix_pat = r"(?i)\s+(?:por\s+favor|pfv|pfvr|agora|agr|aí|ai|silva|de\s+uber|de\s+99|no\s+uber|na\s+99|pelo\s+uber|pela\s+99|obrigad[oa]|vlw|valeu)$"
-    for _ in range(5):
+    suffix_pat = (
+        r"(?i)\s+(?:pra\s+mim|para\s+mim|por\s+favor|pfv|pfvr|agora|agr|rapidinho|r[aá]pido|"
+        r"aqui|blz|beleza|valeu|vlw|obrigad[oa]|silva|logo|j[aá]|aí|ai|"
+        r"de\s+uber|de\s+99|no\s+uber|na\s+99|no\s+99|na\s+99\s*pop|no\s+99\s*pop|"
+        r"pelo\s+uber|pela\s+99|pelo\s+99)$"
+    )
+    for _ in range(6):
         prev = text
         text = re.sub(suffix_pat, "", text).strip()
         text = re.sub(r"[?!.,;:]+$", "", text).strip()
@@ -217,15 +225,17 @@ def _clean_ride_destination(raw_dest: str) -> str:
 
     # 2. Prefixos conversacionais no início (repetidos até limpar completamente)
     prefix_patterns = [
+        r"(?i)^(?:de\s+onde\s+estou|daqui|aqui)\b\s*",
+        r"(?i)^(?:pra\s+mim|para\s+mim|mim|eu|gente|nós|nos)\b\s*",
+        r"(?i)^(?:por\s+favor|pfv|pfvr|rapidinho|r[aá]pido|agora|agr|j[aá]|logo)\b\s*",
         r"(?i)^(?:me\s+levar|me\s+leva|me\s+leve|levar|leva|leve|chegar|voltar|ir)\b\s*",
         r"(?i)^(?:para|pra|pro|pras|pros)\b\s*",
         r"(?i)^p/\s*",
-        r"(?i)^(?:mim|eu|gente|nós|nos)\b\s*",
         r"(?i)^(?:ao|aos|à|às|no|na|nos|nas|em|até|ate)\b\s*",
         r"(?i)^(?:o|a|os|as)\b\s*",
     ]
 
-    for _ in range(10):
+    for _ in range(12):
         prev = text
         text = re.sub(r'^[?!.,;:\"`\'\s]+', '', text).strip()
         for pat in prefix_patterns:
@@ -234,20 +244,70 @@ def _clean_ride_destination(raw_dest: str) -> str:
         if text == prev:
             break
 
-    text = re.sub(suffix_pat, "", text).strip()
-    text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+    for _ in range(6):
+        prev = text
+        text = re.sub(suffix_pat, "", text).strip()
+        text = re.sub(r'[?!.,;:\"`\'\s]+$', '', text).strip()
+        if text == prev:
+            break
     return text.strip()
 
 
-def request_ride(destination: str, app: str = "uber") -> Dict[str, Any]:
+def _geocode_destination(destination: str) -> Optional[Dict[str, Any]]:
+    """
+    Geocodifica destino via Nominatim OSM com bias geográfico (viewbox + bounded=0)
+    baseado na última localização salva em data/last_location.json.
+    """
+    clean_q = str(destination or "").strip()
+    if not clean_q:
+        return None
+
+    encoded = urllib.parse.quote(clean_q)
+    url = (
+        f"https://nominatim.openstreetmap.org/search"
+        f"?q={encoded}&format=json&limit=1&addressdetails=1&countrycodes=br"
+    )
+
+    try:
+        loc_cache = load_last_location()
+        if loc_cache and "latitude" in loc_cache and "longitude" in loc_cache:
+            lat = float(loc_cache["latitude"])
+            lon = float(loc_cache["longitude"])
+            viewbox = f"{lon - 0.35:.6f},{lat + 0.35:.6f},{lon + 0.35:.6f},{lat - 0.35:.6f}"
+            url += f"&viewbox={urllib.parse.quote(viewbox)}&bounded=0"
+    except Exception:
+        pass
+
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "SilvaAgent/1.0 (https://github.com/TGTiler/Silva)"},
+        )
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+        if isinstance(payload, list) and payload:
+            top = payload[0]
+            return {
+                "latitude": float(top["lat"]),
+                "longitude": float(top["lon"]),
+                "display_name": top.get("display_name", clean_q),
+                "query_url": url,
+            }
+    except Exception:
+        pass
+    return None
+
+
+def request_ride(destination: str, app: str = "uber", service: str = "") -> Dict[str, Any]:
     """Abre o aplicativo de transporte (Uber ou 99) com o destino configurado a partir da localização atual."""
     clean_dest = _clean_ride_destination(destination)
     if not clean_dest:
         return {"status": "error", "message": "Destino da corrida não informado."}
 
-    # 1. Integração com Memória Local: consulta se o destino corresponde a um local salvo
+    # 1. Integração com Memória Local (memory.db / FTS5): consulta se o destino corresponde a um local salvo
     resolved_destination = clean_dest
     mem = _load_memory()
+    found_in_mem = False
     if mem:
         norm_dest = _normalize_text(clean_dest)
         query_tokens = set(norm_dest.split())
@@ -274,8 +334,19 @@ def request_ride(destination: str, app: str = "uber") -> Dict[str, Any]:
 
         if best_match:
             resolved_destination = best_match
+            found_in_mem = True
 
-    app_target = str(app).strip().lower() if app else "uber"
+    if not found_in_mem:
+        try:
+            rec = recall_note(clean_dest)
+            if rec.get("status") == "ok":
+                notes = rec.get("data", {}).get("notes") or []
+                if notes and isinstance(notes[0], dict) and notes[0].get("value"):
+                    resolved_destination = str(notes[0]["value"]).strip()
+        except Exception:
+            pass
+
+    app_target = str(service or app or "uber").strip().lower()
 
     if app_target == "uber":
         encoded_dest = urllib.parse.quote(resolved_destination)
@@ -286,11 +357,14 @@ def request_ride(destination: str, app: str = "uber") -> Dict[str, Any]:
                 "message": f"Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
                 "data": {"destination": resolved_destination, "app": "uber", "url": url}
             }
+        geo = _geocode_destination(resolved_destination)
+        if geo:
+            url += f"&dropoff[latitude]={geo['latitude']}&dropoff[longitude]={geo['longitude']}"
         _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
         return {
             "status": "ok",
             "message": f"Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
-            "data": {"destination": resolved_destination, "app": "uber", "url": url}
+            "data": {"destination": resolved_destination, "app": "uber", "url": url, "geocoded": geo}
         }
 
     elif app_target in ("99", "99pop"):

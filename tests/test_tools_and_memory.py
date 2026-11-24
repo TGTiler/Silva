@@ -351,6 +351,60 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertEqual(r5["status"], "ok")
         self.assertEqual(r5["data"]["package"], "com.google.android.youtube")
 
+    def test_make_call_contact_resolution_and_fallback(self):
+        """Testa resolução de contato na agenda, discagem direta e fallback para ACTION_DIAL."""
+        import subprocess
+
+        # Reseta cache de contatos
+        tools_comms._CONTACTS_CACHE["timestamp"] = 0.0
+        tools_comms._CONTACTS_CACHE["contacts"] = []
+
+        fake_contacts = [
+            {"name": "Carlos Silva", "number": "+5511988887777"},
+            {"name": "Dra. Mariana", "number": "11977776666"}
+        ]
+
+        def fake_run_termux(cmd, timeout=10):
+            if cmd == ["termux-contact-list"]:
+                return subprocess.CompletedProcess(args=cmd, returncode=0, stdout=json.dumps(fake_contacts), stderr="")
+            if cmd[0] == "termux-telephony-call":
+                if cmd[1] == "+5511988887777":
+                    return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+                # Simula falha de permissão no segundo caso
+                return subprocess.CompletedProcess(args=cmd, returncode=1, stdout="", stderr="SecurityException: Permission Denial")
+            return subprocess.CompletedProcess(args=cmd, returncode=1, stdout="", stderr="error")
+
+        def fake_exec_intent(cmd_str, timeout=6):
+            return subprocess.CompletedProcess(args=[cmd_str], returncode=0, stdout="Intent started", stderr="")
+
+        with patch.object(tools_comms, "SIMULATE_HARDWARE", False), \
+             patch.object(tools_comms, "_run_termux_cmd", side_effect=fake_run_termux), \
+             patch.object(tools_comms, "_exec_android_intent", side_effect=fake_exec_intent):
+
+            # 1. Resolução com sucesso e chamada direta (Camada 1)
+            r1 = tools_comms.make_call(target="Carlos")
+            self.assertEqual(r1["status"], "ok")
+            self.assertEqual(r1["data"]["method"], "telephony_call")
+            self.assertIn("+5511988887777", r1["message"])
+            self.assertIn("Iniciando chamada direta", r1["message"])
+
+            # 2. Resolução com sucesso e fallback ACTION_DIAL (Camada 2)
+            r2 = tools_comms.make_call(target="Mariana")
+            self.assertEqual(r2["status"], "ok")
+            self.assertEqual(r2["data"]["method"], "dial_intent")
+            self.assertIn("11977776666", r2["message"])
+            self.assertIn("Abrindo discador", r2["message"])
+
+            # 3. Contato inexistente
+            r3 = tools_comms.make_call(target="Desconhecido")
+            self.assertEqual(r3["status"], "error")
+            self.assertEqual(r3["message"], "Contato 'Desconhecido' não encontrado na agenda. Informe o número com DDD.")
+
+            # 4. Número direto por dígitos sem passar por contatos
+            r4 = tools_comms.make_call(target="11999998888")
+            self.assertEqual(r4["status"], "ok")
+            self.assertEqual(r4["data"]["number"], "11999998888")
+
 
 if __name__ == "__main__":
     unittest.main()

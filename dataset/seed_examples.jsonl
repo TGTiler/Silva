@@ -16,6 +16,8 @@
 {"prompt": "Silva, ligue para o número 11987654321", "completion": "<call>make_call(number=\"11987654321\")</call>"}
 {"prompt": "Faz uma ligação pro 21988776655", "completion": "<call>make_call(number=\"21988776655\")</call>"}
 {"prompt": "Disque para 08007771234", "completion": "<call>make_call(number=\"08007771234\")</call>"}
+{"prompt": "Faz uma ligação para 11988887777", "completion": "<call>make_call(target=\"11988887777\")</call>"}
+{"prompt": "Silva, liga pro Carlos", "completion": "<call>make_call(target=\"Carlos\")</call>"}
 {"prompt": "Silva, onde eu estou agora?", "completion": "<call>get_location()</call>"}
 {"prompt": "Qual é a minha localização atual?", "completion": "<call>get_location()</call>"}
 {"prompt": "Pega as coordenadas do GPS do celular", "completion": "<call>get_location()</call>"}

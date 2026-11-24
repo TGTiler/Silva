@@ -975,14 +975,56 @@ def extract_open_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 
 def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Chamada telefônica."""
-    m_call = re.search(r"(?:liga|ligar|disca|discar|chama|chamar|telefone|telefonar)\s+(?:para\s+o|para\s+a|para|pro|pra|a)?\s*([^\n\r,\.;]+)", raw, re.IGNORECASE)
-    if m_call and not any(w in norm for w in ["lanterna", "alarme", "som", "brilho", "uber", "carro", "corrida"]):
-        target = m_call.group(1).strip()
-        target = re.sub(r"(?i)\s+(?:pra mim|por favor|agora|rapido)$", "", target).strip()
-        if target:
-            return 0.90, _format_call("make_call", number=target)
-    return 0.0, None
+    """Chamada telefônica prioritária sobre lanterna/Wi-Fi quando acompanhada de alvo humano ou numérico."""
+    system_devices = {
+        "lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth",
+        "alarme", "timer", "volume", "som", "brilho", "gps", "camera", "tela",
+        "uber", "carro", "corrida", "taxi", "99"
+    }
+
+    # Padrão 1: "fazer / faz / efetuar uma ligação / chamada para ..."
+    m1 = re.search(
+        r"(?:(?:faz|fazer|faca|faça|efetua|efetuar|realiza|realizar)\s+(?:uma\s+)?(?:ligacao|ligação|chamada|telefonema))\s+(?:para\s+o|para\s+a|para\s+os|para\s+as|para|pro|pra|ao|a)?\s*([^\n\r,\.;]+)",
+        raw,
+        re.IGNORECASE
+    )
+
+    # Padrão 2: "ligar / liga / ligue / discar / disca / disque / telefonar / telefona para ..."
+    m2 = re.search(
+        r"(?:(?:ligar|liga|ligue|discar|disca|disque|telefonar|telefona|telefone))\s+(?:para\s+o|para\s+a|para\s+os|para\s+as|para|pro|pra|ao|a)?\s*([^\n\r,\.;]+)",
+        raw,
+        re.IGNORECASE
+    )
+
+    # Padrão 3: "chama / chamar o/a / para ..."
+    m3 = re.search(
+        r"(?:(?:chamar|chama|chame))\s+(?:o|a|os|as|para\s+o|para\s+a|para|pro|pra|ao)\s+([^\n\r,\.;]+)",
+        raw,
+        re.IGNORECASE
+    )
+
+    m_call = m1 or m2 or m3
+    if not m_call:
+        return 0.0, None
+
+    target = m_call.group(1).strip()
+    # Remove artigos iniciais no target se sobraram
+    target = re.sub(r"(?i)^(?:o|a|os|as|um|uma)\s+", "", target).strip()
+    # Remove preposições residuais
+    target = re.sub(r"(?i)^(?:para\s+o|para\s+a|para|pro|pra|ao|a)\s+", "", target).strip()
+    # Remove sufixos de cortesia e pontuação
+    target = re.sub(r"(?i)\s+(?:pra mim|pro silva|por favor|pfv|agora|rapido|imediatamente|urgente)$", "", target).strip()
+    target = target.strip("'\"` .,;!?")
+
+    if not target:
+        return 0.0, None
+
+    norm_target = normalize_text(target)
+    if norm_target in system_devices or any(w in norm_target for w in ["lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "uber", "carro", "corrida"]):
+        return 0.0, None
+
+    # Prioridade máxima (0.97) sobre lanterna/Wi-Fi quando acompanhado de alvo humano ou numérico
+    return 0.97, _format_call("make_call", target=target)
 
 
 def extract_send_sms(raw: str, norm: str) -> Tuple[float, Optional[str]]:

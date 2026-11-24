@@ -80,6 +80,34 @@ class TestFormattingResilience(unittest.TestCase):
             "<call>get_weather(day='hoje', time='', location='')</call>"
         )
 
+    def test_make_call_intent_priorities(self):
+        """Valida que intenções de chamada têm prioridade máxima com alvo e não colidem com lanterna/Wi-Fi."""
+        self.assertEqual(
+            match_intent_fallback("Faz uma ligação para 11988887777"),
+            "<call>make_call(target='11988887777')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Liga pro Carlos"),
+            "<call>make_call(target='Carlos')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Chama o Carlos"),
+            "<call>make_call(target='Carlos')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("fazer ligacao para a Maria por favor"),
+            "<call>make_call(target='Maria')</call>"
+        )
+        # Garante que liga lanterna e liga wifi continuam indo para as ferramentas de sistema
+        self.assertEqual(
+            match_intent_fallback("liga a lanterna"),
+            "<call>set_torch(state=True)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("liga o wifi"),
+            "<call>set_wifi_state(state=True)</call>"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

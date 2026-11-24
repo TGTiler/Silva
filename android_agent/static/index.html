@@ -1505,6 +1505,13 @@
     (function () {
       "use strict";
 
+      // 0. Redirecionamento Automático 127.0.0.1 -> localhost (contexto seguro exigido pelo Chrome Android para Web Speech API)
+      if (window.location.hostname === "127.0.0.1") {
+        const portPart = window.location.port ? ":" + window.location.port : "";
+        window.location.replace("http://localhost" + portPart + window.location.pathname + window.location.search + window.location.hash);
+        return;
+      }
+
       // 1. PIN de Acesso e Helper de Mídia Segura
       const pinInput = document.getElementById("pinInput");
       pinInput.value = localStorage.getItem("silva_pin") || "1234";
@@ -2391,7 +2398,45 @@
       const voiceWaveContainer = document.getElementById("voiceWaveContainer");
       const voiceStatusHint = document.getElementById("voiceStatusHint");
 
+      function showToastNotification(message) {
+        let toast = document.getElementById("silva-toast");
+        if (!toast) {
+          toast = document.createElement("div");
+          toast.id = "silva-toast";
+          toast.style.position = "fixed";
+          toast.style.bottom = "84px";
+          toast.style.left = "50%";
+          toast.style.transform = "translateX(-50%) translateY(0)";
+          toast.style.background = "rgba(25, 15, 45, 0.95)";
+          toast.style.color = "#f4f4f5";
+          toast.style.border = "1px solid var(--purple-light, #9d4edd)";
+          toast.style.borderRadius = "20px";
+          toast.style.padding = "8px 18px";
+          toast.style.fontSize = "13px";
+          toast.style.fontWeight = "500";
+          toast.style.zIndex = "9999";
+          toast.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.45)";
+          toast.style.transition = "opacity 0.25s, transform 0.25s";
+          toast.style.pointerEvents = "none";
+          document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.style.opacity = "1";
+        toast.style.transform = "translateX(-50%) translateY(0)";
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(function () {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateX(-50%) translateY(10px)";
+        }, 2800);
+      }
+
       function setComposerMode(mode) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (mode === "voice" && !SpeechRec) {
+          showToastNotification("Voz não suportada neste navegador. Use o ditado do teclado.");
+          mode = "text";
+        }
+
         if (mode === "voice") {
           composerTextRow.style.display = "none";
           composerBottomRow.style.display = "none";
@@ -2409,6 +2454,13 @@
       }
 
       toggleVoiceModeBtn.addEventListener("click", function () {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          showToastNotification("Voz não suportada neste navegador. Alternando para o teclado.");
+          setComposerMode("text");
+          promptTextarea.focus();
+          return;
+        }
         setComposerMode("voice");
       });
       toggleTextModeBtn.addEventListener("click", function () {
@@ -2508,6 +2560,15 @@
 
       function startVoiceHold(e) {
         if (isVoiceHolding) return;
+
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          showToastNotification("Reconhecimento de voz indisponível. Alternando para o teclado.");
+          setComposerMode("text");
+          promptTextarea.focus();
+          return;
+        }
+
         isVoiceHolding = true;
         isCancelling = false;
         finalTranscript = "";
@@ -2528,50 +2589,46 @@
 
         startWaveVisualizer();
 
-        // Web Speech API
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRec) {
-          voiceLivePreview.textContent = "Reconhecimento de voz não suportado neste navegador.";
-          return;
-        }
-
-        // Validação de contexto não-seguro (ex: IP 192.168.x.x no Chrome mobile)
-        const isSecure = window.isSecureContext || location.hostname === "localhost" || location.hostname === "127.0.0.1";
-        if (!isSecure) {
-          voiceLivePreview.textContent = "Reconhecimento de voz disponível em http://localhost:5000 (HTTPS/Localhost).";
-        }
-
         try {
           recognition = new SpeechRec();
           recognition.lang = "pt-BR";
-          recognition.continuous = true;
+          recognition.continuous = false;
           recognition.interimResults = true;
+          recognition.maxAlternatives = 1;
 
           recognition.onresult = function (ev) {
             interimTranscript = "";
             for (let i = ev.resultIndex; i < ev.results.length; ++i) {
+              const text = ev.results[i][0].transcript;
               if (ev.results[i].isFinal) {
-                finalTranscript += ev.results[i][0].transcript;
+                finalTranscript += (finalTranscript ? " " : "") + text;
               } else {
-                interimTranscript += ev.results[i][0].transcript;
+                interimTranscript += text;
               }
             }
             const combined = (finalTranscript + " " + interimTranscript).trim();
             if (combined) {
-              voiceLivePreview.textContent = combined;
+              voiceLivePreview.textContent = "Ouvindo: " + combined;
             }
           };
 
           recognition.onerror = function (ev) {
             console.warn("SpeechRecognition error:", ev.error);
+            let errorMsg = "Erro no reconhecimento (" + ev.error + ")";
             if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
-              voiceLivePreview.textContent = "Reconhecimento de voz disponível em http://localhost:5000 (HTTPS/Localhost).";
+              errorMsg = "Permissão de microfone negada no Chrome";
+            } else if (ev.error === "no-speech") {
+              errorMsg = "Nenhuma fala detectada";
+            } else if (ev.error === "network") {
+              errorMsg = "Erro de rede no serviço de voz do Android";
             }
+            voiceLivePreview.textContent = errorMsg;
           };
 
           recognition.start();
         } catch (rErr) {
           console.warn("Erro ao iniciar SpeechRecognition:", rErr);
+          voiceLivePreview.textContent = "Falha ao iniciar microfone: " + rErr.message;
         }
       }
 
@@ -2580,13 +2637,13 @@
         const currentY = (e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY) || startY;
         const diffY = startY - currentY;
 
-        if (diffY > 70) {
+        if (diffY > 60) {
           if (!isCancelling) {
             isCancelling = true;
             voiceOverlay.classList.add("is-cancelling");
             voiceStatusHint.textContent = "Solte para cancelar";
             if (navigator.vibrate) {
-              try { navigator.vibrate(25); } catch (vErr) {}
+              try { navigator.vibrate(30); } catch (vErr) {}
             }
           }
         } else {
@@ -2605,23 +2662,61 @@
 
         stopWaveVisualizer();
 
-        if (recognition) {
-          try { recognition.stop(); } catch (err) {}
-        }
-
         if (isCancelling) {
+          if (recognition) {
+            try { recognition.abort(); } catch (err) {}
+            recognition = null;
+          }
           voiceOverlay.style.display = "none";
           finalTranscript = "";
           interimTranscript = "";
+          if (navigator.vibrate) {
+            try { navigator.vibrate([20, 40, 20]); } catch (vErr) {}
+          }
+          return;
+        }
+
+        // Mude o texto do overlay para "Processando fala..." (não feche o overlay instantaneamente!)
+        voiceStatusHint.textContent = "Processando fala...";
+        const currentPreview = (finalTranscript || interimTranscript).trim();
+        if (currentPreview) {
+          voiceLivePreview.textContent = "Processando: " + currentPreview;
         } else {
-          releaseTimeout = setTimeout(function () {
+          voiceLivePreview.textContent = "Processando fala...";
+        }
+
+        let hasEnded = false;
+        function finishProcessing() {
+          if (hasEnded) return;
+          hasEnded = true;
+          clearTimeout(safetyTimeout);
+
+          const messageToSend = (finalTranscript || interimTranscript).trim();
+          setTimeout(function () {
             voiceOverlay.style.display = "none";
-            const messageToSend = (finalTranscript + " " + interimTranscript).trim();
             if (messageToSend) {
               promptTextarea.value = messageToSend;
               handleSend(messageToSend);
             }
-          }, 250);
+          }, 150);
+        }
+
+        // Timeout de segurança de 1800ms
+        const safetyTimeout = setTimeout(function () {
+          finishProcessing();
+        }, 1800);
+
+        if (recognition) {
+          recognition.onend = function () {
+            finishProcessing();
+          };
+          try {
+            recognition.stop();
+          } catch (err) {
+            finishProcessing();
+          }
+        } else {
+          finishProcessing();
         }
       }
 
@@ -2637,6 +2732,19 @@
         if (isVoiceHolding) endVoiceHold(e);
       });
       window.addEventListener("pointercancel", function (e) {
+        if (isVoiceHolding) endVoiceHold(e);
+      });
+
+      voiceHoldAction.addEventListener("touchstart", function (e) {
+        startVoiceHold(e);
+      }, { passive: false });
+      window.addEventListener("touchmove", function (e) {
+        if (isVoiceHolding) moveVoiceHold(e);
+      }, { passive: false });
+      window.addEventListener("touchend", function (e) {
+        if (isVoiceHolding) endVoiceHold(e);
+      });
+      window.addEventListener("touchcancel", function (e) {
         if (isVoiceHolding) endVoiceHold(e);
       });
 

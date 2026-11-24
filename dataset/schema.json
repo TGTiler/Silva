@@ -73,12 +73,17 @@
       }
     },
     "make_call": {
-      "description": "Inicia uma chamada telefônica para o número informado.",
+      "description": "Inicia uma chamada telefônica para o número informado ou contato da agenda.",
       "parameters": {
         "number": {
           "type": "string",
-          "required": true,
+          "required": false,
           "description": "Número de telefone para discar."
+        },
+        "target": {
+          "type": "string",
+          "required": false,
+          "description": "Número de telefone ou nome do contato para discar."
         }
       }
     },

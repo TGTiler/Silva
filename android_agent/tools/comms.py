@@ -2,10 +2,13 @@
 Módulo Comunicação do Silva: SMS, Chamadas, Notificações e Clipboard.
 """
 
+import difflib
 import json
 import re
 import subprocess
-from typing import Any, Dict, Optional
+import time
+import unicodedata
+from typing import Any, Dict, Optional, Tuple
 
 from .core import (
     SIMULATE_HARDWARE,
@@ -14,6 +17,87 @@ from .core import (
     resolve_contact_or_number,
     sanitize_phone_number,
 )
+
+_CONTACTS_CACHE: Dict[str, Any] = {"timestamp": 0.0, "contacts": []}
+
+
+def _resolve_contact_number(target: str) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Resolve número ou nome de contato:
+    - Se contiver letras, busca na agenda telefônica via termux-contact-list.
+      Busca correspondência exata, substring ou aproximada (difflib sem acentos).
+    - Se for apenas dígitos/+, sanitiza e valida número de telefone.
+    Retorna (numero_limpo, nome_formatado) ou (None, None).
+    """
+    raw = str(target or "").strip()
+    if not raw:
+        return None, None
+
+    has_letters = bool(re.search(r"[a-zA-ZáéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇ]", raw))
+    if not has_letters:
+        clean = sanitize_phone_number(raw)
+        digits_only = re.sub(r"\D", "", clean)
+        if len(digits_only) >= 3:
+            return clean, clean
+        return None, None
+
+    # Alvo com letras: consulta agenda de contatos
+    contacts = []
+    now = time.time()
+    if now - _CONTACTS_CACHE.get("timestamp", 0.0) < 30.0 and _CONTACTS_CACHE.get("contacts"):
+        contacts = _CONTACTS_CACHE["contacts"]
+    else:
+        try:
+            res = _run_termux_cmd(["termux-contact-list"], timeout=4)
+            if res.returncode == 0 and res.stdout.strip():
+                contacts = json.loads(res.stdout)
+                _CONTACTS_CACHE["timestamp"] = now
+                _CONTACTS_CACHE["contacts"] = contacts
+        except Exception:
+            contacts = []
+
+    if not contacts:
+        return None, None
+
+    def _norm(s: str) -> str:
+        deaccent = unicodedata.normalize("NFKD", str(s or "")).encode("ASCII", "ignore").decode("ASCII")
+        return re.sub(r"[^\w\s]", "", deaccent).strip().lower()
+
+    target_norm = _norm(raw)
+    candidates = []
+    for c in contacts:
+        c_name = c.get("name", "") or ""
+        c_num = c.get("number") or c.get("phone") or ""
+        if isinstance(c_num, list) and c_num:
+            c_num = c_num[0]
+        if c_name and c_num:
+            clean_num = sanitize_phone_number(str(c_num))
+            if clean_num:
+                candidates.append((c_name, _norm(c_name), clean_num))
+
+    if not candidates:
+        return None, None
+
+    # 1. Correspondência Exata
+    for c_name, c_norm, clean_num in candidates:
+        if target_norm == c_norm:
+            return clean_num, c_name
+
+    # 2. Correspondência por Substring / Palavra
+    target_words = set(target_norm.split())
+    for c_name, c_norm, clean_num in candidates:
+        c_words = set(c_norm.split())
+        if target_norm in c_norm or c_norm in target_norm or (target_words and target_words.issubset(c_words)):
+            return clean_num, c_name
+
+    # 3. Correspondência Aproximada (Fuzzy Matching via difflib)
+    cand_map = {c_norm: (c_name, clean_num) for c_name, c_norm, clean_num in candidates}
+    matches = difflib.get_close_matches(target_norm, list(cand_map.keys()), n=1, cutoff=0.60)
+    if matches:
+        matched_name, clean_num = cand_map[matches[0]]
+        return clean_num, matched_name
+
+    return None, None
 
 def get_last_sms(limit: int = 5) -> Dict[str, Any]:
     """Lê as últimas mensagens SMS recebidas."""
@@ -109,30 +193,66 @@ def send_sms(number: str, message: str) -> Dict[str, Any]:
 
 
 
-def make_call(number: str) -> Dict[str, Any]:
-    """Disca para um número ou contato telefônico."""
-    clean_target = resolve_contact_or_number(number)
-    if not clean_target:
-        return {"status": "error", "message": "Destinatário de discagem inválido."}
+def make_call(number: str = "", target: str = "") -> Dict[str, Any]:
+    """
+    Inicia uma chamada telefônica para o número ou contato informado.
+    Utiliza discagem resiliente em 2 camadas:
+      - Camada 1: termux-telephony-call direto.
+      - Camada 2: Fallback universal via Intent ACTION_DIAL nativo.
+    """
+    raw_target = (target or number).strip()
+    if not raw_target:
+        return {"status": "error", "message": "Destinatário de discagem inválido. Informe o número ou contato."}
+
+    clean_num, matched_name = _resolve_contact_number(raw_target)
+    if not clean_num:
+        return {
+            "status": "error",
+            "message": f"Contato '{raw_target}' não encontrado na agenda. Informe o número com DDD.",
+            "data": {"target": raw_target}
+        }
+
+    display_target = f"{matched_name} ({clean_num})" if matched_name and matched_name != clean_num else clean_num
 
     if SIMULATE_HARDWARE:
         return {
             "status": "ok",
-            "message": f"Silva: Discando para {clean_target}... [Simulado]",
-            "data": {"number": clean_target}
+            "message": f"Silva: Iniciando chamada direta para {display_target}... [Simulado]",
+            "data": {"number": clean_num, "target": raw_target, "method": "simulated"}
         }
 
+    # Camada 1: Discagem direta
     try:
-        res = _run_termux_cmd(["termux-telephony-call", clean_target], timeout=6)
-        if res.returncode != 0:
-            return {"status": "error", "message": f"Falha ao discar: {res.stderr.strip()}"}
+        res = _run_termux_cmd(["termux-telephony-call", clean_num], timeout=6)
+        if res.returncode == 0:
+            return {
+                "status": "ok",
+                "message": f"Silva: Iniciando chamada direta para {display_target}.",
+                "data": {"number": clean_num, "target": raw_target, "method": "telephony_call"}
+            }
+    except Exception:
+        pass
+
+    # Camada 2 (Fallback Universal): Abrir tela de discagem nativa via Intent DIAL
+    try:
+        res_intent = _exec_android_intent(f'am start -a android.intent.action.DIAL -d "tel:{clean_num}"', timeout=6)
+        if res_intent.returncode == 0:
+            return {
+                "status": "ok",
+                "message": f"Silva: Abrindo discador com o número {clean_num} pronto para chamada.",
+                "data": {"number": clean_num, "target": raw_target, "method": "dial_intent"}
+            }
         return {
-            "status": "ok",
-            "message": f"Silva: Discando para {clean_target}.",
-            "data": {"number": clean_target}
+            "status": "error",
+            "message": f"Falha ao acionar discador nativo: {res_intent.stderr.strip()}",
+            "data": {"number": clean_num, "target": raw_target}
         }
     except Exception as e:
-        return {"status": "error", "message": f"Erro ao efetuar ligação: {str(e)}"}
+        return {
+            "status": "error",
+            "message": f"Erro ao acionar discador nativo: {str(e)}",
+            "data": {"number": clean_num, "target": raw_target}
+        }
 
 
 

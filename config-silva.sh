@@ -140,6 +140,8 @@ print_menu() {
     current_model="$(get_env_val MODEL_PATH "nenhum")"
     local current_city
     current_city="$(get_env_val DEFAULT_CITY "Recife")"
+    local current_adb
+    current_adb="$(get_env_val ADB_TARGET "")"
 
     echo -e "${BOLD}========================================================${RESET}"
     echo -e "${BOLD}      SILVA AGENT - ASSISTENTE DE CONFIGURAÇÃO          ${RESET}"
@@ -152,10 +154,11 @@ print_menu() {
     echo -e "  [5] Auto-detectar llama.cpp / LLM ${CYAN}(Motor: ${current_llama##*/})${RESET}"
     echo -e "  [6] Alterar Cidade Padrão (Clima) ${CYAN}(Atual: ${current_city})${RESET}"
     echo -e "  [7] Restaurar Configurações Padrão"
+    echo -e "  [8] Configurar / Parear ADB Local ${CYAN}(Alvo: ${current_adb:-[desativado]})${RESET}"
     echo ""
     echo -e "  [0] Salvar e Sair"
     echo -e "${BOLD}--------------------------------------------------------${RESET}"
-    echo -n "Escolha uma opção [0-7]: "
+    echo -n "Escolha uma opção [0-8]: "
 }
 
 while true; do
@@ -281,6 +284,50 @@ while true; do
             fi
             sleep 1.5
             ;;
+        8)
+            echo ""
+            echo -e "${BOLD}--- [8] Configurar / Parear ADB Local (Automação Total sem Toques) ---${RESET}"
+            if ! command -v adb >/dev/null 2>&1; then
+                echo -e "${RED}[!] Binário 'adb' não encontrado. No Termux, instale com: pkg install android-tools${RESET}"
+                sleep 2
+                continue
+            fi
+            echo ""
+            echo -e "${CYAN}Dica: Use a Tela Dividida do Android para abrir:${RESET}"
+            echo -e "  Configurações > Opções do desenvolvedor > Depuração por Wi-Fi"
+            echo ""
+            echo -n "Passo 1 - Digite a Porta de Pareamento (ou deixe vazio se já pareado): "
+            read -r pair_port
+            if [ -n "$pair_port" ]; then
+                echo -n "Passo 2 - Digite o Código de pareamento de 6 dígitos: "
+                read -r pair_code
+                if [ -n "$pair_code" ]; then
+                    echo "[*] Pareando com 127.0.0.1:${pair_port}..."
+                    adb pair "127.0.0.1:${pair_port}" "$pair_code" || true
+                fi
+            fi
+            echo -n "Passo 3 - Digite a Porta de Conexão principal da Depuração por Wi-Fi: "
+            read -r conn_port
+            if [ -n "$conn_port" ]; then
+                local_target="127.0.0.1:${conn_port}"
+                set_env_val "ADB_TARGET" "$local_target"
+                set_env_val "AUTO_ENABLE_GPS_VIA_ADB" "true"
+                echo "[*] Conectando em ${local_target}..."
+                adb connect "$local_target" || true
+                echo "[*] Aplicando permissões automáticas ao Termux / Termux:API..."
+                ADB_TARGET="$local_target" python3 -c "
+import sys; sys.path.insert(0, '$SCRIPT_DIR/android_agent')
+from tools.adb_bridge import grant_termux_permissions
+granted = grant_termux_permissions()
+print('[OK] Permissões aplicadas:', ', '.join(granted) if granted else 'nenhuma (verifique conexão ADB)')
+" || true
+            else
+                echo -e "${YELLOW}[INFO] Nenhuma porta informada. Configuração ADB mantida.${RESET}"
+            fi
+            echo ""
+            echo -n "Pressione Enter para voltar ao menu..."
+            read -r _
+            ;;
         0)
             echo ""
             echo -e "${GREEN}[OK] Configurações salvas em .env com sucesso!${RESET}"
@@ -289,7 +336,7 @@ while true; do
             exit 0
             ;;
         *)
-            echo -e "${RED}[!] Opção inválida. Digite um número de 0 a 7.${RESET}"
+            echo -e "${RED}[!] Opção inválida. Digite um número de 0 a 8.${RESET}"
             sleep 1.2
             ;;
     esac

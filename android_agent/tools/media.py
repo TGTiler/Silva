@@ -16,6 +16,7 @@ from .core import (
     _run_termux_cmd,
     _exec_android_intent,
 )
+from .adb_bridge import ensure_adb_connected, pull_adb_file, run_adb_shell
 
 def take_photo(camera_id: int = 0) -> Dict[str, Any]:
     """Captura uma foto e salva no diretório de capturas."""
@@ -102,6 +103,20 @@ def take_screenshot() -> Dict[str, Any]:
         }
 
     try:
+        # Método 0 — Ponte ADB Local privilegiada (screencap -> pull -> validação PNG)
+        if ensure_adb_connected():
+            remote_tmp = f"/data/local/tmp/{filename}"
+            ok_cap, _ = run_adb_shell(["screencap", "-p", remote_tmp], timeout=8.0)
+            if ok_cap and pull_adb_file(remote_tmp, output_path, timeout=8.0):
+                run_adb_shell(["rm", "-f", remote_tmp], timeout=3.0)
+                if _is_valid_png(output_path):
+                    return {
+                        "status": "ok",
+                        "message": "Silva: Print da tela capturado.",
+                        "image_url": rel_url,
+                        "data": {"file_path": str(output_path), "method": "adb"}
+                    }
+
         # Método 1 — ADB Local (adb exec-out screencap -p)
         adb_bin = shutil.which("adb")
         if adb_bin:
@@ -369,11 +384,20 @@ def media_control(action: str) -> Dict[str, Any]:
     msg = MEDIA_CONFIRMATIONS[normalized_action]
 
     if not SIMULATE_HARDWARE:
+        key_code = MEDIA_KEYEVENTS[normalized_action]
+        # Tentativa 0 (ADB Local privilegiado): input keyevent {code}
+        ok_adb, _ = run_adb_shell(["input", "keyevent", str(key_code)], timeout=4.0)
+        if ok_adb:
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {"action": normalized_action, "method": "adb"}
+            }
+
         # Tentativa 1 (Nativo Android 10+): cmd media_session dispatch {normalized_action}
         res1 = _exec_android_intent(f"cmd media_session dispatch {normalized_action}")
         # Tentativa 2 (Fallback via KeyEvent caso cmd media_session falhe)
         if res1.returncode != 0 or "Error" in res1.stderr:
-            key_code = MEDIA_KEYEVENTS[normalized_action]
             _exec_android_intent(f"input keyevent {key_code}")
 
     return {

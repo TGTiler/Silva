@@ -20,6 +20,7 @@ from .core import (
     _exec_android_intent,
     load_last_location,
 )
+from .adb_bridge import ensure_adb_connected, run_adb_shell
 from .comms import set_clipboard
 from .memory_schedule import _load_memory, _normalize_text, recall_note
 
@@ -123,36 +124,50 @@ def open_app(app_name: str) -> Dict[str, Any]:
 
     try:
         opened_pkg = None
-        for pkg in packages_to_try:
-            # 1. Componente explícito se fornecido (ex: pkg/activity)
-            if "/" in pkg:
-                res_c = _exec_android_intent(f"am start -n {pkg}")
-                if res_c.returncode == 0 and "Error:" not in res_c.stdout:
+        if ensure_adb_connected():
+            for pkg in packages_to_try:
+                if "/" in pkg:
+                    ok_adb, out_adb = run_adb_shell(["am", "start", "-n", pkg], timeout=5.0)
+                else:
+                    ok_adb, out_adb = run_adb_shell(
+                        ["monkey", "-p", pkg, "-c", "android.intent.category.LAUNCHER", "1"],
+                        timeout=5.0,
+                    )
+                if ok_adb and not any(err in out_adb for err in ("Error:", "No activities found", "aborted")):
                     opened_pkg = pkg
                     break
 
-            # 2. Resolução exata via mapa de Activities verificadas no dispositivo
-            if pkg in RESOLVED_APP_ACTIVITIES and RESOLVED_APP_ACTIVITIES[pkg]:
-                act_comp = RESOLVED_APP_ACTIVITIES[pkg]
-                res_act = _exec_android_intent(f"am start -n {act_comp}")
-                if res_act.returncode == 0 and "Error:" not in res_act.stdout:
+        if not opened_pkg:
+            for pkg in packages_to_try:
+                # 1. Componente explícito se fornecido (ex: pkg/activity)
+                if "/" in pkg:
+                    res_c = _exec_android_intent(f"am start -n {pkg}")
+                    if res_c.returncode == 0 and "Error:" not in res_c.stdout:
+                        opened_pkg = pkg
+                        break
+
+                # 2. Resolução exata via mapa de Activities verificadas no dispositivo
+                if pkg in RESOLVED_APP_ACTIVITIES and RESOLVED_APP_ACTIVITIES[pkg]:
+                    act_comp = RESOLVED_APP_ACTIVITIES[pkg]
+                    res_act = _exec_android_intent(f"am start -n {act_comp}")
+                    if res_act.returncode == 0 and "Error:" not in res_act.stdout:
+                        opened_pkg = pkg
+                        break
+
+                # 3. Fallback am start com categoria LAUNCHER
+                res_am = _exec_android_intent(f"am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p {pkg}")
+                if res_am.returncode == 0 and "Error:" not in res_am.stdout:
                     opened_pkg = pkg
                     break
 
-            # 3. Fallback am start com categoria LAUNCHER
-            res_am = _exec_android_intent(f"am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p {pkg}")
-            if res_am.returncode == 0 and "Error:" not in res_am.stdout:
-                opened_pkg = pkg
-                break
-
-            # 4. Fallback am start direto em Activities comuns
-            for act in [".MainActivity", ".Main", ".Calculator", ".HomeActivity", ".SplashActivity"]:
-                res_act = _exec_android_intent(f"am start -n {pkg}/{act}")
-                if res_act.returncode == 0 and "Error:" not in res_act.stdout:
-                    opened_pkg = pkg
+                # 4. Fallback am start direto em Activities comuns
+                for act in [".MainActivity", ".Main", ".Calculator", ".HomeActivity", ".SplashActivity"]:
+                    res_act = _exec_android_intent(f"am start -n {pkg}/{act}")
+                    if res_act.returncode == 0 and "Error:" not in res_act.stdout:
+                        opened_pkg = pkg
+                        break
+                if opened_pkg:
                     break
-            if opened_pkg:
-                break
 
         if not opened_pkg:
             return {

@@ -28,6 +28,7 @@ from .core import (
     save_last_location,
     load_last_location,
 )
+from .adb_bridge import ensure_adb_connected, run_adb_shell
 
 def _generate_map_preview(lat: float, lon: float) -> Optional[str]:
     """
@@ -330,6 +331,18 @@ def set_location_state(state: bool) -> Dict[str, Any]:
             "data": {"state": st_bool}
         }
 
+    # Tentativa 0: ADB Local privilegiado (cmd location set-location-enabled)
+    ok_adb, _ = run_adb_shell(
+        ["cmd", "location", "set-location-enabled", "true" if st_bool else "false"],
+        timeout=5.0,
+    )
+    if ok_adb:
+        return {
+            "status": "ok",
+            "message": f"Silva: Localização (GPS) {txt} com sucesso.",
+            "data": {"state": st_bool, "method": "adb"}
+        }
+
     try:
         res = _run_termux_cmd(["settings", "put", "secure", "location_mode", val], timeout=5)
         err_output = ((res.stderr or "") + (res.stdout or "")).lower()
@@ -580,6 +593,13 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
         # CADEIA DE 3 NÍVEIS
         # Nível 1: Localização Ativa do Aparelho (GPS / Network em tempo real)
         dev_loc = _get_current_device_location()
+        if not dev_loc:
+            auto_gps = os.getenv("AUTO_ENABLE_GPS_VIA_ADB", "true").lower() in ("1", "true", "yes")
+            if auto_gps and ensure_adb_connected():
+                ok_gps, _ = run_adb_shell(["cmd", "location", "set-location-enabled", "true"], timeout=4.0)
+                if ok_gps:
+                    time.sleep(0.5)
+                    dev_loc = _get_current_device_location()
         if dev_loc:
             lat, lon, provider = dev_loc
             label = _reverse_geocode_label(lat, lon)

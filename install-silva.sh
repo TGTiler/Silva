@@ -30,7 +30,7 @@ if [ "$IS_TERMUX" = "true" ]; then
     echo "      -> Ambiente Android Termux detectado."
     echo "      -> Atualizando repositórios e instalando dependências essenciais..."
     pkg update -y
-    pkg install -y python termux-api curl git cmake clang
+    pkg install -y python termux-api curl git cmake clang android-tools
     echo "      [OK] Pacotes base instalados com sucesso no Termux."
 else
     echo "      -> Ambiente Linux Desktop/Servidor detectado."

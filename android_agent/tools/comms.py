@@ -17,6 +17,7 @@ from .core import (
     resolve_contact_or_number,
     sanitize_phone_number,
 )
+from .adb_bridge import run_adb_shell
 
 _CONTACTS_CACHE: Dict[str, Any] = {"timestamp": 0.0, "contacts": []}
 
@@ -221,7 +222,19 @@ def make_call(number: str = "", target: str = "") -> Dict[str, Any]:
             "data": {"number": clean_num, "target": raw_target, "method": "simulated"}
         }
 
-    # Camada 1: Discagem direta
+    # Camada 0: ADB Local privilegiado (ACTION_CALL direta sem parar no discador)
+    ok_adb, out_adb = run_adb_shell(
+        ["am", "start", "-a", "android.intent.action.CALL", "-d", f"tel:{clean_num}"],
+        timeout=6.0,
+    )
+    if ok_adb and not any(err in out_adb for err in ("Error:", "SecurityException", "Permission")):
+        return {
+            "status": "ok",
+            "message": f"Silva: Iniciando chamada direta para {display_target}.",
+            "data": {"number": clean_num, "target": raw_target, "method": "adb_call"}
+        }
+
+    # Camada 1: Discagem direta via Termux:API
     try:
         res = _run_termux_cmd(["termux-telephony-call", clean_num], timeout=6)
         if res.returncode == 0:

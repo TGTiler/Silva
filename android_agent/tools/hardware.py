@@ -19,6 +19,7 @@ from .core import (
     _run_termux_cmd,
     _exec_android_intent,
 )
+from .adb_bridge import run_adb_shell
 
 def get_battery() -> Dict[str, Any]:
     """Obtém status da bateria: porcentagem, status e temperatura."""
@@ -99,6 +100,15 @@ def set_dnd(state: bool) -> Dict[str, Any]:
 
     # Arquivo de backup dos volumes para restauração quando DND for desativado
     backup_file = DATA_DIR / "dnd_backup.json"
+
+    # Tentativa 0: ADB Local privilegiado (cmd notification set_dnd)
+    ok_adb, _ = run_adb_shell(["cmd", "notification", "set_dnd", dnd_state_str], timeout=5.0)
+    if ok_adb:
+        return {
+            "status": "ok",
+            "message": f"Silva: Modo Não Perturbe {action_pt}.",
+            "data": {"state": state_bool, "method": "adb"}
+        }
 
     # Tentativa 1: cmd notification set_dnd on|off (nativo Android)
     try:
@@ -518,6 +528,31 @@ def connect_wifi(ssid: str, password: str = "") -> Dict[str, Any]:
         }
 
     # Modo Real no Android / Termux
+    # Camada 0: Conexão direta privilegiada via ADB Local (cmd wifi connect-network)
+    if clean_pass:
+        for sec_type in ("wpa2", "wpa3"):
+            ok_adb, out_adb = run_adb_shell(
+                ["cmd", "wifi", "connect-network", clean_ssid, sec_type, clean_pass],
+                timeout=8.0,
+            )
+            if ok_adb and not any(err in out_adb for err in ("SecurityException", "Permission denied", "Error", "Failed")):
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Conectado diretamente à rede Wi-Fi '{clean_ssid}' ({sec_type.upper()}).",
+                    "data": {"ssid": clean_ssid, "direct_connect": True, "protected": True, "method": "adb"}
+                }
+    else:
+        ok_adb, out_adb = run_adb_shell(
+            ["cmd", "wifi", "connect-network", clean_ssid, "open"],
+            timeout=8.0,
+        )
+        if ok_adb and not any(err in out_adb for err in ("SecurityException", "Permission denied", "Error", "Failed")):
+            return {
+                "status": "ok",
+                "message": f"Silva: Conectado diretamente à rede Wi-Fi aberta '{clean_ssid}'.",
+                "data": {"ssid": clean_ssid, "direct_connect": True, "protected": False, "method": "adb"}
+            }
+
     # Camada 1: Conexão direta via cmd wifi (Shizuku, ADB ou Root)
     cmd_args = ["cmd", "wifi", "connect-network", clean_ssid]
     if clean_pass:
@@ -738,6 +773,16 @@ def set_wifi_state(state: bool) -> Dict[str, Any]:
         }
 
     cmd_val = "true" if state_bool else "false"
+    svc_val = "enable" if state_bool else "disable"
+
+    # Camada 0: ADB Local privilegiado (svc wifi enable/disable)
+    ok_adb, _ = run_adb_shell(["svc", "wifi", svc_val], timeout=5.0)
+    if ok_adb:
+        return {
+            "status": "ok",
+            "message": f"Silva: Wi-Fi {txt} com sucesso.",
+            "data": {"state": state_bool, "method": "adb"}
+        }
 
     # Camada 1: termux-wifi-enable
     try:

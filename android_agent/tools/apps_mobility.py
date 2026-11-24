@@ -283,7 +283,7 @@ def _geocode_destination(destination: str) -> Optional[Dict[str, Any]]:
             url,
             headers={"User-Agent": "SilvaAgent/1.0 (https://github.com/TGTiler/Silva)"},
         )
-        with urllib.request.urlopen(req, timeout=4) as resp:
+        with urllib.request.urlopen(req, timeout=3) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
         if isinstance(payload, list) and payload:
             top = payload[0]
@@ -298,18 +298,29 @@ def _geocode_destination(destination: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _intent_succeeded(res: Any) -> bool:
+    """Verifica se uma chamada _exec_android_intent foi bem-sucedida."""
+    if not res or getattr(res, "returncode", 1) != 0:
+        return False
+    combined = (getattr(res, "stdout", "") or "") + (getattr(res, "stderr", "") or "")
+    return not any(err in combined for err in ("Error:", "ActivityNotFound", "does not exist", "No activities found"))
+
+
 def request_ride(destination: str, app: str = "uber", service: str = "") -> Dict[str, Any]:
-    """Abre o aplicativo de transporte (Uber ou 99) com o destino configurado a partir da localização atual."""
+    """Abre o aplicativo de transporte (Uber ou 99) com resolução de apelidos, geocodificação e fallback em 3 camadas."""
     clean_dest = _clean_ride_destination(destination)
     if not clean_dest:
         return {"status": "error", "message": "Destino da corrida não informado."}
 
-    # 1. Integração com Memória Local (memory.db / FTS5): consulta se o destino corresponde a um local salvo
+    # 1. Integração com Memória Local (memory.db / FTS5): apelidos comuns ou destinos curtos (< 3 palavras)
     resolved_destination = clean_dest
-    mem = _load_memory()
     found_in_mem = False
+    common_aliases = {"casa", "trabalho", "escola", "faculdade", "academia", "igreja", "mercado"}
+    norm_dest = _normalize_text(clean_dest)
+    should_check_memory = norm_dest in common_aliases or len(norm_dest.split()) < 3
+
+    mem = _load_memory()
     if mem:
-        norm_dest = _normalize_text(clean_dest)
         query_tokens = set(norm_dest.split())
         best_match = None
         best_score = 0
@@ -317,7 +328,7 @@ def request_ride(destination: str, app: str = "uber", service: str = "") -> Dict
             val = v_data.get("value", "") if isinstance(v_data, dict) else str(v_data)
             norm_k = _normalize_text(k)
             score = 0
-            if norm_dest == norm_k:
+            if norm_dest == norm_k or f"endereco {norm_dest}" == norm_k:
                 score += 10
             elif norm_dest in norm_k:
                 score += 6
@@ -336,59 +347,110 @@ def request_ride(destination: str, app: str = "uber", service: str = "") -> Dict
             resolved_destination = best_match
             found_in_mem = True
 
-    if not found_in_mem:
-        try:
-            rec = recall_note(clean_dest)
-            if rec.get("status") == "ok":
-                notes = rec.get("data", {}).get("notes") or []
-                if notes and isinstance(notes[0], dict) and notes[0].get("value"):
-                    resolved_destination = str(notes[0]["value"]).strip()
-        except Exception:
-            pass
+    if not found_in_mem and should_check_memory:
+        for mem_query in (f"endereco {clean_dest}", clean_dest):
+            try:
+                rec = recall_note(mem_query)
+                if rec.get("status") == "ok":
+                    notes = rec.get("data", {}).get("notes") or []
+                    if notes and isinstance(notes[0], dict) and notes[0].get("value"):
+                        resolved_destination = str(notes[0]["value"]).strip()
+                        found_in_mem = True
+                        break
+            except Exception:
+                pass
 
+    alias_prefix = f"Usando endereço salvo para '{clean_dest}': {resolved_destination}. " if found_in_mem else ""
     app_target = str(service or app or "uber").strip().lower()
+    encoded_dest = urllib.parse.quote(resolved_destination)
 
     if app_target == "uber":
-        encoded_dest = urllib.parse.quote(resolved_destination)
-        url = f"https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]={encoded_dest}"
+        geo = None if SIMULATE_HARDWARE else _geocode_destination(resolved_destination)
+        geo_qs = f"&dropoff[latitude]={geo['latitude']}&dropoff[longitude]={geo['longitude']}" if geo else ""
+        uber_uri = f"uber://?action=setPickup&pickup=my_location&dropoff[formatted_address]={encoded_dest}{geo_qs}"
+        web_url = f"https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]={encoded_dest}{geo_qs}"
+
         if SIMULATE_HARDWARE:
             return {
                 "status": "ok",
-                "message": f"Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
-                "data": {"destination": resolved_destination, "app": "uber", "url": url}
+                "message": f"{alias_prefix}Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
+                "data": {"destination": resolved_destination, "app": "uber", "url": uber_uri, "web_url": web_url}
             }
-        geo = _geocode_destination(resolved_destination)
-        if geo:
-            url += f"&dropoff[latitude]={geo['latitude']}&dropoff[longitude]={geo['longitude']}"
-        _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+
+        # Camada 1: Deep Link nativo Uber
+        res1 = _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{uber_uri}"')
+        if _intent_succeeded(res1):
+            return {
+                "status": "ok",
+                "message": f"{alias_prefix}Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
+                "data": {"destination": resolved_destination, "app": "uber", "url": uber_uri, "geocoded": geo, "method": "deep_link"}
+            }
+
+        # Camada 2: Package Launch (com.ubercab)
+        res2 = _exec_android_intent("monkey -p com.ubercab -c android.intent.category.LAUNCHER 1")
+        if _intent_succeeded(res2):
+            set_clipboard(resolved_destination)
+            return {
+                "status": "ok",
+                "message": f"{alias_prefix}Abrindo UBER com destino para '{resolved_destination}' (endereço copiado para a área de transferência).",
+                "data": {"destination": resolved_destination, "app": "uber", "package": "com.ubercab", "geocoded": geo, "method": "package_fallback"}
+            }
+
+        # Camada 3: Fallback Web Mobile
+        _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{web_url}"')
         return {
             "status": "ok",
-            "message": f"Abrindo UBER com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
-            "data": {"destination": resolved_destination, "app": "uber", "url": url, "geocoded": geo}
+            "message": f"{alias_prefix}Abrindo UBER Web com destino para '{resolved_destination}'.",
+            "data": {"destination": resolved_destination, "app": "uber", "url": web_url, "geocoded": geo, "method": "web_fallback"}
         }
 
     elif app_target in ("99", "99pop"):
+        geo = None if SIMULATE_HARDWARE else _geocode_destination(resolved_destination)
+        geo_qs_99 = f"&dropoff_lat={geo['latitude']}&dropoff_lng={geo['longitude']}" if geo else ""
+        uri_99 = f"taxis99://call?dropoff_title={encoded_dest}{geo_qs_99}"
+        set_clipboard(resolved_destination)
+
         if SIMULATE_HARDWARE:
             return {
                 "status": "ok",
-                "message": f"Abrindo 99 com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
-                "data": {"destination": resolved_destination, "app": "99"}
+                "message": f"{alias_prefix}Abrindo 99 com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
+                "data": {"destination": resolved_destination, "app": "99", "url": uri_99}
             }
-        set_clipboard(resolved_destination)
-        open_app("99")
+
+        # Camada 1: Deep Link nativo 99
+        res1 = _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{uri_99}"')
+        if _intent_succeeded(res1):
+            return {
+                "status": "ok",
+                "message": f"{alias_prefix}Abrindo 99 com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
+                "data": {"destination": resolved_destination, "app": "99", "url": uri_99, "geocoded": geo, "method": "deep_link"}
+            }
+
+        # Camada 2: Package Launch (com.taxis99 / com.xiaojukeji.didi.brazil.passenger)
+        for pkg in ("com.taxis99", "com.xiaojukeji.didi.brazil.passenger"):
+            cmd = f"am start -n {RESOLVED_APP_ACTIVITIES[pkg]}" if pkg in RESOLVED_APP_ACTIVITIES else f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"
+            res_pkg = _exec_android_intent(cmd)
+            if _intent_succeeded(res_pkg):
+                return {
+                    "status": "ok",
+                    "message": f"{alias_prefix}Abrindo 99 com destino para '{resolved_destination}' (endereço copiado para a área de transferência).",
+                    "data": {"destination": resolved_destination, "app": "99", "package": pkg, "geocoded": geo, "method": "package_fallback"}
+                }
+
+        # Camada 3: Play Store / Web fallback
+        _exec_android_intent('am start -a android.intent.action.VIEW -d "market://details?id=com.taxis99"')
         return {
             "status": "ok",
-            "message": f"Abrindo 99 com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
-            "data": {"destination": resolved_destination, "app": "99"}
+            "message": f"{alias_prefix}Abrindo página da 99 na Play Store para corrida até '{resolved_destination}'.",
+            "data": {"destination": resolved_destination, "app": "99", "method": "store_fallback"}
         }
     else:
-        encoded_dest = urllib.parse.quote(resolved_destination)
         url = f"https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]={encoded_dest}"
         if not SIMULATE_HARDWARE:
             _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
         return {
             "status": "ok",
-            "message": f"Abrindo {app_target.upper()} com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
+            "message": f"{alias_prefix}Abrindo {app_target.upper()} com destino para '{resolved_destination}'. Basta confirmar a corrida na tela.",
             "data": {"destination": resolved_destination, "app": app_target, "url": url}
         }
 
@@ -416,7 +478,8 @@ def _clean_food_query(raw_query: str) -> str:
 
     # 2. Prefixos de comando no início da frase (repetidos até limpar)
     prefix_patterns = [
-        r"(?i)^(?:silva|ei|oi)\b\s*",
+        r"(?i)^(?:silva|ei|oi)\b[,\s]*",
+        r"(?i)^(?:t[oô]\s+com\s+fome|estou\s+com\s+fome|com\s+fome)\b[,\s]*",
         r"(?i)^(?:abre\s+o\s+ifood\s+e\s+pede|abre\s+o\s+ifood\s+e\s+peça|abre\s+o\s+ifood\s+e\s+peca|abre\s+o\s+ifood\s+e\s+pedir)\b\s*",
         r"(?i)^(?:abre\s+o\s+99\s+e\s+pede|abre\s+a\s+99\s+e\s+pede)\b\s*",
         r"(?i)^(?:quero\s+pedir|quero|gostaria\s+de\s+pedir|gostaria\s+de|me\s+vê|me\s+ve)\b\s*",
@@ -443,41 +506,50 @@ def _clean_food_query(raw_query: str) -> str:
 
 
 def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
-    """Abre o aplicativo de delivery (iFood ou 99) buscando o prato, restaurante ou item pedido."""
+    """Abre o aplicativo de delivery (iFood ou 99Food) buscando o prato em 3 camadas."""
     clean_query = _clean_food_query(query)
     if not clean_query:
         return {"status": "error", "message": "Item ou prato para busca de comida não informado."}
 
     app_target = str(app).strip().lower() if app else "ifood"
-    encoded_query = urllib.parse.quote(clean_query)
+    encoded_query = urllib.parse.quote_plus(clean_query)
 
     if app_target == "ifood":
-        # 1. Copia para a área de transferência (garante colar em 1 toque na lupa)
         set_clipboard(clean_query)
+        url_deep = f"ifood://search?q={encoded_query}"
         url_web = f"https://www.ifood.com.br/busca?q={encoded_query}&tab=0"
-        url_deep = f"ifood://search?term={encoded_query}"
 
         if SIMULATE_HARDWARE:
             return {
                 "status": "ok",
-                "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência caso precise colar na lupa).\nhttps://www.ifood.com.br/busca?q={encoded_query}",
-                "data": {"query": clean_query, "app": "ifood", "url": url_web}
+                "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência caso precise colar na lupa).\n{url_web}",
+                "data": {"query": clean_query, "app": "ifood", "url": url_deep, "web_url": url_web}
             }
 
-        # 2. Ordem de disparo no Android:
-        # Tentativa 1 (Deep Link interno do app)
-        cmd_app = f'am start -a android.intent.action.VIEW -d "{url_deep}" -p br.com.brainweb.ifood'
-        res1 = _exec_android_intent(cmd_app)
+        # Camada 1: Deep Link de busca interno do iFood
+        res1 = _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url_deep}"')
+        if _intent_succeeded(res1):
+            return {
+                "status": "ok",
+                "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência).",
+                "data": {"query": clean_query, "app": "ifood", "url": url_deep, "method": "deep_link"}
+            }
 
-        # Tentativa 2 (Fallback se Tentativa 1 falhou / pacote não encontrado / ActivityNotFound)
-        if res1.returncode != 0 or "Error:" in res1.stderr or "ActivityNotFound" in res1.stderr or "does not exist" in res1.stderr:
-            cmd_web = f'am start -a android.intent.action.VIEW -d "{url_web}"'
-            _exec_android_intent(cmd_web)
+        # Camada 2: App Principal (br.com.brainweb.ifood)
+        res2 = _exec_android_intent("monkey -p br.com.brainweb.ifood -c android.intent.category.LAUNCHER 1")
+        if _intent_succeeded(res2):
+            return {
+                "status": "ok",
+                "message": f"Abrindo iFood para buscar '{clean_query}' (termo copiado para a área de transferência).",
+                "data": {"query": clean_query, "app": "ifood", "package": "br.com.brainweb.ifood", "method": "package_fallback"}
+            }
 
+        # Camada 3: Fallback Web Search
+        _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url_web}"')
         return {
             "status": "ok",
-            "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência caso precise colar na lupa).\nhttps://www.ifood.com.br/busca?q={encoded_query}",
-            "data": {"query": clean_query, "app": "ifood", "url": url_web}
+            "message": f"Buscando '{clean_query}' no iFood Web.\n{url_web}",
+            "data": {"query": clean_query, "app": "ifood", "url": url_web, "method": "web_fallback"}
         }
 
     elif app_target in ("99", "99food", "99 food"):

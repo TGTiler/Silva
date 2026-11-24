@@ -463,6 +463,59 @@ class TestToolsAndMemory(unittest.TestCase):
             self.assertIn("-35.223000", captured_urls[0])
             self.assertIn("-7.590800", captured_urls[0])
 
+    def test_request_ride_alias_memory_and_3layer_fallback(self):
+        """Testa resolução do apelido 'casa' via remember_note e fallback em 3 camadas em request_ride."""
+        import subprocess
+
+        tools_mem.remember_note("endereco casa", "Av. Paulista, 1000, São Paulo")
+        intent_calls = []
+
+        def fake_exec_intent(cmd_str, timeout=6):
+            intent_calls.append(cmd_str)
+            if "uber://" in cmd_str or "com.ubercab" in cmd_str:
+                return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="ActivityNotFound")
+            if "https://m.uber.com/ul/" in cmd_str:
+                return subprocess.CompletedProcess(args=[cmd_str], returncode=0, stdout="Starting: Intent", stderr="")
+            return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="Error")
+
+        fake_geo = {"latitude": -23.5614, "longitude": -46.6559, "display_name": "Av. Paulista, 1000"}
+        with patch.object(tools_apps, "SIMULATE_HARDWARE", False), \
+             patch.object(tools_apps, "_geocode_destination", return_value=fake_geo), \
+             patch.object(tools_apps, "_exec_android_intent", side_effect=fake_exec_intent):
+            res = tools_apps.request_ride(destination="casa", service="uber")
+            self.assertEqual(res["status"], "ok")
+            self.assertIn("Usando endereço salvo para 'casa': Av. Paulista, 1000, São Paulo", res["message"])
+            self.assertEqual(res["data"]["method"], "web_fallback")
+            self.assertIn("dropoff[latitude]=-23.5614", res["data"]["url"])
+            self.assertTrue(any("uber://?action=setPickup" in c for c in intent_calls))
+            self.assertTrue(any("com.ubercab" in c for c in intent_calls))
+            self.assertTrue(any("https://m.uber.com/ul/" in c for c in intent_calls))
+
+    def test_order_food_ifood_3layer_fallback(self):
+        """Testa execução em 3 camadas (deep link -> pacote -> web) e quote_plus em order_food."""
+        import subprocess
+
+        intent_calls = []
+
+        def fake_exec_intent(cmd_str, timeout=6):
+            intent_calls.append(cmd_str)
+            if "ifood://search" in cmd_str or "br.com.brainweb.ifood" in cmd_str:
+                return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="ActivityNotFound")
+            if "https://www.ifood.com.br/busca" in cmd_str:
+                return subprocess.CompletedProcess(args=[cmd_str], returncode=0, stdout="Starting: Intent", stderr="")
+            return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="Error")
+
+        with patch.object(tools_apps, "SIMULATE_HARDWARE", False), \
+             patch.object(tools_apps, "_exec_android_intent", side_effect=fake_exec_intent), \
+             patch.object(tools_apps, "set_clipboard") as mock_clip:
+            res = tools_apps.order_food(query="pizza calabresa", app="ifood")
+            self.assertEqual(res["status"], "ok")
+            self.assertEqual(res["data"]["method"], "web_fallback")
+            self.assertIn("https://www.ifood.com.br/busca?q=pizza+calabresa", res["data"]["url"])
+            mock_clip.assert_called_once_with("pizza calabresa")
+            self.assertTrue(any("ifood://search?q=pizza+calabresa" in c for c in intent_calls))
+            self.assertTrue(any("br.com.brainweb.ifood" in c for c in intent_calls))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -351,7 +351,8 @@ def _clean_food_query(raw_query: str) -> str:
             break
 
     prefix_patterns = [
-        r"(?i)^(?:silva|ei|oi)\b\s*",
+        r"(?i)^(?:silva|ei|oi)\b[,\s]*",
+        r"(?i)^(?:t[oô]\s+com\s+fome|estou\s+com\s+fome|com\s+fome)\b[,\s]*",
         r"(?i)^(?:abre\s+o\s+ifood\s+e\s+pede|abre\s+o\s+ifood\s+e\s+peça|abre\s+o\s+ifood\s+e\s+peca|abre\s+o\s+ifood\s+e\s+pedir)\b\s*",
         r"(?i)^(?:abre\s+o\s+99\s+e\s+pede|abre\s+a\s+99\s+e\s+pede)\b\s*",
         r"(?i)^(?:quero\s+pedir|quero|gostaria\s+de\s+pedir|gostaria\s+de|me\s+vê|me\s+ve)\b\s*",

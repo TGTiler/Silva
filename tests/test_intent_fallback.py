@@ -174,6 +174,29 @@ class TestFormattingResilience(unittest.TestCase):
             "<call>request_ride(destination='casa do Pedro', app='uber')</call>"
         )
 
+    def test_ride_food_and_call_disambiguation(self):
+        """Valida desambiguação entre request_ride, make_call e order_food (incluindo 'Tô com fome')."""
+        self.assertEqual(
+            match_intent_fallback("Chama um Uber pra casa"),
+            "<call>request_ride(destination='casa', app='uber')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede um 99 para o Shopping Paulista por favor"),
+            "<call>request_ride(destination='Shopping Paulista', app='99')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Chama o Carlos"),
+            "<call>make_call(target='Carlos')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Pede uma pizza de calabresa no iFood"),
+            "<call>order_food(query='pizza de calabresa', app='ifood')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Tô com fome, pede um hambúrguer artesanal"),
+            "<call>order_food(query='hambúrguer artesanal', app='ifood')</call>"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

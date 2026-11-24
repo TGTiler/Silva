@@ -171,3 +171,13 @@
 {"prompt": "Chama um Uber pra casa do Pedro", "completion": "<call>request_ride(destination=\"casa do Pedro\", app=\"uber\")</call>"}
 {"prompt": "Joga um 99 pro terminal", "completion": "<call>request_ride(destination=\"terminal\", app=\"99\")</call>"}
 {"prompt": "Manda um Uber rapidinho pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "Pede um Uber pra casa", "completion": "<call>request_ride(destination=\"casa\", app=\"uber\")</call>"}
+{"prompt": "Pede um 99 para o Shopping Paulista por favor", "completion": "<call>request_ride(destination=\"Shopping Paulista\", app=\"99\")</call>"}
+{"prompt": "Corrida para o aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"uber\")</call>"}
+{"prompt": "Uber para o trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"uber\")</call>"}
+{"prompt": "99 para a faculdade", "completion": "<call>request_ride(destination=\"faculdade\", app=\"99\")</call>"}
+{"prompt": "Pede uma pizza de calabresa no iFood", "completion": "<call>order_food(query=\"pizza de calabresa\", app=\"ifood\")</call>"}
+{"prompt": "Tô com fome, pede um hambúrguer artesanal", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "Pede um lanche no iFood", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
+{"prompt": "Pedir comida no 99food", "completion": "<call>order_food(query=\"comida\", app=\"99food\")</call>"}
+{"prompt": "Pede um sushi pelo iFood", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}

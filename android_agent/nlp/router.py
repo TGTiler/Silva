@@ -453,7 +453,19 @@ def _clean_weather_location(raw_loc: str) -> str:
         "hoje", "amanha", "amanhã", "depois", "aqui", "minha cidade",
         "mim", "graus", "tempo", "chuva", "sol", "calor", "frio", "clima", "previsao", "previsão"
     }
-    if s.lower() in invalid_words:
+    s_norm = _strip_accents(s.lower()).strip()
+    relative_local_keywords = {
+        "minha cidade", "meu bairro", "minha regiao", "minha regiao atual",
+        "meu estado", "meu pais", "aqui", "por aqui", "onde estou", "onde eu estou",
+        "onde to", "onde eu to", "local atual", "meu local", "minha localizacao",
+        "minha area", "meu setor", "meu redor", "ao meu redor", "na minha cidade",
+        "no meu bairro", "na minha regiao", "no local atual"
+    }
+    if (
+        s.lower() in invalid_words
+        or s_norm in relative_local_keywords
+        or bool(re.search(r"^(?:minha\s+cidade|meu\s+bairro|minha\s+regi[aã]o|onde\s+(?:eu\s+)?(?:estou|t[oô])|local\s+atual|meu\s+local|minha\s+localiza[cç][aã]o|por\s+aqui|aqui)$", s, re.IGNORECASE))
+    ):
         return ""
 
     parts = [p.strip() for p in s.split(",") if p.strip()]
@@ -1283,7 +1295,17 @@ def extract_brightness(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 def extract_weather(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Previsão do tempo e clima."""
-    if any(w in norm for w in ["clima", "previsao", "tempo", "chover", "chuva", "temperatura"]):
+    is_weather_intent = (
+        any(w in norm for w in ["clima", "previsao", "tempo", "chover", "chuva", "temperatura"])
+        or bool(re.search(r"\bquantos?\s+graus\b", norm))
+        or bool(re.search(r"\bquanto\s+(?:est[aá]|t[aá])\s+fazendo\b", norm))
+        or bool(re.search(r"\bcomo\s+(?:est[aá]|t[aá])\s+o\s+tempo\b", norm))
+        or bool(re.search(r"\bcomo\s+(?:est[aá]|t[aá])\s+a\s+temperatura\b", norm))
+        or bool(re.search(r"\bqual\s+(?:o\s+)?clima\b", norm))
+        or bool(re.search(r"\bqual\s+(?:a\s+)?temperatura\b", norm))
+        or bool(re.search(r"\bprevis[aã]o\s+d[oa]\s+tempo\b", norm))
+    )
+    if is_weather_intent:
         if not any(w in norm for w in ["no google", "pesquisa no google"]):
             day = "hoje"
             if "depois de amanha" in norm:
@@ -1311,7 +1333,7 @@ def extract_weather(raw: str, norm: str) -> Tuple[float, Optional[str]]:
                     time_val = m_t.group(1)
 
             loc = ""
-            pattern = r"\b(?:em|para|pra|no|na|de\s+(?!chuva\b|tempo\b|clima\b))\s*([a-zA-ZÀ-ÿ0-9\s,\-_]+)"
+            pattern = r"\b(?:em|para|pra|no|na|de\s+(?!chuva\b|tempo\b|clima\b|temperatura\b|graus\b))\s*([a-zA-ZÀ-ÿ0-9\s,\-_]+)"
             matches = re.findall(pattern, raw, re.IGNORECASE)
             for m in reversed(matches):
                 c = _clean_weather_location(m)

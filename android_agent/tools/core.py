@@ -23,6 +23,58 @@ EVENTS_FILE = DATA_DIR / "events.json"
 
 _FILE_LOCK = threading.RLock()
 
+
+def save_last_location(
+    latitude: float,
+    longitude: float,
+    label: str = "",
+    updated_at: str = "",
+    maps_url: str = "",
+    image_url: Optional[str] = None,
+    provider: str = ""
+) -> Dict[str, Any]:
+    """
+    Salva a localização geográfica no arquivo de cache persistente data/last_location.json.
+    """
+    lat = float(latitude)
+    lon = float(longitude)
+    from datetime import datetime
+    now = datetime.now()
+    if not updated_at:
+        updated_at = now.strftime("%Y-%m-%d %H:%M")
+    if not maps_url:
+        maps_url = f"https://maps.google.com/?q={lat},{lon}"
+    if not label:
+        label = f"{lat:.4f}, {lon:.4f}"
+
+    payload = {
+        "latitude": lat,
+        "longitude": lon,
+        "label": label,
+        "updated_at": updated_at,
+        "timestamp": now.isoformat(),
+        "maps_url": maps_url,
+        "image_url": image_url,
+        "provider": provider or "termux"
+    }
+    _atomic_write_json(LAST_LOCATION_FILE, payload)
+    return payload
+
+
+def load_last_location() -> Optional[Dict[str, Any]]:
+    """Carrega o último cache de localização registrado em data/last_location.json ou retorna None."""
+    if not LAST_LOCATION_FILE.is_file():
+        return None
+    with _FILE_LOCK:
+        try:
+            with open(LAST_LOCATION_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if data.get("latitude") is not None and data.get("longitude") is not None:
+                return data
+        except Exception:
+            pass
+    return None
+
 def _atomic_write_json(path: Path, payload: Any) -> None:
     """
     Grava JSON de forma atômica e thread-safe:

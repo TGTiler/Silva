@@ -96,6 +96,11 @@
 {"prompt": "Vai chover às 18:00 em Recife?", "completion": "<call>get_weather(day=\"hoje\", time=\"18:00\", location=\"Recife\")</call>"}
 {"prompt": "Como vai estar o clima no sábado à tarde?", "completion": "<call>get_weather(day=\"sábado\", time=\"tarde\", location=\"\")</call>"}
 {"prompt": "Qual a temperatura atual?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "Qual a temperatura está fazendo na minha cidade?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "Qual o clima está fazendo no meu bairro?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "Quantos graus está fazendo na minha cidade agora?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "Qual a previsão do tempo no meu bairro hoje?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
+{"prompt": "Quanto está fazendo na minha região?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
 {"prompt": "Silva, grava um vídeo de 10 segundos", "completion": "<call>record_video(duration=10, camera_id=0)</call>"}
 {"prompt": "Filma com a câmera frontal por 15 segundos", "completion": "<call>record_video(duration=15, camera_id=1)</call>"}
 {"prompt": "Grava um vídeo de 30 segundos com a câmera traseira", "completion": "<call>record_video(duration=30, camera_id=0)</call>"}

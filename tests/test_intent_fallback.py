@@ -53,6 +53,33 @@ class TestFormattingResilience(unittest.TestCase):
             self.assertNotIn("ssid='conectar wifi'", call)
             self.assertNotIn("ssid='wifi'", call)
 
+    def test_relative_weather_queries(self):
+        """Valida comandos de clima e temperatura com referências locais relativas ou explícitas."""
+        self.assertEqual(
+            match_intent_fallback("Qual a temperatura está fazendo na minha cidade?"),
+            "<call>get_weather(day='hoje', time='', location='')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Qual o clima está fazendo no meu bairro"),
+            "<call>get_weather(day='hoje', time='', location='')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Como está a temperatura em Paulista?"),
+            "<call>get_weather(day='hoje', time='', location='Paulista')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("quantos graus esta fazendo na minha regiao"),
+            "<call>get_weather(day='hoje', time='', location='')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("quanto esta fazendo aqui"),
+            "<call>get_weather(day='hoje', time='', location='')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("previsao do tempo por aqui"),
+            "<call>get_weather(day='hoje', time='', location='')</call>"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

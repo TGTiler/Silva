@@ -25,6 +25,8 @@ from .core import (
     _atomic_write_json,
     _run_termux_cmd,
     _exec_android_intent,
+    save_last_location,
+    load_last_location,
 )
 
 def _generate_map_preview(lat: float, lon: float) -> Optional[str]:
@@ -116,66 +118,198 @@ def _generate_map_preview(lat: float, lon: float) -> Optional[str]:
             return None
 
 
+UF_TO_STATE = {
+    "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas",
+    "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal", "ES": "Espírito Santo",
+    "GO": "Goiás", "MA": "Maranhão", "MT": "Mato Grosso", "MS": "Mato Grosso do Sul",
+    "MG": "Minas Gerais", "PA": "Pará", "PB": "Paraíba", "PR": "Paraná",
+    "PE": "Pernambuco", "PI": "Piauí", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte",
+    "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima", "SC": "Santa Catarina",
+    "SP": "São Paulo", "SE": "Sergipe", "TO": "Tocantins"
+}
+
+STATE_TO_UF = {
+    unicodedata.normalize("NFKD", v.lower()).encode("ascii", "ignore").decode("ascii"): k
+    for k, v in UF_TO_STATE.items()
+}
+
+
+def _reverse_geocode_label(lat: float, lon: float) -> str:
+    """
+    Obtém bairro e cidade/UF para as coordenadas dadas via API pública sem chave (timeout 3s).
+    Fallback seguro: f'{lat:.4f}, {lon:.4f}'.
+    """
+    fallback_coord = f"{lat:.4f}, {lon:.4f}"
+
+    # 1. Tenta Nominatim (OpenStreetMap) com zoom de bairro/rua
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=14&addressdetails=1"
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "SilvaAgent/1.0 (Android Open Source Assistant)"}
+        )
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            if resp.status == 200:
+                d = json.loads(resp.read().decode("utf-8"))
+                addr = d.get("address", {})
+                neighborhood = (
+                    addr.get("suburb")
+                    or addr.get("neighbourhood")
+                    or addr.get("city_district")
+                    or addr.get("quarter")
+                    or ""
+                )
+                city = (
+                    addr.get("city")
+                    or addr.get("town")
+                    or addr.get("municipality")
+                    or addr.get("village")
+                    or ""
+                )
+                state = addr.get("state") or ""
+                norm_state = unicodedata.normalize("NFKD", state.lower()).encode("ascii", "ignore").decode("ascii") if state else ""
+                uf = STATE_TO_UF.get(norm_state, state) if state else ""
+
+                parts = []
+                if neighborhood:
+                    parts.append(neighborhood)
+                if city:
+                    city_state = f"{city} - {uf}" if uf else city
+                    parts.append(city_state)
+                elif uf:
+                    parts.append(uf)
+
+                if parts:
+                    return ", ".join(parts)
+    except Exception:
+        pass
+
+    # 2. Tenta BigDataCloud Reverse Geocoding
+    try:
+        url = f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=pt"
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "SilvaAgent/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            if resp.status == 200:
+                d = json.loads(resp.read().decode("utf-8"))
+                locality = d.get("locality", "")
+                city = d.get("city", "")
+                subdiv = d.get("principalSubdivisionCode", "")
+                uf = subdiv.split("-")[-1] if "-" in subdiv else subdiv
+
+                parts = []
+                if locality and locality != city:
+                    parts.append(locality)
+                if city:
+                    city_state = f"{city} - {uf}" if uf else city
+                    parts.append(city_state)
+                elif uf:
+                    parts.append(uf)
+
+                if parts:
+                    return ", ".join(parts)
+    except Exception:
+        pass
+
+    return fallback_coord
+
+
+_MOCK_LOCATION_ACTIVE: Optional[Any] = None
+
+
+def _get_current_device_location() -> Optional[tuple]:
+    """
+    Tenta obter coordenadas atuais do dispositivo em tempo real via termux-location.
+    Tenta primeiro 'network' rápido (timeout 5s) e depois 'gps' (timeout 8s).
+    Em modo SIMULATE_HARDWARE ou mock, respeita o estado configurado.
+    Retorna (latitude, longitude, provider) ou None se desativado/indisponível.
+    """
+    global _MOCK_LOCATION_ACTIVE
+    if _MOCK_LOCATION_ACTIVE is False:
+        return None
+    if isinstance(_MOCK_LOCATION_ACTIVE, tuple) and len(_MOCK_LOCATION_ACTIVE) >= 2:
+        prov = _MOCK_LOCATION_ACTIVE[2] if len(_MOCK_LOCATION_ACTIVE) > 2 else "mock"
+        return float(_MOCK_LOCATION_ACTIVE[0]), float(_MOCK_LOCATION_ACTIVE[1]), prov
+    if _MOCK_LOCATION_ACTIVE is True:
+        return -7.9408, -34.8731, "mock"
+
+    if SIMULATE_HARDWARE:
+        return -7.9408, -34.8731, "simulated"
+
+    try:
+        # Tenta primeiro via network (rápido, timeout 5s)
+        res = _run_termux_cmd(["termux-location", "-p", "network", "-r", "last"], timeout=5)
+        if res.returncode == 0 and res.stdout.strip():
+            try:
+                data = json.loads(res.stdout)
+                lat = data.get("latitude")
+                lon = data.get("longitude")
+                if lat is not None and lon is not None:
+                    return float(lat), float(lon), data.get("provider", "network")
+            except Exception:
+                pass
+
+        # Fallback para GPS (timeout 8s)
+        res = _run_termux_cmd(["termux-location", "-p", "gps", "-r", "once"], timeout=8)
+        if res.returncode == 0 and res.stdout.strip():
+            try:
+                data = json.loads(res.stdout)
+                lat = data.get("latitude")
+                lon = data.get("longitude")
+                if lat is not None and lon is not None:
+                    return float(lat), float(lon), data.get("provider", "gps")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return None
+
+
 def get_location() -> Dict[str, Any]:
     """Obtém coordenadas de localização geográfica com link do Google Maps e pré-visualização de mapa."""
     if SIMULATE_HARDWARE:
-        lat, lon = -23.550520, -46.633308
+        lat, lon = -7.9408, -34.8731
         maps_url = f"https://maps.google.com/?q={lat},{lon}"
         map_img = _generate_map_preview(lat, lon)
-        loc_data = {
-            "latitude": lat,
-            "longitude": lon,
-            "timestamp": datetime.now().isoformat(),
-            "maps_url": maps_url,
-            "image_url": map_img,
-            "provider": "simulated"
-        }
-        try:
-            _atomic_write_json(LAST_LOCATION_FILE, loc_data)
-        except Exception:
-            pass
-
+        label = "Centro, Paulista - PE"
+        loc_data = save_last_location(
+            lat, lon,
+            label=label,
+            maps_url=maps_url,
+            image_url=map_img,
+            provider="simulated"
+        )
         return {
             "status": "ok",
-            "message": f"Silva: Localização: Lat {lat:.5f}, Lon {lon:.5f}. {maps_url} [Simulado]",
+            "message": f"Silva: Localização: {label} (Lat {lat:.5f}, Lon {lon:.5f}). {maps_url} [Simulado]",
             "image_url": map_img,
             "data": loc_data
         }
 
     try:
-        # Tenta primeiro via network (rápido)
-        res = _run_termux_cmd(["termux-location", "-p", "network", "-r", "last"], timeout=10)
-        if res.returncode != 0 or not res.stdout.strip():
-            # Fallback para GPS
-            res = _run_termux_cmd(["termux-location", "-p", "gps", "-r", "once"], timeout=15)
-
-        if res.returncode != 0 or not res.stdout.strip():
+        dev_loc = _get_current_device_location()
+        if not dev_loc:
             return {"status": "error", "message": "Não foi possível obter sinal de localização."}
 
-        data = json.loads(res.stdout)
-        lat = data.get("latitude")
-        lon = data.get("longitude")
-        if lat is None or lon is None:
-            return {"status": "error", "message": "Coordenadas não disponíveis."}
+        lat_f, lon_f, provider = dev_loc
+        maps_url = f"https://maps.google.com/?q={lat_f},{lon_f}"
+        map_img = _generate_map_preview(lat_f, lon_f)
+        label = _reverse_geocode_label(lat_f, lon_f)
+        loc_data = save_last_location(
+            lat_f, lon_f,
+            label=label,
+            maps_url=maps_url,
+            image_url=map_img,
+            provider=provider
+        )
 
-        maps_url = f"https://maps.google.com/?q={lat},{lon}"
-        map_img = _generate_map_preview(float(lat), float(lon))
-        loc_data = {
-            "latitude": float(lat),
-            "longitude": float(lon),
-            "timestamp": datetime.now().isoformat(),
-            "maps_url": maps_url,
-            "image_url": map_img,
-            "provider": data.get("provider", "termux")
-        }
-        try:
-            _atomic_write_json(LAST_LOCATION_FILE, loc_data)
-        except Exception:
-            pass
-
+        label_display = f"{label} " if label and label != f"{lat_f:.4f}, {lon_f:.4f}" else ""
         return {
             "status": "ok",
-            "message": f"Silva: Localização: Lat {lat:.5f}, Lon {lon:.5f}. {maps_url}",
+            "message": f"Silva: Localização: {label_display}(Lat {lat_f:.5f}, Lon {lon_f:.5f}). {maps_url}",
             "image_url": map_img,
             "data": loc_data
         }
@@ -227,9 +361,10 @@ def set_location_state(state: bool) -> Dict[str, Any]:
 
 def get_last_location() -> Dict[str, Any]:
     """Consulta a última localização geográfica registrada offline com card de mapa."""
-    if not LAST_LOCATION_FILE.is_file():
+    cached = load_last_location()
+    if not cached:
         if SIMULATE_HARDWARE:
-            lat, lon = -23.550520, -46.633308
+            lat, lon = -7.9408, -34.8731
             maps_url = f"https://maps.google.com/?q={lat},{lon}"
             map_img = _generate_map_preview(lat, lon)
             dt_fmt = datetime.now().strftime("%d/%m/%Y às %H:%M")
@@ -246,40 +381,22 @@ def get_last_location() -> Dict[str, Any]:
         }
 
     try:
-        data = json.loads(LAST_LOCATION_FILE.read_text(encoding="utf-8"))
-        lat = data.get("latitude")
-        lon = data.get("longitude")
-        maps_url = data.get("maps_url", f"https://maps.google.com/?q={lat},{lon}")
-        img_url = data.get("image_url")
-        ts_str = data.get("timestamp", "")
-        dt_fmt = ""
-        if ts_str:
-            try:
-                dt_obj = datetime.fromisoformat(ts_str)
-                dt_fmt = dt_obj.strftime("%d/%m/%Y às %H:%M")
-            except Exception:
-                dt_fmt = ts_str
-
-        time_label = f" em {dt_fmt}" if dt_fmt else ""
+        lat = float(cached["latitude"])
+        lon = float(cached["longitude"])
+        maps_url = cached.get("maps_url", f"https://maps.google.com/?q={lat},{lon}")
+        img_url = cached.get("image_url")
+        label = cached.get("label", "")
+        updated_at = cached.get("updated_at") or cached.get("timestamp", "")
+        time_label = f" em {updated_at}" if updated_at else ""
+        label_str = f"{label} - " if label and label != f"{lat:.4f}, {lon:.4f}" else ""
         return {
             "status": "ok",
-            "message": f"Silva: Última localização registrada{time_label}: Lat {float(lat):.5f}, Lon {float(lon):.5f}. {maps_url}",
+            "message": f"Silva: Última localização registrada{time_label}: {label_str}Lat {lat:.5f}, Lon {lon:.5f}. {maps_url}",
             "image_url": img_url,
-            "data": data
+            "data": cached
         }
     except Exception as e:
         return {"status": "error", "message": f"Erro ao consultar última localização: {str(e)}"}
-
-
-UF_TO_STATE = {
-    "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas",
-    "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal", "ES": "Espírito Santo",
-    "GO": "Goiás", "MA": "Maranhão", "MT": "Mato Grosso", "MS": "Mato Grosso do Sul",
-    "MG": "Minas Gerais", "PA": "Pará", "PB": "Paraíba", "PR": "Paraná",
-    "PE": "Pernambuco", "PI": "Piauí", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte",
-    "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima", "SC": "Santa Catarina",
-    "SP": "São Paulo", "SE": "Sergipe", "TO": "Tocantins"
-}
 
 WMO_BASE_MAP = {
     0: "Céu limpo",
@@ -438,13 +555,61 @@ def _interpret_wmo_condition(
 
 
 def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[str, Any]:
-    """Consulta previsão do tempo detalhada por dia, horário e cidade via Open-Meteo."""
+    """Consulta previsão do tempo detalhada por dia, horário e cidade via Open-Meteo com cadeia de 3 níveis."""
     day_raw = str(day).strip().lower() if day else "hoje"
     time_raw = str(time).strip().lower() if time else ""
     loc_raw = str(location).strip() if location else ""
 
-    # Determina Coordenadas e Nome do Local com prioridade Brasil e desempate por Estado
-    lat, lon, city_name = _resolve_weather_location(loc_raw)
+    # Determina se a consulta é relativa à localização atual do usuário (ou vazia)
+    is_relative_or_empty = not loc_raw or any(
+        loc_raw.lower() == k
+        for k in [
+            "aqui", "por aqui", "minha cidade", "meu bairro", "minha regiao", "minha região",
+            "minha localizacao", "minha localização", "localizacao atual", "localização atual",
+            "local atual", "local", "meu local", "onde estou", "onde eu estou",
+            "minha area", "minha área", "meu setor", "meu redor", "ao meu redor"
+        ]
+    )
+
+    location_fallback_notice = ""
+    is_cached_fallback = False
+    cached_label = ""
+    cached_updated_at = ""
+
+    if is_relative_or_empty:
+        # CADEIA DE 3 NÍVEIS
+        # Nível 1: Localização Ativa do Aparelho (GPS / Network em tempo real)
+        dev_loc = _get_current_device_location()
+        if dev_loc:
+            lat, lon, provider = dev_loc
+            label = _reverse_geocode_label(lat, lon)
+            save_last_location(lat, lon, label=label, provider=provider)
+            city_name = label
+        else:
+            # Nível 2: Última Localização Registrada (data/last_location.json)
+            cached = load_last_location()
+            if cached and cached.get("latitude") is not None and cached.get("longitude") is not None:
+                lat = float(cached["latitude"])
+                lon = float(cached["longitude"])
+                cached_label = cached.get("label") or f"{lat:.4f}, {lon:.4f}"
+                cached_updated_at = cached.get("updated_at") or cached.get("timestamp") or "data recente"
+                city_name = cached_label
+                is_cached_fallback = True
+                location_fallback_notice = f"Localização atual desativada — usando última localização registrada ({cached_label} em {cached_updated_at}): "
+            else:
+                # Nível 3: Nenhuma Localização Disponível
+                return {
+                    "status": "ok",
+                    "message": "Silva: Não foi possível consultar a temperatura porque a localização do aparelho está desligada e ainda não há nenhuma localização anterior registrada. Por favor, ligue a localização (GPS) e tente novamente.",
+                    "data": {
+                        "error": "location_unavailable",
+                        "location_disabled": True,
+                        "cached_location_available": False
+                    }
+                }
+    else:
+        # Consulta para localidade/cidade informada explicitamente
+        lat, lon, city_name = _resolve_weather_location(loc_raw)
 
     today = date.today()
     target_date = today
@@ -529,23 +694,29 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
                 wcode = hourly_block.get("weather_code", [0])[match_idx]
                 cond = _interpret_wmo_condition(wcode, prob, precip_mm, clouds)
 
-                msg = f"Silva: Previsão para {city_name} ({day_display} às {hora_str}): {cond}, temperatura de {temp:.1f}°C (sensação de {sensacao:.1f}°C) e chance de chuva de {prob}%."
+                base_msg = f"Previsão para {city_name} ({day_display} às {hora_str}): {cond}, temperatura de {temp:.1f}°C (sensação de {sensacao:.1f}°C) e chance de chuva de {prob}%."
+                msg = f"Silva: {location_fallback_notice}{base_msg}" if is_cached_fallback else f"Silva: {base_msg}"
+                res_data = {
+                    "city": city_name,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "day": day_display,
+                    "time": hora_str,
+                    "condition": cond,
+                    "temperature": temp,
+                    "apparent_temperature": sensacao,
+                    "precipitation_probability": prob,
+                    "precipitation_mm": precip_mm,
+                    "source": "open-meteo"
+                }
+                if is_cached_fallback:
+                    res_data["fallback_used"] = "last_location"
+                    res_data["cached_label"] = cached_label
+                    res_data["cached_updated_at"] = cached_updated_at
                 return {
                     "status": "ok",
                     "message": msg,
-                    "data": {
-                        "city": city_name,
-                        "latitude": lat,
-                        "longitude": lon,
-                        "day": day_display,
-                        "time": hora_str,
-                        "condition": cond,
-                        "temperature": temp,
-                        "apparent_temperature": sensacao,
-                        "precipitation_probability": prob,
-                        "precipitation_mm": precip_mm,
-                        "source": "open-meteo"
-                    }
+                    "data": res_data
                 }
 
         # CASO 1: Clima de Hoje sem hora específica (day == "hoje" e time == "")
@@ -573,27 +744,33 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
             temp_max = daily_block.get("temperature_2m_max", [temp_atual])[0]
             prob_max = daily_block.get("precipitation_probability_max", [0])[0]
 
-            msg = (
-                f"Silva: Agora em {city_name}: {condicao_atual}, {temp_atual:.1f}°C (sensação de {sensacao:.1f}°C). "
+            base_msg = (
+                f"Agora em {city_name}: {condicao_atual}, {temp_atual:.1f}°C (sensação de {sensacao:.1f}°C). "
                 f"Previsão para hoje: mínima de {temp_min:.1f}°C, máxima de {temp_max:.1f}°C e chance de chuva de {prob_max}%."
             )
+            msg = f"Silva: {location_fallback_notice}{base_msg}" if is_cached_fallback else f"Silva: {base_msg}"
+            res_data = {
+                "city": city_name,
+                "latitude": lat,
+                "longitude": lon,
+                "condition": condicao_atual,
+                "temperature": temp_atual,
+                "apparent_temperature": sensacao,
+                "humidity": umidade,
+                "temp_min": temp_min,
+                "temp_max": temp_max,
+                "precipitation_probability": prob_max,
+                "precipitation_mm": current_precip,
+                "source": "open-meteo"
+            }
+            if is_cached_fallback:
+                res_data["fallback_used"] = "last_location"
+                res_data["cached_label"] = cached_label
+                res_data["cached_updated_at"] = cached_updated_at
             return {
                 "status": "ok",
                 "message": msg,
-                "data": {
-                    "city": city_name,
-                    "latitude": lat,
-                    "longitude": lon,
-                    "condition": condicao_atual,
-                    "temperature": temp_atual,
-                    "apparent_temperature": sensacao,
-                    "humidity": umidade,
-                    "temp_min": temp_min,
-                    "temp_max": temp_max,
-                    "precipitation_probability": prob_max,
-                    "precipitation_mm": current_precip,
-                    "source": "open-meteo"
-                }
+                "data": res_data
             }
 
         # CASO 3: Dias futuros sem hora específica (day != "hoje" e time == "")
@@ -620,58 +797,85 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
         wcode = daily_block.get("weather_code", [0])[day_idx]
         cond = _interpret_wmo_condition(wcode, rain_max, precip_sum, None)
 
-        msg = f"Silva: Previsão para {city_name} ({day_display}): {cond}. Mínima de {t_min:.1f}°C, máxima de {t_max:.1f}°C e probabilidade de chuva de {rain_max}%."
+        base_msg = f"Previsão para {city_name} ({day_display}): {cond}. Mínima de {t_min:.1f}°C, máxima de {t_max:.1f}°C e probabilidade de chuva de {rain_max}%."
+        msg = f"Silva: {location_fallback_notice}{base_msg}" if is_cached_fallback else f"Silva: {base_msg}"
+        res_data = {
+            "city": city_name,
+            "latitude": lat,
+            "longitude": lon,
+            "day": day_display,
+            "condition": cond,
+            "temp_min": t_min,
+            "temp_max": t_max,
+            "precipitation_probability": rain_max,
+            "precipitation_sum": precip_sum,
+            "source": "open-meteo"
+        }
+        if is_cached_fallback:
+            res_data["fallback_used"] = "last_location"
+            res_data["cached_label"] = cached_label
+            res_data["cached_updated_at"] = cached_updated_at
         return {
             "status": "ok",
             "message": msg,
-            "data": {
-                "city": city_name,
-                "latitude": lat,
-                "longitude": lon,
-                "day": day_display,
-                "condition": cond,
-                "temp_min": t_min,
-                "temp_max": t_max,
-                "precipitation_probability": rain_max,
-                "precipitation_sum": precip_sum,
-                "source": "open-meteo"
-            }
+            "data": res_data
         }
     except Exception as e:
         if SIMULATE_HARDWARE:
             city_disp = city_name or loc_raw or "Paulista, PE"
+            prefix = f"Silva: {location_fallback_notice}" if is_cached_fallback else "Silva: "
             if day_raw in ("hoje", "") and not time_raw:
+                res_data = {
+                    "city": city_disp, "latitude": lat, "longitude": lon, "condition": "Parcialmente nublado",
+                    "temperature": 27.5, "apparent_temperature": 29.8, "humidity": 75,
+                    "temp_min": 24.0, "temp_max": 30.5, "precipitation_probability": 20, "precipitation_mm": 0.0,
+                    "source": "simulated"
+                }
+                if is_cached_fallback:
+                    res_data["fallback_used"] = "last_location"
+                    res_data["cached_label"] = cached_label
+                    res_data["cached_updated_at"] = cached_updated_at
                 return {
                     "status": "ok",
-                    "message": f"Silva: Agora em {city_disp}: Parcialmente nublado, 27.5°C (sensação de 29.8°C). Previsão para hoje: mínima de 24.0°C, máxima de 30.5°C e chance de chuva de 20%.",
-                    "data": {
-                        "city": city_disp, "latitude": lat, "longitude": lon, "condition": "Parcialmente nublado",
-                        "temperature": 27.5, "apparent_temperature": 29.8, "humidity": 75,
-                        "temp_min": 24.0, "temp_max": 30.5, "precipitation_probability": 20, "precipitation_mm": 0.0,
-                        "source": "simulated"
-                    }
+                    "message": f"{prefix}Agora em {city_disp}: Parcialmente nublado, 27.5°C (sensação de 29.8°C). Previsão para hoje: mínima de 24.0°C, máxima de 30.5°C e chance de chuva de 20%.",
+                    "data": res_data
                 }
             elif time_raw:
                 hora_str = "20:00" if "noite" in time_raw else ("15:00" if "tarde" in time_raw else ("09:00" if any(m in time_raw for m in ["manha", "manhã"]) else "12:00"))
+                res_data = {
+                    "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display, "time": hora_str,
+                    "condition": "Parcialmente nublado", "temperature": 26.0, "apparent_temperature": 28.0,
+                    "precipitation_probability": 15, "precipitation_mm": 0.0, "source": "simulated"
+                }
+                if is_cached_fallback:
+                    res_data["fallback_used"] = "last_location"
+                    res_data["cached_label"] = cached_label
+                    res_data["cached_updated_at"] = cached_updated_at
                 return {
                     "status": "ok",
-                    "message": f"Silva: Previsão para {city_disp} ({day_display} às {hora_str}): Parcialmente nublado, temperatura de 26.0°C (sensação de 28.0°C) e chance de chuva de 15%.",
-                    "data": {
-                        "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display, "time": hora_str,
-                        "condition": "Parcialmente nublado", "temperature": 26.0, "apparent_temperature": 28.0,
-                        "precipitation_probability": 15, "precipitation_mm": 0.0, "source": "simulated"
-                    }
+                    "message": f"{prefix}Previsão para {city_disp} ({day_display} às {hora_str}): Parcialmente nublado, temperatura de 26.0°C (sensação de 28.0°C) e chance de chuva de 15%.",
+                    "data": res_data
                 }
             else:
+                res_data = {
+                    "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display,
+                    "condition": "Parcialmente nublado", "temp_min": 24.5, "temp_max": 31.0,
+                    "precipitation_probability": 20, "precipitation_mm": 0.0, "source": "simulated"
+                }
+                if is_cached_fallback:
+                    res_data["fallback_used"] = "last_location"
+                    res_data["cached_label"] = cached_label
+                    res_data["cached_updated_at"] = cached_updated_at
                 return {
                     "status": "ok",
-                    "message": f"Silva: Previsão para {city_disp} ({day_display}): Parcialmente nublado. Mínima de 24.5°C, máxima de 31.0°C e probabilidade de chuva de 20%.",
-                    "data": {
-                        "city": city_disp, "latitude": lat, "longitude": lon, "day": day_display,
-                        "condition": "Parcialmente nublado", "temp_min": 24.5, "temp_max": 31.0,
-                        "precipitation_probability": 20, "precipitation_mm": 0.0, "source": "simulated"
-                    }
+                    "message": f"{prefix}Previsão para {city_disp} ({day_display}): Parcialmente nublado. Mínima de 24.5°C, máxima de 31.0°C e probabilidade de chuva de 20%.",
+                    "data": res_data
                 }
+        return {
+            "status": "error",
+            "message": "Não foi possível obter a previsão do tempo no momento (verifique a conexão com a internet).",
+            "data": {"error": str(e), "location": city_name}
+        }
         return {
             "status": "error",
             "message": "Não foi possível obter a previsão do tempo no momento (verifique a conexão com a internet).",

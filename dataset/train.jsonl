@@ -6043,3 +6043,105 @@
 {"prompt": "ei silva ativa o wi-fi do aparelho pfv", "completion": "<call>set_wifi_state(state=True)</call>"}
 {"prompt": "desliga o wifi q eu quero economizar bateria blz", "completion": "<call>set_wifi_state(state=False)</call>"}
 {"prompt": "silva liga o wi-fi ai rapidinho pfvr", "completion": "<call>set_wifi_state(state=True)</call>"}
+{"instruction": "Qual a temperatura está fazendo na minha cidade?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Qual o clima no meu bairro agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Quantos graus tá fazendo aqui hoje?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai chover na minha cidade amanhã de manhã?", "output": "<call>get_weather(day='amanhã', time='manhã', location='')</call>"}
+{"instruction": "Como tá o tempo por aqui?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Previsão do tempo pra minha região hoje", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Tá frio onde eu estou?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Qual a temperatura\nna minha cidade", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai fazer sol lá fora amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Me diz o clima daqui de noite", "output": "<call>get_weather(day='hoje', time='noite', location='')</call>"}
+{"instruction": "Quantos graus tá na minha localização agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Preciso de guarda-chuva hoje aqui?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Como vai estar o tempo no meu bairro amanhã à tarde?", "output": "<call>get_weather(day='amanhã', time='tarde', location='')</call>"}
+{"instruction": "Tá calor aqui hoje?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Qual a previsão do tempo pra minha cidade essa semana?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai chover aqui amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Clima de agora na minha região", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Quantos graus está fazendo onde eu estou?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Previsão do tempo\npro meu bairro", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Tá nublado aqui fora?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Como estará o tempo na minha cidade amanhã de noite?", "output": "<call>get_weather(day='amanhã', time='noite', location='')</call>"}
+{"instruction": "Me fala a temperatura daqui", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai fazer frio na minha região hoje à noite?", "output": "<call>get_weather(day='hoje', time='noite', location='')</call>"}
+{"instruction": "Qual o clima lá fora agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Quantos graus tá fazendo no meu bairro?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Previsão do tempo pra hoje por aqui", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai chover na minha localização amanhã de manhã?", "output": "<call>get_weather(day='amanhã', time='manhã', location='')</call>"}
+{"instruction": "Como tá o tempo onde eu estou agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Tá quente aqui hoje?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Qual a temperatura\nna minha região agora", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Vai fazer sol na minha cidade amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Me diz quantos graus tá fazendo aqui", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Previsão do tempo pro meu bairro amanhã de tarde", "output": "<call>get_weather(day='amanhã', time='tarde', location='')</call>"}
+{"instruction": "Como vai estar o clima daqui hoje à noite?", "output": "<call>get_weather(day='hoje', time='noite', location='')</call>"}
+{"instruction": "Tá frio lá fora agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Quantos graus faz na minha cidade hoje?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai chover por aqui amanhã à tarde?", "output": "<call>get_weather(day='amanhã', time='tarde', location='')</call>"}
+{"instruction": "Clima na minha localização agora", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Previsão do tempo\npra minha cidade amanhã", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Tá calor onde eu estou?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Como estará o tempo aqui de manhã?", "output": "<call>get_weather(day='hoje', time='manhã', location='')</call>"}
+{"instruction": "Me fala a previsão do tempo daqui pra amanhã", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Quantos graus tá fazendo lá fora?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai fazer frio na minha região amanhã de manhã?", "output": "<call>get_weather(day='amanhã', time='manhã', location='')</call>"}
+{"instruction": "Qual o clima no meu bairro hoje à tarde?", "output": "<call>get_weather(day='hoje', time='tarde', location='')</call>"}
+{"instruction": "Previsão do tempo pra minha localização amanhã de noite", "output": "<call>get_weather(day='amanhã', time='noite', location='')</call>"}
+{"instruction": "Tá nublado lá fora hoje?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Como tá o clima aqui agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Quantos graus faz na minha região amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Vai chover na minha cidade hoje à noite?", "output": "<call>get_weather(day='hoje', time='noite', location='')</call>"}
+{"instruction": "Me diz o clima daqui de manhã", "output": "<call>get_weather(day='hoje', time='manhã', location='')</call>"}
+{"instruction": "Previsão do tempo pra minha cidade hoje", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Tá quente lá fora agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Como vai estar o tempo onde eu estou amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Quantos graus tá fazendo na minha localização?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Vai fazer sol aqui amanhã de tarde?", "output": "<call>get_weather(day='amanhã', time='tarde', location='')</call>"}
+{"instruction": "Clima do meu bairro agora", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Previsão do tempo\npra minha região hoje à noite", "output": "<call>get_weather(day='hoje', time='noite', location='')</call>"}
+{"instruction": "Tá frio na minha cidade hoje?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Como estará o clima por aqui amanhã de manhã?", "output": "<call>get_weather(day='amanhã', time='manhã', location='')</call>"}
+{"instruction": "Me fala quantos graus tá aqui agora", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Vai chover na minha região amanhã à noite?", "output": "<call>get_weather(day='amanhã', time='noite', location='')</call>"}
+{"instruction": "Qual a temperatura na minha cidade amanhã de tarde?", "output": "<call>get_weather(day='amanhã', time='tarde', location='')</call>"}
+{"instruction": "Tá calor lá fora hoje?", "output": "<call>get_weather(day='hoje', time='', location='')</call>"}
+{"instruction": "Previsão do tempo pra minha localização hoje de manhã", "output": "<call>get_weather(day='hoje', time='manhã', location='')</call>"}
+{"instruction": "Como tá o tempo na minha região agora?", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Quantos graus faz onde eu estou amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='')</call>"}
+{"instruction": "Vai fazer frio aqui hoje à noite?", "output": "<call>get_weather(day='hoje', time='noite', location='')</call>"}
+{"instruction": "Me diz a temperatura daqui de agora", "output": "<call>get_weather(day='hoje', time='agora', location='')</call>"}
+{"instruction": "Qual a temperatura em Paulista hoje?", "output": "<call>get_weather(day='hoje', time='', location='Paulista')</call>"}
+{"instruction": "Como vai ficar o tempo em Recife amanhã à noite?", "output": "<call>get_weather(day='amanhã', time='noite', location='Recife')</call>"}
+{"instruction": "Quantos graus tá fazendo em São Paulo agora?", "output": "<call>get_weather(day='hoje', time='agora', location='São Paulo')</call>"}
+{"instruction": "Previsão do tempo para Curitiba amanhã de manhã", "output": "<call>get_weather(day='amanhã', time='manhã', location='Curitiba')</call>"}
+{"instruction": "Vai chover no Rio de Janeiro hoje à tarde?", "output": "<call>get_weather(day='hoje', time='tarde', location='Rio de Janeiro')</call>"}
+{"instruction": "Qual o clima em Salvador amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='Salvador')</call>"}
+{"instruction": "Tá calor em Fortaleza hoje?", "output": "<call>get_weather(day='hoje', time='', location='Fortaleza')</call>"}
+{"instruction": "Como estará o tempo em Belo Horizonte amanhã de tarde?", "output": "<call>get_weather(day='amanhã', time='tarde', location='Belo Horizonte')</call>"}
+{"instruction": "Quantos graus faz em Porto Alegre agora?", "output": "<call>get_weather(day='hoje', time='agora', location='Porto Alegre')</call>"}
+{"instruction": "Previsão do tempo\npara Manaus amanhã", "output": "<call>get_weather(day='amanhã', time='', location='Manaus')</call>"}
+{"instruction": "Vai fazer sol em Brasília hoje?", "output": "<call>get_weather(day='hoje', time='', location='Brasília')</call>"}
+{"instruction": "Qual a temperatura em Natal amanhã de manhã?", "output": "<call>get_weather(day='amanhã', time='manhã', location='Natal')</call>"}
+{"instruction": "Como vai estar o clima em Florianópolis hoje à noite?", "output": "<call>get_weather(day='hoje', time='noite', location='Florianópolis')</call>"}
+{"instruction": "Tá frio em Gramado hoje?", "output": "<call>get_weather(day='hoje', time='', location='Gramado')</call>"}
+{"instruction": "Quantos graus tá fazendo em Campinas amanhã?", "output": "<call>get_weather(day='amanhã', time='', location='Campinas')</call>"}
+{"instruction": "Previsão do tempo para Goiânia hoje à tarde", "output": "<call>get_weather(day='hoje', time='tarde', location='Goiânia')</call>"}
+{"instruction": "Vai chover em Maceió amanhã de noite?", "output": "<call>get_weather(day='amanhã', time='noite', location='Maceió')</call>"}
+{"instruction": "Qual o clima em João Pessoa agora?", "output": "<call>get_weather(day='hoje', time='agora', location='João Pessoa')</call>"}
+{"instruction": "Não precisa ver o clima da minha cidade agora", "output": "<call>none()</call>"}
+{"instruction": "Quanto tempo falta para acabar o dia?", "output": "<call>none()</call>"}
+{"instruction": "Gira a tela em 90 graus", "output": "<call>none()</call>"}
+{"instruction": "Esquece a previsão do tempo de hoje", "output": "<call>none()</call>"}
+{"instruction": "Qual o clima organizacional da empresa?", "output": "<call>none()</call>"}
+{"instruction": "Aumenta o volume em 10 graus", "output": "<call>none()</call>"}
+{"instruction": "Não quero saber a temperatura agora", "output": "<call>none()</call>"}
+{"instruction": "Quanto tempo demora pra chegar no Recife?", "output": "<call>none()</call>"}
+{"instruction": "O clima entre eles tá tenso", "output": "<call>none()</call>"}
+{"instruction": "Deixa a temperatura do ar-condicionado em 22 graus", "output": "<call>none()</call>"}
+{"instruction": "Qual o tempo de execução do programa?", "output": "<call>none()</call>"}
+{"instruction": "Não liga pro clima hoje", "output": "<call>none()</call>"}
+{"instruction": "Vira 180 graus à direita", "output": "<call>none()</call>"}
+{"instruction": "O tempo passou rápido hoje", "output": "<call>none()</call>"}
+{"instruction": "Ignora a previsão do tempo de amanhã", "output": "<call>none()</call>"}

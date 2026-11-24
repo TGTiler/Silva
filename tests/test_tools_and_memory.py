@@ -160,6 +160,65 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertIn("data", res)
         self.assertIn("city", res["data"])
 
+    def test_weather_three_level_fallback_chain(self):
+        """Testa a cadeia de fallback em 3 níveis de clima e temperatura por localização."""
+        import android_agent.tools.weather_web as weather_mod
+        orig_mock = weather_mod._MOCK_LOCATION_ACTIVE
+
+        try:
+            # ------------------------------------------------------------------
+            # CENÁRIO 1: GPS Ativo -> Salva last_location.json e retorna temperatura
+            # ------------------------------------------------------------------
+            weather_mod.LAST_LOCATION_FILE.unlink(missing_ok=True)
+            weather_mod._MOCK_LOCATION_ACTIVE = (-7.9408, -34.8731, "gps")
+
+            res_gps = tools.get_weather(day="hoje", time="", location="")
+            self.assertEqual(res_gps["status"], "ok")
+            self.assertTrue(weather_mod.LAST_LOCATION_FILE.is_file(), "Deve ter salvo last_location.json")
+
+            cached_data = tools.load_last_location()
+            self.assertIsNotNone(cached_data)
+            self.assertAlmostEqual(cached_data["latitude"], -7.9408, places=3)
+            self.assertAlmostEqual(cached_data["longitude"], -34.8731, places=3)
+            self.assertIn("label", cached_data)
+            self.assertIn("updated_at", cached_data)
+            self.assertIn("°C", res_gps["message"])
+
+            # ------------------------------------------------------------------
+            # CENÁRIO 2: GPS Desligado + Cache Existente -> Informa última posição
+            # ------------------------------------------------------------------
+            weather_mod._MOCK_LOCATION_ACTIVE = False
+            tools.save_last_location(
+                -7.9408, -34.8731,
+                label="Centro, Paulista - PE",
+                updated_at="2026-11-24 10:55"
+            )
+
+            res_cache = tools.get_weather(day="hoje", time="", location="")
+            self.assertEqual(res_cache["status"], "ok")
+            expected_notice = "Localização atual desativada — usando última localização registrada (Centro, Paulista - PE em 2026-11-24 10:55): "
+            self.assertIn(expected_notice, res_cache["message"])
+            self.assertEqual(res_cache["data"].get("fallback_used"), "last_location")
+
+            # ------------------------------------------------------------------
+            # CENÁRIO 3: GPS Desligado + Sem Cache -> Retorna orientação para ligar GPS
+            # ------------------------------------------------------------------
+            weather_mod._MOCK_LOCATION_ACTIVE = False
+            weather_mod.LAST_LOCATION_FILE.unlink(missing_ok=True)
+
+            res_none = tools.get_weather(day="hoje", time="", location="")
+            self.assertEqual(res_none["status"], "ok")
+            expected_guidance = (
+                "Não foi possível consultar a temperatura porque a localização do aparelho "
+                "está desligada e ainda não há nenhuma localização anterior registrada. "
+                "Por favor, ligue a localização (GPS) e tente novamente."
+            )
+            self.assertIn(expected_guidance, res_none["message"])
+            self.assertEqual(res_none["data"].get("error"), "location_unavailable")
+
+        finally:
+            weather_mod._MOCK_LOCATION_ACTIVE = orig_mock
+
     def test_wifi_tools_simulation(self):
         """Testa connect_wifi, get_wifi_info e set_wifi_state em modo simulado."""
         # 1. connect_wifi

@@ -497,6 +497,13 @@ def _get_memory_db() -> sqlite3.Connection:
                 checked_at TIMESTAMP DEFAULT NULL
             );
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS fx_cache (
+                pair TEXT PRIMARY KEY,
+                rate REAL NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+        """)
 
         # Migração transparente de events.json legado para scheduled_events
         events_legacy = DATA_DIR / "events.json"
@@ -1306,6 +1313,7 @@ _UNIT_ALIASES = {
     "gbp": "gbp", "libra esterlina": "gbp", "libras esterlinas": "gbp",
     "ars": "ars", "peso argentino": "ars", "pesos argentinos": "ars",
     "jpy": "jpy", "iene": "jpy", "ienes": "jpy",
+    "btc": "btc", "bitcoin": "btc",
 }
 
 _DISTANCE_FACTORS_M = {
@@ -1327,6 +1335,7 @@ _CURRENCY_RATES_TO_BRL = {
     "gbp": 7.30,
     "ars": 0.0058,
     "jpy": 0.0375,
+    "btc": 550000.0,
 }
 
 
@@ -1343,26 +1352,132 @@ def _format_physical_number(val: float) -> str:
     return formatted
 
 
-def _fetch_currency_rate(from_cur: str, to_cur: str) -> tuple[float, bool]:
-    """Retorna (taxa, is_online) consultando AwesomeAPI com fallback offline."""
+def _save_fx_cache(pair_key: str, rate: float) -> None:
+    """Persiste cotação em fx_cache no memory.db sob _FILE_LOCK."""
+    now_iso = datetime.now().isoformat(timespec="seconds")
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            with conn:
+                conn.execute(
+                    "INSERT INTO fx_cache (pair, rate, updated_at) VALUES (?, ?, ?) "
+                    "ON CONFLICT(pair) DO UPDATE SET rate = excluded.rate, updated_at = excluded.updated_at",
+                    (pair_key, float(rate), now_iso),
+                )
+        finally:
+            conn.close()
+
+
+def _load_fx_cache(pair_key: str) -> Optional[tuple[float, str]]:
+    """Consulta cotação em cache no fx_cache e retorna (rate, formatted_dt) se existir."""
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            row = conn.execute(
+                "SELECT rate, updated_at FROM fx_cache WHERE pair = ?",
+                (pair_key,),
+            ).fetchone()
+            if not row:
+                return None
+            raw_ts = str(row["updated_at"] or "")
+            try:
+                dt = datetime.fromisoformat(raw_ts)
+                fmt_dt = dt.strftime("%d/%m às %H:%M")
+            except ValueError:
+                fmt_dt = raw_ts or "data recente"
+            return float(row["rate"]), fmt_dt
+        finally:
+            conn.close()
+
+
+def _fetch_awesomeapi_pair(from_code: str, to_code: str) -> Optional[float]:
+    pair_key = f"{from_code}{to_code}"
+    url = f"https://economia.awesomeapi.com.br/json/last/{from_code}-{to_code}"
+    req = urllib.request.Request(url, headers={"User-Agent": "SilvaAgent/1.0"})
+    with urllib.request.urlopen(req, timeout=3.5) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        if pair_key in data and "bid" in data[pair_key]:
+            return float(data[pair_key]["bid"])
+    return None
+
+
+def _fetch_frankfurter_pair(from_code: str, to_code: str) -> Optional[float]:
+    if "BTC" in (from_code, to_code):
+        return None
+    url = f"https://api.frankfurter.app/latest?from={from_code}&to={to_code}"
+    req = urllib.request.Request(url, headers={"User-Agent": "SilvaAgent/1.0"})
+    with urllib.request.urlopen(req, timeout=3.5) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        rates = data.get("rates") or {}
+        if to_code in rates:
+            return float(rates[to_code])
+    return None
+
+
+def _fetch_currency_rate_with_cache(from_cur: str, to_cur: str) -> tuple[float, str, Optional[str]]:
+    """
+    Retorna (taxa, source_mode, cached_dt) com cadeia:
+    1. Online: AwesomeAPI (direto ou via pivô BRL) -> Frankfurter API -> grava em fx_cache;
+    2. Offline Cache: fx_cache no memory.db;
+    3. Fallback estático de emergência.
+    """
     if from_cur == to_cur:
-        return 1.0, True
-    pair_key = f"{from_cur.upper()}{to_cur.upper()}"
-    url = f"https://economia.awesomeapi.com.br/json/last/{from_cur.upper()}-{to_cur.upper()}"
+        return 1.0, "online", None
+
+    f_code = from_cur.upper()
+    t_code = to_cur.upper()
+    pair_key = f"{f_code}{t_code}"
+
+    # 1. Consulta Online (AwesomeAPI direto -> pivô BRL -> Frankfurter)
+    online_rate: Optional[float] = None
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "SilvaAgent/1.0"})
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if pair_key in data and "bid" in data[pair_key]:
-                return float(data[pair_key]["bid"]), True
+        online_rate = _fetch_awesomeapi_pair(f_code, t_code)
+    except Exception:
+        online_rate = None
+
+    if online_rate is None and "BRL" not in (f_code, t_code):
+        try:
+            r_from = _fetch_awesomeapi_pair(f_code, "BRL")
+            r_to = _fetch_awesomeapi_pair(t_code, "BRL")
+            if r_from and r_to:
+                online_rate = r_from / r_to
+        except Exception:
+            online_rate = None
+
+    if online_rate is None:
+        try:
+            online_rate = _fetch_frankfurter_pair(f_code, t_code)
+        except Exception:
+            online_rate = None
+
+    if online_rate is not None and online_rate > 0:
+        try:
+            _save_fx_cache(pair_key, online_rate)
+        except Exception:
+            pass
+        return online_rate, "online", None
+
+    # 2. Fallback Cache Persistente (fx_cache)
+    try:
+        cached = _load_fx_cache(pair_key)
+        if cached:
+            return cached[0], "cache", cached[1]
     except Exception:
         pass
+
+    # 3. Tabela estática de emergência
     rate = _CURRENCY_RATES_TO_BRL[from_cur] / _CURRENCY_RATES_TO_BRL[to_cur]
-    return rate, False
+    return rate, "static", None
+
+
+def _fetch_currency_rate(from_cur: str, to_cur: str) -> tuple[float, bool]:
+    """Compatibilidade legada: retorna (taxa, is_online)."""
+    rate, mode, _ = _fetch_currency_rate_with_cache(from_cur, to_cur)
+    return rate, (mode == "online")
 
 
 def convert_units(amount: float, from_unit: str, to_unit: str) -> Dict[str, Any]:
-    """Converte medidas físicas (distância, massa, temperatura, volume) e moedas (online/offline)."""
+    """Converte medidas físicas (distância, massa, temperatura, volume) e moedas (tempo real / fx_cache / offline)."""
     try:
         val = float(amount)
     except (TypeError, ValueError):
@@ -1376,15 +1491,22 @@ def convert_units(amount: float, from_unit: str, to_unit: str) -> Dict[str, Any]
 
     # 1. Moedas
     if u_from in _CURRENCY_RATES_TO_BRL and u_to in _CURRENCY_RATES_TO_BRL:
-        rate, is_online = _fetch_currency_rate(u_from, u_to)
+        rate, source_mode, cached_dt = _fetch_currency_rate_with_cache(u_from, u_to)
+        is_online = source_mode == "online"
         result_val = round(val * rate, 2)
-        src_note = "" if is_online else " (cotação offline estimada)"
+        if source_mode == "online":
+            src_note = ""
+        elif source_mode == "cache":
+            src_note = f" (cotação em cache de {cached_dt})"
+        else:
+            src_note = " (offline, taxa aproximada — cotação offline estimada)"
         return {
             "status": "ok",
             "message": f"Silva: {_format_physical_number(val)} {u_from.upper()} = {result_val:.2f} {u_to.upper()}{src_note}.",
             "data": {
                 "amount": val, "from_unit": u_from.upper(), "to_unit": u_to.upper(),
-                "result": result_val, "rate": rate, "online": is_online, "category": "currency",
+                "result": result_val, "rate": rate, "online": is_online,
+                "source": source_mode, "cached_at": cached_dt, "category": "currency",
             },
         }
 

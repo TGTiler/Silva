@@ -792,6 +792,7 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
                 res_data["fallback_used"] = "last_location"
                 res_data["cached_label"] = cached_label
                 res_data["cached_updated_at"] = cached_updated_at
+            _save_weather_cache(city_name, msg, res_data)
             return {
                 "status": "ok",
                 "message": msg,
@@ -896,11 +897,64 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
                     "message": f"{prefix}Previsão para {city_disp} ({day_display}): Parcialmente nublado. Mínima de 24.5°C, máxima de 31.0°C e probabilidade de chuva de 20%.",
                     "data": res_data
                 }
+        cached_weather = _load_weather_cache(city_name or loc_raw or "local")
+        if cached_weather:
+            return cached_weather
         return {
             "status": "error",
             "message": "Não foi possível obter a previsão do tempo no momento (verifique a conexão com a internet).",
             "data": {"error": str(e), "location": city_name}
         }
+
+
+def _save_weather_cache(city_name: str, message: str, data: Dict[str, Any]) -> None:
+    """Salva o último boletim meteorológico na tabela memories (category='clima')."""
+    try:
+        from .core import _FILE_LOCK
+        from .memory_schedule import _get_memory_db, _normalize_text
+        key = f"weather_cache:{_normalize_text(city_name or 'local')}"
+        payload = json.dumps({"message": message, "data": data}, ensure_ascii=False)
+        now_iso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                with conn:
+                    conn.execute(
+                        "INSERT INTO memories (key, value, category, updated_at) VALUES (?, ?, 'clima', ?) "
+                        "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+                        (key, payload, now_iso),
+                    )
+            finally:
+                conn.close()
+    except Exception:
+        pass
+
+
+def _load_weather_cache(city_name: str) -> Optional[Dict[str, Any]]:
+    """Recupera o último boletim meteorológico salvo em memories caso a rede falhe."""
+    try:
+        from .core import _FILE_LOCK
+        from .memory_schedule import _get_memory_db, _normalize_text
+        key = f"weather_cache:{_normalize_text(city_name or 'local')}"
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                row = conn.execute(
+                    "SELECT value, updated_at FROM memories WHERE key = ?",
+                    (key,),
+                ).fetchone()
+            finally:
+                conn.close()
+        if not row:
+            return None
+        parsed = json.loads(str(row["value"]))
+        data = dict(parsed.get("data") or {})
+        data["source"] = "weather_cache"
+        data["cached_at"] = str(row["updated_at"] or "")
+        msg = f"{parsed.get('message', '')} (boletim em cache de {data['cached_at']})"
+        return {"status": "ok", "message": msg.strip(), "data": data}
+    except Exception:
+        return None
 
 
 class DuckDuckGoHTMLParser(HTMLParser):
@@ -1123,13 +1177,82 @@ def _strip_leading_articles(q: str) -> str:
     return re.sub(r"[\s\.\?!,;:~—–-]+$", "", cleaned).strip()
 
 
+def _fetch_duckduckgo_instant(query: str) -> Dict[str, Any]:
+    """
+    Consulta a DuckDuckGo Instant Answer API (JSON puro, sem scraping/CAPTCHA).
+    Retorna {"summary": str, "url": str, "heading": str, "topics": list, "network_error": bool}.
+    """
+    encoded = urllib.parse.quote_plus(query)
+    url = f"https://api.duckduckgo.com/?q={encoded}&format=json&no_html=1&skip_disambig=1"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "SilvaAgent/1.0 (Android Termux)"})
+        with urllib.request.urlopen(req, timeout=4.0) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+        summary = str(payload.get("AbstractText") or payload.get("Answer") or "").strip()
+        heading = str(payload.get("Heading") or query).strip()
+        abs_url = str(payload.get("AbstractURL") or "").strip()
+        topics = []
+        for item in payload.get("RelatedTopics") or []:
+            if isinstance(item, dict) and item.get("Text"):
+                topics.append({
+                    "title": str(item.get("Text")).split(" - ")[0][:120],
+                    "snippet": str(item.get("Text")),
+                    "url": str(item.get("FirstURL") or ""),
+                    "source": "DuckDuckGo",
+                })
+                if len(topics) >= 3:
+                    break
+        return {
+            "summary": summary,
+            "url": abs_url,
+            "heading": heading,
+            "topics": topics,
+            "network_error": False,
+        }
+    except Exception:
+        return {"summary": "", "url": "", "heading": query, "topics": [], "network_error": True}
+
+
+def _fetch_wikipedia_pt_search(query: str) -> list[Dict[str, str]]:
+    """
+    Fallback Wikipedia PT-BR API (JSON puro, sem tags HTML).
+    Retorna lista de até 3 itens com title, summary e url.
+    """
+    encoded = urllib.parse.quote(query)
+    url = (
+        "https://pt.wikipedia.org/w/api.php"
+        f"?action=query&list=search&srsearch={encoded}&format=json&utf8=1&srlimit=3"
+    )
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "SilvaAgent/1.0 (Android Termux)"})
+        with urllib.request.urlopen(req, timeout=4.0) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+        items = (payload.get("query") or {}).get("search") or []
+        results = []
+        for it in items[:3]:
+            title = str(it.get("title") or "").strip()
+            raw_snip = str(it.get("snippet") or "")
+            clean_snip = re.sub(r"<[^>]+>", "", raw_snip)
+            clean_snip = re.sub(r"\s+", " ", clean_snip).strip()
+            if title:
+                wiki_url = f"https://pt.wikipedia.org/wiki/{urllib.parse.quote(title.replace(' ', '_'))}"
+                results.append({"title": title, "summary": clean_snip, "url": wiki_url, "source": "Wikipédia PT-BR"})
+        return results
+    except Exception:
+        return []
+
+
+def web_search(query: str) -> Dict[str, Any]:
+    """Busca web resiliente via APIs JSON (DuckDuckGo Instant Answer -> Wikipedia PT-BR -> Modo Offline)."""
+    return search_google(query=query, open_browser=False)
+
+
 def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
     """
-    Pesquisa multi-fonte na web com cascata real:
-    1. Wikipédia PT-BR (Busca Semântica + Resumo)
-    2. Google News RSS PT-BR (Notícias recentes via XML nativo)
-    3. DuckDuckGo Lite (Fallback orgânico via POST)
-    Abre o navegador se open_browser=True ou se solicitado explicitamente no texto.
+    Pesquisa multi-fonte na web com cadeia resiliente de APIs JSON:
+    1. DuckDuckGo Instant Answer API (JSON)
+    2. Wikipedia PT-BR API (fallback sem tags HTML)
+    3. Modo Offline orientando consulta a memórias/notas locais.
     """
     clean_query = _strip_leading_articles(str(query))
     if not clean_query:
@@ -1202,19 +1325,60 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # Cascata Multi-Fonte Real
-    # 1. Wikipédia PT-BR (Busca Semântica + Resumo)
-    wiki_res = _fetch_wikipedia_summary(clean_query)
+    # Cadeia Resiliente de APIs JSON (sem scraping HTML / CAPTCHA)
+    # 1. DuckDuckGo Instant Answer API
+    ddg = _fetch_duckduckgo_instant(clean_query)
+    wiki_res: Optional[Dict[str, Any]] = None
+    results: list[Dict[str, Any]] = []
 
-    # 2. Google News RSS PT-BR
-    news_res = _fetch_google_news_rss(clean_query)
-    results = list(news_res)
-
-    # 3. DuckDuckGo Lite (se Wiki e News estiverem vazios)
-    if not wiki_res and not results:
-        ddg_results = _fetch_duckduckgo_lite(clean_query)
-        if ddg_results:
-            results = ddg_results
+    if ddg["summary"] or ddg["topics"]:
+        if ddg["summary"]:
+            wiki_res = {
+                "title": ddg["heading"] or clean_query,
+                "summary": ddg["summary"],
+                "extract": ddg["summary"],
+                "url": ddg["url"] or search_url,
+                "source": "DuckDuckGo",
+            }
+        results = list(ddg["topics"])
+    else:
+        # 2. Fallback Wikipedia PT-BR API
+        wiki_items = _fetch_wikipedia_pt_search(clean_query)
+        if wiki_items:
+            first = wiki_items[0]
+            wiki_res = {
+                "title": first["title"],
+                "summary": first["summary"],
+                "extract": first["summary"],
+                "url": first["url"],
+                "source": "Wikipédia PT-BR",
+            }
+            results = [
+                {
+                    "title": it["title"],
+                    "snippet": it["summary"],
+                    "url": it["url"],
+                    "source": it["source"],
+                }
+                for it in wiki_items
+            ]
+        elif ddg["network_error"]:
+            # 3. Modo Offline
+            return {
+                "status": "ok",
+                "message": (
+                    f"Silva: O dispositivo parece estar offline no momento para pesquisar '{clean_query}'. "
+                    "Você pode consultar suas memórias e notas locais (ex.: 'o que você lembra sobre ...' ou 'mostra meus lembretes')."
+                ),
+                "data": {
+                    "query": clean_query,
+                    "offline": True,
+                    "google_url": search_url,
+                    "url": search_url,
+                    "results": [],
+                    "opened_browser": should_open_browser,
+                },
+            }
 
     # Formatação Limpa da Resposta (zero linhas em branco vazias, links ocultos Markdown)
     sections = [f"Silva: Resultados da pesquisa para '{clean_query}':"]

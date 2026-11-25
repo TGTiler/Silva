@@ -461,7 +461,8 @@ class TestToolsAndMemory(unittest.TestCase):
             self.assertTrue(cur_on["data"]["online"])
             self.assertIn("275.00 BRL", cur_on["message"])
 
-        with patch("android_agent.tools.memory_schedule.urllib.request.urlopen", side_effect=OSError("offline")):
+        with patch("android_agent.tools.memory_schedule.urllib.request.urlopen", side_effect=OSError("offline")), \
+             patch("android_agent.tools.memory_schedule._load_fx_cache", return_value=None):
             cur_off = tools.convert_units(100, "euros", "reais")
             self.assertEqual(cur_off["status"], "ok")
             self.assertFalse(cur_off["data"]["online"])
@@ -1180,6 +1181,94 @@ class TestToolsAndMemory(unittest.TestCase):
                 ok_e, msg_e = media._record_microphone_file(out_empty, 3)
                 self.assertFalse(ok_e)
                 self.assertIn("Termux:API", msg_e)
+
+    def test_fx_cache_realtime_and_offline_fallback(self):
+        """Valida convert_units(1.0, 'USD', 'BRL') gravando fx_cache e reutilizando cache quando offline."""
+        import io
+        import sqlite3
+        from android_agent.tools import memory_schedule as ms
+
+        class _FakeResp(io.BytesIO):
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "memory.db"
+
+            def factory():
+                conn = sqlite3.connect(str(db_path), timeout=5.0)
+                conn.row_factory = sqlite3.Row
+                conn.execute("CREATE TABLE IF NOT EXISTS fx_cache (pair TEXT PRIMARY KEY, rate REAL NOT NULL, updated_at TEXT NOT NULL)")
+                return conn
+
+            with patch.object(ms, "_get_memory_db", side_effect=factory):
+                with patch("android_agent.tools.memory_schedule.urllib.request.urlopen", return_value=_FakeResp(b'{"USDBRL":{"bid":"5.81"}}')):
+                    res_on = ms.convert_units(1.0, "USD", "BRL")
+                self.assertEqual(res_on["status"], "ok")
+                self.assertTrue(res_on["data"]["online"])
+                self.assertAlmostEqual(res_on["data"]["result"], 5.81, places=2)
+
+                with patch("android_agent.tools.memory_schedule.urllib.request.urlopen", side_effect=OSError("offline")):
+                    res_cache = ms.convert_units(10.0, "USD", "BRL")
+                self.assertEqual(res_cache["status"], "ok")
+                self.assertFalse(res_cache["data"]["online"])
+                self.assertEqual(res_cache["data"]["source"], "cache")
+                self.assertAlmostEqual(res_cache["data"]["result"], 58.10, places=2)
+                self.assertIn("cotação em cache", res_cache["message"])
+
+    def test_open_meteo_weather_geocoding_and_web_search_ddg_wikipedia(self):
+        """Valida get_weather('Recife') via Open-Meteo e web_search (DuckDuckGo -> Wikipedia PT-BR)."""
+        import io
+        from android_agent.tools import weather_web as ww
+
+        class _FakeResp(io.BytesIO):
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+
+        geo_payload = json.dumps({"results": [{"name": "Recife", "admin1": "Pernambuco", "latitude": -8.05428, "longitude": -34.8813}]}).encode("utf-8")
+        forecast_payload = json.dumps({
+            "current": {"temperature_2m": 28.4, "relative_humidity_2m": 72, "apparent_temperature": 31.0, "weather_code": 2, "wind_speed_10m": 14.2, "precipitation": 0.0, "cloud_cover": 25},
+            "hourly": {"time": [], "precipitation_probability": []},
+            "daily": {"time": ["2026-11-25"], "temperature_2m_min": [24.0], "temperature_2m_max": [30.5], "precipitation_probability_max": [15]},
+        }).encode("utf-8")
+
+        with patch.object(ww, "SIMULATE_HARDWARE", False), \
+             patch("android_agent.tools.weather_web._save_weather_cache"), \
+             patch("android_agent.tools.weather_web.urllib.request.urlopen", side_effect=[_FakeResp(geo_payload), _FakeResp(forecast_payload)]):
+            w_res = ww.get_weather(day="hoje", location="Recife")
+        self.assertEqual(w_res["status"], "ok")
+        self.assertEqual(w_res["data"]["source"], "open-meteo")
+        self.assertIn("28.4°C", w_res["message"])
+        self.assertIn("Parcialmente nublado", w_res["message"])
+
+        # 1. DuckDuckGo Instant Answer JSON
+        ddg_payload = json.dumps({
+            "Heading": "Inteligência artificial",
+            "AbstractText": "Inteligência artificial é a inteligência exibida por máquinas.",
+            "AbstractURL": "https://pt.wikipedia.org/wiki/Intelig%C3%AAncia_artificial",
+            "RelatedTopics": [],
+        }).encode("utf-8")
+        with patch.object(ww, "SIMULATE_HARDWARE", False), \
+             patch("android_agent.tools.weather_web.urllib.request.urlopen", return_value=_FakeResp(ddg_payload)):
+            s1 = ww.web_search("Inteligência Artificial")
+        self.assertEqual(s1["status"], "ok")
+        self.assertIn("inteligência exibida por máquinas", s1["message"])
+
+        # 2. Fallback Wikipedia PT-BR API (removendo tags HTML)
+        ddg_empty = json.dumps({"AbstractText": "", "Answer": "", "RelatedTopics": []}).encode("utf-8")
+        wiki_payload = json.dumps({
+            "query": {"search": [{"title": "Inteligência artificial", "snippet": "<span class=\"searchmatch\">Inteligência</span> artificial na computação."}]}
+        }).encode("utf-8")
+        with patch.object(ww, "SIMULATE_HARDWARE", False), \
+             patch("android_agent.tools.weather_web.urllib.request.urlopen", side_effect=[_FakeResp(ddg_empty), _FakeResp(wiki_payload)]):
+            s2 = ww.web_search("Inteligência Artificial")
+        self.assertEqual(s2["status"], "ok")
+        self.assertIn("Inteligência artificial na computação.", s2["message"])
+        self.assertNotIn("<span", s2["message"])
 
 
 if __name__ == "__main__":

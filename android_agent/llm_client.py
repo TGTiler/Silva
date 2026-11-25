@@ -157,6 +157,14 @@ class SilvaLLMClient:
 
                 return full_output, round(latency_ms, 2), None
 
+        except urllib.error.HTTPError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000.0
+            try:
+                err_body = e.read().decode("utf-8", errors="ignore").strip()
+            except Exception:
+                err_body = ""
+            err_msg = f"LLM indisponível (HTTP {e.code}): {err_body or e.reason}"
+            return "<call>none()</call>", round(latency_ms, 2), err_msg
         except urllib.error.URLError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             err_str = str(e)

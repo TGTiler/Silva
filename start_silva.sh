@@ -179,7 +179,7 @@ elif [ -n "$LLAMA_BIN" ] && [ -x "$LLAMA_BIN" ] && [ -n "$TARGET_MODEL" ] && [ -
     MODEL_NAME="$(basename "$TARGET_MODEL")"
     echo -e "${CYAN}[*] Iniciando llama-server local com modelo: ${MODEL_NAME}...${RESET}"
     : > "$LLAMA_LOG"
-    _spawn_detached "$LLAMA_LOG" "$LLAMA_BIN" -m "$TARGET_MODEL" --host 127.0.0.1 --port "$LLM_PORT" -c 1024 -t 4
+    _spawn_detached "$LLAMA_LOG" "$LLAMA_BIN" -m "$TARGET_MODEL" --host 127.0.0.1 --port "$LLM_PORT" -c 2048 -t 4
     LLAMA_PID=$!
     _write_pids_file
     echo "$LLAMA_PID" > "$DATA_DIR/llama.pid"

@@ -208,6 +208,18 @@ class TestFormattingResilience(unittest.TestCase):
             match_intent_fallback("busca pizza no ifood"),
             "<call>order_food(query='pizza', app='ifood')</call>"
         )
+        self.assertEqual(
+            match_intent_fallback("peça um 99 para o shopping north way para mim"),
+            "<call>request_ride(destination='shopping north way', app='99')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("qual a cotação do dolar hoje"),
+            "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("quanto está o euro hoje"),
+            "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"
+        )
 
 
 if __name__ == "__main__":

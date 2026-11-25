@@ -6603,3 +6603,123 @@
 {"instruction": "desativa o roteameto wifi ai", "output": "<call>set_hotspot_state(state=False)</call>"}
 {"instruction": "desliga o wifi roteameto do celular", "output": "<call>set_hotspot_state(state=False)</call>"}
 {"instruction": "desativa o roteameto wi fi", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Me vê um 99 pra ir pro centro da cidade", "output": "<call>request_ride(destination='centro da cidade', app='99')</call>"}
+{"instruction": "Chama um 99 aí pra me levar no mercado municipal", "output": "<call>request_ride(destination='mercado municipal', app='99')</call>"}
+{"instruction": "Preciso de um 99 pra ir na faculdade agora", "output": "<call>request_ride(destination='faculdade', app='99')</call>"}
+{"instruction": "Pede um 99 pra mim até o hospital são lucas", "output": "<call>request_ride(destination='hospital são lucas', app='99')</call>"}
+{"instruction": "Quero um 99 pop pra estação da luz por favor", "output": "<call>request_ride(destination='estação da luz', app='99')</call>"}
+{"instruction": "Chama o 99 pra me buscar na rodoviária", "output": "<call>request_ride(destination='rodoviária', app='99')</call>"}
+{"instruction": "Me arruma um 99 pra ir no shopping Ibirapuera", "output": "<call>request_ride(destination='shopping ibirapuera', app='99')</call>"}
+{"instruction": "Pede um 99 pra rua augusta 500 pra mim", "output": "<call>request_ride(destination='rua augusta 500', app='99')</call>"}
+{"instruction": "Chama um uber pra me levar no aeroporto de guarulhos", "output": "<call>request_ride(destination='aeroporto de guarulhos', app='uber')</call>"}
+{"instruction": "Pede um uber black até o hotel copacabana palace", "output": "<call>request_ride(destination='hotel copacabana palace', app='uber')</call>"}
+{"instruction": "Quero um uber pra ir na praia de ipanema", "output": "<call>request_ride(destination='praia de ipanema', app='uber')</call>"}
+{"instruction": "Me chama um uber pro escritório na av paulista", "output": "<call>request_ride(destination='av paulista', app='uber')</call>"}
+{"instruction": "Pede um uber x pra estação central do brasil", "output": "<call>request_ride(destination='estação central do brasil', app='uber')</call>"}
+{"instruction": "Chama um uber pra casa da minha mãe no bairro jardim América", "output": "<call>request_ride(destination='bairro jardim américa', app='uber')</call>"}
+{"instruction": "Preciso de um uber agora pra ir no consulado americano", "output": "<call>request_ride(destination='consulado americano', app='uber')</call>"}
+{"instruction": "Me pede um 99 pra ir na academia smart fit do centro", "output": "<call>request_ride(destination='academia smart fit do centro', app='99')</call>"}
+{"instruction": "Chama um 99 pra me levar no cinema do shopping eldorado", "output": "<call>request_ride(destination='cinema do shopping eldorado', app='99')</call>"}
+{"instruction": "Pede um uber pra farmácia drogasil da esquina por favor", "output": "<call>request_ride(destination='farmácia drogasil da esquina', app='uber')</call>"}
+{"instruction": "Qual a cotação do dólar hoje", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto tá valendo o euro agora", "output": "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Me diz quanto tá a libra em reais", "output": "<call>convert_units(amount=1.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Qual o valor do peso argentino hoje", "output": "<call>convert_units(amount=1.0, from_unit='ARS', to_unit='BRL')</call>"}
+{"instruction": "Tô querendo saber a cotação do dólar pra real", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto vale um euro em reais hoje", "output": "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Como tá a libra esterlina em relação ao real", "output": "<call>convert_units(amount=1.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Me fala a cotação do dólar comercial agora", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto tá o euro turismo hoje", "output": "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Qual a taxa de câmbio do dólar pro real", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto custa um peso argentino em reais", "output": "<call>convert_units(amount=1.0, from_unit='ARS', to_unit='BRL')</call>"}
+{"instruction": "Me diz quanto tá valendo a libra hoje", "output": "<call>convert_units(amount=1.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Qual o preço do dólar no dia de hoje", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto vale a moeda europeia em reais", "output": "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Qual a cotação do dólar pra mim agora", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Converte 99 dólares pra reais", "output": "<call>convert_units(amount=99.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto dá 99 km em milhas", "output": "<call>convert_units(amount=99.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Me converte 99 euros em reais por favor", "output": "<call>convert_units(amount=99.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "99 libras dá quantos reais", "output": "<call>convert_units(amount=99.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Quanto é 99 metros em pés", "output": "<call>convert_units(amount=99.0, from_unit='m', to_unit='ft')</call>"}
+{"instruction": "Converte 35 graus celsius em fahrenheit", "output": "<call>convert_units(amount=35.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Quanto dá 150 libras em quilos", "output": "<call>convert_units(amount=150.0, from_unit='lb', to_unit='kg')</call>"}
+{"instruction": "Me diz quanto é 12 milhas em quilômetros", "output": "<call>convert_units(amount=12.0, from_unit='mi', to_unit='km')</call>"}
+{"instruction": "Converte 99 dólares australianos pra reais", "output": "<call>convert_units(amount=99.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto é 72 fahrenheit em celsius", "output": "<call>convert_units(amount=72.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Converte 500 reais pra dólares", "output": "<call>convert_units(amount=500.0, from_unit='BRL', to_unit='USD')</call>"}
+{"instruction": "Quanto dá 99 quilômetros em metros", "output": "<call>convert_units(amount=99.0, from_unit='km', to_unit='m')</call>"}
+{"instruction": "Pede uma comida no ifood", "output": "<call>order_food(query='comida', app='ifood')</call>"}
+{"instruction": "Quero pedir algo pra comer no ifood", "output": "<call>order_food(query='comida', app='ifood')</call>"}
+{"instruction": "Pede um hambúrguer artesanal no ifood pra mim", "output": "<call>order_food(query='hambúrguer artesanal', app='ifood')</call>"}
+{"instruction": "Me pede uma pizza no ifood por favor", "output": "<call>order_food(query='pizza', app='ifood')</call>"}
+{"instruction": "Quero um açaí no ifood agora", "output": "<call>order_food(query='açaí', app='ifood')</call>"}
+{"instruction": "Pede um sushi no ifood pra entregar aqui", "output": "<call>order_food(query='sushi', app='ifood')</call>"}
+{"instruction": "Me pede uma marmita no 99food", "output": "<call>order_food(query='marmita', app='99food')</call>"}
+{"instruction": "Quero pedir um lanche no 99food", "output": "<call>order_food(query='lanche', app='99food')</call>"}
+{"instruction": "Pede uma comida japonesa no 99food pra mim", "output": "<call>order_food(query='comida japonesa', app='99food')</call>"}
+{"instruction": "Me pede um café da manhã no ifood", "output": "<call>order_food(query='café da manhã', app='ifood')</call>"}
+{"instruction": "Hoje eu gastei 99 reais no mercado", "output": "<call>none()</call>"}
+{"instruction": "O dólar subiu muito esse ano né", "output": "<call>none()</call>"}
+{"instruction": "O uber tava caro demais ontem à noite", "output": "<call>none()</call>"}
+{"instruction": "O ifood atrasou minha entrega de novo", "output": "<call>none()</call>"}
+{"instruction": "Aquele 99 que passou na avenida tava voando", "output": "<call>none()</call>"}
+{"instruction": "Chama um 99 pra me levar no parque ibirapuera", "output": "<call>request_ride(destination='parque ibirapuera', app='99')</call>"}
+{"instruction": "Pede um 99 pop até a estação da sé", "output": "<call>request_ride(destination='estação da sé', app='99')</call>"}
+{"instruction": "Me arruma um 99 pra ir no estádio do morumbi", "output": "<call>request_ride(destination='estádio do morumbi', app='99')</call>"}
+{"instruction": "Quero um 99 pra ir no teatro municipal agora", "output": "<call>request_ride(destination='teatro municipal', app='99')</call>"}
+{"instruction": "Chama o 99 pra me buscar no aeroporto de congonhas", "output": "<call>request_ride(destination='aeroporto de congonhas', app='99')</call>"}
+{"instruction": "Pede um 99 pra rua oscar freire 200 por favor", "output": "<call>request_ride(destination='rua oscar freire 200', app='99')</call>"}
+{"instruction": "Me vê um 99 pra ir na biblioteca municipal", "output": "<call>request_ride(destination='biblioteca municipal', app='99')</call>"}
+{"instruction": "Chama um 99 pra me levar no clube pinheiros", "output": "<call>request_ride(destination='clube pinheiros', app='99')</call>"}
+{"instruction": "Preciso de um 99 pra ir no dentista no bairro moema", "output": "<call>request_ride(destination='bairro moema', app='99')</call>"}
+{"instruction": "Pede um uber comfort até o hotel fasano", "output": "<call>request_ride(destination='hotel fasano', app='uber')</call>"}
+{"instruction": "Me chama um uber pra ir no show no allianz parque", "output": "<call>request_ride(destination='allianz parque', app='uber')</call>"}
+{"instruction": "Quero um uber pra ir no restaurante do bairro vila madalena", "output": "<call>request_ride(destination='bairro vila madalena', app='uber')</call>"}
+{"instruction": "Chama um uber pra me levar na av atlântica 1500", "output": "<call>request_ride(destination='av atlântica 1500', app='uber')</call>"}
+{"instruction": "Pede um uber x até o museu do amanhã", "output": "<call>request_ride(destination='museu do amanhã', app='uber')</call>"}
+{"instruction": "Me arruma um uber pra ir no supermercado extra da av paulista", "output": "<call>request_ride(destination='supermercado extra da av paulista', app='uber')</call>"}
+{"instruction": "Chama um uber agora pra estação jabaquara", "output": "<call>request_ride(destination='estação jabaquara', app='uber')</call>"}
+{"instruction": "Quero um uber pra ir no cecília rodrigues a noite", "output": "<call>request_ride(destination='cecília rodrigues', app='uber')</call>"}
+{"instruction": "Pede um uber pra minha casa na rua haddock lobo 300", "output": "<call>request_ride(destination='rua haddock lobo 300', app='uber')</call>"}
+{"instruction": "Chama um uber black pra me levar no aeroporto de viracopos", "output": "<call>request_ride(destination='aeroporto de viracopos', app='uber')</call>"}
+{"instruction": "Quanto tá o dólar hoje em reais", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Me fala a cotação do euro pra real agora", "output": "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Qual o valor da libra hoje no brasil", "output": "<call>convert_units(amount=1.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Quanto tá valendo o peso argentino em reais", "output": "<call>convert_units(amount=1.0, from_unit='ARS', to_unit='BRL')</call>"}
+{"instruction": "Tô querendo saber quanto tá o dólar agora", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Me diz a cotação do euro turismo por favor", "output": "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Como tá o câmbio do dólar pro real hoje", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Qual o preço da libra esterlina em reais", "output": "<call>convert_units(amount=1.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Quanto vale um dólar em reais nesse momento", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Me fala quanto tá a moeda argentina em reais", "output": "<call>convert_units(amount=1.0, from_unit='ARS', to_unit='BRL')</call>"}
+{"instruction": "Quero saber a cotação do dólar comercial de hoje", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Qual a taxa do euro hoje em dia", "output": "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Quanto tá a libra em real agora", "output": "<call>convert_units(amount=1.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Me diz quanto vale o dólar hoje cedo", "output": "<call>convert_units(amount=1.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Converte 99 euros pra reais por favor", "output": "<call>convert_units(amount=99.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Quanto dá 99 milhas em quilômetros", "output": "<call>convert_units(amount=99.0, from_unit='mi', to_unit='km')</call>"}
+{"instruction": "Me converte 99 libras em reais", "output": "<call>convert_units(amount=99.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "99 pés dá quantos metros", "output": "<call>convert_units(amount=99.0, from_unit='ft', to_unit='m')</call>"}
+{"instruction": "Quanto é 99 quilos em libras", "output": "<call>convert_units(amount=99.0, from_unit='kg', to_unit='lb')</call>"}
+{"instruction": "Converte 20 graus celsius em fahrenheit", "output": "<call>convert_units(amount=20.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Quanto dá 200 dólares em reais", "output": "<call>convert_units(amount=200.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Me diz quanto é 45 milhas em quilômetros", "output": "<call>convert_units(amount=45.0, from_unit='mi', to_unit='km')</call>"}
+{"instruction": "Converte 80 euros pra reais agora", "output": "<call>convert_units(amount=80.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Quanto é 98 fahrenheit em celsius", "output": "<call>convert_units(amount=98.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Converte 1000 reais pra dólares", "output": "<call>convert_units(amount=1000.0, from_unit='BRL', to_unit='USD')</call>"}
+{"instruction": "Quanto dá 99 metros em pés por favor", "output": "<call>convert_units(amount=99.0, from_unit='m', to_unit='ft')</call>"}
+{"instruction": "Me pede um lanche no ifood agora", "output": "<call>order_food(query='lanche', app='ifood')</call>"}
+{"instruction": "Quero pedir uma sobremesa no ifood", "output": "<call>order_food(query='sobremesa', app='ifood')</call>"}
+{"instruction": "Pede uma lasanha no ifood pra mim por favor", "output": "<call>order_food(query='lasanha', app='ifood')</call>"}
+{"instruction": "Me pede um yakisoba no ifood", "output": "<call>order_food(query='yakisoba', app='ifood')</call>"}
+{"instruction": "Quero um hambúrguer no ifood pra entregar em casa", "output": "<call>order_food(query='hambúrguer', app='ifood')</call>"}
+{"instruction": "Pede uma salada no ifood pra mim", "output": "<call>order_food(query='salada', app='ifood')</call>"}
+{"instruction": "Me pede um pastel no 99food", "output": "<call>order_food(query='pastel', app='99food')</call>"}
+{"instruction": "Quero pedir uma bebida no 99food", "output": "<call>order_food(query='bebida', app='99food')</call>"}
+{"instruction": "Pede um sanduíche natural no 99food pra mim", "output": "<call>order_food(query='sanduíche natural', app='99food')</call>"}
+{"instruction": "Me pede uma feijoada no ifood no domingo", "output": "<call>order_food(query='feijoada', app='ifood')</call>"}
+{"instruction": "Semana passada peguei um 99 lotado demais", "output": "<call>none()</call>"}
+{"instruction": "O euro tá caro pra viajar esse ano", "output": "<call>none()</call>"}
+{"instruction": "Meu amigo trabalha como motorista de uber", "output": "<call>none()</call>"}
+{"instruction": "O ifood cobrou taxa de entrega errada ontem", "output": "<call>none()</call>"}
+{"instruction": "Aquele 99 que passou buzinando me assustou", "output": "<call>none()</call>"}

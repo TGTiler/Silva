@@ -956,7 +956,7 @@ def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
             dest = _clean_ride_destination(cleaned)
         if not dest:
             dest = "destino"
-        return 0.95, _format_call("request_ride", destination=dest, app=app)
+        return 0.96, _format_call("request_ride", destination=dest, app=app)
 
     return 0.0, None
 
@@ -1781,11 +1781,58 @@ def extract_record_audio(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+_CURRENCY_QUOTE_MAP = {
+    "dolar": "USD", "dolares": "USD", "usd": "USD",
+    "euro": "EUR", "euros": "EUR", "eur": "EUR",
+    "libra": "GBP", "libras": "GBP", "libra esterlina": "GBP", "gbp": "GBP",
+    "iene": "JPY", "ienes": "JPY", "jpy": "JPY",
+    "peso argentino": "ARS", "ars": "ARS",
+    "real": "BRL", "reais": "BRL", "brl": "BRL",
+}
+
+_KNOWN_CONVERT_UNITS = {
+    "km", "quilometro", "quilometros", "kilometro", "kilometros",
+    "m", "metro", "metros", "cm", "centimetro", "centimetros", "mm", "milimetro", "milimetros",
+    "mi", "milha", "milhas", "yd", "jarda", "jardas", "ft", "pe", "pes", "in", "polegada", "polegadas",
+    "kg", "quilo", "quilos", "quilograma", "quilogramas", "kilo", "kilos",
+    "g", "grama", "gramas", "mg", "miligrama", "miligramas",
+    "t", "ton", "tonelada", "toneladas", "lb", "lbs", "libra", "libras", "oz", "onca", "oncas",
+    "c", "celsius", "grau celsius", "graus celsius", "centigrados",
+    "f", "fahrenheit", "grau fahrenheit", "graus fahrenheit", "k", "kelvin",
+    "l", "litro", "litros", "ml", "mililitro", "mililitros", "gal", "galao", "galoes",
+    "brl", "real", "reais", "r$", "usd", "dolar", "dolares", "us$", "$",
+    "eur", "euro", "euros", "gbp", "libra esterlina", "libras esterlinas",
+    "ars", "peso argentino", "pesos argentinos", "jpy", "iene", "ienes",
+}
+
+
+def _is_known_convert_unit(unit_str: str) -> bool:
+    norm_u = normalize_text(unit_str).replace("°", "").strip()
+    norm_u = re.sub(r"\s+", " ", norm_u)
+    return norm_u in _KNOWN_CONVERT_UNITS
+
+
 def extract_convert_units(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Conversão de unidades físicas e moedas."""
+    """Conversão de unidades físicas, moedas e cotações sem valor numérico."""
     clean_raw = raw.strip().rstrip("?!.,;:")
 
-    # Padrão invertido: "quantos reais são 100 euros?"
+    # Bloqueia colisão com corridas 99 ("peça um 99 para o shopping...")
+    if re.search(r"\b(?:um|o|de|no|na|chama|chamar|peca|pede|pedir|solicita|solicitar)\s+99\b", norm):
+        return 0.0, None
+
+    # 1. Cotação de moeda sem número explícito ("qual a cotação do dólar hoje", "quanto tá o euro hoje", "valor da libra")
+    if not re.search(r"\b(?:pesquisa|pesquise|pesquisar|google)\b", norm):
+        m_quote = re.search(
+            r"\b(?:(?:cotacao|valor|preco)\s+(?:do|da|de)|quanto\s+(?:ta|esta(?:\s+valendo)?|custa|vale))\s+(?:o\s+|a\s+)?(dolar|dolares|euro|euros|libra(?:\s+esterlina)?|iene|peso\s+argentino|usd|eur|gbp|jpy|ars)\b(?:\s+(?:em|para|pra)\s+(real|reais|brl|dolar|usd|euro|eur))?",
+            norm,
+        )
+        if m_quote:
+            from_cur = _CURRENCY_QUOTE_MAP.get(m_quote.group(1).strip())
+            to_cur = _CURRENCY_QUOTE_MAP.get((m_quote.group(2) or "").strip(), "BRL")
+            if from_cur:
+                return 0.96, _format_call("convert_units", amount=1.0, from_unit=from_cur, to_unit=to_cur)
+
+    # 2. Padrão invertido: "quantos reais são 100 euros?"
     m_inv = re.search(
         r"quantos?\s+([a-zA-ZÀ-ÿ$\s]{1,25}?)\s+(?:s[aã]o|tem|equivalem?\s+a)\s+(\d+(?:[.,]\d+)?)\s*(?:graus?\s+)?([a-zA-ZÀ-ÿ$°\s]{1,25})$",
         clean_raw,
@@ -1795,10 +1842,10 @@ def extract_convert_units(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         to_u = re.sub(r"^(?:em|de|graus?)\s+", "", m_inv.group(1).strip(), flags=re.IGNORECASE).strip()
         amt = float(m_inv.group(2).replace(",", "."))
         from_u = re.sub(r"^(?:de|graus?)\s+", "", m_inv.group(3).strip(), flags=re.IGNORECASE).strip()
-        if from_u and to_u:
+        if _is_known_convert_unit(from_u) and _is_known_convert_unit(to_u):
             return 0.96, _format_call("convert_units", amount=amt, from_unit=from_u, to_unit=to_u)
 
-    # Padrão direto: "converter 50 dólares para reais", "32 graus celsius em fahrenheit", "quanto dá 5 libras em quilos"
+    # 3. Padrão direto: "converter 50 dólares para reais", "32 graus celsius em fahrenheit", "quanto dá 5 libras em quilos"
     m_dir = re.search(
         r"(?:(?:converter|converte|converta|transformar|transforma|quanto\s+(?:d[aá]|[eé]|valem?))\s+)?(\d+(?:[.,]\d+)?)\s*(?:graus?\s+)?([a-zA-ZÀ-ÿ$°\s]{1,25}?)\s+(?:para|em|pra)\s+(?:graus?\s+)?([a-zA-ZÀ-ÿ$°\s]{1,25})$",
         clean_raw,
@@ -1808,8 +1855,7 @@ def extract_convert_units(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         amt = float(m_dir.group(1).replace(",", "."))
         from_u = re.sub(r"^(?:de|graus?)\s+", "", m_dir.group(2).strip(), flags=re.IGNORECASE).strip()
         to_u = re.sub(r"^(?:de|graus?)\s+", "", m_dir.group(3).strip(), flags=re.IGNORECASE).strip()
-        # Evita falsos positivos com comandos de alarmes/timer/clima
-        if from_u and to_u and not any(w in normalize_text(from_u + " " + to_u) for w in ("minuto", "hora", "segundo", "recife", "sp", "uber")):
+        if _is_known_convert_unit(from_u) and _is_known_convert_unit(to_u):
             return 0.96, _format_call("convert_units", amount=amt, from_unit=from_u, to_unit=to_u)
 
     return 0.0, None

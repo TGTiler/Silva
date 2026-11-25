@@ -188,6 +188,10 @@ def check_and_notify_context_reminders() -> None:
         try:
             conn = _get_memory_db()
             cur = conn.cursor()
+            cur.execute("SELECT 1 FROM context_reminders WHERE is_active = 1 LIMIT 1")
+            if not cur.fetchone():
+                conn.close()
+                return
             cur.execute(
                 "SELECT id, trigger_value, reminder_text "
                 "FROM context_reminders WHERE is_active = 1 AND trigger_type = 'wifi'"

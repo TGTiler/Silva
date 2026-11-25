@@ -39,6 +39,7 @@ ACCESS_PIN = os.getenv("ACCESS_PIN", "1234").strip()
 # Conexão com o LLM (llama-server)
 LLAMA_SERVER_URL = os.getenv("LLAMA_SERVER_URL", "http://127.0.0.1:8080").rstrip("/")
 LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "15"))
+LLM_CONTEXT_SIZE = int(os.getenv("LLM_CONTEXT_SIZE", "2048"))
 
 # Armazenamento de capturas
 CAPTURES_DIR = BASE_DIR / "captures"

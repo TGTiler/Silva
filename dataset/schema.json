@@ -30,6 +30,12 @@
           "type": "string",
           "required": true,
           "description": "Texto da mensagem a ser enviada."
+        },
+        "channel": {
+          "type": "string",
+          "required": false,
+          "default": "sms",
+          "description": "Canal de envio ('sms' ou 'whatsapp')."
         }
       }
     },
@@ -69,6 +75,18 @@
           "type": "string",
           "required": true,
           "description": "Nome comum do aplicativo (ex: 'whatsapp', 'youtube', 'chrome', 'camera', 'configuracoes', 'spotify')."
+        },
+        "action": {
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Ação opcional de UI ('tap' para tocar em elemento)."
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Rótulo do elemento para interação UI."
         }
       }
     },
@@ -196,6 +214,12 @@
           "type": "string",
           "required": false,
           "description": "Horário de início do compromisso no formato HH:MM (padrão '09:00')."
+        },
+        "recurrence": {
+          "type": "string",
+          "required": false,
+          "default": "none",
+          "description": "Recorrência ('none', 'daily', 'weekdays', 'weekly')."
         }
       }
     },
@@ -285,7 +309,8 @@
         },
         "level": {
           "type": "integer",
-          "required": true,
+          "required": false,
+          "default": 50,
           "description": "Nível de volume desejado em porcentagem (0 a 100)."
         }
       }
@@ -392,6 +417,12 @@
           "required": false,
           "default": "uber",
           "description": "Aplicativo de transporte a utilizar ('uber' ou '99')."
+        },
+        "service": {
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Alias legado para aplicativo de transporte."
         }
       }
     },

@@ -1032,6 +1032,63 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertFalse(checked_file.exists())
                 self.assertFalse(orphan_vn.exists())
 
+    def test_llm_token_budget_circuit_breaker_and_scheduler_battery_guard(self):
+        """Testa orçamento dinâmico de tokens, circuit breaker de 30s no llm_client e zero get_wifi_info() no scheduler sem lembretes ativos."""
+        import urllib.error
+        from android_agent import conversation_context, scheduler
+        from android_agent.llm_client import SilvaLLMClient
+        from android_agent.tools import memory_schedule
+
+        # 1. Orçamento dinâmico de tokens descarta histórico antigo para não estourar n_ctx
+        sid = "sess_budget_test"
+        captured_payloads = []
+
+        class FakeResp:
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+            def read(self):
+                return b'{"content": "none()</call>"}'
+
+        def fake_urlopen(req, timeout=15):
+            captured_payloads.append(json.loads(req.data.decode("utf-8")))
+            return FakeResp()
+
+        def fake_ctx(session_id, max_turns=2):
+            return "R" * (max_turns * 4000)
+
+        client = SilvaLLMClient(base_url="http://127.0.0.1:59999", context_size=2048)
+        with patch("android_agent.llm_client.format_recent_context", side_effect=fake_ctx), \
+             patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            out, _, err = client.generate_call("Explique brevemente a teoria da relatividade", session_id=sid)
+            self.assertIsNone(err)
+            self.assertEqual(out, "<call>none()</call>")
+            self.assertEqual(len(captured_payloads), 1)
+            self.assertLessEqual(len(captured_payloads[0]["prompt"]), int(2048 * 0.75 * 3.4) + 200)
+
+        # 2. Circuit Breaker abre após 2 falhas consecutivas e não chama urlopen durante 30s
+        client_cb = SilvaLLMClient(base_url="http://127.0.0.1:59999", circuit_cooldown_sec=30.0)
+        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("Connection refused")) as mock_err:
+            _, _, err1 = client_cb.generate_call("Explique fotossíntese", session_id="cb1")
+            _, _, err2 = client_cb.generate_call("Explique gravidade", session_id="cb2")
+            self.assertIsNotNone(err1)
+            self.assertIsNotNone(err2)
+            self.assertEqual(mock_err.call_count, 2)
+
+            # 3ª chamada: circuito aberto -> retorno imediato sem chamar urlopen
+            _, lat3, err3 = client_cb.generate_call("Explique termodinâmica", session_id="cb3")
+            self.assertEqual(lat3, 0.0)
+            self.assertIn("circuit breaker", err3.lower())
+            self.assertEqual(mock_err.call_count, 2)
+
+        # 3. Economia de bateria no scheduler: 0 chamadas a get_wifi_info() quando context_reminders está vazio
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.object(memory_schedule, "DATA_DIR", Path(tmpdir)), \
+                 patch("android_agent.scheduler.get_wifi_info") as mock_wifi:
+                scheduler.check_and_notify_context_reminders()
+                mock_wifi.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

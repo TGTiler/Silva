@@ -5,6 +5,7 @@ Utiliza apenas a biblioteca padrão (urllib) para rodar com zero dependências e
 
 import json
 import re
+import threading
 import time
 import unicodedata
 import urllib.error
@@ -12,13 +13,13 @@ import urllib.request
 from typing import Any, Dict, Optional, Tuple
 
 try:
-    from config import LLAMA_SERVER_URL, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
+    from config import LLAMA_SERVER_URL, LLM_CONTEXT_SIZE, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
     from intent_fallback import match_intent_fallback
     from conversation_context import resolve_anaphora, format_recent_context
     from tools import AVAILABLE_TOOLS
     from tools.memory_schedule import active_recall_search
 except ImportError:
-    from android_agent.config import LLAMA_SERVER_URL, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
+    from android_agent.config import LLAMA_SERVER_URL, LLM_CONTEXT_SIZE, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
     from android_agent.intent_fallback import match_intent_fallback
     from android_agent.conversation_context import resolve_anaphora, format_recent_context
     from android_agent.tools import AVAILABLE_TOOLS
@@ -35,9 +36,35 @@ def _is_interrogative_question(text: str) -> bool:
 
 
 class SilvaLLMClient:
-    def __init__(self, base_url: str = LLAMA_SERVER_URL, timeout: int = LLM_TIMEOUT_SECONDS):
+    def __init__(
+        self,
+        base_url: str = LLAMA_SERVER_URL,
+        timeout: int = LLM_TIMEOUT_SECONDS,
+        context_size: int = LLM_CONTEXT_SIZE,
+        circuit_cooldown_sec: float = 30.0,
+    ):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.context_size = max(512, int(context_size))
+        self.circuit_cooldown_sec = float(circuit_cooldown_sec)
+        self._cb_lock = threading.Lock()
+        self._consecutive_failures = 0
+        self._circuit_open_until = 0.0
+
+    def _is_circuit_open(self) -> bool:
+        with self._cb_lock:
+            return time.monotonic() < self._circuit_open_until
+
+    def _record_success(self) -> None:
+        with self._cb_lock:
+            self._consecutive_failures = 0
+            self._circuit_open_until = 0.0
+
+    def _record_failure(self) -> None:
+        with self._cb_lock:
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= 2:
+                self._circuit_open_until = time.monotonic() + self.circuit_cooldown_sec
 
     def check_health(self) -> Dict[str, Any]:
         """Verifica se o llama-server está online e respondendo."""
@@ -86,18 +113,37 @@ class SilvaLLMClient:
             if recall_level == "medium" and top_mem:
                 memory_hint_block = f"[Memória Relevante: {top_mem['key']}: {top_mem['value']}]"
 
-        # 2. Inferência via LLM local (llama-server) para consultas complexas
-        ctx_block = format_recent_context(session_id, max_turns=2)
+        # 2. Circuit Breaker: evita bloquear o usuário se o llama-server falhou 2x seguidas
+        if self._is_circuit_open():
+            return (
+                "<call>none()</call>",
+                0.0,
+                "LLM temporariamente em cooldown (circuit breaker ativo após falhas consecutivas). Tente novamente em instantes.",
+            )
+
+        # 3. Orçamento dinâmico de tokens (margem segura ~75% de n_ctx) com descarte progressivo de histórico
+        safe_char_budget = max(800, int(self.context_size * 0.75 * 3.4))
+        overhead_chars = len(SILVA_SYSTEM_PROMPT) + len(memory_hint_block) + 120
+        ctx_block = ""
+        for turns in (2, 1):
+            candidate_ctx = format_recent_context(session_id, max_turns=turns)
+            if candidate_ctx and (overhead_chars + len(candidate_ctx) + len(resolved_prompt)) <= safe_char_budget:
+                ctx_block = candidate_ctx
+                break
+
+        max_prompt_chars = max(120, safe_char_budget - overhead_chars - len(ctx_block))
+        trimmed_prompt = resolved_prompt[:max_prompt_chars]
+
         parts = []
         if memory_hint_block:
             parts.append(memory_hint_block)
         if ctx_block:
             parts.append(f"Contexto recente:\n{ctx_block}")
         if parts:
-            parts.append(f"Pedido atual: {resolved_prompt}")
+            parts.append(f"Pedido atual: {trimmed_prompt}")
             user_block = "\n\n".join(parts)
         else:
-            user_block = resolved_prompt
+            user_block = trimmed_prompt
         formatted_prompt = (
             f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
             f"<|im_start|>user\n{user_block}<|im_end|>\n"
@@ -155,9 +201,11 @@ class SilvaLLMClient:
                 else:
                     full_output = "<call>none()</call>"
 
+                self._record_success()
                 return full_output, round(latency_ms, 2), None
 
         except urllib.error.HTTPError as e:
+            self._record_failure()
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             try:
                 err_body = e.read().decode("utf-8", errors="ignore").strip()
@@ -166,6 +214,7 @@ class SilvaLLMClient:
             err_msg = f"LLM indisponível (HTTP {e.code}): {err_body or e.reason}"
             return "<call>none()</call>", round(latency_ms, 2), err_msg
         except urllib.error.URLError as e:
+            self._record_failure()
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             err_str = str(e)
             if "111" in err_str or "Connection refused" in err_str or isinstance(getattr(e, "reason", None), (ConnectionRefusedError, ConnectionError)):
@@ -173,10 +222,12 @@ class SilvaLLMClient:
             else:
                 err_msg = f"LLM indisponível (conexão): {e}"
             return "<call>none()</call>", round(latency_ms, 2), err_msg
-        except (ConnectionRefusedError, ConnectionError):
+        except (ConnectionRefusedError, ConnectionError, TimeoutError):
+            self._record_failure()
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             return "<call>none()</call>", round(latency_ms, 2), "Não reconheci esse comando no modo rápido (o servidor do modelo local está offline no momento). Tente reformular o pedido ou inicie o llama-server."
         except Exception as e:
+            self._record_failure()
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             err_str = str(e)
             if "111" in err_str or "Connection refused" in err_str:

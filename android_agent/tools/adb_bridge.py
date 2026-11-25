@@ -38,7 +38,8 @@ def _get_adb_target() -> str:
 
 
 def _parse_connected_local_serial(devices_output: str, target: str = "") -> Optional[str]:
-    """Extrai o serial local (127.0.0.1:* ou localhost:* ou ADB_TARGET) com status 'device'."""
+    """Extrai o serial local (127.0.0.1:*, localhost:*, ADB_TARGET ou IP:porta Wi-Fi) com status 'device'."""
+    fallback_tcp_serial = None
     for line in (devices_output or "").splitlines():
         line = line.strip()
         if not line or line.startswith("List of devices"):
@@ -48,7 +49,9 @@ def _parse_connected_local_serial(devices_output: str, target: str = "") -> Opti
             serial = parts[0]
             if serial.startswith(("127.0.0.1:", "localhost:")) or (target and serial == target):
                 return serial
-    return None
+            if ":" in serial and fallback_tcp_serial is None:
+                fallback_tcp_serial = serial
+    return fallback_tcp_serial
 
 
 def ensure_adb_connected() -> Optional[str]:

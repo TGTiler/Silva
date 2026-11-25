@@ -9,7 +9,7 @@ import time
 import urllib.parse
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from .core import (
     CAPTURES_DIR,
@@ -410,6 +410,53 @@ def media_control(action: str) -> Dict[str, Any]:
     }
 
 
+def _record_microphone_file(output_path: Path, duration: int) -> Tuple[bool, str]:
+    """
+    Grava áudio real via `termux-microphone-record` respeitando o ciclo assíncrono:
+    1. Encerra qualquer sessão residual (-q) e aguarda 0.3s.
+    2. Inicia gravação (-f <path> -l <dur> -e aac).
+    3. Aguarda a duração real (duration + 0.6s) antes de enviar -q para dar flush no .m4a.
+    4. Valida que o arquivo existe e tem > 1024 bytes.
+    """
+    dur = max(1, min(120, int(duration)))
+    try:
+        _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
+    except Exception:
+        pass
+    time.sleep(0.3)
+
+    try:
+        res = _run_termux_cmd(
+            ["termux-microphone-record", "-f", str(output_path), "-l", str(dur), "-e", "aac"],
+            timeout=dur + 8,
+        )
+        if res.returncode != 0 and not output_path.is_file():
+            err_detail = (res.stderr or "").strip() or "erro desconhecido"
+            return False, (
+                f"Falha ao gravar áudio ({err_detail}). "
+                "Verifique se a permissão de Microfone foi concedida ao aplicativo Termux:API nas Configurações do Android."
+            )
+        time.sleep(dur + 0.6)
+    except Exception as e:
+        return False, (
+            f"Erro ao gravar áudio: {str(e)}. "
+            "Conceda permissão de Microfone ao Termux:API nas Configurações do Android."
+        )
+    finally:
+        try:
+            _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
+        except Exception:
+            pass
+
+    if not output_path.is_file() or output_path.stat().st_size <= 1024:
+        size_bytes = output_path.stat().st_size if output_path.is_file() else 0
+        return False, (
+            f"A gravação não gerou um arquivo de áudio válido ({size_bytes} bytes). "
+            "Verifique se a permissão de Microfone foi concedida ao aplicativo Termux:API nas Configurações do Android."
+        )
+    return True, "ok"
+
+
 def record_audio(duration: int = 10) -> Dict[str, Any]:
     """Grava um áudio/nota de voz usando o microfone via termux-microphone-record (1 a 120s)."""
     try:
@@ -433,47 +480,9 @@ def record_audio(duration: int = 10) -> Dict[str, Any]:
             "data": {"filename": filename, "duration": dur, "simulated": True},
         }
 
-    try:
-        _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
-    except Exception:
-        pass
-
-    try:
-        res = _run_termux_cmd(
-            ["termux-microphone-record", "-f", str(out_path), "-l", str(dur), "-e", "aac"],
-            timeout=dur + 8,
-        )
-        time.sleep(0.4)
-        if res.returncode != 0 and not out_path.is_file():
-            return {
-                "status": "error",
-                "message": (
-                    f"Falha ao gravar áudio ({res.stderr.strip() or 'erro desconhecido'}). "
-                    "Verifique se a permissão de Microfone foi concedida ao aplicativo Termux:API nas Configurações do Android."
-                ),
-            }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": (
-                f"Erro ao gravar áudio: {str(e)}. "
-                "Conceda permissão de Microfone ao Termux:API nas Configurações do Android."
-            ),
-        }
-    finally:
-        try:
-            _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
-        except Exception:
-            pass
-
-    if not out_path.is_file() or out_path.stat().st_size <= 0:
-        return {
-            "status": "error",
-            "message": (
-                "A gravação de áudio não gerou um arquivo válido (0 bytes). "
-                "Conceda a permissão de Microfone ao aplicativo Termux:API nas Configurações do Android."
-            ),
-        }
+    ok_rec, rec_msg = _record_microphone_file(out_path, dur)
+    if not ok_rec:
+        return {"status": "error", "message": rec_msg}
 
     return {
         "status": "ok",
@@ -610,40 +619,9 @@ def save_voice_note(title: str = "", duration: int = 15, text_only: bool = False
     if SIMULATE_HARDWARE:
         out_path.write_bytes(b"\x00\x00\x00\x20ftypM4A \x00\x00\x00\x00M4A mp42isom\x00\x00\x00\x08free")
     else:
-        try:
-            _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
-        except Exception:
-            pass
-        try:
-            res = _run_termux_cmd(
-                ["termux-microphone-record", "-f", str(out_path), "-l", str(dur), "-e", "aac"],
-                timeout=dur + 8,
-            )
-            time.sleep(0.4)
-            if res.returncode != 0 and not out_path.is_file():
-                return {
-                    "status": "error",
-                    "message": (
-                        f"Falha ao gravar nota de voz ({res.stderr.strip() or 'erro desconhecido'}). "
-                        "Conceda permissão de Microfone ao Termux:API nas Configurações do Android."
-                    ),
-                }
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": f"Erro ao gravar nota de voz: {str(e)}",
-            }
-        finally:
-            try:
-                _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
-            except Exception:
-                pass
-
-        if not out_path.is_file() or out_path.stat().st_size <= 0:
-            return {
-                "status": "error",
-                "message": "A gravação da nota de voz não gerou um arquivo válido (0 bytes).",
-            }
+        ok_rec, rec_msg = _record_microphone_file(out_path, dur)
+        if not ok_rec:
+            return {"status": "error", "message": rec_msg}
 
     with _FILE_LOCK:
         conn = _get_memory_db()

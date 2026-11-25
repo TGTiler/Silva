@@ -61,14 +61,53 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    _AUDIO_MIME_TYPES = {
+        ".m4a": "audio/mp4",
+        ".mp4": "audio/mp4",
+        ".webm": "audio/webm",
+        ".ogg": "audio/ogg",
+        ".wav": "audio/wav",
+    }
+
     def _send_file(self, file_path: Path, mime_type: str):
         if not file_path.is_file():
             self.send_error(HTTPStatus.NOT_FOUND, "Arquivo não encontrado")
             return
+        ext = file_path.suffix.lower()
+        effective_mime = self._AUDIO_MIME_TYPES.get(ext, mime_type or "application/octet-stream")
         file_bytes = file_path.read_bytes()
+        total_len = len(file_bytes)
+
+        range_header = (self.headers.get("Range") or "").strip() if getattr(self, "headers", None) else ""
+        if range_header.startswith("bytes=") and total_len > 0:
+            spec = range_header[len("bytes="):].split(",")[0].strip()
+            parts = spec.split("-", 1)
+            try:
+                start = int(parts[0]) if parts[0] else 0
+                end = int(parts[1]) if len(parts) > 1 and parts[1] else total_len - 1
+            except ValueError:
+                start, end = 0, total_len - 1
+            if start < 0 or start >= total_len or end < start:
+                self.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                self.send_header("Content-Range", f"bytes */{total_len}")
+                self.end_headers()
+                return
+            end = min(end, total_len - 1)
+            chunk = file_bytes[start:end + 1]
+            self.send_response(HTTPStatus.PARTIAL_CONTENT)
+            self.send_header("Content-Type", effective_mime)
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Content-Range", f"bytes {start}-{end}/{total_len}")
+            self.send_header("Content-Length", str(len(chunk)))
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(chunk)
+            return
+
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", mime_type)
-        self.send_header("Content-Length", str(len(file_bytes)))
+        self.send_header("Content-Type", effective_mime)
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(total_len))
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(file_bytes)

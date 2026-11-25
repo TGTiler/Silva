@@ -251,6 +251,31 @@ class TestWebServer(unittest.TestCase):
                 self.assertEqual(resp_ok.status, 200)
             self.assertEqual(web_server._PIN_FAILURES, {})
 
+    def test_captures_audio_m4a_mime_and_range_headers(self):
+        """Valida Content-Type: audio/mp4 e Accept-Ranges: bytes ao servir /captures/audio_test.m4a."""
+        CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+        audio_file = CAPTURES_DIR / "audio_test.m4a"
+        payload = b"\x00\x00\x00\x20ftypM4A " + b"\xab" * 2048
+        audio_file.write_bytes(payload)
+
+        try:
+            url = f"{self.base_url}/captures/audio_test.m4a?pin={ACCESS_PIN}"
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                self.assertEqual(resp.status, 200)
+                self.assertEqual(resp.headers.get("Content-Type"), "audio/mp4")
+                self.assertEqual(resp.headers.get("Accept-Ranges"), "bytes")
+                self.assertEqual(resp.read(), payload)
+
+            req_range = urllib.request.Request(url, headers={"Range": "bytes=0-15"})
+            with urllib.request.urlopen(req_range, timeout=5) as resp_r:
+                self.assertEqual(resp_r.status, 206)
+                self.assertEqual(resp_r.headers.get("Content-Type"), "audio/mp4")
+                self.assertEqual(resp_r.headers.get("Content-Range"), f"bytes 0-15/{len(payload)}")
+                self.assertEqual(resp_r.read(), payload[:16])
+        finally:
+            if audio_file.exists():
+                audio_file.unlink()
+
 
 if __name__ == "__main__":
     unittest.main()

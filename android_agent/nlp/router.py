@@ -1847,27 +1847,30 @@ def extract_voice_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     # 4. save_voice_note Modo Voz (text_only=False)
     if (
         any(k in norm for k in ("nota de voz", "lembrete de voz", "minha voz"))
-        and any(v in norm for v in ("grava", "gravar", "grave", "lembrar", "dizendo", "segundo"))
+        and any(v in norm for v in ("grava", "gravar", "grave", "lembrar", "dizendo", "segundo", "nota de voz", "lembrete de voz"))
     ):
         dur = 15
         m_sec = re.search(r"(\d+)\s*(?:s|seg|segundo|segundos)\b", norm)
         if m_sec:
             dur = max(1, min(120, int(m_sec.group(1))))
         m_title = re.search(
-            r"(?:para\s+lembrar(?:\s+de)?|lembrar(?:\s+de)?|dizendo|sobre|titulo|t[ií]tulo)\s+(.+)$",
+            r"(?:\s*:\s*|\b(?:para\s+lembrar(?:\s+de)?|lembrar(?:\s+de)?|dizendo|sobre|para|titulo|t[ií]tulo)\s+)(.+)$",
             clean_raw,
             re.IGNORECASE,
         )
-        title_val = m_title.group(1).strip() if m_title else ""
-        if title_val or m_sec or "lembrete de voz" in norm or "minha voz" in norm:
-            return 0.97, _format_call("save_voice_note", title=title_val, duration=dur, text_only=False)
+        title_val = m_title.group(1).strip().lstrip(":").strip() if m_title else ""
+        if title_val and re.fullmatch(r"\d+\s*(?:s|seg|segundo|segundos)", _normalize_ascii_lower(title_val) if "_normalize_ascii_lower" in globals() else title_val.lower()):
+            title_val = ""
+        return 0.97, _format_call("save_voice_note", title=title_val, duration=dur, text_only=False)
 
     return 0.0, None
 
 
 def extract_record_audio(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Gravação de áudio / nota de voz."""
-    if any(t in norm for t in ("gravar audio", "grava audio", "grava um audio", "gravar um audio", "nota de voz", "gravar som", "grava som", "gravar voz", "grava voz")):
+    """Gravação genérica de áudio/som (sem menção a nota/lembrete de voz)."""
+    if any(k in norm for k in ("nota de voz", "lembrete de voz")):
+        return 0.0, None
+    if any(t in norm for t in ("gravar audio", "grava audio", "grava um audio", "gravar um audio", "grave um audio", "gravar som", "grava som", "grave o som", "grava o som", "gravar voz", "grava voz")):
         dur = 10
         m_min = re.search(r"(\d+)\s*(?:min|minuto|minutos)\b", norm)
         m_sec = re.search(r"(\d+)\s*(?:s|seg|segundo|segundos)\b", norm)

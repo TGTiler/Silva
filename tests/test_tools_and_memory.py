@@ -417,7 +417,7 @@ class TestToolsAndMemory(unittest.TestCase):
                 rec_cmds.append(cmd)
                 if "-f" in cmd:
                     f_path = Path(cmd[cmd.index("-f") + 1])
-                    f_path.write_bytes(b"FAKE_AAC_AUDIO_BYTES")
+                    f_path.write_bytes(b"FAKE_AAC_AUDIO_BYTES" * 100)
                 return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
 
             with patch("android_agent.tools.media.CAPTURES_DIR", cap_dir), \
@@ -1135,6 +1135,49 @@ class TestToolsAndMemory(unittest.TestCase):
             self.assertNotIn("wifi", flat)
             self.assertNotIn("airplane", flat)
             self.assertNotIn("svc data", flat)
+
+    def test_record_microphone_file_waits_real_duration_and_rejects_empty(self):
+        """Valida que _record_microphone_file aguarda duration+0.6s antes de -q e rejeita arquivos <= 1024 bytes."""
+        import subprocess
+        from android_agent.tools import media
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_valid = Path(tmpdir) / "audio_ok.m4a"
+            out_empty = Path(tmpdir) / "audio_empty.m4a"
+            events = []
+
+            def fake_cmd(args, timeout=5):
+                events.append(("cmd", list(args)))
+                if "-f" in args:
+                    target = Path(args[args.index("-f") + 1])
+                    if target == out_valid:
+                        target.write_bytes(b"ftypM4A " + b"\x01" * 2048)
+                    else:
+                        target.write_bytes(b"ftypM4A ")
+                return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
+
+            def fake_sleep(sec):
+                events.append(("sleep", round(sec, 2)))
+
+            with patch.object(media, "_run_termux_cmd", side_effect=fake_cmd), \
+                 patch.object(media.time, "sleep", side_effect=fake_sleep):
+                ok_v, msg_v = media._record_microphone_file(out_valid, 5)
+                self.assertTrue(ok_v, msg_v)
+                self.assertEqual(
+                    events,
+                    [
+                        ("cmd", ["termux-microphone-record", "-q"]),
+                        ("sleep", 0.3),
+                        ("cmd", ["termux-microphone-record", "-f", str(out_valid), "-l", "5", "-e", "aac"]),
+                        ("sleep", 5.6),
+                        ("cmd", ["termux-microphone-record", "-q"]),
+                    ],
+                )
+
+                events.clear()
+                ok_e, msg_e = media._record_microphone_file(out_empty, 3)
+                self.assertFalse(ok_e)
+                self.assertIn("Termux:API", msg_e)
 
 
 if __name__ == "__main__":

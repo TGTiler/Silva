@@ -269,6 +269,19 @@ class TestFormattingResilience(unittest.TestCase):
             match_intent_fallback("ligue para o João"),
             "<call>make_call(target='João')</call>"
         )
+        # Roteamento de nota de voz com título (:) vs gravação genérica de áudio
+        self.assertEqual(
+            match_intent_fallback("Grave uma nota de voz: teste"),
+            "<call>save_voice_note(title='teste', duration=15, text_only=False)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("Grava nota de voz sobre comprar café"),
+            "<call>save_voice_note(title='comprar café', duration=15, text_only=False)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("gravar áudio de 10 segundos"),
+            "<call>record_audio(duration=10)</call>"
+        )
 
 
 if __name__ == "__main__":

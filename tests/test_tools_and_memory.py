@@ -696,6 +696,8 @@ class TestToolsAndMemory(unittest.TestCase):
             return subprocess.CompletedProcess(args=cmd, returncode=1, stdout="", stderr="error")
 
         def fake_exec_intent(cmd_str, timeout=6):
+            if "action.CALL" in str(cmd_str):
+                return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="Error: SecurityException")
             return subprocess.CompletedProcess(args=[cmd_str], returncode=0, stdout="Intent started", stderr="")
 
         with patch.object(tools_comms, "SIMULATE_HARDWARE", False), \
@@ -1269,6 +1271,102 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertEqual(s2["status"], "ok")
         self.assertIn("Inteligência artificial na computação.", s2["message"])
         self.assertNotIn("<span", s2["message"])
+
+    def test_android12_resilient_comms_connectivity_email_and_calendar_sync(self):
+        """
+        Valida blindagem Android 12+:
+        1. send_sms -> fallback smsto: e make_call -> fallback ACTION_CALL;
+        2. SecurityException em dados móveis / modo avião / hotspot abrindo android.settings.* sem falso positivo;
+        3. send_email (mailto: e SMTP_SSL) e tentativa de inserção nativa em schedule_event.
+        """
+        import subprocess
+        from unittest.mock import MagicMock
+        from android_agent.tools import comms, hardware, memory_schedule as ms
+
+        # 1. send_sms fallback smsto: & make_call fallback ACTION_CALL
+        intent_calls = []
+
+        def fake_intent(cmd, timeout=6):
+            intent_calls.append(cmd)
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="Starting: Intent", stderr="")
+
+        with patch.object(comms, "SIMULATE_HARDWARE", False), \
+             patch.object(comms, "ensure_adb_connected", return_value=None), \
+             patch.object(comms, "_run_termux_cmd", return_value=subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="Permission denied")), \
+             patch.object(comms, "_exec_android_intent", side_effect=fake_intent), \
+             patch.object(comms, "resolve_contact_detailed", return_value={"number": "11999998888", "name": "João"}):
+            sms_res = comms.send_sms("João", "Chegando")
+            self.assertEqual(sms_res["status"], "ok")
+            self.assertEqual(sms_res["data"]["method"], "intent_sendto")
+            self.assertTrue(any("smsto:11999998888" in str(c) for c in intent_calls))
+
+            call_res = comms.make_call(target="João")
+            self.assertEqual(call_res["status"], "ok")
+            self.assertEqual(call_res["data"]["method"], "intent_call")
+            self.assertTrue(any("android.intent.action.CALL" in str(c) for c in intent_calls))
+
+        # 2. SecurityException em Dados Móveis, Modo Avião e Hotspot abre android.settings.*
+        hw_cmds = []
+
+        def fake_hw_adb(args, timeout=5.0):
+            hw_cmds.append(args)
+            if args[:2] in (["svc", "data"], ["cmd", "connectivity"], ["settings", "put"], ["cmd", "wifi"]):
+                return False, "java.lang.SecurityException: Permission denial"
+            return True, ""
+
+        with patch.object(hardware, "SIMULATE_HARDWARE", False), \
+             patch.object(hardware, "ensure_adb_connected", return_value="192.168.0.106:33169"), \
+             patch.object(hardware, "run_adb_shell", side_effect=fake_hw_adb):
+            r_data = hardware.set_mobile_data_state(True)
+            r_air = hardware.set_airplane_mode(True)
+            r_hot = hardware.set_hotspot_state(True)
+
+        self.assertTrue(r_data["data"]["fallback"])
+        self.assertTrue(r_air["data"]["fallback"])
+        self.assertTrue(r_hot["data"]["fallback"])
+        self.assertIn(["am", "start", "-a", "android.settings.DATA_ROAMING_SETTINGS"], hw_cmds)
+        self.assertIn(["am", "start", "-a", "android.settings.AIRPLANE_MODE_SETTINGS"], hw_cmds)
+        self.assertIn(["am", "start", "-a", "android.settings.TETHER_SETTINGS"], hw_cmds)
+
+        # 3. send_email (mailto: e SMTP_SSL) + schedule_event inserindo em content://com.android.calendar/events
+        mail_intents = []
+        with patch.object(comms, "SIMULATE_HARDWARE", False), \
+             patch.object(comms, "ensure_adb_connected", return_value=None), \
+             patch.object(comms, "_exec_android_intent", side_effect=lambda c: mail_intents.append(c)), \
+             patch.dict("os.environ", {"SILVA_SMTP_HOST": "", "SILVA_SMTP_USER": "", "SILVA_SMTP_PASS": ""}):
+            em_res = comms.send_email("teste@exemplo.com", "Reunião", "Confirmado amanhã")
+        self.assertEqual(em_res["status"], "ok")
+        self.assertEqual(em_res["data"]["method"], "mailto_intent")
+        self.assertTrue(any("mailto:teste%40exemplo.com" in str(c) for c in mail_intents))
+
+        mock_smtp = MagicMock()
+        with patch.object(comms, "SIMULATE_HARDWARE", False), \
+             patch.dict("os.environ", {"SILVA_SMTP_HOST": "smtp.test.com", "SILVA_SMTP_USER": "u@test.com", "SILVA_SMTP_PASS": "secret"}), \
+             patch("android_agent.tools.comms.smtplib.SMTP_SSL", return_value=mock_smtp):
+            em_smtp = comms.send_email("dest@test.com", "Assunto", "Corpo")
+        self.assertEqual(em_smtp["status"], "ok")
+        self.assertEqual(em_smtp["data"]["method"], "smtp")
+        mock_smtp.__enter__.return_value.send_message.assert_called_once()
+
+        cal_adb_calls = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            import sqlite3
+            db_path = Path(tmpdir) / "memory.db"
+
+            def _cal_db():
+                conn = sqlite3.connect(str(db_path), timeout=5.0)
+                conn.row_factory = sqlite3.Row
+                conn.execute("CREATE TABLE IF NOT EXISTS scheduled_events (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, event_type TEXT, trigger_at TEXT, recurrence TEXT, status TEXT, spoken_alert INTEGER)")
+                return conn
+
+            with patch.object(ms, "SIMULATE_HARDWARE", False), \
+                 patch.object(ms, "_get_memory_db", side_effect=_cal_db), \
+                 patch("android_agent.tools.adb_bridge.ensure_adb_connected", return_value="192.168.0.106:33169"), \
+                 patch("android_agent.tools.adb_bridge.run_adb_shell", side_effect=lambda a, timeout=4.0: (cal_adb_calls.append(a) or True, "")), \
+                 patch.object(ms, "_run_termux_cmd", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")):
+                ev_res = ms.schedule_event("Dentista", date="amanha", time="10:00")
+            self.assertEqual(ev_res["status"], "ok")
+            self.assertTrue(any("content://com.android.calendar/events" in " ".join(c) for c in cal_adb_calls))
 
 
 if __name__ == "__main__":

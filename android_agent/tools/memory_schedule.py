@@ -343,7 +343,26 @@ def schedule_event(title: str, date: str = "", time: str = "", recurrence: str =
             }
         }
 
-    # 2. Intent direta para o Calendário Samsung (evitando pop-up do Outlook)
+    # 2. Sincronização opcional silenciosa com o provedor nativo content://com.android.calendar/events
+    try:
+        from .adb_bridge import ensure_adb_connected, run_adb_shell
+        if ensure_adb_connected():
+            run_adb_shell(
+                [
+                    "content", "insert",
+                    "--uri", "content://com.android.calendar/events",
+                    "--bind", "calendar_id:i:1",
+                    "--bind", f"title:s:{title_clean}",
+                    "--bind", f"dtstart:l:{begin_ms}",
+                    "--bind", f"dtend:l:{end_ms}",
+                    "--bind", "eventTimezone:s:America/Sao_Paulo",
+                ],
+                timeout=4.0,
+            )
+    except Exception:
+        pass
+
+    # 3. Intent direta para o Calendário Samsung (evitando pop-up do Outlook)
     cmd = [
         "am", "start",
         "-a", "android.intent.action.INSERT",

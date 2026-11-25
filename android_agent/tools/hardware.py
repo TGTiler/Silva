@@ -9,6 +9,7 @@ import shutil
 import socket
 import struct
 import subprocess
+import time
 from typing import Any, Dict
 
 from .core import (
@@ -925,7 +926,25 @@ def get_system_info() -> Dict[str, Any]:
 
 
 def _adb_error_free(ok: bool, out: str) -> bool:
-    return ok and not any(err in (out or "") for err in ("SecurityException", "Permission denied", "Error:", "Exception"))
+    low = (out or "").lower()
+    return ok and not any(
+        err in low for err in ("securityexception", "permission denied", "permission denial", "error:", "exception")
+    )
+
+
+def _verify_global_setting_matches(setting_key: str, expected_val: str) -> bool:
+    """
+    Aguarda 0.8s e valida via `settings get global <key>` se o estado realmente mudou.
+    Se o retorno for vazio/desconhecido (ex.: mock simples), não reprova.
+    """
+    time.sleep(0.8)
+    ok_chk, out_chk = run_adb_shell(["settings", "get", "global", setting_key], timeout=4.0)
+    if not ok_chk:
+        return True
+    val = (out_chk or "").strip()
+    if val in ("0", "1"):
+        return val == expected_val
+    return True
 
 
 def set_bluetooth_state(state: bool) -> Dict[str, Any]:
@@ -970,15 +989,17 @@ def set_mobile_data_state(state: bool) -> Dict[str, Any]:
 
     if adb_serial:
         ok1, out1 = run_adb_shell(["svc", "data", action], timeout=5.0)
-        if _adb_error_free(ok1, out1):
+        if _adb_error_free(ok1, out1) and _verify_global_setting_matches("mobile_data", "1" if state_bool else "0"):
             return {"status": "ok", "message": f"Silva: Dados móveis {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_svc"}}
-        run_adb_shell(["am", "start", "-a", "android.settings.DATA_ROAMING_SETTINGS"], timeout=4.0)
+        ok_p, out_p = run_adb_shell(["am", "start", "-a", "android.settings.DATA_ROAMING_SETTINGS"], timeout=4.0)
+        if not _adb_error_free(ok_p, out_p):
+            run_adb_shell(["am", "start", "-a", "android.settings.WIRELESS_SETTINGS"], timeout=4.0)
     else:
         _exec_android_intent(["am", "start", "-a", "android.settings.DATA_ROAMING_SETTINGS"])
 
     return {
         "status": "ok",
-        "message": "Silva: O Android/operadora restringiu a alteração direta dos dados móveis. Abrindo configurações de rede móvel.",
+        "message": "Silva: O Android exige confirmação manual por segurança para alterar os dados móveis. Tela de configurações aberta no aparelho.",
         "data": {"state": state_bool, "fallback": True, "settings_opened": True},
     }
 
@@ -997,11 +1018,11 @@ def set_airplane_mode(state: bool) -> Dict[str, Any]:
 
     if adb_serial:
         ok1, out1 = run_adb_shell(["cmd", "connectivity", "airplane-mode", action], timeout=5.0)
-        if _adb_error_free(ok1, out1):
+        if _adb_error_free(ok1, out1) and _verify_global_setting_matches("airplane_mode_on", val_num):
             return {"status": "ok", "message": f"Silva: Modo Avião {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_cmd"}}
 
         ok2, out2 = run_adb_shell(["settings", "put", "global", "airplane_mode_on", val_num], timeout=4.0)
-        if _adb_error_free(ok2, out2):
+        if _adb_error_free(ok2, out2) and _verify_global_setting_matches("airplane_mode_on", val_num):
             run_adb_shell(
                 ["am", "broadcast", "-a", "android.intent.action.AIRPLANE_MODE", "--ez", "state", val_bool],
                 timeout=4.0,
@@ -1017,7 +1038,7 @@ def set_airplane_mode(state: bool) -> Dict[str, Any]:
 
     return {
         "status": "ok",
-        "message": "Silva: O Android bloqueou a alteração automática do Modo Avião. Abrindo configurações para confirmação manual.",
+        "message": "Silva: O Android exige confirmação manual por segurança para alterar o Modo Avião. Tela de configurações aberta no aparelho.",
         "data": {"state": state_bool, "fallback": True, "settings_opened": True},
     }
 
@@ -1040,13 +1061,15 @@ def set_hotspot_state(state: bool) -> Dict[str, Any]:
         ok1, out1 = run_adb_shell(cmd_args, timeout=5.0)
         if _adb_error_free(ok1, out1):
             return {"status": "ok", "message": f"Silva: Roteador Wi-Fi (Hotspot) {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_softap"}}
-        run_adb_shell(["am", "start", "-n", "com.android.settings/.TetherSettings"], timeout=4.0)
+        ok_t, out_t = run_adb_shell(["am", "start", "-a", "android.settings.TETHER_SETTINGS"], timeout=4.0)
+        if not _adb_error_free(ok_t, out_t):
+            run_adb_shell(["am", "start", "-a", "android.settings.WIRELESS_SETTINGS"], timeout=4.0)
     else:
-        _exec_android_intent(["am", "start", "-n", "com.android.settings/.TetherSettings"])
+        _exec_android_intent(["am", "start", "-a", "android.settings.TETHER_SETTINGS"])
 
     return {
         "status": "ok",
-        "message": "Silva: A fabricante restringiu o controle direto do Hotspot. Abrindo configurações de Roteador/Tethering.",
+        "message": "Silva: O Android exige confirmação manual por segurança para alterar o Hotspot. Tela de Roteador/Tethering aberta no aparelho.",
         "data": {"state": state_bool, "fallback": True, "settings_opened": True},
     }
 

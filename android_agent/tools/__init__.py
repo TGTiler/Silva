@@ -54,7 +54,9 @@ from .media import (
 
 from .comms import (
     get_last_sms,
+    read_sms,
     send_sms,
+    send_email,
     make_call,
     save_contact,
     get_contact,
@@ -233,7 +235,9 @@ __all__ = [
     "play_media",
     "media_control",
     "get_last_sms",
+    "read_sms",
     "send_sms",
+    "send_email",
     "make_call",
     "save_contact",
     "get_contact",

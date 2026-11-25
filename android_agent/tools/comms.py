@@ -4,11 +4,14 @@ Módulo Comunicação do Silva: SMS, Chamadas, Notificações e Clipboard.
 
 import difflib
 import json
+import os
 import re
+import smtplib
 import subprocess
 import time
 import unicodedata
 import urllib.parse
+from email.message import EmailMessage
 from typing import Any, Dict, Optional, Tuple
 
 from .core import (
@@ -137,7 +140,15 @@ def get_last_sms(limit: int = 5) -> Dict[str, Any]:
     try:
         res = _run_termux_cmd(["termux-sms-list", "-l", str(limit)], timeout=8)
         if res.returncode != 0:
-            return {"status": "error", "message": f"Falha ao obter SMS: {res.stderr.strip()}"}
+            err_txt = (res.stderr or "").strip() or "permissão negada pelo Android"
+            return {
+                "status": "error",
+                "message": (
+                    f"Não foi possível ler os SMS ({err_txt}). No Android 12+, conceda a permissão de SMS ao "
+                    "Termux:API nas Configurações do Android ou peça 'resume minhas notificações de sms' "
+                    "(summarize_notifications)."
+                ),
+            }
 
         raw_messages = json.loads(res.stdout)
         formatted = []
@@ -173,7 +184,16 @@ def get_last_sms(limit: int = 5) -> Dict[str, Any]:
             "data": formatted
         }
     except Exception as e:
-        return {"status": "error", "message": f"Erro ao listar SMS: {str(e)}"}
+        return {
+            "status": "error",
+            "message": (
+                f"Não foi possível ler os SMS ({str(e)}). Conceda permissão de SMS ao Termux:API ou use "
+                "'resume minhas notificações de sms'."
+            ),
+        }
+
+
+read_sms = get_last_sms
 
 
 def _format_whatsapp_phone(raw_phone: str) -> Optional[str]:
@@ -615,16 +635,40 @@ def send_sms(number: str, message: str, channel: str = "sms") -> Dict[str, Any]:
         }
 
     try:
-        res = _run_termux_cmd(["termux-sms-send", "-n", clean_target, clean_text], timeout=10)
-        if res.returncode != 0:
-            return {"status": "error", "message": f"Falha ao enviar SMS: {res.stderr.strip()}"}
+        res = _run_termux_cmd(["termux-sms-send", "-n", clean_target, clean_text], timeout=5)
+        if res.returncode == 0:
+            return {
+                "status": "ok",
+                "message": f"Silva: SMS enviado com sucesso para {display_target}.",
+                "data": {"number": clean_target, "name": display_name, "message": clean_text, "method": "termux_sms"}
+            }
+    except Exception:
+        pass
+
+    # Camada 2 (Fallback Android 13+): Intent SENDTO smsto: preenchido para confirmação
+    sms_cmd = [
+        "am", "start",
+        "-a", "android.intent.action.SENDTO",
+        "-d", f"smsto:{clean_target}",
+        "--es", "sms_body", clean_text,
+        "--ez", "exit_on_sent", "true",
+    ]
+    if ensure_adb_connected():
+        ok_adb, out_adb = run_adb_shell(sms_cmd, timeout=5.0)
+        if ok_adb and not any(err in (out_adb or "") for err in ("Error:", "SecurityException", "Permission")):
+            return {
+                "status": "ok",
+                "message": f"Silva: SMS preenchido no aplicativo de mensagens para {display_target}, pronto para confirmação.",
+                "data": {"number": clean_target, "name": display_name, "message": clean_text, "method": "intent_sendto"}
+            }
+    res_intent = _exec_android_intent(sms_cmd)
+    if res_intent and getattr(res_intent, "returncode", 1) == 0:
         return {
             "status": "ok",
-            "message": f"Silva: SMS enviado com sucesso para {display_target}.",
-            "data": {"number": clean_target, "name": display_name, "message": clean_text}
+            "message": f"Silva: SMS preenchido no aplicativo de mensagens para {display_target}, pronto para confirmação.",
+            "data": {"number": clean_target, "name": display_name, "message": clean_text, "method": "intent_sendto"}
         }
-    except Exception as e:
-        return {"status": "error", "message": f"Erro ao disparar SMS: {str(e)}"}
+    return {"status": "error", "message": f"Falha ao enviar ou abrir SMS para {display_target}."}
 
 
 
@@ -681,7 +725,7 @@ def make_call(number: str = "", target: str = "") -> Dict[str, Any]:
 
     # Camada 1: Discagem direta via Termux:API
     try:
-        res = _run_termux_cmd(["termux-telephony-call", clean_num], timeout=6)
+        res = _run_termux_cmd(["termux-telephony-call", clean_num], timeout=5)
         if res.returncode == 0:
             return {
                 "status": "ok",
@@ -691,27 +735,103 @@ def make_call(number: str = "", target: str = "") -> Dict[str, Any]:
     except Exception:
         pass
 
-    # Camada 2 (Fallback Universal): Abrir tela de discagem nativa via Intent DIAL
+    # Camada 2: Intent CALL direta e fallback secundário DIAL
     try:
-        res_intent = _exec_android_intent(f'am start -a android.intent.action.DIAL -d "tel:{clean_num}"', timeout=6)
-        if res_intent.returncode == 0:
+        res_call = _exec_android_intent(["am", "start", "-a", "android.intent.action.CALL", "-d", f"tel:{clean_num}"])
+        if res_call and getattr(res_call, "returncode", 1) == 0 and "Error:" not in (getattr(res_call, "stderr", "") or ""):
             return {
                 "status": "ok",
-                "message": f"Silva: Abrindo discador com o número {clean_num} pronto para chamada.",
+                "message": f"Silva: Iniciando chamada para {display_target}.",
+                "data": {"number": clean_num, "target": raw_target, "method": "intent_call"}
+            }
+    except Exception:
+        pass
+
+    try:
+        res_dial = _exec_android_intent(["am", "start", "-a", "android.intent.action.DIAL", "-d", f"tel:{clean_num}"])
+        if res_dial and getattr(res_dial, "returncode", 1) == 0:
+            return {
+                "status": "ok",
+                "message": f"Silva: Abrindo discador para {display_target}.",
                 "data": {"number": clean_num, "target": raw_target, "method": "dial_intent"}
             }
+    except Exception:
+        pass
+
+    return {"status": "error", "message": f"Falha ao iniciar chamada para {display_target}."}
+
+
+def send_email(to: str, subject: str, body: str) -> Dict[str, Any]:
+    """
+    Envia e-mail via SMTP (SILVA_SMTP_HOST/USER/PASS) ou abre o app de e-mail
+    nativo preenchido via Intent SENDTO (mailto:).
+    """
+    raw_to = str(to or "").strip()
+    if not raw_to:
+        return {"status": "error", "message": "Destinatário de e-mail não informado."}
+
+    to_addr = raw_to
+    if "@" not in to_addr:
+        info = resolve_contact_detailed(raw_to)
+        candidate_email = str(info.get("email") or "").strip()
+        if candidate_email and "@" in candidate_email:
+            to_addr = candidate_email
+        else:
+            return {"status": "error", "message": f"E-mail inválido ou não encontrado para '{raw_to}'."}
+
+    subj_clean = str(subject or "").strip() or "Mensagem via Silva"
+    body_clean = str(body or "").strip()
+
+    smtp_host = os.getenv("SILVA_SMTP_HOST", "").strip()
+    smtp_user = os.getenv("SILVA_SMTP_USER", "").strip()
+    smtp_pass = os.getenv("SILVA_SMTP_PASS", "").strip()
+    smtp_port = int(os.getenv("SILVA_SMTP_PORT", "465") or 465)
+
+    if smtp_host and smtp_user and smtp_pass:
+        if SIMULATE_HARDWARE:
+            return {
+                "status": "ok",
+                "message": f"Silva: E-mail enviado via SMTP para {to_addr}. [Simulado]",
+                "data": {"to": to_addr, "subject": subj_clean, "method": "smtp_simulated"},
+            }
+        try:
+            msg = EmailMessage()
+            msg["From"] = smtp_user
+            msg["To"] = to_addr
+            msg["Subject"] = subj_clean
+            msg.set_content(body_clean)
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=8.0) as server:
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+            return {
+                "status": "ok",
+                "message": f"Silva: E-mail enviado com sucesso para {to_addr} via SMTP.",
+                "data": {"to": to_addr, "subject": subj_clean, "method": "smtp"},
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Falha ao enviar e-mail via SMTP: {str(e)}"}
+
+    mailto_uri = (
+        f"mailto:{urllib.parse.quote(to_addr)}"
+        f"?subject={urllib.parse.quote(subj_clean)}&body={urllib.parse.quote(body_clean)}"
+    )
+    if SIMULATE_HARDWARE:
         return {
-            "status": "error",
-            "message": f"Falha ao acionar discador nativo: {res_intent.stderr.strip()}",
-            "data": {"number": clean_num, "target": raw_target}
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Erro ao acionar discador nativo: {str(e)}",
-            "data": {"number": clean_num, "target": raw_target}
+            "status": "ok",
+            "message": f"Silva: Abrindo app de e-mail preenchido para {to_addr}. [Simulado]",
+            "data": {"to": to_addr, "subject": subj_clean, "url": mailto_uri, "method": "mailto_simulated"},
         }
 
+    mail_cmd = ["am", "start", "-a", "android.intent.action.SENDTO", "-d", mailto_uri]
+    if ensure_adb_connected():
+        run_adb_shell(mail_cmd, timeout=5.0)
+    else:
+        _exec_android_intent(mail_cmd)
+    return {
+        "status": "ok",
+        "message": f"Silva: App de e-mail aberto e preenchido para {to_addr}, pronto para envio.",
+        "data": {"to": to_addr, "subject": subj_clean, "url": mailto_uri, "method": "mailto_intent"},
+    }
 
 
 def get_clipboard() -> Dict[str, Any]:

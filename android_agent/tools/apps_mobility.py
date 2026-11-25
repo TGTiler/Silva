@@ -12,7 +12,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from .core import (
     APP_PACKAGES,
@@ -25,6 +25,7 @@ from .adb_bridge import ensure_adb_connected, is_screen_unlocked, run_adb_shell
 from .ui_automator import _UI_LOCK, dump_ui_nodes, get_screen_dimensions, press_key, tap_coords, tap_element, type_text_unicode
 from .comms import set_clipboard
 from .memory_schedule import _load_memory, _normalize_text, recall_note
+from .weather_web import set_location_state
 
 JOKES_PTBR = [
     "Por que o computador foi ao médico? Porque ele estava com um vírus!",
@@ -469,15 +470,136 @@ def _launch_99_package(target_tab: str) -> Optional[str]:
     return None
 
 
+def _dismiss_99_location_accuracy_dialog(nodes: list) -> Optional[list]:
+    """
+    Caso A: Diálogo do sistema / Google Play Services ('Precisão de Local' / 'Localização do dispositivo').
+    Prioriza o botão positivo 'Ativar' (à direita, maior cx), evitando 'Agora não'.
+    """
+    has_dialog = any(
+        any(h in _node_label(n) for h in ("precisao de local", "localizacao do dispositivo"))
+        for n in nodes or []
+    )
+    if not has_dialog:
+        return None
+
+    ativar_nodes = []
+    for n in nodes or []:
+        t_norm = _normalize_text(str(n.get("text") or ""))
+        d_norm = _normalize_text(str(n.get("content_desc") or ""))
+        if t_norm == "ativar" or d_norm == "ativar":
+            ativar_nodes.append(n)
+
+    if not ativar_nodes:
+        return None
+
+    ativar_nodes.sort(key=lambda item: int(item.get("cx") or 0), reverse=True)
+    target = ativar_nodes[0]
+    tap_coords(int(target["cx"]), int(target["cy"]))
+    time.sleep(1.0)
+    return dump_ui_nodes()
+
+
+def _handle_99_location_blocker(nodes: list) -> Tuple[Optional[list], bool]:
+    """
+    Caso C: Tela bloqueadora 'Habilitar Serviços de Localização' na aba Corrida.
+    1. Tenta ativar o GPS silenciosamente via ADB (set_location_state(True)).
+    2. Se 'Inserir localização manualmente' estiver visível, toca nele para avançar direto à tela de endereço.
+    3. Caso contrário, se 'Ativar nas Configurações' estiver visível, toca, aguarda e envia KEYCODE_BACK.
+    Retorna (novos_nodes_ou_None, manual_location_mode).
+    """
+    has_blocker = any("habilitar servicos de localizacao" in _node_label(n) for n in nodes or [])
+    if not has_blocker:
+        return None, False
+
+    try:
+        set_location_state(True)
+    except Exception:
+        pass
+
+    manual_btn = None
+    settings_btn = None
+    for n in nodes or []:
+        label = _node_label(n)
+        if "inserir localizacao manualmente" in label:
+            manual_btn = n
+            break
+        if "ativar nas configuracoes" in label and settings_btn is None:
+            settings_btn = n
+
+    if manual_btn:
+        tap_coords(int(manual_btn["cx"]), int(manual_btn["cy"]))
+        time.sleep(1.0)
+        return dump_ui_nodes(), True
+
+    if settings_btn:
+        tap_coords(int(settings_btn["cx"]), int(settings_btn["cy"]))
+        time.sleep(1.0)
+        try:
+            set_location_state(True)
+        except Exception:
+            pass
+        press_key(4)  # KEYCODE_BACK
+        time.sleep(1.0)
+        return dump_ui_nodes(), False
+
+    return None, False
+
+
+def _stabilize_99_ui(
+    nodes: list,
+    screen_w: int,
+    screen_h: int,
+    target_tab: str,
+) -> Tuple[list, bool]:
+    """
+    Executa até 3 iterações de estabilização de UI (pausa de 1.0s após cada ação):
+    - Caso A: Diálogo 'Precisão de Local' -> botão 'Ativar'
+    - Caso B: Modal de cupons do 99 -> botão 'X' (ou 50%, 81%)
+    - Caso C: Tela 'Habilitar Serviços de Localização' (aba Corrida) -> GPS + 'Inserir localização manualmente'
+    """
+    manual_location_mode = False
+    for _ in range(3):
+        next_nodes = _dismiss_99_location_accuracy_dialog(nodes)
+        if next_nodes is not None:
+            nodes = next_nodes
+            continue
+
+        next_nodes = _dismiss_99_promo(nodes, screen_w, screen_h)
+        if next_nodes is not None:
+            nodes = next_nodes
+            continue
+
+        if target_tab == "ride":
+            blocker_nodes, is_manual = _handle_99_location_blocker(nodes)
+            if blocker_nodes is not None:
+                nodes = blocker_nodes
+                if is_manual:
+                    manual_location_mode = True
+                    break
+                continue
+
+        break
+    return nodes, manual_location_mode
+
+
 def _prepare_99_app(target_tab: str) -> Dict[str, Any]:
     """
     Prepara o super-app 99 para automação (target_tab in ('ride', 'food')):
-    1. Abre o pacote correto e aguarda 2.5s; exige ADB e tela desbloqueada.
-    2. Dispensa o modal de cupons pelo 'X'.
-    3. Alterna para a aba inferior correta (Corrida x≈20% / Food x≈40%, y≈92%).
-    Retorna {"ok", "package", "nodes", "screen_w", "screen_h", "reason"}.
+    1. Para corrida ('ride'), pré-ativa a localização silenciosamente via ADB.
+    2. Abre o pacote correto e aguarda 3.5s (splash promocional inicial de ~3s); exige ADB e tela desbloqueada.
+    3. Executa loop de estabilização de UI (até 3 tentativas): Precisão de Local, cupons e Serviços de Localização.
+    4. Alterna para a aba inferior correta (Corrida x≈20% / Food x≈40%, y≈92%) e reestabiliza se necessário.
+    Retorna {"ok", "package", "nodes", "screen_w", "screen_h", "manual_location_mode", "reason"}.
     """
-    result: Dict[str, Any] = {"ok": False, "package": None, "nodes": [], "screen_w": 1080, "screen_h": 2400, "reason": ""}
+    result: Dict[str, Any] = {
+        "ok": False,
+        "package": None,
+        "nodes": [],
+        "screen_w": 1080,
+        "screen_h": 2400,
+        "manual_location_mode": False,
+        "reason": "",
+    }
     if target_tab not in ("ride", "food"):
         result["reason"] = "invalid_tab"
         return result
@@ -488,13 +610,19 @@ def _prepare_99_app(target_tab: str) -> Dict[str, Any]:
         return result
 
     with _UI_LOCK:
+        if target_tab == "ride":
+            try:
+                set_location_state(True)
+            except Exception:
+                pass
+
         pkg = _launch_99_package(target_tab)
         if not pkg:
             result["reason"] = "package_not_found"
             return result
         result["package"] = pkg
 
-        time.sleep(2.5)
+        time.sleep(3.5)
         unlocked, _ = is_screen_unlocked(serial=adb_ser)
         if not unlocked:
             result["reason"] = "screen_locked"
@@ -502,12 +630,10 @@ def _prepare_99_app(target_tab: str) -> Dict[str, Any]:
 
         nodes = dump_ui_nodes()
         screen_w, screen_h = get_screen_dimensions(nodes)
-        dismissed = _dismiss_99_promo(nodes, screen_w, screen_h)
-        if dismissed is not None:
-            nodes = dismissed
+        nodes, manual_location_mode = _stabilize_99_ui(nodes, screen_w, screen_h, target_tab)
 
         # Alternância de abas só existe no super-app (com.taxis99).
-        if pkg == "com.taxis99":
+        if pkg == "com.taxis99" and not manual_location_mode:
             ride_visible = _has_99_ride_field(nodes)
             tab_node = None
             fallback_xy = None
@@ -525,11 +651,15 @@ def _prepare_99_app(target_tab: str) -> Dict[str, Any]:
                     tap_coords(*fallback_xy)
                 time.sleep(1.2)
                 nodes = dump_ui_nodes()
-                dismissed = _dismiss_99_promo(nodes, screen_w, screen_h)
-                if dismissed is not None:
-                    nodes = dismissed
+                nodes, manual_location_mode = _stabilize_99_ui(nodes, screen_w, screen_h, target_tab)
 
-        result.update({"ok": True, "nodes": nodes, "screen_w": screen_w, "screen_h": screen_h})
+        result.update({
+            "ok": True,
+            "nodes": nodes,
+            "screen_w": screen_w,
+            "screen_h": screen_h,
+            "manual_location_mode": manual_location_mode,
+        })
         return result
 
 
@@ -604,7 +734,7 @@ def _pick_99_destination_suggestion(nodes: list, destination: str, screen_h: int
 
 def _automate_99_ride_via_ui(destination: str) -> Optional[Dict[str, Any]]:
     """
-    Preenche o destino em 'Para onde vamos?' no 99 (aba Corrida).
+    Preenche o destino em 'Para onde vamos?' (ou após 'Inserir localização manualmente') no 99 (aba Corrida).
     Retorna {"package", "suggestion_selected"} em caso de sucesso, ou None.
     """
     with _UI_LOCK:
@@ -613,17 +743,26 @@ def _automate_99_ride_via_ui(destination: str) -> Optional[Dict[str, Any]]:
             return None
         nodes, screen_w, screen_h = prep["nodes"], prep["screen_w"], prep["screen_h"]
 
-        y_min, y_max = int(screen_h * 0.30), int(screen_h * 0.45)
-        field = None
-        for n in nodes:
-            if _99_RIDE_FIELD_HINT in _node_label(n) and y_min <= int(n.get("cy") or 0) <= y_max:
-                field = n
-                break
-        if field:
-            tap_coords(int(field["cx"]), int(field["cy"]))
+        if prep.get("manual_location_mode"):
+            edit_node = next(
+                (n for n in nodes if "edittext" in str(n.get("class_name") or "").lower()),
+                None,
+            )
+            if edit_node:
+                tap_coords(int(edit_node["cx"]), int(edit_node["cy"]))
+                time.sleep(0.3)
         else:
-            tap_coords(int(screen_w * 0.50), int(screen_h * 0.36))
-        time.sleep(1.0)
+            y_min, y_max = int(screen_h * 0.30), int(screen_h * 0.45)
+            field = None
+            for n in nodes:
+                if _99_RIDE_FIELD_HINT in _node_label(n) and y_min <= int(n.get("cy") or 0) <= y_max:
+                    field = n
+                    break
+            if field:
+                tap_coords(int(field["cx"]), int(field["cy"]))
+            else:
+                tap_coords(int(screen_w * 0.50), int(screen_h * 0.36))
+            time.sleep(1.0)
 
         ok_type, _ = type_text_unicode(destination)
         if not ok_type:

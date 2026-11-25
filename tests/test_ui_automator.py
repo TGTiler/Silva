@@ -288,6 +288,7 @@ class TestUiAutomator(unittest.TestCase):
             patch.object(apps_mobility, "_exec_android_intent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="Starting: Intent", stderr="")),
             patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)),
             patch.object(apps_mobility, "dump_ui_nodes", side_effect=dumps),
+            patch.object(apps_mobility, "set_location_state", return_value={"status": "ok"}),
             patch.object(apps_mobility, "set_clipboard"),
             patch("time.sleep"),
         ]
@@ -373,6 +374,58 @@ class TestUiAutomator(unittest.TestCase):
         self.assertEqual(res["data"]["method"], "deep_link")
         mock_dump.assert_not_called()
         mock_tap.assert_not_called()
+
+    def test_99_accepts_location_accuracy_dialog_and_enters_manual_location_screen(self):
+        """
+        Valida:
+        1. Pré-ativação silenciosa set_location_state(True) antes de abrir com.taxis99;
+        2. Aceite do diálogo 'Precisão de Local' tocando em 'Ativar' (e nunca 'Agora não');
+        3. Tela 'Habilitar Serviços de Localização' avançando via 'Inserir localização manualmente'
+           e preenchendo o destino no EditText da tela seguinte.
+        """
+        from contextlib import ExitStack
+        accuracy_dialog = [
+            self._n("Para uma experiência melhor, o dispositivo precisa usar a Precisão de Local", bounds=(80, 900, 1000, 1100)),
+            self._n("Agora não", "", "com.google.android.gms:id/negative_btn", "android.widget.Button", True, (180, 1300, 460, 1400)),
+            self._n("Ativar", "", "com.google.android.gms:id/positive_btn", "android.widget.Button", True, (620, 1300, 900, 1400)),
+        ]
+        location_blocker = [
+            self._n("Habilitar Serviços de Localização", bounds=(100, 700, 980, 820)),
+            self._n("Ativar nas Configurações", "", "com.taxis99:id/btn_settings", "android.widget.Button", True, (120, 1200, 960, 1320)),
+            self._n("Inserir localização manualmente", "", "com.taxis99:id/btn_manual", "android.widget.Button", True, (120, 1360, 960, 1480)),
+        ]
+        manual_address_screen = [
+            self._n("", "Digite seu destino", "com.taxis99:id/dest_input", "android.widget.EditText", True, (120, 260, 1000, 350)),
+        ]
+        suggestions = [
+            self._n("shopping tacaruna", "", "com.taxis99:id/dest_input", "android.widget.EditText", True, (120, 260, 1000, 350)),
+            self._n("Shopping Tacaruna", "", "com.taxis99:id/addr_title", "android.widget.TextView", True, (60, 560, 1020, 640)),
+        ]
+
+        dumps = [accuracy_dialog, location_blocker, manual_address_screen, suggestions]
+        with ExitStack() as stack:
+            for p in self._99_common_patches(dumps):
+                stack.enter_context(p)
+            mock_loc = stack.enter_context(patch.object(apps_mobility, "set_location_state", return_value={"status": "ok"}))
+            stack.enter_context(patch.object(apps_mobility, "_load_memory", return_value={}))
+            stack.enter_context(patch.object(apps_mobility, "recall_note", return_value={"status": "error"}))
+            stack.enter_context(patch.object(apps_mobility, "_geocode_destination", return_value=None))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            mock_type = stack.enter_context(patch.object(apps_mobility, "type_text_unicode", return_value=(True, "ok")))
+            res = apps_mobility.request_ride(destination="shopping tacaruna", app="99")
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["data"]["method"], "ui_automator_destination")
+        self.assertTrue(res["data"]["suggestion_selected"])
+        self.assertGreaterEqual(mock_loc.call_count, 2)
+        mock_loc.assert_called_with(True)
+
+        taps = [c.args for c in mock_tap.call_args_list]
+        # 1º: 'Ativar' (760, 1350) — NUNCA 'Agora não' (320, 1350); 2º: 'Inserir localização manualmente' (540, 1420);
+        # 3º: EditText (560, 305); 4º: Sugestão 'Shopping Tacaruna' (540, 600)
+        self.assertEqual(taps, [(760, 1350), (540, 1420), (560, 305), (540, 600)])
+        self.assertNotIn((320, 1350), taps)
+        mock_type.assert_called_once_with("shopping tacaruna")
 
 
 if __name__ == "__main__":

@@ -248,6 +248,27 @@ class TestFormattingResilience(unittest.TestCase):
             match_intent_fallback("onde eu estou agora?"),
             "<call>get_location()</call>"
         )
+        # Desambiguação de 'ligue' + possessivos/artigos: hardware/GPS vs ligação telefônica
+        self.assertEqual(
+            match_intent_fallback("ligue minha localização"),
+            "<call>set_location_state(state=True)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("ligue a minha localização"),
+            "<call>set_location_state(state=True)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("ligue meu gps"),
+            "<call>set_location_state(state=True)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("ativa minha localização"),
+            "<call>set_location_state(state=True)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("ligue para o João"),
+            "<call>make_call(target='João')</call>"
+        )
 
 
 if __name__ == "__main__":

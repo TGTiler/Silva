@@ -1098,6 +1098,26 @@ def extract_open_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+_HARDWARE_TARGETS = {
+    "gps", "localizacao", "localização", "wifi", "wi-fi", "bluetooth", "bt",
+    "lanterna", "flash", "dados", "dados moveis", "dados móveis", "internet",
+    "4g", "5g", "roteador", "hotspot", "modo aviao", "modo avião", "tela",
+}
+_HARDWARE_TARGET_RE = re.compile(
+    r"(?:^|\b)(?:"
+    + "|".join(
+        re.escape(t)
+        for t in sorted(
+            {normalize_text(x) for x in _HARDWARE_TARGETS}
+            | {"__rede_4g__", "__rede_5g__", "__rede_3g__", "torch", "3g"},
+            key=len,
+            reverse=True,
+        )
+    )
+    + r")(?:\b|$)"
+)
+
+
 def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Chamada telefônica prioritária sobre lanterna/Wi-Fi quando acompanhada de alvo humano ou numérico."""
     # Nunca rotear pedidos de corrida/transporte (Uber, 99, carro, corrida) ou consulta de telefone para make_call
@@ -1140,20 +1160,26 @@ def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         return 0.0, None
 
     target = m_call.group(1).strip()
-    # Remove artigos iniciais no target se sobraram
-    target = re.sub(r"(?i)^(?:o|a|os|as|um|uma)\s+", "", target).strip()
+    # Remove artigos e possessivos iniciais no target se sobraram
+    target = re.sub(r"(?i)^(?:o|a|os|as|um|uma|meu|minha|meus|minhas)\s+", "", target).strip()
     # Remove preposições residuais
     target = re.sub(r"(?i)^(?:para\s+o|para\s+a|para|pro|pra|ao|a)\s+", "", target).strip()
+    # Remove artigos/possessivos após preposição
+    target = re.sub(r"(?i)^(?:o|a|os|as|meu|minha|meus|minhas)\s+", "", target).strip()
     # Remove sufixos de cortesia e pontuação
     target = re.sub(r"(?i)\s+(?:pra mim|pro silva|por favor|pfv|agora|rapido|imediatamente|urgente)$", "", target).strip()
     target = target.strip("'\"` .,;!?")
 
     if not target:
-        return 0.0, None
+        return 0.0, ""
 
     norm_target = normalize_text(target)
-    if norm_target in system_devices or any(w in norm_target for w in ["lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "dados moveis", "modo aviao", "hotspot", "roteador", "uber", "carro", "corrida"]):
-        return 0.0, None
+    if (
+        norm_target in system_devices
+        or _HARDWARE_TARGET_RE.search(norm_target)
+        or any(w in norm_target for w in ["lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "dados moveis", "modo aviao", "hotspot", "roteador", "uber", "carro", "corrida"])
+    ):
+        return 0.0, ""
 
     # Prioridade máxima (0.97) sobre lanterna/Wi-Fi quando acompanhado de alvo humano ou numérico
     return 0.97, _format_call("make_call", target=target)

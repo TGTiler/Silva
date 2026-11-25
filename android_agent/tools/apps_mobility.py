@@ -22,7 +22,7 @@ from .core import (
     load_last_location,
 )
 from .adb_bridge import ensure_adb_connected, run_adb_shell
-from .ui_automator import dump_ui_nodes, press_key, tap_coords, tap_element, type_text_unicode
+from .ui_automator import dump_ui_nodes, get_screen_dimensions, press_key, tap_coords, tap_element, type_text_unicode
 from .comms import set_clipboard
 from .memory_schedule import _load_memory, _normalize_text, recall_note
 
@@ -578,19 +578,68 @@ def _clean_food_query(raw_query: str) -> str:
     return text.strip()
 
 
-def _find_food_search_node(nodes: list, prefer_edit_text: bool = False) -> Optional[Dict[str, Any]]:
-    """Localiza o campo/barra de busca na tela do app de delivery via UI Automator."""
-    search_hints = ("o que vai pedir", "item ou loja", "buscar", "pesquisar", "procurar")
-    candidates = []
+def _dismiss_promo_modal(nodes: list) -> Optional[list]:
+    """Dispensa modais promocionais/splash no iFood ('Fechar', 'Agora não', 'Pular', 'Continuar', 'Entendi')."""
+    modal_labels = {"fechar", "agora nao", "pular", "continuar", "entendi", "close", "dismiss"}
     for n in nodes:
-        cls_name = str(n.get("class") or "").lower()
+        t_norm = _normalize_text(str(n.get("text") or ""))
+        d_norm = _normalize_text(str(n.get("content_desc") or ""))
+        if t_norm in modal_labels or d_norm in modal_labels:
+            tap_coords(int(n["cx"]), int(n["cy"]))
+            time.sleep(1.0)
+            return dump_ui_nodes()
+    return None
+
+
+def _find_food_search_node(
+    nodes: list,
+    screen_w: int = 1080,
+    screen_h: int = 2400,
+    prefer_edit_text: bool = False,
+) -> Optional[Dict[str, Any]]:
+    """
+    Localiza a barra superior de pesquisa no app de delivery via UI Automator:
+    - Ignora a barra de navegação inferior (cy > 85% da altura).
+    - Prioriza EditText ou nós clicáveis na faixa superior (cy < 22% da altura)
+      com resource-id de busca ou largura de barra de pesquisa (mesmo com placeholders rotativos).
+    """
+    search_hints = ("o que vai pedir", "item ou loja", "buscar", "pesquisar", "procurar", "mercado perto de mim", "todo o ifood")
+    top_limit = int(screen_h * 0.22)
+    bottom_limit = int(screen_h * 0.85)
+    candidates = []
+
+    for n in nodes:
+        cy = int(n.get("cy") or 0)
+        if cy > bottom_limit:
+            continue
+
+        cls_name = str(n.get("class_name") or n.get("class") or "").lower()
+        res_id = str(n.get("resource_id") or "").lower()
         combined = _normalize_text(f"{n.get('text', '')} {n.get('content_desc', '')}")
         is_edit = "edittext" in cls_name
+        is_clickable = bool(n.get("clickable", False))
+        in_top = cy <= top_limit
+        has_res_search = any(k in res_id for k in ("search", "input", "query", "busca"))
         has_hint = any(h in combined for h in search_hints)
+        x1 = int(n.get("x1") or 0)
+        x2 = int(n.get("x2") or 0)
+        is_wide_bar = (x2 - x1) >= int(screen_w * 0.35)
+
         if prefer_edit_text and is_edit:
-            candidates.append((2 if has_hint else 1, n))
-        elif has_hint:
-            candidates.append((1 if is_edit else 0, n))
+            candidates.append((110 if in_top else 90, n))
+            continue
+
+        if is_edit and in_top:
+            candidates.append((100, n))
+        elif is_clickable and in_top and has_res_search:
+            candidates.append((90, n))
+        elif is_clickable and in_top and has_hint:
+            candidates.append((85, n))
+        elif is_clickable and in_top and is_wide_bar:
+            candidates.append((70, n))
+        elif in_top and (has_res_search or has_hint):
+            candidates.append((60, n))
+
     if not candidates:
         return None
     candidates.sort(key=lambda item: item[0], reverse=True)
@@ -599,27 +648,40 @@ def _find_food_search_node(nodes: list, prefer_edit_text: bool = False) -> Optio
 
 def _automate_food_search_via_ui(clean_query: str) -> bool:
     """
-    Camada 2 ativa (ADB + UI Automator): aguarda carregamento do app de delivery,
-    toca no campo de busca, insere o termo com acentos PT-BR e envia Enter (keycode 66).
+    Camada 2 ativa (ADB + UI Automator):
+    1. Aguarda estabilização (3.0s) e dispensa modais promocionais.
+    2. Localiza a barra superior (y < 22%, ignorando rodapé y > 85%) ou usa coordenada segura (52%, 7.5%).
+    3. Toca na barra, aguarda foco no EditText (0.8s), digita com acentos PT-BR e envia Enter (66).
     """
     if not ensure_adb_connected():
         return False
 
-    time.sleep(2.0)
+    time.sleep(3.0)
     nodes = dump_ui_nodes()
-    search_node = _find_food_search_node(nodes, prefer_edit_text=False)
-    if not search_node:
-        return False
+    if nodes:
+        dismissed_nodes = _dismiss_promo_modal(nodes)
+        if dismissed_nodes is not None:
+            nodes = dismissed_nodes
 
-    tap_coords(search_node["cx"], search_node["cy"])
+    screen_w, screen_h = get_screen_dimensions(nodes)
+    search_node = _find_food_search_node(nodes, screen_w=screen_w, screen_h=screen_h, prefer_edit_text=False)
+
+    if search_node:
+        tap_coords(int(search_node["cx"]), int(search_node["cy"]))
+        tapped_cls = str(search_node.get("class_name") or search_node.get("class") or "").lower()
+    else:
+        # Prioridade 2: Fallback por coordenada segura da barra superior (52% x, 7.5% y)
+        tap_coords(int(screen_w * 0.52), int(screen_h * 0.075))
+        tapped_cls = ""
+
     time.sleep(0.8)
 
-    if "edittext" not in str(search_node.get("class") or "").lower():
+    if "edittext" not in tapped_cls:
         nodes_after = dump_ui_nodes()
-        edit_node = _find_food_search_node(nodes_after, prefer_edit_text=True)
+        edit_node = _find_food_search_node(nodes_after, screen_w=screen_w, screen_h=screen_h, prefer_edit_text=True)
         if edit_node:
-            tap_coords(edit_node["cx"], edit_node["cy"])
-            time.sleep(0.4)
+            tap_coords(int(edit_node["cx"]), int(edit_node["cy"]))
+            time.sleep(0.3)
 
     ok_type, _ = type_text_unicode(clean_query)
     if not ok_type:

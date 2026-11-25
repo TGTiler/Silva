@@ -242,6 +242,24 @@ def _set_device_clipboard(text: str) -> bool:
     return ok
 
 
+def get_screen_dimensions(nodes: Optional[List[Dict[str, Any]]] = None) -> Tuple[int, int]:
+    """Obtém (largura, altura) da tela via 'wm size' ou a partir dos bounds dos nós."""
+    try:
+        ok, out = run_adb_shell(["wm", "size"], timeout=3.0)
+        if ok and out:
+            m = re.search(r"(\d{3,4})x(\d{3,4})", out)
+            if m:
+                return int(m.group(1)), int(m.group(2))
+    except Exception:
+        pass
+    if nodes:
+        max_x = max((int(n.get("x2") or n.get("cx") or 0) for n in nodes), default=0)
+        max_y = max((int(n.get("y2") or n.get("cy") or 0) for n in nodes), default=0)
+        if max_x >= 480 and max_y >= 800:
+            return max_x, max_y
+    return 1080, 2400
+
+
 def type_text_unicode(text: str) -> Tuple[bool, str]:
     """
     Digita texto no campo focado preservando acentuação PT-BR via clipboard + KEYCODE_PASTE (279),

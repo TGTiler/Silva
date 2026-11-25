@@ -213,6 +213,42 @@ class TestUiAutomator(unittest.TestCase):
         self.assertEqual(match_intent_fallback("tem algo importante nas notificações?"), "<call>summarize_notifications(app_filter='')</call>")
         self.assertEqual(match_intent_fallback("notificações do whatsapp"), "<call>summarize_notifications(app_filter='whatsapp')</call>")
 
+    def test_ifood_dynamic_placeholder_ignores_bottom_nav_and_dismisses_modal(self):
+        import subprocess
+
+        # 1. XML com modal promocional -> após fechar, barra superior "Mercado perto de mim" (y < 22%) e aba "Busca" (y > 85%)
+        modal_nodes = [
+            {"text": "Fechar", "content_desc": "Fechar", "resource_id": "", "class_name": "android.widget.Button", "clickable": True, "x1": 900, "y1": 120, "x2": 1020, "y2": 200, "cx": 960, "cy": 160},
+            {"text": "Aproveite 50% OFF", "content_desc": "", "resource_id": "", "class_name": "android.widget.TextView", "clickable": False, "x1": 100, "y1": 800, "x2": 980, "y2": 900, "cx": 540, "cy": 850},
+        ]
+        home_nodes = [
+            {"text": "Mercado perto de mim", "content_desc": "", "resource_id": "br.com.brainweb.ifood:id/search_bar", "class_name": "android.widget.TextView", "clickable": True, "x1": 40, "y1": 120, "x2": 1040, "y2": 240, "cx": 540, "cy": 180},
+            {"text": "Busca", "content_desc": "Busca", "resource_id": "br.com.brainweb.ifood:id/nav_search", "class_name": "android.widget.FrameLayout", "clickable": True, "x1": 220, "y1": 2180, "x2": 420, "y2": 2360, "cx": 320, "cy": 2270},
+        ]
+        search_focus_nodes = [
+            {"text": "", "content_desc": "Buscar em todo o iFood", "resource_id": "br.com.brainweb.ifood:id/input_query", "class_name": "android.widget.EditText", "clickable": True, "x1": 120, "y1": 120, "x2": 1020, "y2": 230, "cx": 570, "cy": 175},
+        ]
+
+        with patch.object(apps_mobility, "SIMULATE_HARDWARE", False), \
+             patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:38893"), \
+             patch.object(apps_mobility, "_exec_android_intent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="Starting: Intent", stderr="")), \
+             patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)), \
+             patch.object(apps_mobility, "dump_ui_nodes", side_effect=[modal_nodes, home_nodes, search_focus_nodes]), \
+             patch.object(apps_mobility, "tap_coords") as mock_tap, \
+             patch.object(apps_mobility, "type_text_unicode", return_value=(True, "ok")) as mock_type, \
+             patch.object(apps_mobility, "press_key") as mock_key, \
+             patch.object(apps_mobility, "set_clipboard"), \
+             patch("time.sleep"):
+            res = apps_mobility.order_food(query="hambúrguer", app="ifood")
+            self.assertEqual(res["status"], "ok")
+            self.assertEqual(res["data"]["method"], "ui_automator_search")
+            # 1º tap: Fechar modal (960, 160); 2º tap: Barra superior (540, 180) — NUNCA (320, 2270); 3º tap: EditText (570, 175)
+            self.assertEqual(mock_tap.call_args_list[0].args, (960, 160))
+            self.assertEqual(mock_tap.call_args_list[1].args, (540, 180))
+            self.assertEqual(mock_tap.call_args_list[2].args, (570, 175))
+            mock_type.assert_called_once_with("hambúrguer")
+            mock_key.assert_called_once_with(66)
+
 
 if __name__ == "__main__":
     unittest.main()

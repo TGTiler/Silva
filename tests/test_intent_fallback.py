@@ -138,6 +138,18 @@ class TestFormattingResilience(unittest.TestCase):
             match_intent_fallback("Pede um açaí na 99"),
             "<call>order_food(query='açaí', app='99food')</call>"
         )
+        # Super-app 99: táxi -> 99, delivery '99 food' -> 99food, Uber explícito preservado
+        cases_99 = [
+            ("chama um táxi para o aeroporto", "<call>request_ride(destination='aeroporto', app='99')</call>"),
+            ("chama um taxi pro shopping recife", "<call>request_ride(destination='shopping recife', app='99')</call>"),
+            ("peça um 99 para o shopping tacaruna", "<call>request_ride(destination='shopping tacaruna', app='99')</call>"),
+            ("pede uma pizza no 99", "<call>order_food(query='pizza', app='99food')</call>"),
+            ("pedir comida no 99 food", "<call>order_food(query='comida', app='99food')</call>"),
+            ("peça um uber para o shopping", "<call>request_ride(destination='shopping', app='uber')</call>"),
+        ]
+        for phrase, expected in cases_99:
+            with self.subTest(phrase=phrase):
+                self.assertEqual(match_intent_fallback(phrase), expected)
 
     def test_colloquial_ride_expressions_and_priority_over_call(self):
         """Valida gírias brasileiras de corrida, destino sem preposição, limpeza de ruídos e prioridade sobre make_call."""

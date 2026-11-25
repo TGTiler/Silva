@@ -249,6 +249,131 @@ class TestUiAutomator(unittest.TestCase):
             mock_type.assert_called_once_with("hambúrguer")
             mock_key.assert_called_once_with(66)
 
+    # ------------------------------------------------------------------
+    # Super-app 99 (com.taxis99): XML simulado das 3 telas reais
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _n(text="", desc="", res="", cls="android.widget.TextView", clickable=False, bounds=(0, 0, 0, 0)):
+        x1, y1, x2, y2 = bounds
+        return {"text": text, "content_desc": desc, "resource_id": res, "class_name": cls, "clickable": clickable,
+                "x1": x1, "y1": y1, "x2": x2, "y2": y2, "cx": (x1 + x2) // 2, "cy": (y1 + y2) // 2}
+
+    def _99_screens(self):
+        n = self._n
+        bottom_nav = [
+            n("Corrida", "Corrida", "com.taxis99:id/tab_ride", "android.widget.FrameLayout", True, (100, 2140, 332, 2280)),
+            n("Food", "Food", "com.taxis99:id/tab_food", "android.widget.FrameLayout", True, (332, 2140, 532, 2280)),
+            n("Buscar", "Buscar", "com.taxis99:id/tab_search", "android.widget.FrameLayout", True, (532, 2140, 732, 2280)),
+        ]
+        ride_home = [
+            n("Para onde vamos?", "", "com.taxis99:id/where_to", "android.widget.TextView", True, (60, 820, 1020, 910)),
+        ] + bottom_nav
+        promo = [
+            n("R$99 em cupons só pra você!", bounds=(120, 900, 960, 1000)),
+            n("Peça já!", "", "com.taxis99:id/promo_cta", "android.widget.Button", True, (200, 1650, 880, 1760)),
+            n("", "Fechar", "com.taxis99:id/promo_close", "android.widget.ImageView", True, (490, 1900, 590, 2000)),
+        ]
+        food_home = [
+            n("açaí", "", "com.taxis99:id/food_search_bar", "android.widget.TextView", True, (40, 300, 1040, 396)),
+        ] + bottom_nav
+        return ride_home, promo, food_home
+
+    def _99_common_patches(self, dumps):
+        import subprocess
+        return [
+            patch.object(apps_mobility, "SIMULATE_HARDWARE", False),
+            patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:32913"),
+            patch.object(apps_mobility, "is_screen_unlocked", return_value=(True, "ok")),
+            patch.object(apps_mobility, "run_adb_shell", return_value=(True, "")),
+            patch.object(apps_mobility, "_exec_android_intent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="Starting: Intent", stderr="")),
+            patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)),
+            patch.object(apps_mobility, "dump_ui_nodes", side_effect=dumps),
+            patch.object(apps_mobility, "set_clipboard"),
+            patch("time.sleep"),
+        ]
+
+    def test_99food_closes_coupon_modal_and_switches_ride_to_food_tab(self):
+        from contextlib import ExitStack
+        ride_home, promo, food_home = self._99_screens()
+        # 1º dump: aba Corrida + modal de cupons; 2º: modal fechado (Corrida); 3º: aba Food
+        dumps = [ride_home + promo, ride_home, food_home]
+        with ExitStack() as stack:
+            for p in self._99_common_patches(dumps):
+                stack.enter_context(p)
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            mock_type = stack.enter_context(patch.object(apps_mobility, "type_text_unicode", return_value=(True, "ok")))
+            mock_key = stack.enter_context(patch.object(apps_mobility, "press_key"))
+            res = apps_mobility.order_food(query="pizza", app="99food")
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["data"]["method"], "ui_automator_search")
+        self.assertEqual(res["data"]["package"], "com.taxis99")
+        taps = [c.args for c in mock_tap.call_args_list]
+        # X do modal (540, 1950) — NUNCA 'Peça já!' (540, 1705); aba Food (432, 2210); barra de busca (540, 348)
+        self.assertEqual(taps, [(540, 1950), (432, 2210), (540, 348)])
+        self.assertNotIn((540, 1705), taps)
+        mock_type.assert_called_once_with("pizza")
+        mock_key.assert_called_once_with(66)
+
+    def test_99_promo_without_close_label_uses_safe_x_coordinate(self):
+        _, promo, _ = self._99_screens()
+        promo_no_close = [p for p in promo if p["content_desc"] != "Fechar"]
+        with patch.object(apps_mobility, "tap_coords") as mock_tap, \
+             patch.object(apps_mobility, "dump_ui_nodes", return_value=[]), \
+             patch("time.sleep"):
+            self.assertEqual(apps_mobility._dismiss_99_promo(promo_no_close, 1080, 2400), [])
+            mock_tap.assert_called_once_with(540, 1944)
+            # Sem modal: nada é tocado
+            mock_tap.reset_mock()
+            self.assertIsNone(apps_mobility._dismiss_99_promo([], 1080, 2400))
+            mock_tap.assert_not_called()
+
+    def test_99_ride_switches_food_to_ride_tab_and_fills_destination(self):
+        from contextlib import ExitStack
+        ride_home, _, food_home = self._99_screens()
+        suggestions = [
+            self._n("shopping tacaruna", "", "com.taxis99:id/dest_input", "android.widget.EditText", True, (120, 260, 1000, 350)),
+            self._n("Shopping Tacaruna", "", "com.taxis99:id/addr_title", "android.widget.TextView", True, (60, 560, 1020, 640)),
+            self._n("Shopping Recife", "", "com.taxis99:id/addr_title", "android.widget.TextView", True, (60, 700, 1020, 780)),
+        ]
+        dumps = [food_home, ride_home, suggestions]
+        with ExitStack() as stack:
+            for p in self._99_common_patches(dumps):
+                stack.enter_context(p)
+            stack.enter_context(patch.object(apps_mobility, "_load_memory", return_value={}))
+            stack.enter_context(patch.object(apps_mobility, "recall_note", return_value={"status": "error"}))
+            stack.enter_context(patch.object(apps_mobility, "_geocode_destination", return_value=None))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            mock_type = stack.enter_context(patch.object(apps_mobility, "type_text_unicode", return_value=(True, "ok")))
+            res = apps_mobility.request_ride(destination="shopping tacaruna", app="99")
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["data"]["method"], "ui_automator_destination")
+        self.assertTrue(res["data"]["suggestion_selected"])
+        taps = [c.args for c in mock_tap.call_args_list]
+        # Aba Corrida (216, 2210); campo 'Para onde vamos?' (540, 865); 1ª sugestão correspondente (540, 600)
+        self.assertEqual(taps, [(216, 2210), (540, 865), (540, 600)])
+        mock_type.assert_called_once_with("shopping tacaruna")
+
+    def test_99_ride_screen_locked_falls_back_without_touching_ui(self):
+        import subprocess
+        with patch.object(apps_mobility, "SIMULATE_HARDWARE", False), \
+             patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:32913"), \
+             patch.object(apps_mobility, "is_screen_unlocked", return_value=(False, "Tela bloqueada")), \
+             patch.object(apps_mobility, "_exec_android_intent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="Starting: Intent", stderr="")), \
+             patch.object(apps_mobility, "_load_memory", return_value={}), \
+             patch.object(apps_mobility, "recall_note", return_value={"status": "error"}), \
+             patch.object(apps_mobility, "_geocode_destination", return_value=None), \
+             patch.object(apps_mobility, "set_clipboard"), \
+             patch.object(apps_mobility, "dump_ui_nodes") as mock_dump, \
+             patch.object(apps_mobility, "tap_coords") as mock_tap, \
+             patch("time.sleep"):
+            res = apps_mobility.request_ride(destination="aeroporto", app="99")
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["data"]["method"], "deep_link")
+        mock_dump.assert_not_called()
+        mock_tap.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

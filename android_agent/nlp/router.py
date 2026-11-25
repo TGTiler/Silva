@@ -990,7 +990,9 @@ def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     is_99 = bool(re.search(r"\b99\b|noventa\s+e\s+nove|__app_99__", norm))
 
     if is_uber or has_ride_kw or (is_99 and (has_direction_prep or has_ride_verb)):
-        app = "99" if is_99 else "uber"
+        # Táxi é atendido pelo super-app 99 (99 Táxi), salvo menção explícita ao Uber.
+        is_taxi = bool(re.search(r"\btaxis?\b|\btáxis?\b", norm))
+        app = "99" if (is_99 or (is_taxi and not is_uber)) else "uber"
         dest = ""
         m_dest = re.search(r"\b(?:para|pra|pro|ate|até|p/)\s+([^\n\r,\.;?!]+)", raw, re.IGNORECASE)
         if m_dest:

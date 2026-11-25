@@ -738,6 +738,7 @@ class TestToolsAndMemory(unittest.TestCase):
             return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="Error")
 
         with patch.object(tools_apps, "SIMULATE_HARDWARE", False), \
+             patch.object(tools_apps, "ensure_adb_connected", return_value=None), \
              patch.object(tools_apps, "_exec_android_intent", side_effect=fake_exec_intent), \
              patch.object(tools_apps, "set_clipboard") as mock_clip:
 
@@ -750,6 +751,32 @@ class TestToolsAndMemory(unittest.TestCase):
             mock_clip.assert_called_once_with("pizza")
             self.assertTrue(any("taxis99://food/search?q=pizza" in c for c in intent_calls))
             self.assertTrue(any("com.taxis99" in c for c in intent_calls))
+
+    def test_request_ride_99_adb_disconnected_keeps_deeplink_fallback(self):
+        """Sem ADB, request_ride(app='99') não toca na UI e mantém o deep link taxis99://call."""
+        import subprocess
+
+        intent_calls = []
+
+        def fake_exec_intent(cmd_str, timeout=6):
+            intent_calls.append(cmd_str)
+            return subprocess.CompletedProcess(args=[cmd_str], returncode=0, stdout="Starting: Intent", stderr="")
+
+        with patch.object(tools_apps, "SIMULATE_HARDWARE", False), \
+             patch.object(tools_apps, "ensure_adb_connected", return_value=None), \
+             patch.object(tools_apps, "_exec_android_intent", side_effect=fake_exec_intent), \
+             patch.object(tools_apps, "_geocode_destination", return_value=None), \
+             patch.object(tools_apps, "_load_memory", return_value={}), \
+             patch.object(tools_apps, "recall_note", return_value={"status": "error"}), \
+             patch.object(tools_apps, "tap_coords") as mock_tap, \
+             patch.object(tools_apps, "set_clipboard"):
+            res = tools_apps.request_ride(destination="shopping tacaruna", app="99")
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["data"]["method"], "deep_link")
+        self.assertEqual(len(intent_calls), 1)
+        self.assertIn("taxis99://call?dropoff_title=shopping%20tacaruna", intent_calls[0])
+        mock_tap.assert_not_called()
 
     def test_geocode_destination_viewbox_bias(self):
         """Valida envio do viewbox geográfico (bounded=0) baseado em last_location.json no Nominatim."""

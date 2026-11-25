@@ -384,6 +384,258 @@ def _intent_succeeded(res: Any) -> bool:
     return not any(err in combined for err in ("Error:", "ActivityNotFound", "does not exist", "No activities found"))
 
 
+# ---------------------------------------------------------------------------
+# Super-app 99 (com.taxis99 / com.taxis99.food): helpers de UI Automator
+# ---------------------------------------------------------------------------
+_99_PROMO_HINTS = ("cupons", "cupom", "peca ja", "aproveite agora")
+_99_CLOSE_LABELS = {"fechar", "close", "cancelar", "agora nao", "x", "dispensar"}
+_99_RIDE_FIELD_HINT = "para onde vamos"
+_99_RIDE_TAB_LABELS = {"corrida", "taxi", "corridas"}
+_99_FOOD_TAB_LABELS = {"food", "99food", "comida"}
+
+
+def _node_label(n: Dict[str, Any]) -> str:
+    """Texto + content-desc normalizados (sem acentos, minúsculas) de um nó da UI."""
+    return _normalize_text(f"{n.get('text', '')} {n.get('content_desc', '')}")
+
+
+def _is_99_promo_visible(nodes: list) -> bool:
+    """Detecta o modal promocional do 99 ('R$99 em cupons só pra você!', 'Peça já!', 'Aproveite agora')."""
+    return any(any(h in _node_label(n) for h in _99_PROMO_HINTS) for n in nodes or [])
+
+
+def _dismiss_99_promo(nodes: list, screen_w: int, screen_h: int) -> Optional[list]:
+    """
+    Fecha o modal de cupons do 99 tocando no 'X' (rótulo Fechar/Close/Cancelar/Agora não ou
+    resource-id close/dismiss), nunca em 'Peça já!'. Fallback: coordenada segura (50%, 81%).
+    Retorna a nova árvore de UI se algo foi dispensado; None se não havia modal.
+    """
+    if not _is_99_promo_visible(nodes):
+        return None
+
+    close_node = None
+    for n in nodes:
+        label = _node_label(n)
+        if "peca ja" in label or "aproveite" in label:
+            continue
+        t_norm = _normalize_text(str(n.get("text") or ""))
+        d_norm = _normalize_text(str(n.get("content_desc") or ""))
+        res_id = str(n.get("resource_id") or "").lower()
+        if t_norm in _99_CLOSE_LABELS or d_norm in _99_CLOSE_LABELS or any(k in res_id for k in ("close", "dismiss")):
+            close_node = n
+            break
+
+    if close_node:
+        tap_coords(int(close_node["cx"]), int(close_node["cy"]))
+    else:
+        tap_coords(int(screen_w * 0.50), int(screen_h * 0.81))
+    time.sleep(1.0)
+    return dump_ui_nodes()
+
+
+def _has_99_ride_field(nodes: list) -> bool:
+    """Indica se o campo 'Para onde vamos?' (aba Corrida) está visível."""
+    return any(_99_RIDE_FIELD_HINT in _node_label(n) for n in nodes or [])
+
+
+def _find_99_bottom_tab(nodes: list, labels: set, screen_h: int) -> Optional[Dict[str, Any]]:
+    """Localiza uma aba da barra inferior do super-app 99 (cy > 88% da altura) pelo rótulo."""
+    bottom_limit = int(screen_h * 0.88)
+    for n in nodes or []:
+        if int(n.get("cy") or 0) <= bottom_limit:
+            continue
+        t_norm = _normalize_text(str(n.get("text") or ""))
+        d_norm = _normalize_text(str(n.get("content_desc") or ""))
+        if t_norm in labels or d_norm in labels:
+            return n
+    return None
+
+
+def _launch_99_package(target_tab: str) -> Optional[str]:
+    """Abre com.taxis99.food (se instalado, para 'food') ou o super-app com.taxis99."""
+    candidates = ["com.taxis99"]
+    if target_tab == "food":
+        ok_pm, out_pm = run_adb_shell(["pm", "list", "packages", "com.taxis99.food"], timeout=4.0)
+        if ok_pm and "package:com.taxis99.food" in (out_pm or ""):
+            candidates.insert(0, "com.taxis99.food")
+
+    for pkg in candidates:
+        if pkg in RESOLVED_APP_ACTIVITIES:
+            cmd = f"am start -n {RESOLVED_APP_ACTIVITIES[pkg]}"
+        else:
+            cmd = f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"
+        if _intent_succeeded(_exec_android_intent(cmd)):
+            return pkg
+    return None
+
+
+def _prepare_99_app(target_tab: str) -> Dict[str, Any]:
+    """
+    Prepara o super-app 99 para automação (target_tab in ('ride', 'food')):
+    1. Abre o pacote correto e aguarda 2.5s; exige ADB e tela desbloqueada.
+    2. Dispensa o modal de cupons pelo 'X'.
+    3. Alterna para a aba inferior correta (Corrida x≈20% / Food x≈40%, y≈92%).
+    Retorna {"ok", "package", "nodes", "screen_w", "screen_h", "reason"}.
+    """
+    result: Dict[str, Any] = {"ok": False, "package": None, "nodes": [], "screen_w": 1080, "screen_h": 2400, "reason": ""}
+    if target_tab not in ("ride", "food"):
+        result["reason"] = "invalid_tab"
+        return result
+
+    adb_ser = ensure_adb_connected()
+    if not adb_ser:
+        result["reason"] = "adb_disconnected"
+        return result
+
+    with _UI_LOCK:
+        pkg = _launch_99_package(target_tab)
+        if not pkg:
+            result["reason"] = "package_not_found"
+            return result
+        result["package"] = pkg
+
+        time.sleep(2.5)
+        unlocked, _ = is_screen_unlocked(serial=adb_ser)
+        if not unlocked:
+            result["reason"] = "screen_locked"
+            return result
+
+        nodes = dump_ui_nodes()
+        screen_w, screen_h = get_screen_dimensions(nodes)
+        dismissed = _dismiss_99_promo(nodes, screen_w, screen_h)
+        if dismissed is not None:
+            nodes = dismissed
+
+        # Alternância de abas só existe no super-app (com.taxis99).
+        if pkg == "com.taxis99":
+            ride_visible = _has_99_ride_field(nodes)
+            tab_node = None
+            fallback_xy = None
+            if target_tab == "food" and ride_visible:
+                tab_node = _find_99_bottom_tab(nodes, _99_FOOD_TAB_LABELS, screen_h)
+                fallback_xy = (int(screen_w * 0.40), int(screen_h * 0.92))
+            elif target_tab == "ride" and not ride_visible:
+                tab_node = _find_99_bottom_tab(nodes, _99_RIDE_TAB_LABELS, screen_h)
+                fallback_xy = (int(screen_w * 0.20), int(screen_h * 0.92))
+
+            if fallback_xy:
+                if tab_node:
+                    tap_coords(int(tab_node["cx"]), int(tab_node["cy"]))
+                else:
+                    tap_coords(*fallback_xy)
+                time.sleep(1.2)
+                nodes = dump_ui_nodes()
+                dismissed = _dismiss_99_promo(nodes, screen_w, screen_h)
+                if dismissed is not None:
+                    nodes = dismissed
+
+        result.update({"ok": True, "nodes": nodes, "screen_w": screen_w, "screen_h": screen_h})
+        return result
+
+
+def _find_99_food_search_node(nodes: list, screen_w: int, screen_h: int) -> Optional[Dict[str, Any]]:
+    """Barra de busca da aba Food do 99: faixa 11%–20% da altura, ignorando o rodapé (y > 85%)."""
+    y_min, y_max = int(screen_h * 0.11), int(screen_h * 0.20)
+    candidates = []
+    for n in nodes or []:
+        cy = int(n.get("cy") or 0)
+        if not (y_min <= cy <= y_max):
+            continue
+        cls_name = str(n.get("class_name") or "").lower()
+        res_id = str(n.get("resource_id") or "").lower()
+        label = _node_label(n)
+        is_wide = (int(n.get("x2") or 0) - int(n.get("x1") or 0)) >= int(screen_w * 0.35)
+        has_res = any(k in res_id for k in ("search", "input", "query", "busca"))
+        has_hint = any(h in label for h in ("buscar", "pesquisar", "o que voce", "restaurante", "busque"))
+        clickable = bool(n.get("clickable"))
+        if "edittext" in cls_name:
+            candidates.append((100, n))
+        elif clickable and has_res:
+            candidates.append((90, n))
+        elif clickable and has_hint:
+            candidates.append((85, n))
+        elif clickable and is_wide:
+            candidates.append((70, n))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def _automate_99_food_search_via_ui(clean_query: str) -> Optional[str]:
+    """Busca `clean_query` na aba Food do 99. Retorna o pacote usado em caso de sucesso, ou None."""
+    with _UI_LOCK:
+        prep = _prepare_99_app("food")
+        if not prep["ok"]:
+            return None
+        nodes, screen_w, screen_h = prep["nodes"], prep["screen_w"], prep["screen_h"]
+
+        search_node = _find_99_food_search_node(nodes, screen_w, screen_h)
+        if search_node:
+            tap_coords(int(search_node["cx"]), int(search_node["cy"]))
+        else:
+            tap_coords(int(screen_w * 0.50), int(screen_h * 0.145))
+        time.sleep(0.8)
+
+        ok_type, _ = type_text_unicode(clean_query)
+        if not ok_type:
+            return None
+        time.sleep(0.3)
+        press_key(66)
+        return prep["package"]
+
+
+def _pick_99_destination_suggestion(nodes: list, destination: str, screen_h: int) -> Optional[Dict[str, Any]]:
+    """Primeira sugestão de endereço que contém todos os termos significativos do destino."""
+    tokens = [t for t in _normalize_text(destination).split() if len(t) > 2]
+    if not tokens:
+        return None
+    bottom_limit = int(screen_h * 0.85)
+    for n in sorted(nodes or [], key=lambda item: int(item.get("cy") or 0)):
+        if "edittext" in str(n.get("class_name") or "").lower():
+            continue
+        if int(n.get("cy") or 0) > bottom_limit or not str(n.get("text") or "").strip():
+            continue
+        label = _node_label(n)
+        if all(t in label for t in tokens):
+            return n
+    return None
+
+
+def _automate_99_ride_via_ui(destination: str) -> Optional[Dict[str, Any]]:
+    """
+    Preenche o destino em 'Para onde vamos?' no 99 (aba Corrida).
+    Retorna {"package", "suggestion_selected"} em caso de sucesso, ou None.
+    """
+    with _UI_LOCK:
+        prep = _prepare_99_app("ride")
+        if not prep["ok"]:
+            return None
+        nodes, screen_w, screen_h = prep["nodes"], prep["screen_w"], prep["screen_h"]
+
+        y_min, y_max = int(screen_h * 0.30), int(screen_h * 0.45)
+        field = None
+        for n in nodes:
+            if _99_RIDE_FIELD_HINT in _node_label(n) and y_min <= int(n.get("cy") or 0) <= y_max:
+                field = n
+                break
+        if field:
+            tap_coords(int(field["cx"]), int(field["cy"]))
+        else:
+            tap_coords(int(screen_w * 0.50), int(screen_h * 0.36))
+        time.sleep(1.0)
+
+        ok_type, _ = type_text_unicode(destination)
+        if not ok_type:
+            return None
+        time.sleep(1.2)
+
+        suggestion = _pick_99_destination_suggestion(dump_ui_nodes(), destination, screen_h)
+        if suggestion:
+            tap_coords(int(suggestion["cx"]), int(suggestion["cy"]))
+        return {"package": prep["package"], "suggestion_selected": bool(suggestion)}
+
+
 def request_ride(destination: str, app: str = "uber", service: str = "") -> Dict[str, Any]:
     """Abre o aplicativo de transporte (Uber ou 99) com resolução de apelidos, geocodificação e fallback em 3 camadas."""
     clean_dest = _clean_ride_destination(destination)
@@ -493,6 +745,26 @@ def request_ride(destination: str, app: str = "uber", service: str = "") -> Dict
                 "status": "ok",
                 "message": f"{alias_prefix}Abrindo 99 com destino para '{resolved_destination}'. Basta confirmar a corrida na tela. [Simulado]",
                 "data": {"destination": resolved_destination, "app": "99", "url": uri_99}
+            }
+
+        # Camada 0: Automação real via ADB + UI Automator ('Para onde vamos?')
+        ui_ride = _automate_99_ride_via_ui(resolved_destination)
+        if ui_ride:
+            tail = (
+                "Sugestão de endereço selecionada; basta confirmar a corrida na tela."
+                if ui_ride["suggestion_selected"]
+                else "Escolha o endereço na lista de sugestões e confirme a corrida."
+            )
+            return {
+                "status": "ok",
+                "message": f"{alias_prefix}Destino '{resolved_destination}' preenchido no 99. {tail}",
+                "data": {
+                    "destination": resolved_destination,
+                    "app": "99",
+                    "package": ui_ride["package"],
+                    "suggestion_selected": ui_ride["suggestion_selected"],
+                    "method": "ui_automator_destination",
+                }
             }
 
         # Camada 1: Deep Link nativo 99
@@ -795,20 +1067,23 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
                 "data": {"query": clean_query, "app": app_norm, "url": url_deep}
             }
 
+        # 0. Automação real via ADB + UI Automator (pop-up de cupons, aba Food e barra de busca)
+        ui_pkg = _automate_99_food_search_via_ui(clean_query)
+        if ui_pkg:
+            return {
+                "status": "ok",
+                "message": f"Buscando '{clean_query}' no 99Food.",
+                "data": {"query": clean_query, "app": app_norm, "package": ui_pkg, "method": "ui_automator_search"}
+            }
+
         # 1. Tentativa via Deep Link nativo do super-app da 99
         cmd_deep = f'am start -a android.intent.action.VIEW -d "{url_deep}"'
         res1 = _exec_android_intent(cmd_deep)
-        if res1.returncode == 0 and "Error:" not in res1.stderr and "ActivityNotFound" not in res1.stderr and "does not exist" not in res1.stderr:
-            ui_ok = _automate_food_search_via_ui(clean_query)
+        if _intent_succeeded(res1):
             return {
                 "status": "ok",
                 "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência).",
-                "data": {
-                    "query": clean_query,
-                    "app": app_norm,
-                    "url": url_deep,
-                    "method": "ui_automator_search" if ui_ok else "deep_link",
-                }
+                "data": {"query": clean_query, "app": app_norm, "url": url_deep, "method": "deep_link"}
             }
 
         # 2. Fallback: abrir pacote principal do super-app da 99 / 99Food
@@ -817,18 +1092,11 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
                 res_pkg = _exec_android_intent(f"am start -n {RESOLVED_APP_ACTIVITIES[pkg]}")
             else:
                 res_pkg = _exec_android_intent(f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1")
-            combined_out = (res_pkg.stdout or "") + (res_pkg.stderr or "")
-            if res_pkg.returncode == 0 and "Error:" not in combined_out and "No activities found" not in combined_out:
-                ui_ok = _automate_food_search_via_ui(clean_query)
+            if _intent_succeeded(res_pkg):
                 return {
                     "status": "ok",
                     "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência).",
-                    "data": {
-                        "query": clean_query,
-                        "app": app_norm,
-                        "package": pkg,
-                        "method": "ui_automator_search" if ui_ok else "package_fallback",
-                    }
+                    "data": {"query": clean_query, "app": app_norm, "package": pkg, "method": "package_fallback"}
                 }
 
         open_app("99")

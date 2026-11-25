@@ -6,6 +6,7 @@ Utiliza apenas a biblioteca padrão (urllib) para rodar com zero dependências e
 import json
 import re
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from typing import Any, Dict, Optional, Tuple
@@ -15,11 +16,22 @@ try:
     from intent_fallback import match_intent_fallback
     from conversation_context import resolve_anaphora, format_recent_context
     from tools import AVAILABLE_TOOLS
+    from tools.memory_schedule import active_recall_search
 except ImportError:
     from android_agent.config import LLAMA_SERVER_URL, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
     from android_agent.intent_fallback import match_intent_fallback
     from android_agent.conversation_context import resolve_anaphora, format_recent_context
     from android_agent.tools import AVAILABLE_TOOLS
+    from android_agent.tools.memory_schedule import active_recall_search
+
+
+def _is_interrogative_question(text: str) -> bool:
+    """Identifica perguntas interrogativas em PT-BR para Recordação Ativa Pré-LLM."""
+    norm = "".join(
+        c for c in unicodedata.normalize("NFKD", (text or "").lower())
+        if not unicodedata.combining(c)
+    )
+    return bool(re.search(r"\b(?:qual|quais|onde|quando|quanto|quantos|quantas|quem|como\s+e)\b", norm))
 
 
 class SilvaLLMClient:
@@ -63,12 +75,29 @@ class SilvaLLMClient:
         if fast_call:
             return fast_call, 1.5, None
 
+        # 1.5. Recordação Ativa Pré-LLM para perguntas interrogativas abertas
+        memory_hint_block = ""
+        if _is_interrogative_question(resolved_prompt):
+            recall_info = active_recall_search(resolved_prompt)
+            recall_level = recall_info.get("level")
+            top_mem = recall_info.get("top")
+            if recall_level == "high" and top_mem:
+                return f"<call>recall_note(query={repr(top_mem['key'])})</call>", 1.5, None
+            if recall_level == "medium" and top_mem:
+                memory_hint_block = f"[Memória Relevante: {top_mem['key']}: {top_mem['value']}]"
+
         # 2. Inferência via LLM local (llama-server) para consultas complexas
         ctx_block = format_recent_context(session_id, max_turns=2)
-        user_block = (
-            f"Contexto recente:\n{ctx_block}\n\nPedido atual: {resolved_prompt}"
-            if ctx_block else resolved_prompt
-        )
+        parts = []
+        if memory_hint_block:
+            parts.append(memory_hint_block)
+        if ctx_block:
+            parts.append(f"Contexto recente:\n{ctx_block}")
+        if parts:
+            parts.append(f"Pedido atual: {resolved_prompt}")
+            user_block = "\n\n".join(parts)
+        else:
+            user_block = resolved_prompt
         formatted_prompt = (
             f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
             f"<|im_start|>user\n{user_block}<|im_end|>\n"

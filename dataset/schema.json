@@ -239,6 +239,21 @@
         }
       }
     },
+    "remind_on_wifi": {
+      "description": "Agenda um lembrete proativo disparado ao conectar em uma rede Wi-Fi específica ou alias (casa, trabalho, neste wifi).",
+      "parameters": {
+        "ssid": {
+          "type": "string",
+          "required": true,
+          "description": "Nome da rede Wi-Fi (SSID), alias salvo ('casa', 'trabalho') ou 'neste wifi'."
+        },
+        "reminder": {
+          "type": "string",
+          "required": true,
+          "description": "Texto do lembrete a ser disparado."
+        }
+      }
+    },
     "recall_note": {
       "description": "Consulta a memória persistente por anotações salvas anteriormente.",
       "parameters": {

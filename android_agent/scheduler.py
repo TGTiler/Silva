@@ -13,9 +13,11 @@ from typing import Any, Dict, List
 
 try:
     from .tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd
+    from .tools.hardware import get_wifi_info
     from .tools.memory_schedule import _get_memory_db, compute_next_trigger
 except ImportError:
     from tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd
+    from tools.hardware import get_wifi_info
     from tools.memory_schedule import _get_memory_db, compute_next_trigger
 
 _SCHEDULER_STARTED = False
@@ -177,10 +179,113 @@ def check_and_notify_events() -> None:
             })
 
 
+def check_and_notify_context_reminders() -> None:
+    """
+    Verifica lembretes contextuais por Wi-Fi em context_reminders.
+    Só consulta get_wifi_info() quando há lembretes ativos pendentes (baixo consumo).
+    """
+    with _FILE_LOCK:
+        try:
+            conn = _get_memory_db()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, trigger_value, reminder_text "
+                "FROM context_reminders WHERE is_active = 1 AND trigger_type = 'wifi'"
+            )
+            active_rows = cur.fetchall()
+            conn.close()
+        except Exception:
+            return
+
+    if not active_rows:
+        return
+
+    try:
+        wifi_res = get_wifi_info()
+        current_ssid = str((wifi_res.get("data") or {}).get("ssid") or "").strip()
+    except Exception:
+        current_ssid = ""
+
+    if not current_ssid or current_ssid.lower() in ("<unknown ssid>", "desconhecido", "none"):
+        return
+
+    current_ssid_lower = current_ssid.lower()
+    matching_ids = [
+        int(r["id"])
+        for r in active_rows
+        if str(r["trigger_value"] or "").strip().lower() == current_ssid_lower
+    ]
+    if not matching_ids:
+        return
+
+    dispatches: List[Dict[str, Any]] = []
+    with _FILE_LOCK:
+        try:
+            conn = _get_memory_db()
+            cur = conn.cursor()
+            with conn:
+                for rem_id in matching_ids:
+                    cur.execute(
+                        "SELECT id, trigger_value, reminder_text FROM context_reminders "
+                        "WHERE id = ? AND is_active = 1",
+                        (rem_id,),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        continue
+                    cur.execute(
+                        "UPDATE context_reminders "
+                        "SET is_active = 0, triggered_at = datetime('now', 'localtime') "
+                        "WHERE id = ? AND is_active = 1",
+                        (rem_id,),
+                    )
+                    if cur.rowcount > 0:
+                        rem_text = str(row["reminder_text"] or "").strip()
+                        ssid_val = str(row["trigger_value"] or current_ssid).strip()
+                        dispatches.append({
+                            "id": f"ctx_{rem_id}",
+                            "title": rem_text,
+                            "event_type": "context_wifi",
+                            "trigger_at": f"Wi-Fi {ssid_val}",
+                            "message": f"Você conectou no Wi-Fi '{ssid_val}'. Lembrete: {rem_text}",
+                        })
+            conn.close()
+        except Exception:
+            return
+
+    tts_enabled = _is_proactive_tts_enabled()
+    for item in dispatches:
+        if not SIMULATE_HARDWARE:
+            try:
+                _run_termux_cmd(["termux-vibrate", "-d", "450"], timeout=5)
+                _run_termux_cmd([
+                    "termux-notification",
+                    "--id", f"silva_{item['id']}",
+                    "--title", "Silva — Lembrete de Wi-Fi",
+                    "--content", item["message"],
+                    "--priority", "max",
+                    "--sound",
+                ], timeout=5)
+            except Exception:
+                pass
+            if tts_enabled:
+                _speak_proactive(item["message"])
+
+        with _ALERTS_LOCK:
+            _TRIGGERED_ALERTS.append({
+                "id": item["id"],
+                "title": item["title"],
+                "event_type": item["event_type"],
+                "trigger_at": item["trigger_at"],
+                "message": item["message"],
+            })
+
+
 def _events_scheduler_loop(interval_sec: int = 10) -> None:
     while True:
         try:
             check_and_notify_events()
+            check_and_notify_context_reminders()
         except Exception:
             pass
         time.sleep(interval_sec)

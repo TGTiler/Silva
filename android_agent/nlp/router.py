@@ -658,6 +658,10 @@ def extract_wifi_and_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     if not (has_wifi_kw or has_network_kw):
         return 0.0, None
 
+    # Deixa lembretes contextuais por Wi-Fi para extract_remind_on_wifi
+    if re.search(r"\b(?:quando|assim\s+que)\b.*\b(?:lembra|lembre|lembrar|avisa|avise)\b", norm) or re.search(r"\b(?:lembra|lembre|avisa|avise)\b.*\bquando\b", norm):
+        return 0.0, None
+
     # Verificação prévia de menção a senha
     has_pwd = any(w in norm for w in ["senha", "password", "pass", "codigo", "chave", "passe"])
 
@@ -1036,6 +1040,8 @@ def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     # Nunca rotear pedidos de corrida/transporte (Uber, 99, carro, corrida) ou consulta de telefone para make_call
     if any(w in norm for w in ["uber", "corrida", "carro", "qual o telefone", "qual e o telefone", "qual o numero", "qual e o numero"]) or re.search(r"\b99\b|noventa\s+e\s+nove", norm):
         return 0.0, None
+    if re.search(r"\b(?:me\s+)?(?:lembra|lembre|lembrar)\s+(?:de|do|da)\b", norm):
+        return 0.0, None
 
     system_devices = {
         "lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "bt",
@@ -1217,10 +1223,68 @@ def extract_timer(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def extract_remind_on_wifi(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Lembretes contextuais disparados ao conectar a uma rede Wi-Fi ou local salvo."""
+    clean_raw = raw.strip().rstrip("?!.,;:")
+
+    # 1. "quando eu chegar em casa / no trabalho / no escritório me lembra de ..."
+    m_arrival = re.search(
+        r"(?:quando|assim\s+que)\s+(?:eu\s+)?chegar\s+(?:em\s+|no\s+|na\s+)?(minha\s+casa|casa|meu\s+trabalho|trabalho|meu\s+escrit[oó]rio|escrit[oó]rio)\s*(?:,?\s*(?:me\s+)?(?:lembra|lembre|lembrar|avisa|avise)(?:\s+de|\s+que)?\s+(.+))",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_arrival:
+        alias = re.sub(r"(?i)^(?:minha|meu)\s+", "", m_arrival.group(1)).strip().lower()
+        reminder = m_arrival.group(2).strip()
+        if reminder:
+            return 0.96, _format_call("remind_on_wifi", ssid=alias, reminder=reminder)
+
+    # 2. "quando conectar no wifi Trabalho me lembra de ..." / "quando conectar neste wifi lembra de ..."
+    m_wifi_curr = re.search(
+        r"(?:quando|assim\s+que)\s+(?:eu\s+)?(?:conectar|entrar|chegar)?\s*(?:neste|nesse)\s+wi-?fi\s*(?:,?\s*(?:me\s+)?(?:lembra|lembre|lembrar|avisa|avise)(?:\s+de|\s+que)?\s+(.+))",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_wifi_curr:
+        reminder = m_wifi_curr.group(1).strip()
+        if reminder:
+            return 0.96, _format_call("remind_on_wifi", ssid="neste wifi", reminder=reminder)
+
+    m_wifi_named = re.search(
+        r"(?:quando|assim\s+que)\s+(?:eu\s+)?(?:conectar|entrar|chegar)?\s*(?:no|na|ao)?\s*wi-?fi\s+([^\s,]+)\s*(?:,?\s*(?:me\s+)?(?:lembra|lembre|lembrar|avisa|avise)(?:\s+de|\s+que)?\s+(.+))",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_wifi_named:
+        ssid_val = m_wifi_named.group(1).strip().strip("'\"")
+        reminder = m_wifi_named.group(2).strip()
+        if ssid_val and reminder:
+            return 0.96, _format_call("remind_on_wifi", ssid=ssid_val, reminder=reminder)
+
+    # 3. Ordem inversa: "me lembra de pagar o boleto quando eu chegar em casa / conectar no wifi X"
+    m_rev = re.search(
+        r"^(?:silva,?\s*)?(?:me\s+)?(?:lembra|lembre|avisa|avise)\s+(?:de\s+|que\s+)?(.+?)\s+(?:quando|assim\s+que)\s+(?:eu\s+)?(?:chegar\s+(?:em\s+|no\s+|na\s+)?(minha\s+casa|casa|meu\s+trabalho|trabalho|meu\s+escrit[oó]rio|escrit[oó]rio)|(?:conectar|entrar)\s+(?:no|na)?\s*wi-?fi\s+([^\s,]+))",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_rev:
+        reminder = m_rev.group(1).strip()
+        ssid_val = (m_rev.group(2) or m_rev.group(3) or "").strip().strip("'\"")
+        ssid_val = re.sub(r"(?i)^(?:minha|meu)\s+", "", ssid_val).strip()
+        if ssid_val and reminder:
+            return 0.96, _format_call("remind_on_wifi", ssid=ssid_val, reminder=reminder)
+
+    return 0.0, None
+
+
 def extract_schedule(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Agenda e calendário."""
     triggers = ["agenda", "agende", "agendar", "marca", "marque", "marcar", "compromisso", "reuniao", "lembrete"]
-    if any(t in norm for t in triggers) and not (norm.startswith(("abre", "abra", "abrir")) and any(a in norm for a in ["agenda", "calendario"])):
+    has_temporal_reminder = bool(
+        re.search(r"\b(?:me\s+)?(?:lembra|lembre|lembrar)\s+(?:de|do|da)\b", norm)
+        and re.search(r"\b(?:\d{1,2}[:h]\d{0,2}|amanha|hoje|depois de amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d{1,2}/\d{1,2})\b", norm)
+    )
+    if (any(t in norm for t in triggers) or has_temporal_reminder) and not (norm.startswith(("abre", "abra", "abrir")) and any(a in norm for a in ["agenda", "calendario"])):
         time_val = ""
         time_span = None
         time_match = re.search(r"\b(?:[aàá]s|para\s+[aàá]s|pras|pra\s+[aàá]s)?\s*(\d{1,2})(?:[:h](\d{2})?|h)\b", raw, re.IGNORECASE)
@@ -1269,13 +1333,15 @@ def extract_schedule(raw: str, norm: str) -> Tuple[float, Optional[str]]:
                     "",
                     cleaned
                 ).strip()
+                cleaned = re.sub(r"(?i)^(?:me\s+)?(?:lembra|lembre|lembrar)\s+(?:de\s+|do\s+|da\s+)?", "", cleaned).strip()
                 cleaned = re.sub(r"(?i)^(?:compromisso|lembrete)\s+(?:de\s+|sobre\s+|para\s+)?", "", cleaned).strip()
                 cleaned = re.sub(r"(?i)\s+(?:por\s+favor|pra\s+mim|agora)$", "", cleaned).strip()
                 cleaned = re.sub(r"(?i)\s+(?:na|no|em|de|para|pra)$", "", cleaned).strip()
                 cleaned = re.sub(r'[?!.,;:]+$', '', cleaned).strip()
                 title_val = cleaned or "Compromisso"
 
-        return 0.91, _format_call("schedule_event", title=title_val, date=date_val, time=time_val)
+        score = 0.96 if has_temporal_reminder else 0.91
+        return score, _format_call("schedule_event", title=title_val, date=date_val, time=time_val)
 
     return 0.0, None
 
@@ -1314,7 +1380,7 @@ def extract_memory(raw: str, norm: str) -> Tuple[float, Optional[str]]:
             return 0.95, _format_call("forget_note", query=target_q)
 
     # 3. remember_note (estruturado, captura livre e TTL)
-    if any(w in norm for w in ["lembra que", "lembrar que", "lembre que", "anota que", "anotar que", "anote que", "salva que", "salvar que", "salve que", "guarda que", "guardar que", "guarde que", "lembra disso"]):
+    if any(w in norm for w in ["lembra que", "lembrar que", "lembre que", "anota que", "anotar que", "anote que", "anota ai que", "anote ai que", "salva que", "salvar que", "salve que", "guarda que", "guardar que", "guarde que", "lembra disso"]):
         ttl_hours = 0
         m_ttl_h = re.search(r"\bpor\s+(\d+)\s*horas?\b", norm)
         if m_ttl_h:
@@ -1325,7 +1391,7 @@ def extract_memory(raw: str, norm: str) -> Tuple[float, Optional[str]]:
             ttl_hours = 24
 
         content = re.sub(
-            r"(?i)^(?:silva,?\s*)?(?:lembra|lembrar|lembre|anota|anotar|anote|salva|salvar|salve|guarda|guardar|guarde)\s+(?:disso\s+|que\s+)",
+            r"(?i)^(?:silva,?\s*)?(?:lembra|lembrar|lembre|anota|anotar|anote|salva|salvar|salve|guarda|guardar|guarde)\s+(?:a[ií]\s+)?(?:disso\s+|que\s+)",
             "",
             raw,
         ).strip()
@@ -1887,6 +1953,7 @@ class ScoredIntentRouter:
             extract_clipboard,
             extract_alarm,
             extract_timer,
+            extract_remind_on_wifi,
             extract_schedule,
             extract_memory,
             extract_summarize_notifications,

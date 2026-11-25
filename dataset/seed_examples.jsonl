@@ -257,3 +257,7 @@
 {"prompt": "O que você tem anotado?", "completion": "<call>list_memories(category=\"\")</call>"}
 {"prompt": "Lista minhas memórias", "completion": "<call>list_memories(category=\"\")</call>"}
 {"prompt": "Mostra minhas anotações de senha", "completion": "<call>list_memories(category=\"senha\")</call>"}
+{"prompt": "Quando eu chegar em casa me lembra de pagar o boleto", "completion": "<call>remind_on_wifi(ssid=\"casa\", reminder=\"pagar o boleto\")</call>"}
+{"prompt": "Quando conectar no wifi Trabalho lembra de falar com o Marcos", "completion": "<call>remind_on_wifi(ssid=\"Trabalho\", reminder=\"falar com o Marcos\")</call>"}
+{"prompt": "Quando conectar neste wifi me lembra de ligar o notebook", "completion": "<call>remind_on_wifi(ssid=\"neste wifi\", reminder=\"ligar o notebook\")</call>"}
+{"prompt": "Qual o número da minha matrícula?", "completion": "<call>recall_note(query=\"matrícula\")</call>"}

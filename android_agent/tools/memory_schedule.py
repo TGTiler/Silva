@@ -473,6 +473,18 @@ def _get_memory_db() -> sqlite3.Connection:
             );
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS context_reminders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                trigger_type TEXT NOT NULL DEFAULT 'wifi',
+                trigger_value TEXT NOT NULL,
+                reminder_text TEXT NOT NULL,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                triggered_at TIMESTAMP DEFAULT NULL
+            );
+        """)
+
         # Migração transparente de events.json legado para scheduled_events
         events_legacy = DATA_DIR / "events.json"
         events_migrated = DATA_DIR / "events.json.migrated"
@@ -1605,6 +1617,162 @@ def calculate(expression: str) -> Dict[str, Any]:
         return {"status": "error", "message": f"Não foi possível calcular '{expr_clean}': {str(e)}"}
 
 
+
+
+def remind_on_wifi(ssid: str, reminder: str) -> Dict[str, Any]:
+    """
+    Agenda um lembrete contextual proativo disparado quando o aparelho conectar a um Wi-Fi específico.
+    Suporta aliases ('casa', 'trabalho', 'escritorio') via memória salva ou 'neste wifi'/'aqui' via Wi-Fi atual.
+    """
+    reminder_clean = str(reminder or "").strip()
+    if not reminder_clean:
+        return {"status": "error", "message": "Texto do lembrete não informado."}
+
+    ssid_raw = str(ssid or "").strip()
+    ssid_norm = _normalize_text(ssid_raw)
+    resolved_ssid = ssid_raw
+
+    # 1. "neste wifi" / "aqui" / vazio -> usa SSID conectado atualmente
+    if not ssid_raw or ssid_norm in ("neste wifi", "este wifi", "wifi atual", "aqui", "nessa rede", "esta rede"):
+        try:
+            from .hardware import get_wifi_info
+            wifi_res = get_wifi_info()
+            current_ssid = str((wifi_res.get("data") or {}).get("ssid") or "").strip()
+        except Exception:
+            current_ssid = ""
+
+        if not current_ssid or current_ssid.lower() in ("<unknown ssid>", "desconhecido", "none"):
+            return {
+                "status": "error",
+                "message": "Não consegui identificar o Wi-Fi atual conectado. Informe o nome da rede (SSID).",
+            }
+        resolved_ssid = current_ssid
+
+    # 2. Aliases amigáveis ("casa", "trabalho", "escritorio") -> consulta memória salva
+    elif ssid_norm in ("casa", "minha casa", "trabalho", "meu trabalho", "escritorio", "meu escritorio"):
+        alias_core = ssid_norm.replace("minha ", "").replace("meu ", "").strip()
+        with _FILE_LOCK:
+            try:
+                conn = _get_memory_db()
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT value FROM memories "
+                    "WHERE lower(key) IN (?, ?, ?, ?) "
+                    "OR (lower(key) LIKE '%wifi%' AND lower(key) LIKE ?) "
+                    "ORDER BY updated_at DESC LIMIT 1",
+                    (
+                        f"wifi_{alias_core}",
+                        f"wifi {alias_core}",
+                        f"ssid_{alias_core}",
+                        f"ssid {alias_core}",
+                        f"%{alias_core}%",
+                    ),
+                )
+                row = cur.fetchone()
+                conn.close()
+                if row and str(row["value"] or "").strip():
+                    resolved_ssid = str(row["value"]).strip()
+            except Exception:
+                pass
+
+    with _FILE_LOCK:
+        try:
+            conn = _get_memory_db()
+            with conn:
+                conn.execute(
+                    "INSERT INTO context_reminders (trigger_type, trigger_value, reminder_text, is_active) "
+                    "VALUES ('wifi', ?, ?, 1)",
+                    (resolved_ssid, reminder_clean),
+                )
+            conn.close()
+        except Exception as e:
+            return {"status": "error", "message": f"Erro ao salvar lembrete contextual: {str(e)}"}
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Combinado! Assim que seu celular conectar no Wi-Fi '{resolved_ssid}', vou te lembrar de: {reminder_clean}.",
+        "data": {
+            "trigger_type": "wifi",
+            "ssid": resolved_ssid,
+            "reminder": reminder_clean,
+        },
+    }
+
+
+def active_recall_search(question: str) -> Dict[str, Any]:
+    """
+    Busca silenciosa de ultra-baixa latência (<2ms) no memories_fts para Recordação Ativa Pré-LLM.
+    Retorna level='high' (disparo direto de recall_note), 'medium' (injeção de contexto) ou 'none'.
+    """
+    clean_q = str(question or "").strip()
+    if not clean_q:
+        return {"level": "none", "query": "", "top": None, "matches": []}
+
+    norm_q = re.sub(r"[^\w\s]", " ", _normalize_text(clean_q))
+    stopwords = {
+        "qual", "quais", "onde", "quando", "quanto", "quantos", "quantas", "quem", "como",
+        "o", "a", "os", "as", "um", "uma", "de", "do", "da", "dos", "das",
+        "em", "no", "na", "nos", "nas", "para", "pra", "pro", "por", "que", "e", "eh",
+        "era", "foi", "sao", "esta", "estava", "fica", "me", "meu", "minha", "meus", "minhas",
+        "voce", "vc", "sabe", "sobre", "lembra", "lembrar", "anotei", "salvei", "guardei",
+        "diga", "diz", "fala", "mesmo",
+    }
+    tokens = [t for t in norm_q.split() if t not in stopwords and len(t) >= 2]
+    if not tokens:
+        return {"level": "none", "query": "", "top": None, "matches": []}
+
+    matches = []
+    with _FILE_LOCK:
+        try:
+            conn = _get_memory_db()
+            _purge_expired_memories(conn)
+            cur = conn.cursor()
+            fts_parts = [f'"{re.sub(r"[^\w]", "", t)}"*' for t in tokens if re.sub(r"[^\w]", "", t)]
+            if fts_parts:
+                fts_str = " OR ".join(fts_parts)
+                cur.execute(
+                    "SELECT m.key, m.value, m.category, m.updated_at, m.is_sensitive, bm25(memories_fts) as rank "
+                    "FROM memories_fts f "
+                    "JOIN memories m ON f.rowid = m.id "
+                    "WHERE memories_fts MATCH ? "
+                    "ORDER BY rank ASC LIMIT 3",
+                    (fts_str,),
+                )
+                for row in cur.fetchall():
+                    bm25_pos = max(0.0, -float(row["rank"]))
+                    norm_kv = _normalize_text(f"{row['key']} {row['value']}")
+                    matched_count = sum(1 for t in tokens if t in norm_kv)
+                    overlap = matched_count / len(tokens)
+                    matches.append({
+                        "key": row["key"],
+                        "value": row["value"],
+                        "category": row["category"],
+                        "updated_at": row["updated_at"],
+                        "bm25": bm25_pos,
+                        "overlap": overlap,
+                    })
+            conn.close()
+        except Exception:
+            pass
+
+    if not matches:
+        return {"level": "none", "query": " ".join(tokens), "top": None, "matches": []}
+
+    matches.sort(key=lambda m: (m["overlap"], m["bm25"]), reverse=True)
+    top = matches[0]
+    if top["overlap"] >= 0.8 or (len(tokens) == 1 and top["overlap"] == 1.0 and top["bm25"] >= 0.3):
+        level = "high"
+    elif top["overlap"] >= 0.4 or top["bm25"] >= 0.3:
+        level = "medium"
+    else:
+        level = "none"
+
+    return {
+        "level": level,
+        "query": " ".join(tokens),
+        "top": top,
+        "matches": matches,
+    }
 
 
 # Alias de compatibilidade

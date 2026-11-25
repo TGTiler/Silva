@@ -266,9 +266,9 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertIn("Área de transferência vazia (ou bloqueada em segundo plano pelo Android — libere READ_CLIPBOARD via ADB para o Termux:API).", res_empty["message"])
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
-    def test_all_59_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 59 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 59, "O catálogo formal deve conter exatamente 59 ferramentas.")
+    def test_all_60_tools_smoke_execution(self):
+        """Testa a execução smoke de todas as 60 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 60, "O catálogo formal deve conter exatamente 60 ferramentas.")
 
         sample_args = {
             "add_list_item": {"item": "café", "list_name": "compras"},
@@ -304,6 +304,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "record_audio": {"duration": 5},
             "record_video": {"duration": 5, "camera_id": 0},
             "remember_note": {"key": "teste", "value": "123"},
+            "remind_on_wifi": {"ssid": "CASA_5G", "reminder": "pagar boleto"},
             "remove_list_item": {"item": "café", "list_name": "compras"},
             "request_ride": {"destination": "Shopping"},
             "save_contact": {"name": "Teste", "phone": "11999998888"},
@@ -542,7 +543,9 @@ class TestToolsAndMemory(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_data = Path(tmpdir)
-            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_data):
+            import tools.memory_schedule as top_mem_sched
+            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_data), \
+                 patch.object(top_mem_sched, "DATA_DIR", tmp_data):
                 # 1. Inserção múltipla e sinônimo 'mercado' -> 'compras'
                 r_add = tools.add_list_item("leite, café e pão", list_name="mercado")
                 self.assertEqual(r_add["status"], "ok")
@@ -591,7 +594,9 @@ class TestToolsAndMemory(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_data = Path(tmpdir)
-            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_data):
+            import tools.memory_schedule as top_mem_sched
+            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_data), \
+                 patch.object(top_mem_sched, "DATA_DIR", tmp_data):
                 # 1. Captura livre em uma frase + Upsert sem duplicatas
                 r1 = tools.remember_note("estacionei o carro no G2 vaga 42")
                 self.assertEqual(r1["status"], "ok")
@@ -826,6 +831,73 @@ class TestToolsAndMemory(unittest.TestCase):
             mock_clip.assert_called_once_with("pizza calabresa")
             self.assertTrue(any("ifood://search?q=pizza+calabresa" in c for c in intent_calls))
             self.assertTrue(any("br.com.brainweb.ifood" in c for c in intent_calls))
+
+    def test_remind_on_wifi_scheduler_active_recall_and_unified_nlp(self):
+        """Testa remind_on_wifi (explícito, neste wifi, alias), disparo único no scheduler, Recordação Ativa Pré-LLM e NLP unificado."""
+        from android_agent import scheduler
+        from android_agent.intent_fallback import match_intent_fallback
+        from android_agent.llm_client import SilvaLLMClient
+        from android_agent.tools import memory_schedule
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_data = Path(tmpdir)
+            import tools.memory_schedule as top_mem_sched
+            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_data), \
+                 patch.object(top_mem_sched, "DATA_DIR", tmp_data):
+                # 1. SSID explícito
+                r1 = tools.remind_on_wifi("CASA_5G", "pagar o boleto")
+                self.assertEqual(r1["status"], "ok")
+                self.assertEqual(r1["data"]["ssid"], "CASA_5G")
+                self.assertIn("CASA_5G", r1["message"])
+
+                # 2. "neste wifi" -> usa get_wifi_info()
+                with patch("android_agent.tools.hardware.get_wifi_info", return_value={"status": "ok", "data": {"ssid": "Escritorio_Net"}}):
+                    r2 = tools.remind_on_wifi("neste wifi", "ligar o notebook")
+                    self.assertEqual(r2["status"], "ok")
+                    self.assertEqual(r2["data"]["ssid"], "Escritorio_Net")
+
+                # 3. Alias via nota salva ("wifi_casa" -> "MinhaRede_Casa")
+                tools.remember_note("wifi_casa", "MinhaRede_Casa")
+                r3 = tools.remind_on_wifi("casa", "tirar o lixo")
+                self.assertEqual(r3["status"], "ok")
+                self.assertEqual(r3["data"]["ssid"], "MinhaRede_Casa")
+
+                # 4. Scheduler dispara apenas uma vez quando Wi-Fi conecta
+                scheduler.pop_triggered_alerts()
+                with patch("android_agent.scheduler.get_wifi_info", return_value={"status": "ok", "data": {"ssid": "casa_5g"}}):
+                    scheduler.check_and_notify_context_reminders()
+                    alerts1 = scheduler.pop_triggered_alerts()
+                    self.assertEqual(len(alerts1), 1)
+                    self.assertEqual(alerts1[0]["event_type"], "context_wifi")
+                    self.assertEqual(alerts1[0]["title"], "pagar o boleto")
+
+                    # Segunda passagem não deve disparar novamente (is_active = 0)
+                    scheduler.check_and_notify_context_reminders()
+                    alerts2 = scheduler.pop_triggered_alerts()
+                    self.assertEqual(len(alerts2), 0)
+
+                # 5. Recordação Ativa Pré-LLM (alta relevância intercepta sem chamar llama-server)
+                tools.remember_note("codigo armario academia", "4512")
+                client = SilvaLLMClient(base_url="http://127.0.0.1:59999")
+                with patch("urllib.request.urlopen") as mock_http:
+                    call_out, _, err = client.generate_call("Qual é o código do armário da academia?")
+                    self.assertIsNone(err)
+                    self.assertIn("<call>recall_note(", call_out)
+                    mock_http.assert_not_called()
+
+        # 6. Unificação Natural de Lembretes no NLP
+        self.assertEqual(
+            match_intent_fallback("Quando eu chegar em casa me lembra de pagar o boleto"),
+            "<call>remind_on_wifi(ssid='casa', reminder='pagar o boleto')</call>",
+        )
+        self.assertEqual(
+            match_intent_fallback("Quando conectar no wifi Trabalho lembra de falar com o Marcos"),
+            "<call>remind_on_wifi(ssid='Trabalho', reminder='falar com o Marcos')</call>",
+        )
+        self.assertIn("schedule_event(", match_intent_fallback("Me lembra de tomar remédio às 20h"))
+        self.assertIn("schedule_event(", match_intent_fallback("Lembra de ligar pro banco amanhã às 10h"))
+        self.assertIn("remember_note(", match_intent_fallback("Lembra que a senha do cadeado é 4512"))
+        self.assertIn("remember_note(", match_intent_fallback("Anota aí que o protocolo é 98765"))
 
 
 if __name__ == "__main__":

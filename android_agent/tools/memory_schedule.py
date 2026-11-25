@@ -463,6 +463,16 @@ def _get_memory_db() -> sqlite3.Connection:
             );
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS lists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                list_name TEXT NOT NULL,
+                item TEXT NOT NULL COLLATE NOCASE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(list_name, item)
+            );
+        """)
+
         # Migração transparente de events.json legado para scheduled_events
         events_legacy = DATA_DIR / "events.json"
         events_migrated = DATA_DIR / "events.json.migrated"
@@ -1077,6 +1087,166 @@ def convert_units(amount: float, from_unit: str, to_unit: str) -> Dict[str, Any]
     return {
         "status": "error",
         "message": f"Não é possível converter '{from_unit}' para '{to_unit}' (unidades desconhecidas ou de categorias incompatíveis).",
+    }
+
+
+_LIST_SYNONYMS = {
+    "": "compras",
+    "mercado": "compras",
+    "supermercado": "compras",
+    "feira": "compras",
+    "compras": "compras",
+    "lista de compras": "compras",
+    "tarefa": "tarefas",
+    "tarefas": "tarefas",
+    "afazeres": "tarefas",
+    "pendencias": "tarefas",
+    "to-do": "tarefas",
+    "todo": "tarefas",
+    "lista de tarefas": "tarefas",
+}
+
+
+def _normalize_list_name(name: str) -> str:
+    """Padroniza nomes comuns de listas em PT-BR."""
+    norm = _normalize_text(name)
+    norm = re.sub(r"^(?:lista\s+de\s+|lista\s+do\s+|lista\s+da\s+)", "", norm).strip()
+    return _LIST_SYNONYMS.get(norm, norm or "compras")
+
+
+def add_list_item(item: str, list_name: str = "compras") -> Dict[str, Any]:
+    """Adiciona um ou múltiplos itens (separados por vírgula ou 'e') a uma lista persistente."""
+    raw_item = str(item or "").strip()
+    if not raw_item:
+        return {"status": "error", "message": "Informe o item para adicionar à lista."}
+
+    target_list = _normalize_list_name(list_name)
+    parts = [p.strip() for p in re.split(r"\s*,\s*|\s+e\s+", raw_item, flags=re.IGNORECASE) if p.strip()]
+    if not parts:
+        return {"status": "error", "message": "Nenhum item válido informado."}
+
+    added = []
+    already = []
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        with conn:
+            cur = conn.cursor()
+            for it in parts:
+                cur.execute(
+                    "INSERT OR IGNORE INTO lists (list_name, item) VALUES (?, ?)",
+                    (target_list, it),
+                )
+                if cur.rowcount > 0:
+                    added.append(it)
+                else:
+                    already.append(it)
+        conn.close()
+
+    msg_parts = []
+    if added:
+        msg_parts.append(f"Adicionado(s) à lista '{target_list}': {', '.join(added)}")
+    if already:
+        msg_parts.append(f"Já estava(m) na lista: {', '.join(already)}")
+
+    return {
+        "status": "ok",
+        "message": f"Silva: {'. '.join(msg_parts)}.",
+        "data": {"list_name": target_list, "added": added, "already_present": already},
+    }
+
+
+def get_list(list_name: str = "compras") -> Dict[str, Any]:
+    """Consulta os itens ativos de uma lista ou resume todas as listas existentes."""
+    raw_name = str(list_name or "compras").strip().lower()
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        cur = conn.cursor()
+        if raw_name in ("todas", "all", "listas"):
+            cur.execute("SELECT list_name, item FROM lists ORDER BY list_name ASC, id ASC")
+            rows = cur.fetchall()
+            conn.close()
+            if not rows:
+                return {"status": "ok", "message": "Silva: Nenhuma lista possui itens no momento.", "data": {"lists": {}}}
+            grouped: Dict[str, list] = {}
+            for r in rows:
+                grouped.setdefault(r["list_name"], []).append(r["item"])
+            lines = ["Silva: Suas listas ativas:"]
+            for lname, items in grouped.items():
+                lines.append(f"• {lname} ({len(items)}): {', '.join(items)}")
+            return {"status": "ok", "message": "\n".join(lines), "data": {"lists": grouped}}
+
+        target_list = _normalize_list_name(list_name)
+        cur.execute("SELECT item FROM lists WHERE list_name = ? ORDER BY id ASC", (target_list,))
+        rows = cur.fetchall()
+        conn.close()
+
+    items = [r["item"] for r in rows]
+    if not items:
+        return {
+            "status": "ok",
+            "message": f"Silva: A lista '{target_list}' está vazia.",
+            "data": {"list_name": target_list, "items": []},
+        }
+
+    numbered = "\n".join(f"{idx}. {it}" for idx, it in enumerate(items, 1))
+    return {
+        "status": "ok",
+        "message": f"Silva: Lista '{target_list}' ({len(items)} item(ns)):\n{numbered}",
+        "data": {"list_name": target_list, "items": items},
+    }
+
+
+def remove_list_item(item: str, list_name: str = "compras") -> Dict[str, Any]:
+    """Remove um item específico (exato ou substring) ou limpa todos os itens de uma lista."""
+    clean_item = str(item or "").strip()
+    if not clean_item:
+        return {"status": "error", "message": "Informe o item a remover (ou 'tudo' para limpar a lista)."}
+
+    target_list = _normalize_list_name(list_name)
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            with conn:
+                cur = conn.cursor()
+                if clean_item.lower() in ("tudo", "todos", "limpar", "esvaziar"):
+                    cur.execute("DELETE FROM lists WHERE list_name = ?", (target_list,))
+                    deleted_count = cur.rowcount
+                    return {
+                        "status": "ok",
+                        "message": f"Silva: Lista '{target_list}' limpa ({deleted_count} item(ns) removido(s)).",
+                        "data": {"list_name": target_list, "cleared": True, "removed_count": deleted_count},
+                    }
+
+                cur.execute(
+                    "SELECT id, item FROM lists WHERE list_name = ? AND lower(item) = lower(?)",
+                    (target_list, clean_item),
+                )
+                matches = cur.fetchall()
+                if not matches:
+                    cur.execute(
+                        "SELECT id, item FROM lists WHERE list_name = ? AND lower(item) LIKE ?",
+                        (target_list, f"%{clean_item.lower()}%"),
+                    )
+                    matches = cur.fetchall()
+
+                if not matches:
+                    return {
+                        "status": "ok",
+                        "message": f"Silva: O item '{clean_item}' não estava na lista '{target_list}'.",
+                        "data": {"list_name": target_list, "removed": []},
+                    }
+
+                removed_names = [m["item"] for m in matches]
+                ids = [m["id"] for m in matches]
+                placeholders = ",".join("?" for _ in ids)
+                cur.execute(f"DELETE FROM lists WHERE id IN ({placeholders})", ids)
+        finally:
+            conn.close()
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Removido(s) da lista '{target_list}': {', '.join(removed_names)}.",
+        "data": {"list_name": target_list, "removed": removed_names},
     }
 
 

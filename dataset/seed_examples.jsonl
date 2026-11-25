@@ -220,3 +220,31 @@
 {"prompt": "Converter 10 km em milhas", "completion": "<call>convert_units(amount=10, from_unit=\"km\", to_unit=\"milhas\")</call>"}
 {"prompt": "32 graus celsius em fahrenheit", "completion": "<call>convert_units(amount=32, from_unit=\"celsius\", to_unit=\"fahrenheit\")</call>"}
 {"prompt": "Quanto dá 5 libras em quilos?", "completion": "<call>convert_units(amount=5, from_unit=\"libras\", to_unit=\"quilos\")</call>"}
+{"prompt": "Manda um whatsapp para João dizendo tô chegando", "completion": "<call>send_whatsapp(contact_name=\"João\", message=\"tô chegando\")</call>"}
+{"prompt": "Envia no zap pra Maria que já saí", "completion": "<call>send_whatsapp(contact_name=\"Maria\", message=\"já saí\")</call>"}
+{"prompt": "Mensagem no whatsapp para 11999998888 falando oi", "completion": "<call>send_whatsapp(contact_name=\"11999998888\", message=\"oi\")</call>"}
+{"prompt": "Fala no whatsapp com Pedro que chego às 18h", "completion": "<call>send_whatsapp(contact_name=\"Pedro\", message=\"chego às 18h\")</call>"}
+{"prompt": "Tem algo importante nas notificações?", "completion": "<call>summarize_notifications(app_filter=\"\")</call>"}
+{"prompt": "Resume minhas notificações", "completion": "<call>summarize_notifications(app_filter=\"\")</call>"}
+{"prompt": "Chegou alguma mensagem?", "completion": "<call>summarize_notifications(app_filter=\"\")</call>"}
+{"prompt": "Notificações do whatsapp", "completion": "<call>summarize_notifications(app_filter=\"whatsapp\")</call>"}
+{"prompt": "Me leva até o Shopping Recife", "completion": "<call>navigate_to(destination=\"Shopping Recife\", app=\"maps\")</call>"}
+{"prompt": "Inicia rota para Avenida Paulista", "completion": "<call>navigate_to(destination=\"Avenida Paulista\", app=\"maps\")</call>"}
+{"prompt": "Abrir navegação para o aeroporto no Waze", "completion": "<call>navigate_to(destination=\"aeroporto\", app=\"waze\")</call>"}
+{"prompt": "Como chegar no Centro no Google Maps", "completion": "<call>navigate_to(destination=\"Centro\", app=\"maps\")</call>"}
+{"prompt": "Toca Linkin Park no Spotify", "completion": "<call>play_media(query=\"Linkin Park\", app=\"spotify\")</call>"}
+{"prompt": "Coloca uma música de lo-fi no YouTube", "completion": "<call>play_media(query=\"lo-fi\", app=\"youtube\")</call>"}
+{"prompt": "Tocar Bohemian Rhapsody", "completion": "<call>play_media(query=\"Bohemian Rhapsody\", app=\"\")</call>"}
+{"prompt": "Põe vídeo de receita de bolo no yt", "completion": "<call>play_media(query=\"receita de bolo\", app=\"youtube\")</call>"}
+{"prompt": "Coloca leite e café na lista de compras", "completion": "<call>add_list_item(item=\"leite e café\", list_name=\"compras\")</call>"}
+{"prompt": "Adiciona arroz no mercado", "completion": "<call>add_list_item(item=\"arroz\", list_name=\"compras\")</call>"}
+{"prompt": "Bota pagar luz na lista de tarefas", "completion": "<call>add_list_item(item=\"pagar luz\", list_name=\"tarefas\")</call>"}
+{"prompt": "Adiciona protetor solar na lista de viagem", "completion": "<call>add_list_item(item=\"protetor solar\", list_name=\"viagem\")</call>"}
+{"prompt": "O que tem na minha lista de compras?", "completion": "<call>get_list(list_name=\"compras\")</call>"}
+{"prompt": "O que falta comprar?", "completion": "<call>get_list(list_name=\"compras\")</call>"}
+{"prompt": "Lê a lista de tarefas", "completion": "<call>get_list(list_name=\"tarefas\")</call>"}
+{"prompt": "Quais são minhas listas?", "completion": "<call>get_list(list_name=\"todas\")</call>"}
+{"prompt": "Tira o leite da lista", "completion": "<call>remove_list_item(item=\"leite\", list_name=\"compras\")</call>"}
+{"prompt": "Remove café da lista de compras", "completion": "<call>remove_list_item(item=\"café\", list_name=\"compras\")</call>"}
+{"prompt": "Limpa a lista do mercado", "completion": "<call>remove_list_item(item=\"tudo\", list_name=\"compras\")</call>"}
+{"prompt": "Apaga pagar luz da lista de tarefas", "completion": "<call>remove_list_item(item=\"pagar luz\", list_name=\"tarefas\")</call>"}

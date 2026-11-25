@@ -268,7 +268,7 @@ def resolve_anaphora(user_text: str, session_id: str = "default") -> str:
         if m_wpp:
             target = m_wpp.group(1).strip()
             if target:
-                return _format_call_literal("send_sms", number=target, message="$prev_result", channel="whatsapp")
+                return _format_call_literal("send_whatsapp", contact_name=target, message="$prev_result")
 
         m_sms = _SMS_ANAPHORA_PATTERN.match(cleaned_no_punct)
         if m_sms:

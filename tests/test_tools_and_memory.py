@@ -266,11 +266,12 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertIn("Área de transferência vazia (ou bloqueada em segundo plano pelo Android — libere READ_CLIPBOARD via ADB para o Termux:API).", res_empty["message"])
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
-    def test_all_50_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 50 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 50, "O catálogo formal deve conter exatamente 50 ferramentas.")
+    def test_all_57_tools_smoke_execution(self):
+        """Testa a execução smoke de todas as 57 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 57, "O catálogo formal deve conter exatamente 57 ferramentas.")
 
         sample_args = {
+            "add_list_item": {"item": "café", "list_name": "compras"},
             "calculate": {"expression": "2 + 2"},
             "cancel_alarm": {"time": "07:00"},
             "connect_wifi": {"ssid": "TesteNet", "password": "123"},
@@ -281,6 +282,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "get_datetime": {},
             "get_last_location": {},
             "get_last_sms": {"limit": 3},
+            "get_list": {"list_name": "compras"},
             "get_location": {},
             "get_notifications": {"app": "whatsapp"},
             "get_system_info": {},
@@ -290,20 +292,24 @@ class TestToolsAndMemory(unittest.TestCase):
             "list_capabilities": {},
             "make_call": {"number": "11999999999"},
             "media_control": {"action": "play"},
+            "navigate_to": {"destination": "Shopping Recife", "app": "maps"},
             "none": {},
             "open_app": {"app_name": "YouTube"},
             "order_food": {"query": "pizza"},
+            "play_media": {"query": "Linkin Park", "app": "spotify"},
             "read_screen": {},
             "recall_note": {"query": "teste"},
             "record_audio": {"duration": 5},
             "record_video": {"duration": 5, "camera_id": 0},
             "remember_note": {"key": "teste", "value": "123"},
+            "remove_list_item": {"item": "café", "list_name": "compras"},
             "request_ride": {"destination": "Shopping"},
             "save_contact": {"name": "Teste", "phone": "11999998888"},
             "scan_wifi": {},
             "schedule_event": {"title": "Reuniao", "date": "amanha", "time": "14:00"},
             "search_google": {"query": "Python", "open_browser": False},
             "send_sms": {"number": "11999999999", "message": "ola"},
+            "send_whatsapp": {"contact_name": "11999999999", "message": "oi"},
             "set_airplane_mode": {"state": False},
             "set_alarm": {"time": "07:00", "label": "Acordar"},
             "set_bluetooth_state": {"state": True},
@@ -317,6 +323,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "set_torch": {"state": True},
             "set_volume": {"stream": "music", "level": 50},
             "set_wifi_state": {"state": True},
+            "summarize_notifications": {"app_filter": ""},
             "take_photo": {"camera_id": 0},
             "take_screenshot": {},
             "tell_joke": {},
@@ -465,6 +472,115 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertIn("convert_units(", match_intent_fallback("converter 50 dólares para reais"))
         self.assertIn("convert_units(", match_intent_fallback("quantos reais são 100 euros?"))
         self.assertIn("convert_units(", match_intent_fallback("32 graus celsius em fahrenheit"))
+
+    def test_navigate_to_and_play_media_with_fallbacks_and_nlp_disambiguation(self):
+        """Testa navigate_to (Maps, Waze, geo fallback), play_media (Spotify, YouTube, padrão) e desambiguação NLP."""
+        from android_agent.intent_fallback import match_intent_fallback
+
+        # 1. navigate_to: Maps -> fallback geo:0,0?q=...
+        dispatched_nav = []
+
+        def fake_nav_adb(args, timeout=6.0):
+            dispatched_nav.append(args)
+            if "google.navigation:" in " ".join(args):
+                return False, "Error: Activity not found"
+            return True, "Starting: Intent"
+
+        with patch("android_agent.tools.apps_mobility.SIMULATE_HARDWARE", False), \
+             patch("android_agent.tools.apps_mobility.ensure_adb_connected", return_value="127.0.0.1:5555"), \
+             patch("android_agent.tools.apps_mobility.run_adb_shell", side_effect=fake_nav_adb):
+            nav_maps = tools.navigate_to("Shopping Recife", app="maps")
+            self.assertEqual(nav_maps["status"], "ok")
+            self.assertIn("Google Maps", nav_maps["message"])
+            self.assertTrue(any("geo:0,0?q=Shopping%20Recife" in " ".join(c) for c in dispatched_nav))
+
+            nav_waze = tools.navigate_to("Aeroporto", app="waze")
+            self.assertEqual(nav_waze["status"], "ok")
+            self.assertIn("Waze", nav_waze["message"])
+            self.assertTrue(any("waze.com/ul?q=Aeroporto" in " ".join(c) for c in dispatched_nav))
+
+        # 2. play_media: Spotify fallback -> spotify:search, YouTube, e player padrão
+        dispatched_media = []
+
+        def fake_media_adb(args, timeout=6.0):
+            dispatched_media.append(args)
+            if "MEDIA_PLAY_FROM_SEARCH" in " ".join(args) and "com.spotify.music" in " ".join(args):
+                return False, "Error: rejected"
+            return True, "Starting: Intent"
+
+        with patch("android_agent.tools.media.SIMULATE_HARDWARE", False), \
+             patch("android_agent.tools.media.ensure_adb_connected", return_value="127.0.0.1:5555"), \
+             patch("android_agent.tools.media.run_adb_shell", side_effect=fake_media_adb):
+            sp_res = tools.play_media("Linkin Park", app="spotify")
+            self.assertEqual(sp_res["status"], "ok")
+            self.assertIn("Spotify", sp_res["message"])
+            self.assertTrue(any("spotify:search:Linkin%20Park" in " ".join(c) for c in dispatched_media))
+
+            yt_res = tools.play_media("lo-fi", app="youtube")
+            self.assertEqual(yt_res["status"], "ok")
+            self.assertIn("YouTube", yt_res["message"])
+
+            def_res = tools.play_media("Bohemian Rhapsody", app="")
+            self.assertEqual(def_res["status"], "ok")
+            self.assertIn("Player padrão", def_res["message"])
+
+        # 3. Roteamento NLP e desambiguação contra request_ride e media_control
+        self.assertEqual(match_intent_fallback("me leva até o Shopping Recife"), "<call>navigate_to(destination='Shopping Recife', app='maps')</call>")
+        self.assertEqual(match_intent_fallback("abrir navegação para o aeroporto no Waze"), "<call>navigate_to(destination='aeroporto', app='waze')</call>")
+        self.assertIn("request_ride(", match_intent_fallback("pede um Uber para o Shopping Recife"))
+
+        self.assertEqual(match_intent_fallback("toca Linkin Park no Spotify"), "<call>play_media(query='Linkin Park', app='spotify')</call>")
+        self.assertEqual(match_intent_fallback("coloca uma música de lo-fi no YouTube"), "<call>play_media(query='lo-fi', app='youtube')</call>")
+        self.assertEqual(match_intent_fallback("tocar Bohemian Rhapsody"), "<call>play_media(query='Bohemian Rhapsody', app='')</call>")
+        self.assertEqual(match_intent_fallback("pausa a música"), "<call>media_control(action='pause')</call>")
+
+    def test_dynamic_lists_crud_and_nlp(self):
+        """Testa add_list_item, get_list, remove_list_item (SQLite, deduplicação, limpeza total) e NLP."""
+        from android_agent.intent_fallback import match_intent_fallback
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_data = Path(tmpdir)
+            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_data):
+                # 1. Inserção múltipla e sinônimo 'mercado' -> 'compras'
+                r_add = tools.add_list_item("leite, café e pão", list_name="mercado")
+                self.assertEqual(r_add["status"], "ok")
+                self.assertEqual(r_add["data"]["list_name"], "compras")
+                self.assertEqual(r_add["data"]["added"], ["leite", "café", "pão"])
+
+                # 2. Deduplicação case-insensitive
+                r_dup = tools.add_list_item("LEITE", list_name="compras")
+                self.assertEqual(r_dup["data"]["added"], [])
+                self.assertEqual(r_dup["data"]["already_present"], ["LEITE"])
+
+                # 3. Segunda lista ('afazeres' -> 'tarefas')
+                tools.add_list_item("pagar luz", list_name="afazeres")
+
+                # 4. Consulta por lista e geral ('todas')
+                g_compras = tools.get_list("compras")
+                self.assertEqual(len(g_compras["data"]["items"]), 3)
+                self.assertIn("café", g_compras["message"])
+
+                g_all = tools.get_list("todas")
+                self.assertIn("compras", g_all["data"]["lists"])
+                self.assertIn("tarefas", g_all["data"]["lists"])
+
+                # 5. Remoção unitária e limpeza total
+                rem_one = tools.remove_list_item("café", list_name="compras")
+                self.assertEqual(rem_one["data"]["removed"], ["café"])
+                self.assertEqual(len(tools.get_list("compras")["data"]["items"]), 2)
+
+                rem_all = tools.remove_list_item("tudo", list_name="compras")
+                self.assertTrue(rem_all["data"]["cleared"])
+                self.assertEqual(tools.get_list("compras")["data"]["items"], [])
+
+        # 6. Roteamento NLP
+        self.assertEqual(match_intent_fallback("coloca leite e café na lista de compras"), "<call>add_list_item(item='leite e café', list_name='compras')</call>")
+        self.assertEqual(match_intent_fallback("adiciona arroz no mercado"), "<call>add_list_item(item='arroz', list_name='mercado')</call>")
+        self.assertEqual(match_intent_fallback("o que tem na minha lista de compras?"), "<call>get_list(list_name='compras')</call>")
+        self.assertEqual(match_intent_fallback("o que falta comprar?"), "<call>get_list(list_name='compras')</call>")
+        self.assertEqual(match_intent_fallback("quais são minhas listas?"), "<call>get_list(list_name='todas')</call>")
+        self.assertEqual(match_intent_fallback("tira o leite da lista"), "<call>remove_list_item(item='leite', list_name='compras')</call>")
+        self.assertEqual(match_intent_fallback("limpa a lista do mercado"), "<call>remove_list_item(item='tudo', list_name='mercado')</call>")
 
     def test_open_app_resilience_and_fuzzy(self):
         """Testa remoção de ruídos (hoje, o, agora, app) e fuzzy matching em open_app."""

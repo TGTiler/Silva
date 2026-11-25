@@ -1,6 +1,6 @@
 # Silva — Context Map Técnico
 
-> Documento de referência atualizado por inspeção do projeto. Escopo inspecionado: `2026-11-24` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código. Suíte de testes: 73 testes unitários com 100% de aprovação (`Ran 73 tests in 2.44s, OK`).
+> Documento de referência atualizado por inspeção do projeto. Escopo inspecionado: `2026-11-24` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código. Suíte de testes: 76 testes unitários com 100% de aprovação (`Ran 76 tests in 2.82s, OK`).
 
 ## 1. Estrutura de Pastas e Árvore de Arquivos
 
@@ -132,7 +132,7 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/android_agent/scheduler.py` | Daemon proativo (poll 10s) sobre `scheduled_events` no `memory.db` com pré-alerta (10 min), vibração, notificação, `termux-tts-speak`, recorrências (`daily`/`weekdays`/`weekly`) e fila `pop_triggered_alerts()`. |
 | `silva-agent/android_agent/start_silva.sh` | Wrapper leve de compatibilidade que delega a execução para `../start_silva.sh`. |
 | `silva-agent/android_agent/stop-silva.sh` | Wrapper leve de compatibilidade que delega o encerramento para `../stop-silva.sh`. |
-| `silva-agent/android_agent/tools/` | Pacote modular das **50 ferramentas** em 11 arquivos (`core`, `adb_bridge`, `contacts`, `ui_automator`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), incluindo `record_audio`, `convert_units`, `get_datetime`, `get_system_info`, `read_screen`, `save_contact`, `get_contact` e controles de conectividade ADB, auditado via AST. |
+| `silva-agent/android_agent/tools/` | Pacote modular das **57 ferramentas** em 11 arquivos (`core`, `adb_bridge`, `contacts`, `ui_automator`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), incluindo listas dinâmicas (`add_list_item`, `get_list`, `remove_list_item` na tabela `lists` do `memory.db`), `navigate_to`, `play_media`, `send_whatsapp`, `summarize_notifications`, `record_audio`, `convert_units`, `get_datetime`, `get_system_info`, `read_screen`, `save_contact`, `get_contact` e controles de conectividade ADB, auditado via AST. |
 | `silva-agent/android_agent/web_server.py` | Servidor HTTP com `SO_REUSEADDR`, `X-Session-Id`/`session_id` em `POST /api/chat`, `triggered_alerts` + `web_auto_tts` em `GET /api/health`, PIN e proteção anti-path traversal. |
 | `silva-agent/android_agent/static/index.html` | Frontend responsivo estilo Claude/DeepSeek com `session_id` por conversa, modo "Segure para falar", botão de voz TTS (`window.speechSynthesis` PT-BR) e toast de alertas proativos. |
 | `silva-agent/tests/` | Suíte de testes automatizados unitários e de integração (**69 testes 100% passando** em `2.50s`). |

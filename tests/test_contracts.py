@@ -31,9 +31,9 @@ class TestContracts(unittest.TestCase):
         self.schema_tools = self.schema_data.get("tools", {})
 
     def test_tool_count_and_keys(self):
-        """Verifica se existem exatamente 50 ferramentas e se coincidem com o schema."""
-        self.assertEqual(len(AVAILABLE_TOOLS), 50, "AVAILABLE_TOOLS deve conter exatamente 50 ferramentas")
-        self.assertEqual(len(self.schema_tools), 50, "schema.json deve conter exatamente 50 ferramentas")
+        """Verifica se existem exatamente 57 ferramentas e se coincidem com o schema."""
+        self.assertEqual(len(AVAILABLE_TOOLS), 57, "AVAILABLE_TOOLS deve conter exatamente 57 ferramentas")
+        self.assertEqual(len(self.schema_tools), 57, "schema.json deve conter exatamente 57 ferramentas")
         self.assertEqual(
             set(AVAILABLE_TOOLS.keys()),
             set(self.schema_tools.keys()),
@@ -41,7 +41,7 @@ class TestContracts(unittest.TestCase):
         )
 
     def test_system_prompt_synchronization(self):
-        """Verifica se todas as 50 ferramentas aparecem no prompt de config.py e colab_train_silva.py."""
+        """Verifica se todas as 57 ferramentas aparecem no prompt de config.py e colab_train_silva.py."""
         # 1. Checa config.py
         for tool_name in AVAILABLE_TOOLS.keys():
             self.assertIn(

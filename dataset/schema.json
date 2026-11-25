@@ -536,6 +536,101 @@
         }
       }
     },
+    "send_whatsapp": {
+      "description": "Envia uma mensagem diretamente no WhatsApp para um contato ou telefone.",
+      "parameters": {
+        "contact_name": {
+          "type": "string",
+          "required": true,
+          "description": "Nome, apelido ou telefone do destinatário."
+        },
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "Texto da mensagem a enviar."
+        }
+      }
+    },
+    "summarize_notifications": {
+      "description": "Resume de forma inteligente as notificações ativas do Android filtrando ruídos.",
+      "parameters": {
+        "app_filter": {
+          "type": "string",
+          "required": false,
+          "description": "Filtro opcional de aplicativo ou categoria (ex: whatsapp, banco)."
+        }
+      }
+    },
+    "navigate_to": {
+      "description": "Inicia navegação GPS curva a curva diretamente no Google Maps ou Waze.",
+      "parameters": {
+        "destination": {
+          "type": "string",
+          "required": true,
+          "description": "Destino da rota GPS."
+        },
+        "app": {
+          "type": "string",
+          "required": false,
+          "description": "Aplicativo de navegação ('maps' ou 'waze', padrão 'maps')."
+        }
+      }
+    },
+    "play_media": {
+      "description": "Busca e reproduz música, artista, playlist ou vídeo no Spotify, YouTube ou player padrão.",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Termo de busca (música, artista, vídeo ou playlist)."
+        },
+        "app": {
+          "type": "string",
+          "required": false,
+          "description": "Player desejado ('spotify', 'youtube', 'youtube music' ou vazio para padrão)."
+        }
+      }
+    },
+    "add_list_item": {
+      "description": "Adiciona um ou mais itens a uma lista dinâmica persistente (ex: compras, tarefas).",
+      "parameters": {
+        "item": {
+          "type": "string",
+          "required": true,
+          "description": "Item ou itens separados por vírgula ou 'e'."
+        },
+        "list_name": {
+          "type": "string",
+          "required": false,
+          "description": "Nome da lista (padrão 'compras')."
+        }
+      }
+    },
+    "get_list": {
+      "description": "Consulta os itens ativos de uma lista ou resume todas as listas existentes.",
+      "parameters": {
+        "list_name": {
+          "type": "string",
+          "required": false,
+          "description": "Nome da lista ou 'todas' (padrão 'compras')."
+        }
+      }
+    },
+    "remove_list_item": {
+      "description": "Remove um item específico ou limpa todos os itens de uma lista.",
+      "parameters": {
+        "item": {
+          "type": "string",
+          "required": true,
+          "description": "Nome do item a remover ou 'tudo' para limpar a lista."
+        },
+        "list_name": {
+          "type": "string",
+          "required": false,
+          "description": "Nome da lista (padrão 'compras')."
+        }
+      }
+    },
     "none": {
       "description": "Chamada nula emitida quando o usuário faz uma pergunta geral, saudação ou comando sem ferramenta correspondente.",
       "parameters": {}

@@ -346,6 +346,227 @@ def get_contact(name: str) -> Dict[str, Any]:
     }
 
 
+def send_whatsapp(contact_name: str, message: str) -> Dict[str, Any]:
+    """
+    Envia mensagem diretamente no WhatsApp combinando resolução de contatos,
+    deep link https://wa.me/{phone}?text=... e clique automático no botão Enviar via ADB/ui_automator.
+    """
+    clean_contact = str(contact_name or "").strip()
+    clean_message = str(message or "").strip()
+    if not clean_contact:
+        return {"status": "error", "message": "Nome ou telefone do destinatário não informado."}
+    if not clean_message:
+        return {"status": "error", "message": "Mensagem do WhatsApp vazia."}
+
+    info = resolve_contact_detailed(clean_contact)
+    if info.get("ambiguous"):
+        return {
+            "status": "error",
+            "message": format_disambiguation_message(clean_contact, info.get("candidates", [])),
+            "data": {"ambiguous": True, "candidates": info.get("candidates", [])},
+        }
+
+    if not info.get("number"):
+        return {
+            "status": "error",
+            "message": (
+                f"Contato '{clean_contact}' não encontrado na memória ou na agenda. "
+                "Salve o número com save_contact ou informe o telefone diretamente."
+            ),
+            "data": {"found": False, "contact_name": clean_contact},
+        }
+
+    wa_num = _format_whatsapp_phone(info["number"])
+    display_target = info.get("name") or clean_contact
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        return {
+            "status": "ok",
+            "message": f"Silva: Mensagem enviada no WhatsApp para {display_target} ({wa_num}): '{clean_message}'. [Simulado]",
+            "data": {"recipient": display_target, "phone": wa_num, "message": clean_message, "channel": "whatsapp"},
+        }
+
+    encoded_msg = urllib.parse.quote(clean_message)
+    deep_link = f"https://wa.me/{wa_num}?text={encoded_msg}"
+    opened = False
+    for pkg in ("com.whatsapp", "com.whatsapp.w4b"):
+        if adb_serial:
+            ok_am, out_am = run_adb_shell(
+                ["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, "-p", pkg],
+                timeout=6.0,
+            )
+            if ok_am and "Error:" not in out_am:
+                opened = True
+                break
+        else:
+            if _exec_android_intent(["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, "-p", pkg]):
+                opened = True
+                break
+
+    if not opened:
+        return {
+            "status": "error",
+            "message": f"Não foi possível abrir o WhatsApp para '{display_target}'.",
+            "data": {"recipient": display_target, "phone": wa_num},
+        }
+
+    if adb_serial:
+        time.sleep(1.5)
+        nodes = dump_ui_nodes()
+        send_node = (
+            find_ui_node("com.whatsapp:id/send", nodes=nodes, clickable_only=True)
+            or find_ui_node("Enviar", nodes=nodes, clickable_only=True)
+            or find_ui_node("Send", nodes=nodes, clickable_only=True)
+        )
+        if send_node:
+            ok_tap, _ = tap_coords(send_node["cx"], send_node["cy"])
+            if ok_tap:
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Mensagem enviada no WhatsApp para {display_target}: '{clean_message}'.",
+                    "data": {"recipient": display_target, "phone": wa_num, "message": clean_message, "sent": True},
+                }
+
+    return {
+        "status": "ok",
+        "message": (
+            f"Silva: A mensagem para {display_target} já foi preenchida na tela do WhatsApp e aguarda toque manual "
+            "(ADB offline ou tela bloqueada)."
+        ),
+        "data": {"recipient": display_target, "phone": wa_num, "message": clean_message, "sent": False},
+    }
+
+
+_NOISE_PACKAGES = {
+    "android",
+    "com.android.systemui",
+    "com.android.providers.downloads",
+    "com.samsung.android.incallui",
+    "com.sec.android.app.launcher",
+}
+_NOISE_KEYWORDS = (
+    "carregando", "charging", "bateria", "usb conectado", "depuração usb",
+    "usb debugging", "executando em segundo plano", "running in the background",
+)
+_FRIENDLY_APP_MAP = {
+    "com.whatsapp": "WhatsApp",
+    "com.whatsapp.w4b": "WhatsApp Business",
+    "com.nu.production": "Bancos",
+    "br.com.intermedium": "Bancos",
+    "com.itau": "Bancos",
+    "br.com.bb.android": "Bancos",
+    "com.bradesco": "Bancos",
+    "com.santander.app": "Bancos",
+    "com.google.android.gm": "Gmail",
+    "com.android.mms": "SMS",
+    "com.google.android.apps.messaging": "SMS",
+    "com.samsung.android.messaging": "SMS",
+    "com.instagram.android": "Instagram",
+    "org.telegram.messenger": "Telegram",
+}
+
+
+def _parse_dumpsys_notifications(raw_dump: str) -> list:
+    items = []
+    cur_pkg = ""
+    cur_title = ""
+    cur_text = ""
+    for line in (raw_dump or "").splitlines():
+        s = line.strip()
+        if s.startswith("NotificationRecord("):
+            if cur_pkg and (cur_title or cur_text):
+                items.append({"packageName": cur_pkg, "title": cur_title, "text": cur_text})
+            cur_pkg = ""
+            cur_title = ""
+            cur_text = ""
+            m_pkg = re.search(r"pkg=([^\s]+)", s)
+            if m_pkg:
+                cur_pkg = m_pkg.group(1)
+        elif "android.title=" in s:
+            cur_title = s.split("android.title=", 1)[1].strip(" ()'\"")
+        elif "android.text=" in s:
+            cur_text = s.split("android.text=", 1)[1].strip(" ()'\"")
+    if cur_pkg and (cur_title or cur_text):
+        items.append({"packageName": cur_pkg, "title": cur_title, "text": cur_text})
+    return items
+
+
+def summarize_notifications(app_filter: str = "") -> Dict[str, Any]:
+    """Coleta, filtra ruídos técnicos e resume notificações ativas agrupadas por app."""
+    raw_filter = str(app_filter or "").strip().lower()
+    raw_notifs = []
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        raw_notifs = [
+            {"packageName": "com.whatsapp", "title": "João", "text": "Reunião confirmada às 15h"},
+            {"packageName": "com.nu.production", "title": "Nubank", "text": "Compra aprovada de R$ 42,00"},
+            {"packageName": "com.android.systemui", "title": "Sistema", "text": "Carregando lentamente"},
+        ]
+    else:
+        got_termux = False
+        if not SIMULATE_HARDWARE:
+            try:
+                res = _run_termux_cmd(["termux-notification-list"], timeout=5)
+                if res.returncode == 0 and res.stdout.strip():
+                    parsed = json.loads(res.stdout)
+                    if isinstance(parsed, list):
+                        raw_notifs = parsed
+                        got_termux = True
+            except Exception:
+                pass
+        if not got_termux and adb_serial:
+            ok_adb, out_adb = run_adb_shell(["dumpsys", "notification", "--noredact"], timeout=8.0)
+            if ok_adb and out_adb:
+                raw_notifs = _parse_dumpsys_notifications(out_adb)
+
+    grouped: Dict[str, list] = {}
+    seen_entries = set()
+
+    for n in raw_notifs:
+        pkg = str(n.get("packageName") or "").strip()
+        title = str(n.get("title") or "").strip()
+        body = str(n.get("content") or n.get("text") or "").strip()
+        if not pkg or pkg in _NOISE_PACKAGES:
+            continue
+        combined_low = f"{title} {body}".lower()
+        if not combined_low.strip() or any(kw in combined_low for kw in _NOISE_KEYWORDS):
+            continue
+
+        friendly = _FRIENDLY_APP_MAP.get(pkg, pkg.split(".")[-1].capitalize())
+        if raw_filter and raw_filter not in friendly.lower() and raw_filter not in pkg.lower():
+            continue
+
+        snippet = f"{title}: {body}" if title and body else (title or body)
+        dedup_key = (friendly, snippet)
+        if dedup_key in seen_entries:
+            continue
+        seen_entries.add(dedup_key)
+        grouped.setdefault(friendly, []).append(snippet)
+
+    if not grouped:
+        scope = f" de '{app_filter}'" if raw_filter else ""
+        return {
+            "status": "ok",
+            "message": f"Silva: Nenhuma notificação importante{scope} encontrada no momento.",
+            "data": {"total": 0, "groups": {}},
+        }
+
+    total = sum(len(v) for v in grouped.values())
+    lines = [f"Silva: Resumo de {total} notificação(ões):"]
+    for app_name, msgs in grouped.items():
+        preview = "; ".join(msgs[:3])
+        extra = f" (+{len(msgs) - 3})" if len(msgs) > 3 else ""
+        lines.append(f"• {app_name} ({len(msgs)}): {preview}{extra}")
+
+    return {
+        "status": "ok",
+        "message": "\n".join(lines),
+        "data": {"total": total, "groups": grouped},
+    }
+
+
 def send_sms(number: str, message: str, channel: str = "sms") -> Dict[str, Any]:
     """Envia SMS ou mensagem no WhatsApp (quando channel='whatsapp') para o contato/número."""
     if str(channel or "sms").strip().lower() in ("whatsapp", "zap", "wpp"):

@@ -1104,7 +1104,7 @@ def extract_send_sms(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         to_target = re.sub(r"^(?:o|a)\s+", "", m_wpp_explicit.group(1).strip(), flags=re.IGNORECASE).strip()
         msg_body = m_wpp_explicit.group(2).strip()
         if to_target and msg_body:
-            return 0.97, _format_call("send_sms", number=to_target, message=msg_body, channel="whatsapp")
+            return 0.97, _format_call("send_whatsapp", contact_name=to_target, message=msg_body)
 
     m_wpp_short = re.search(
         r"(?:envia|enviar|envie|manda|mandar|mande)\s+"
@@ -1117,7 +1117,7 @@ def extract_send_sms(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         to_target = m_wpp_short.group(1).strip()
         msg_body = m_wpp_short.group(2).strip()
         if to_target and msg_body:
-            return 0.97, _format_call("send_sms", number=to_target, message=msg_body, channel="whatsapp")
+            return 0.97, _format_call("send_whatsapp", contact_name=to_target, message=msg_body)
 
     # 2. SMS tradicional (aceita números, nomes próprios acentuados e apelidos)
     m_sms = re.search(
@@ -1638,6 +1638,155 @@ def extract_convert_units(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def extract_summarize_notifications(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Resumo inteligente e filtrado de notificações ativas."""
+    notif_triggers = (
+        "algo importante nas notificacoes", "algo importante na notificacao",
+        "resume minhas notificacoes", "resumir notificacoes", "resuma minhas notificacoes",
+        "resuma as notificacoes", "resumo das notificacoes", "resumo de notificacoes",
+        "notificacoes do ", "notificacoes da ", "notificacoes de ",
+        "chegou alguma mensagem", "chegou mensagem",
+    )
+    if any(t in norm for t in notif_triggers):
+        app_filter = ""
+        m_app = re.search(r"notificac(?:ao|oes)\s+(?:do|da|de)\s+([a-zA-Z0-9_\s]{2,30})", norm)
+        if m_app:
+            app_filter = m_app.group(1).strip().rstrip("?!.,;:")
+            if app_filter in ("celular", "android", "sistema"):
+                app_filter = ""
+        return 0.95, _format_call("summarize_notifications", app_filter=app_filter)
+    return 0.0, None
+
+
+def extract_navigate_to(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Navegação GPS curva a curva (Google Maps / Waze), sem colidir com Uber/99."""
+    if any(w in norm for w in ("uber", "corrida", "taxi")) or re.search(r"\b99\b|noventa\s+e\s+nove", norm):
+        return 0.0, None
+
+    nav_cues = (
+        "me leva", "leva ate", "inicia rota", "iniciar rota", "traca rota", "tracar rota",
+        "navegacao", "navegar", "como chegar", "waze", "google maps", "no maps",
+    )
+    if not any(c in norm for c in nav_cues):
+        return 0.0, None
+
+    m_nav = re.search(
+        r"(?:me\s+leva|leva|levar|inicia|iniciar|abre|abrir|tra[çc]a|tra[çc]ar|como\s+chegar|navega|navegar)\s+"
+        r"(?:uma\s+)?(?:rota|navega[çc][ãa]o|caminho)?\s*(?:para|pro|pra|at[eé]|no|na)\s+(.+)",
+        raw.strip().rstrip("?!.,;:"),
+        re.IGNORECASE,
+    )
+    if not m_nav:
+        return 0.0, None
+
+    dest = m_nav.group(1).strip()
+    app_val = "waze" if "waze" in norm else "maps"
+    dest = re.sub(r"(?i)\s+(?:no|pelo|via)\s+(?:waze|google\s+maps|maps)$", "", dest).strip()
+    dest = re.sub(r"(?i)^(?:o|a|os|as)\s+", "", dest).strip()
+    if dest:
+        return 0.97, _format_call("navigate_to", destination=dest, app=app_val)
+    return 0.0, None
+
+
+def extract_play_media(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Busca e reprodução de música, artista, playlist ou vídeo (Spotify / YouTube / padrão)."""
+    if any(w in norm for w in ("alarme", "timer", "uber", "corrida", "99", "ifood", "volume", "brilho")):
+        return 0.0, None
+
+    m_play = re.search(
+        r"^(?:silva,?\s*)?(?:toca|tocar|toque|coloca|colocar|coloque|p[oõ]e|por|reproduz|reproduzir)\s+(.+)$",
+        raw.strip().rstrip("?!.,;:"),
+        re.IGNORECASE,
+    )
+    if not m_play:
+        return 0.0, None
+
+    body = m_play.group(1).strip()
+    norm_body = normalize_text(body)
+    # Comandos simples de transporte ficam em extract_media_control
+    if norm_body in ("musica", "a musica", "o som", "som", "a faixa", "faixa", "a midia", "midia", "o video", "video", "play", "de novo"):
+        return 0.0, None
+
+    app_val = ""
+    if re.search(r"\b(?:youtube\s+music|yt\s+music)\b", norm_body):
+        app_val = "youtube music"
+    elif re.search(r"\b(?:youtube|yt)\b", norm_body):
+        app_val = "youtube"
+    elif "spotify" in norm_body:
+        app_val = "spotify"
+
+    query = re.sub(r"(?i)\s+(?:no|na|pelo|via)\s+(?:spotify|youtube\s+music|yt\s+music|youtube|yt)$", "", body).strip()
+    query = re.sub(r"(?i)^(?:uma\s+m[uú]sica\s+de|m[uú]sica\s+de|uma\s+m[uú]sica|um\s+v[ií]deo\s+de|v[ií]deo\s+de|um\s+v[ií]deo|uma\s+playlist\s+de|playlist\s+de)\s+", "", query).strip()
+    if query:
+        return 0.96, _format_call("play_media", query=query, app=app_val)
+    return 0.0, None
+
+
+def extract_lists(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Listas dinâmicas persistentes (compras, tarefas, etc.)."""
+    clean_raw = raw.strip().rstrip("?!.,;:")
+
+    # 1. Consultar todas as listas
+    if re.search(r"\bquais\s+(?:sao\s+)?(?:as\s+)?minhas\s+listas\b", norm):
+        return 0.97, _format_call("get_list", list_name="todas")
+
+    # 2. O que falta comprar
+    if re.search(r"\bo\s+que\s+(?:falta|precisa|tenho\s+(?:que|de))\s+comprar\b", norm):
+        return 0.97, _format_call("get_list", list_name="compras")
+
+    # 3. Limpar lista inteira
+    m_clear = re.search(
+        r"^(?:silva,?\s*)?(?:limpa|limpar|limpe|esvazia|esvaziar|esvazie|apaga|apagar|apague)\s+(?:toda\s+)?(?:a\s+)?(?:minha\s+)?lista(?:\s+(?:de|do|da)\s+([a-zA-ZÀ-ÿ0-9_\s]+))?$",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_clear:
+        lname = (m_clear.group(1) or "compras").strip()
+        return 0.97, _format_call("remove_list_item", item="tudo", list_name=lname)
+
+    # 4. Remover item específico da lista
+    m_rem = re.search(
+        r"^(?:silva,?\s*)?(?:tira|tirar|tire|remove|remover|remova|apaga|apagar|apague|deleta|deletar|delete|risca|riscar)\s+"
+        r"(?:o\s+|a\s+|os\s+|as\s+)?(.+?)\s+(?:da|do)\s+(?:minha\s+)?(?:lista(?:\s+(?:de|do|da)\s+([a-zA-ZÀ-ÿ0-9_\s]*))?|(mercado|supermercado))$",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_rem:
+        item_val = m_rem.group(1).strip()
+        lname = (m_rem.group(2) or m_rem.group(3) or "compras").strip() or "compras"
+        if item_val:
+            return 0.97, _format_call("remove_list_item", item=item_val, list_name=lname)
+
+    # 5. Adicionar item(ns) na lista
+    m_add = re.search(
+        r"^(?:silva,?\s*)?(?:coloca|colocar|coloque|bota|botar|bote|adiciona|adicionar|adicione|p[oõ]e|por|inclui|incluir|insere|inserir)\s+"
+        r"(.+?)\s+(?:na|no|para\s+a|para\s+o|pra)\s+(?:minha\s+)?(?:lista\s+(?:de|do|da)\s+)?([a-zA-ZÀ-ÿ0-9_\s]+)$",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_add:
+        item_val = m_add.group(1).strip()
+        lname = m_add.group(2).strip()
+        norm_lname = normalize_text(lname)
+        if any(k in norm_lname for k in ("compra", "mercado", "supermercado", "feira", "tarefa", "afazer", "viagem", "farmacia", "lista")):
+            lname_clean = re.sub(r"^(?:lista\s+de\s+|lista\s+do\s+|lista\s+da\s+)", "", lname, flags=re.IGNORECASE).strip() or "compras"
+            if item_val:
+                return 0.97, _format_call("add_list_item", item=item_val, list_name=lname_clean)
+
+    # 6. Consultar lista específica
+    m_get = re.search(
+        r"(?:o\s+que\s+tem\s+na|l[eê]|leia|ler|mostra|mostre|ver|veja|qual\s+(?:[eé]\s+)?a)\s+"
+        r"(?:minha\s+)?lista(?:\s+(?:de|do|da)\s+([a-zA-ZÀ-ÿ0-9_\s]+))?",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_get:
+        lname = (m_get.group(1) or "compras").strip() or "compras"
+        return 0.97, _format_call("get_list", list_name=lname)
+
+    return 0.0, None
+
+
 def extract_none(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Comando nulo explícito."""
     if norm in ["nada", "ignorar", "nenhuma acao", "nenhuma ação", "cancela", "cancelar"]:
@@ -1665,6 +1814,9 @@ class ScoredIntentRouter:
             extract_save_contact,
             extract_get_contact,
             extract_connectivity_controls,
+            extract_navigate_to,
+            extract_play_media,
+            extract_lists,
             extract_record_audio,
             extract_convert_units,
             extract_torch,
@@ -1690,6 +1842,7 @@ class ScoredIntentRouter:
             extract_timer,
             extract_schedule,
             extract_memory,
+            extract_summarize_notifications,
             extract_notifications,
             extract_volume,
             extract_brightness,

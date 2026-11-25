@@ -6,6 +6,7 @@ import difflib
 import json
 import random
 import re
+import shlex
 import unicodedata
 import urllib.parse
 import urllib.request
@@ -889,6 +890,68 @@ def read_screen() -> Dict[str, Any]:
         "status": "ok",
         "message": f"Conteúdo visível na tela: {joined}",
         "data": {"texts": filtered[:30], "count": len(filtered)},
+    }
+
+
+def _dispatch_intent(args: list, adb_serial: Optional[str]) -> bool:
+    if adb_serial:
+        ok, out = run_adb_shell(args, timeout=6.0)
+        if ok and "Error:" not in (out or ""):
+            return True
+    res = _exec_android_intent(shlex.join(args))
+    return res.returncode == 0 and "Error:" not in (res.stderr or "")
+
+
+def navigate_to(destination: str, app: str = "maps") -> Dict[str, Any]:
+    """Inicia navegação GPS curva a curva diretamente no Google Maps ou Waze."""
+    clean_dest = str(destination or "").strip()
+    if not clean_dest:
+        return {"status": "error", "message": "Informe o destino para iniciar a navegação GPS."}
+
+    raw_app = str(app or "maps").strip().lower()
+    norm_app = "waze" if "waze" in raw_app else "maps"
+    app_label = "Waze" if norm_app == "waze" else "Google Maps"
+    if SIMULATE_HARDWARE:
+        return {
+            "status": "ok",
+            "message": f"Silva: Navegação iniciada no {app_label} para '{clean_dest}'. [Simulado]",
+            "data": {"destination": clean_dest, "app": norm_app, "simulated": True},
+        }
+    adb_serial = ensure_adb_connected()
+
+    enc_dest = urllib.parse.quote(clean_dest)
+    launched = False
+    if norm_app == "waze":
+        waze_url = f"https://waze.com/ul?q={enc_dest}&navigate=yes"
+        launched = _dispatch_intent(
+            ["am", "start", "-a", "android.intent.action.VIEW", "-d", waze_url, "-p", "com.waze"],
+            adb_serial,
+        ) or _dispatch_intent(
+            ["am", "start", "-a", "android.intent.action.VIEW", "-d", waze_url],
+            adb_serial,
+        )
+    else:
+        nav_uri = f"google.navigation:q={enc_dest}&mode=d"
+        geo_uri = f"geo:0,0?q={enc_dest}"
+        launched = _dispatch_intent(
+            ["am", "start", "-a", "android.intent.action.VIEW", "-d", nav_uri, "-p", "com.google.android.apps.maps"],
+            adb_serial,
+        ) or _dispatch_intent(
+            ["am", "start", "-a", "android.intent.action.VIEW", "-d", geo_uri],
+            adb_serial,
+        )
+
+    if not launched:
+        return {
+            "status": "error",
+            "message": f"Não foi possível iniciar a navegação no {app_label} para '{clean_dest}'.",
+            "data": {"destination": clean_dest, "app": norm_app},
+        }
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Navegação iniciada no {app_label} para '{clean_dest}'.",
+        "data": {"destination": clean_dest, "app": norm_app},
     }
 
 

@@ -2,12 +2,14 @@
 Módulo Mídia do Silva: Foto, Screenshot, Vídeo e Controle de Mídia.
 """
 
+import shlex
 import shutil
 import subprocess
 import time
+import urllib.parse
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .core import (
     CAPTURES_DIR,
@@ -477,6 +479,83 @@ def record_audio(duration: int = 10) -> Dict[str, Any]:
         "audio_url": audio_url,
         "media_items": [{"type": "audio", "url": audio_url}],
         "data": {"filename": filename, "duration": dur, "size_bytes": out_path.stat().st_size},
+    }
+
+
+_MEDIA_APP_PACKAGES = {
+    "spotify": ("com.spotify.music", "Spotify"),
+    "youtube": ("com.google.android.youtube", "YouTube"),
+    "youtube music": ("com.google.android.apps.youtube.music", "YouTube Music"),
+}
+
+
+def _dispatch_media_intent(args: list, adb_serial: Optional[str]) -> bool:
+    if adb_serial:
+        ok, out = run_adb_shell(args, timeout=6.0)
+        if ok and "Error:" not in (out or ""):
+            return True
+    res = _exec_android_intent(shlex.join(args))
+    return res.returncode == 0 and "Error:" not in (res.stderr or "")
+
+
+def play_media(query: str, app: str = "") -> Dict[str, Any]:
+    """Busca e inicia a reprodução de música, artista, playlist ou vídeo no Spotify, YouTube ou player padrão."""
+    clean_query = str(query or "").strip()
+    if not clean_query:
+        return {"status": "error", "message": "Informe o nome da música, artista ou vídeo para reproduzir."}
+
+    raw_app = str(app or "").strip().lower()
+    if raw_app in ("yt", "youtube"):
+        norm_app = "youtube"
+    elif raw_app in ("yt music", "youtube music", "youtubemusic"):
+        norm_app = "youtube music"
+    elif "spotify" in raw_app:
+        norm_app = "spotify"
+    else:
+        norm_app = ""
+
+    pkg, app_label = _MEDIA_APP_PACKAGES.get(norm_app, ("", "Player padrão"))
+    if SIMULATE_HARDWARE:
+        return {
+            "status": "ok",
+            "message": f"Silva: Reproduzindo '{clean_query}' no {app_label}. [Simulado]",
+            "data": {"query": clean_query, "app": norm_app or "default", "simulated": True},
+        }
+    adb_serial = ensure_adb_connected()
+
+    search_cmd = [
+        "am", "start",
+        "-a", "android.media.action.MEDIA_PLAY_FROM_SEARCH",
+        "-e", "query", clean_query,
+    ]
+    if pkg:
+        search_cmd.extend(["-p", pkg])
+
+    launched = _dispatch_media_intent(search_cmd, adb_serial)
+    if not launched:
+        enc_q = urllib.parse.quote(clean_query)
+        if norm_app in ("youtube", "youtube music"):
+            launched = _dispatch_media_intent(
+                ["am", "start", "-a", "android.intent.action.VIEW", "-d", f"https://www.youtube.com/results?search_query={enc_q}"],
+                adb_serial,
+            )
+        elif norm_app == "spotify":
+            launched = _dispatch_media_intent(
+                ["am", "start", "-a", "android.intent.action.VIEW", "-d", f"spotify:search:{enc_q}", "-p", "com.spotify.music"],
+                adb_serial,
+            )
+
+    if not launched:
+        return {
+            "status": "error",
+            "message": f"Não foi possível iniciar a reprodução de '{clean_query}' no {app_label}.",
+            "data": {"query": clean_query, "app": norm_app or "default"},
+        }
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Reproduzindo '{clean_query}' no {app_label}.",
+        "data": {"query": clean_query, "app": norm_app or "default", "package": pkg},
     }
 
 

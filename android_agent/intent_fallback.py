@@ -125,7 +125,7 @@ def _resolve_piped_clause(clause: str, prev_calls: List[str]) -> Optional[str]:
     if m_wpp:
         target = m_wpp.group(1).strip()
         if target:
-            return _format_call("send_sms", number=target, message="$prev_result", channel="whatsapp")
+            return _format_call("send_whatsapp", contact_name=target, message="$prev_result")
 
     m_sms = _PIPE_SMS_RE.match(clean_clause)
     if m_sms:

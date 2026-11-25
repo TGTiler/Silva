@@ -124,15 +124,13 @@ class TestUiAutomator(unittest.TestCase):
     def test_nlp_whatsapp_and_screen_interaction_routing(self):
         call_wpp = match_intent_fallback("manda mensagem no whatsapp para João dizendo Cheguei agora")
         self.assertIsNotNone(call_wpp)
-        self.assertIn("send_sms(", call_wpp)
-        self.assertIn("channel='whatsapp'", call_wpp)
+        self.assertIn("send_whatsapp(", call_wpp)
         self.assertIn("João", call_wpp)
 
         call_piped = match_intent_fallback("Vê quanto está minha bateria e manda no WhatsApp para o João")
         self.assertIsNotNone(call_piped)
         self.assertIn("<call>get_battery()</call>", call_piped)
-        self.assertIn("send_sms(", call_piped)
-        self.assertIn("channel='whatsapp'", call_piped)
+        self.assertIn("send_whatsapp(", call_piped)
         self.assertIn("$prev_result", call_piped)
 
         call_tap = match_intent_fallback("clica em Confirmar")
@@ -146,6 +144,74 @@ class TestUiAutomator(unittest.TestCase):
             tap_res = apps_mobility.open_app("ui:tap:Confirmar", action="tap", label="Confirmar")
             self.assertEqual(tap_res["status"], "ok")
             self.assertIn("Confirmar", tap_res["message"])
+
+    def test_send_whatsapp_and_summarize_notifications(self):
+        import json
+        import subprocess
+
+        # 1. send_whatsapp com sucesso via ADB + ui_automator
+        adb_cmds = []
+
+        def fake_adb(args, timeout=6.0):
+            adb_cmds.append(args)
+            if args[:2] == ["uiautomator", "dump"]:
+                return True, "UI hierchary dumped to: /sdcard/silva_ui.xml"
+            if args[:2] == ["cat", "/sdcard/silva_ui.xml"]:
+                return True, SAMPLE_WHATSAPP_XML
+            return True, ""
+
+        with patch("android_agent.tools.comms.resolve_contact_detailed", return_value={"number": "81999998888", "name": "João", "source": "android_contacts", "ambiguous": False, "candidates": []}), \
+             patch("android_agent.tools.comms.ensure_adb_connected", return_value="127.0.0.1:5555"), \
+             patch("android_agent.tools.comms.run_adb_shell", side_effect=fake_adb), \
+             patch("android_agent.tools.ui_automator.run_adb_shell", side_effect=fake_adb), \
+             patch("android_agent.tools.comms.time.sleep", return_value=None):
+            res_ok = comms.send_whatsapp("João", "Tô chegando!")
+            self.assertEqual(res_ok["status"], "ok")
+            self.assertTrue(res_ok["data"]["sent"])
+            self.assertTrue(any("https://wa.me/5581999998888" in " ".join(c) for c in adb_cmds))
+            self.assertIn(["input", "tap", "1025", "2195"], adb_cmds)
+
+        # 2. send_whatsapp desambiguação e fallback ADB offline
+        with patch("android_agent.tools.comms.resolve_contact_detailed", return_value={"number": None, "name": None, "source": "ambiguous", "ambiguous": True, "candidates": [{"name": "João A", "number": "111"}, {"name": "João B", "number": "222"}]}):
+            res_amb = comms.send_whatsapp("João", "Oi")
+            self.assertEqual(res_amb["status"], "error")
+            self.assertIn("João A", res_amb["message"])
+
+        with patch("android_agent.tools.comms.SIMULATE_HARDWARE", False), \
+             patch("android_agent.tools.comms.resolve_contact_detailed", return_value={"number": "11999998888", "name": "Maria", "source": "direct", "ambiguous": False, "candidates": []}), \
+             patch("android_agent.tools.comms.ensure_adb_connected", return_value=None), \
+             patch("android_agent.tools.comms._exec_android_intent", return_value=True):
+            res_off = comms.send_whatsapp("11999998888", "Já saí")
+            self.assertEqual(res_off["status"], "ok")
+            self.assertFalse(res_off["data"]["sent"])
+            self.assertIn("aguarda toque manual", res_off["message"])
+
+        # 3. summarize_notifications filtrando ruído técnico e agrupando por app
+        mock_notifs = [
+            {"packageName": "com.whatsapp", "title": "João", "content": "Oi, tudo bem?"},
+            {"packageName": "com.nu.production", "title": "Nubank", "content": "Pix recebido de R$ 100"},
+            {"packageName": "com.android.systemui", "title": "Sistema", "content": "Carregando"},
+            {"packageName": "android", "title": "USB", "content": "Depuração USB conectada"},
+        ]
+        mock_proc = subprocess.CompletedProcess(
+            args=["termux-notification-list"], returncode=0, stdout=json.dumps(mock_notifs), stderr=""
+        )
+        with patch("android_agent.tools.comms.SIMULATE_HARDWARE", False), \
+             patch("android_agent.tools.comms.ensure_adb_connected", return_value=None), \
+             patch("android_agent.tools.comms._run_termux_cmd", return_value=mock_proc):
+            sum_all = comms.summarize_notifications()
+            self.assertEqual(sum_all["status"], "ok")
+            self.assertEqual(sum_all["data"]["total"], 2)
+            self.assertIn("WhatsApp (1)", sum_all["message"])
+            self.assertIn("Bancos (1)", sum_all["message"])
+            self.assertNotIn("Depuração USB", sum_all["message"])
+
+            sum_wpp = comms.summarize_notifications(app_filter="whatsapp")
+            self.assertEqual(sum_wpp["data"]["total"], 1)
+
+        # 4. Roteamento NLP
+        self.assertEqual(match_intent_fallback("tem algo importante nas notificações?"), "<call>summarize_notifications(app_filter='')</call>")
+        self.assertEqual(match_intent_fallback("notificações do whatsapp"), "<call>summarize_notifications(app_filter='whatsapp')</call>")
 
 
 if __name__ == "__main__":

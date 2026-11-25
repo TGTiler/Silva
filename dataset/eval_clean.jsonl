@@ -1,323 +1,324 @@
-{"prompt": "ei silva faz um scan das redes sem fio disponiveis", "completion": "<call>scan_wifi()</call>"}
-{"prompt": "silva coloca um alarme pras 9h45", "completion": "<call>set_alarm(time=\"09:45\")</call>"}
-{"prompt": "ei silva busca cotacao do dolar turismo hoje", "completion": "<call>search_google(query=\"cotação do dólar turismo hoje\")</call>"}
-{"prompt": "calcula 5 elevado a 5 dividido por 25 pfvr silva", "completion": "<call>calculate(expression=\"5**5 / 25\")</call>"}
-{"prompt": "quero rir, conta uma piada", "completion": "<call>tell_joke()</call>"}
-{"prompt": "Bate uma captura da tela", "completion": "<call>take_screenshot()</call>"}
-{"prompt": "busca um temaki pra Rangel silva pfv", "completion": "<call>order_food(query=\"temaki\", app=\"ifood\")</call>"}
-{"prompt": "Coloca a frase 'Bom dia a todos' no clipboard", "completion": "<call>set_clipboard(text=\"Bom dia a todos\")</call>"}
-{"prompt": "filma 30 segundos aí", "completion": "<call>record_video(duration=30, camera_id=0)</call>"}
-{"prompt": "chama um uber pra Fonte Nova pfv agora silva", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
-{"prompt": "silva baixa o whatsapp p/ mim vlw", "completion": "<call>install_app(app_name=\"whatsapp\")</call>"}
-{"prompt": "ei silva conecta no wifi Galeria_Free senha vazia", "completion": "<call>connect_wifi(ssid=\"Galeria_Free\", password=\"\")</call>"}
-{"prompt": "abre as config do celular", "completion": "<call>open_app(app_name=\"configuracoes\")</call>"}
-{"prompt": "como tá o sinal do wi-fi q eu tô usando agr?", "completion": "<call>get_wifi_info()</call>"}
-{"prompt": "silva vê o insta pfv agora", "completion": "<call>get_notifications(app=\"instagram\")</call>"}
-{"prompt": "Efetua uma chamada para a Aline", "completion": "<call>make_call(number=\"Aline\")</call>"}
-{"prompt": "Silva, me lembra a senha do notebook do trabalho", "completion": "<call>recall_note(query=\"senha do notebook do trabalho\")</call>"}
-{"prompt": "aumenta o volume geral pra 80", "completion": "<call>set_volume(stream=\"media\", level=80)</call>"}
-{"prompt": "ei silva chove amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
-{"prompt": "agenda lembrete pra 29 de novembro de 2026 'Pagar Mensalidade Música'", "completion": "<call>schedule_event(title=\"Pagar Mensalidade Musica\", date=\"29/11/2026\", time=\"09:00\")</call>"}
-{"prompt": "ei silva valeu", "completion": "<call>none()</call>"}
-{"prompt": "volta p/ anterior agr pfvr", "completion": "<call>media_control(action=\"previous\")</call>"}
-{"prompt": "silva ativa o gps do aparelho agora pfv", "completion": "<call>set_location_state(state=True)</call>"}
-{"prompt": "previsão do tempo em Recife amanhã às 6h silva", "completion": "<call>get_weather(day=\"amanhã\", time=\"06:00\", location=\"Recife\")</call>"}
-{"prompt": "Silva, pede uma sobremesa no ifood", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
-{"prompt": "ei silva conecta no wifi Academia_Fit senha fit@2026", "completion": "<call>connect_wifi(ssid=\"Academia_Fit\", password=\"fit@2026\")</call>"}
-{"prompt": "ei silva desliga o flash", "completion": "<call>set_torch(state=False)</call>"}
-{"prompt": "anota que a senha do wifi do trabalho é empresa123", "completion": "<call>remember_note(key=\"senha do wifi do trabalho\", value=\"empresa123\")</call>"}
-{"prompt": "silva faz a busca das redes sem fio aqui perto", "completion": "<call>scan_wifi()</call>"}
-{"prompt": "previsao do tempo p/ quinta a tarde pfv", "completion": "<call>get_weather(day=\"quinta\", time=\"tarde\", location=\"\")</call>"}
-{"prompt": "Silva, selfie agora", "completion": "<call>take_photo(camera_id=1)</call>"}
-{"prompt": "joga no google resultado do jogo de ontem", "completion": "<call>search_google(query=\"resultado do jogo de ontem\")</call>"}
-{"prompt": "conecta na rede Shopping_Free q é aberta", "completion": "<call>connect_wifi(ssid=\"Shopping_Free\", password=\"\")</call>"}
-{"prompt": "Silva, liga pro 31911112224 pfv", "completion": "<call>make_call(number=\"31911112224\")</call>"}
-{"prompt": "ei silva quanto da 10 fatorial dividido por 8 fatorial", "completion": "<call>calculate(expression=\"factorial(10) / factorial(8)\")</call>"}
-{"prompt": "silva abre o chrome agora pfv pfv", "completion": "<call>open_app(app_name=\"chrome\")</call>"}
-{"prompt": "conecta agr no wifi Pet_Center c/ a senha pet@55 vlw", "completion": "<call>connect_wifi(ssid=\"Pet_Center\", password=\"pet@55\")</call>"}
-{"prompt": "ei silva quais são suas funcoes blz", "completion": "<call>list_capabilities()</call>"}
-{"prompt": "Silva, lê o clipboard agora", "completion": "<call>get_clipboard()</call>"}
-{"prompt": "ei silva liga o gps agora", "completion": "<call>set_location_state(state=True)</call>"}
-{"prompt": "baixa o nubank na play store p/ mim", "completion": "<call>install_app(app_name=\"nubank\")</call>"}
-{"prompt": "qual minha localização silva?", "completion": "<call>get_location()</call>"}
-{"prompt": "silva chama no 62988887777", "completion": "<call>make_call(number=\"62988887777\")</call>"}
-{"prompt": "ei silva como tirar mancha de suor da roupa?", "completion": "<call>none()</call>"}
-{"prompt": "cancela o alarme agora", "completion": "<call>cancel_alarm()</call>"}
-{"prompt": "silva tá chovendo aí?", "completion": "<call>none()</call>"}
-{"prompt": "qual o melhor produto para limpar mármore silva?", "completion": "<call>none()</call>"}
-{"prompt": "envia sms pro 3133334446 dizendo boa tarde", "completion": "<call>send_sms(number=\"3133334446\", message=\"boa tarde\")</call>"}
-{"prompt": "Silva, abre o WhatsApp por favor", "completion": "<call>open_app(app_name=\"whatsapp\")</call>"}
-{"prompt": "Silva, pede uma salada pra Aeroclube", "completion": "<call>order_food(query=\"salada\", app=\"ifood\")</call>"}
-{"prompt": "Liga para a Renata", "completion": "<call>make_call(number=\"Renata\")</call>"}
-{"prompt": "silva tira o despertador das 7h45", "completion": "<call>cancel_alarm()</call>"}
-{"prompt": "ei silva timer de 25 minutos", "completion": "<call>set_timer(minutes=25, label=\"\")</call>"}
-{"prompt": "ei silva calcula 14% de 1100", "completion": "<call>calculate(expression=\"0.14 * 1100\")</call>"}
-{"prompt": "brilho no talo agora silva", "completion": "<call>set_brightness(level=100)</call>"}
-{"prompt": "Silva, manda um sms pro 11987654321 dizendo oi", "completion": "<call>send_sms(number=\"11987654321\", message=\"oi\")</call>"}
-{"prompt": "peça um uber para mim ir ao Shopping Recife", "completion": "<call>request_ride(destination=\"Shopping Recife\", app=\"uber\")</call>"}
-{"prompt": "Silva, pede uma tapioca pra Fundão", "completion": "<call>order_food(query=\"tapioca\", app=\"ifood\")</call>"}
-{"prompt": "ei silva me faz rir", "completion": "<call>tell_joke()</call>"}
-{"prompt": "faz uma ligação pro 21933334445", "completion": "<call>make_call(number=\"21933334445\")</call>"}
-{"prompt": "Pede um 99 para o aeroporto", "completion": "<call>request_ride(destination=\"aeroporto\", app=\"99\")</call>"}
-{"prompt": "chama um uber pra Arena das Dunas em natal silva", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"uber\")</call>"}
-{"prompt": "Avisa para o Dentista por SMS que estou na portaria", "completion": "<call>send_sms(number=\"Dentista\", message=\"que estou na portaria\")</call>"}
-{"prompt": "Silva, como vai estar o tempo amanhã?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"\")</call>"}
-{"prompt": "Ligue a localização do aparelho", "completion": "<call>set_location_state(state=True)</call>"}
-{"prompt": "Me mostra a lista de comandos que você sabe executar", "completion": "<call>list_capabilities()</call>"}
-{"prompt": "silva envia sms pro 41987654324 com o texto to indo", "completion": "<call>send_sms(number=\"41987654324\", message=\"to indo\")</call>"}
-{"prompt": "marca um lembrete pra 10 de outubro de 2026 com o nome 'Consulta Médica'", "completion": "<call>schedule_event(title=\"Consulta Medica\", date=\"10/10/2026\", time=\"09:00\")</call>"}
-{"prompt": "alarme em 0 silva pfv", "completion": "<call>set_volume(stream=\"alarm\", level=0)</call>"}
-{"prompt": "calcula o valor de 2 elevado a 0.5 vezes 100", "completion": "<call>calculate(expression=\"2**0.5 * 100\")</call>"}
-{"prompt": "ei silva, valeu pela ajuda de ontem", "completion": "<call>none()</call>"}
-{"prompt": "Silva, o que está copiado na minha área de transferência?", "completion": "<call>get_clipboard()</call>"}
-{"prompt": "Silva, como limpar a pia da cozinha?", "completion": "<call>none()</call>"}
-{"prompt": "Silva, envia sms pro 91933334452 dizendo tô no ônibus", "completion": "<call>send_sms(number=\"91933334452\", message=\"to no onibus\")</call>"}
-{"prompt": "ei silva vê se o nubank mandou algo", "completion": "<call>get_notifications(app=\"nubank\")</call>"}
-{"prompt": "ei silva faz aquela parada de escanear wifi p/ mim", "completion": "<call>scan_wifi()</call>"}
-{"prompt": "ei silva abre a camera agora pfv", "completion": "<call>open_app(app_name=\"com.android.camera\")</call>"}
-{"prompt": "agenda lembrete pra 29 de novembro de 2026 'Pagar Mensalidade Robótica'", "completion": "<call>schedule_event(title=\"Pagar Mensalidade Robotica\", date=\"29/11/2026\", time=\"09:00\")</call>"}
-{"prompt": "ei silva pede um uber da minha casa pro museu", "completion": "<call>request_ride(destination=\"museu\", app=\"uber\")</call>"}
-{"prompt": "não liga o flash não, o bebê tá dormindo", "completion": "<call>none()</call>"}
-{"prompt": "Silva, abre as configuracoes agora", "completion": "<call>open_app(app_name=\"configuracoes\")</call>"}
-{"prompt": "sms pro 7133334450 texto chegando em casa", "completion": "<call>send_sms(number=\"7133334450\", message=\"chegando em casa\")</call>"}
-{"prompt": "Silva conecta o cel na rede Ateliê_Moda c/ senha moda@2026", "completion": "<call>connect_wifi(ssid=\"Atelie_Moda\", password=\"moda@2026\")</call>"}
-{"prompt": "Silva, pede um 99 pra Arena de Pernambuco em recife", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
-{"prompt": "silva agenda um alerta pra 29 de novembro de 2026 chamado 'Renovar Assinatura Antivírus'", "completion": "<call>schedule_event(title=\"Renovar Assinatura Antivirus\", date=\"29/11/2026\", time=\"09:00\")</call>"}
-{"prompt": "Silva, pesquisa no google como fazer café gelado", "completion": "<call>search_google(query=\"como fazer café gelado\")</call>"}
-{"prompt": "ei silva coloca o volume da mídia em 65 e abre o whatsapp", "completion": "<call>set_volume(stream=\"media\", level=65)</call><call>open_app(app_name=\"whatsapp\")</call>"}
-{"prompt": "Silva, entra em modo não perturbe", "completion": "<call>set_dnd(state=True)</call>"}
-{"prompt": "ei silva chama um uber pro Castelão em fortaleza pfv", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
-{"prompt": "silva deixa o brilho em 33 pfv", "completion": "<call>set_brightness(level=33)</call>"}
-{"prompt": "ei silva quanto é 7 elevado a 3", "completion": "<call>calculate(expression=\"7 ** 3\")</call>"}
-{"prompt": "ei silva fala uma piada de professora", "completion": "<call>tell_joke()</call>"}
-{"prompt": "silva cancela o alarme das 7 pfv", "completion": "<call>cancel_alarm()</call>"}
-{"prompt": "tira uma foto traseira agora", "completion": "<call>take_photo(camera_id=0)</call>"}
-{"prompt": "quanto e 5 fatorial mais 2 elevado a 4", "completion": "<call>calculate(expression=\"factorial(5) + 2**4\")</call>"}
-{"prompt": "pesquisa como aprender espanhol rapido", "completion": "<call>search_google(query=\"como aprender espanhol rápido\")</call>"}
-{"prompt": "Gravação de vídeo por 15 segundos", "completion": "<call>record_video(duration=15, camera_id=0)</call>"}
-{"prompt": "silva manda sms pro 71933332222 falando bom dia", "completion": "<call>send_sms(number=\"71933332222\", message=\"bom dia\")</call>"}
-{"prompt": "Onde foi meu último check-in offline?", "completion": "<call>get_last_location()</call>"}
+{"prompt": "silva pede uma marmita pra minha casa pfv", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
+{"prompt": "Passa um SMS para o André avisando que acabei de sair do trabalho", "completion": "<call>send_sms(number=\"André\", message=\"acabei de sair do trabalho\")</call>"}
 {"prompt": "ei silva lê a área de transferência", "completion": "<call>get_clipboard()</call>"}
-{"prompt": "ei silva desliga a lanterna pfv agora", "completion": "<call>set_torch(state=False)</call>"}
-{"prompt": "Silva, pede uma cerveja pra minha casa", "completion": "<call>order_food(query=\"cerveja\", app=\"ifood\")</call>"}
-{"prompt": "ei silva me mostra oq vc pode fazer", "completion": "<call>list_capabilities()</call>"}
-{"prompt": "entra no wi-fi Coworking_2 a senha e work77 pfvr", "completion": "<call>connect_wifi(ssid=\"Coworking_2\", password=\"work77\")</call>"}
-{"prompt": "quanto é 100 menos 37?", "completion": "<call>calculate(expression=\"100 - 37\")</call>"}
-{"prompt": "silva calcula 40% de 250", "completion": "<call>calculate(expression=\"0.40 * 250\")</call>"}
-{"prompt": "ei silva copia o endereço da loja", "completion": "<call>set_clipboard(text=\"endereço da loja\")</call>"}
-{"prompt": "silva como fica o clima na Zona Leste amanhã pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Zona Leste\")</call>"}
-{"prompt": "Silva, timer de 1 hora pro almoço", "completion": "<call>set_timer(minutes=60, label=\"almoco\")</call>"}
-{"prompt": "conecta ai no wifi Mercado_Central c/ a senha feira2026 vlw", "completion": "<call>connect_wifi(ssid=\"Mercado_Central\", password=\"feira2026\")</call>"}
-{"prompt": "Salva 'Avenida Paulista, 1000' na área de transferência", "completion": "<call>set_clipboard(text=\"Avenida Paulista, 1000\")</call>"}
-{"prompt": "silva como fica o clima no Recife amanhã", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Recife\")</call>"}
-{"prompt": "ei silva busca um dogão pra minha casa", "completion": "<call>order_food(query=\"dogão\", app=\"ifood\")</call>"}
-{"prompt": "Telefona para a Irmã por favor", "completion": "<call>make_call(number=\"Irmã\")</call>"}
-{"prompt": "filma 90 segundos silva pfv", "completion": "<call>record_video(duration=90, camera_id=0)</call>"}
-{"prompt": "Silva, me conta uma charada", "completion": "<call>tell_joke()</call>"}
-{"prompt": "calcula a raiz quadrada de 2 vezes 100 pfv silva", "completion": "<call>calculate(expression=\"sqrt(2) * 100\")</call>"}
-{"prompt": "silva ve quais redes sem fio ta pegando aqui", "completion": "<call>scan_wifi()</call>"}
-{"prompt": "Qual a previsão do tempo para domingo?", "completion": "<call>get_weather(day=\"domingo\", time=\"\", location=\"\")</call>"}
-{"prompt": "silva como fica o tempo em Petrópolis amanhã", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Petrópolis\")</call>"}
-{"prompt": "Silva, abre o GameMarket", "completion": "<call>open_app(app_name=\"br.com.gamemarket.app\")</call>"}
-{"prompt": "busca um quibe pra minha casa silva", "completion": "<call>order_food(query=\"quibe\", app=\"ifood\")</call>"}
-{"prompt": "ei silva quanto é 43 vezes 2", "completion": "<call>calculate(expression=\"43 * 2\")</call>"}
-{"prompt": "ei silva coloca um timer de 29 minutos", "completion": "<call>set_timer(minutes=29, label=\"\")</call>"}
-{"prompt": "conecta agora no wifi Cyber_Zone c/ senha hack2026 vlw", "completion": "<call>connect_wifi(ssid=\"Cyber_Zone\", password=\"hack2026\")</call>"}
-{"prompt": "Silva, faça o celular vibrar por 300 milissegundos", "completion": "<call>vibrate(duration_ms=300)</call>"}
-{"prompt": "Silva, qual a senha do wifi do clube?", "completion": "<call>recall_note(query=\"senha do wifi do clube\")</call>"}
-{"prompt": "silva ativa o modo foco", "completion": "<call>set_dnd(state=True)</call>"}
-{"prompt": "Nível de bateria do smartphone", "completion": "<call>get_battery()</call>"}
-{"prompt": "quero conectar no wi-fi Lanchonete a senha tá lanche77", "completion": "<call>connect_wifi(ssid=\"Lanchonete\", password=\"lanche77\")</call>"}
-{"prompt": "ei silva timer de 50 minutos pro feijão", "completion": "<call>set_timer(minutes=50, label=\"feijao\")</call>"}
-{"prompt": "qual o melhor desinfetante silva?", "completion": "<call>none()</call>"}
-{"prompt": "silva me informa a bateria", "completion": "<call>get_battery()</call>"}
-{"prompt": "Copia o endereço 'Rua das Flores, 123'", "completion": "<call>set_clipboard(text=\"Rua das Flores, 123\")</call>"}
-{"prompt": "ei silva como fica o clima em porto alegre amn", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Porto Alegre\")</call>"}
-{"prompt": "Silva, calcula 180 dividido por 6", "completion": "<call>calculate(expression=\"180 / 6\")</call>"}
-{"prompt": "Silva, cancela o alarme das 6h25", "completion": "<call>cancel_alarm()</call>"}
-{"prompt": "silva desativa o gps do aparelho agora pfv", "completion": "<call>set_location_state(state=False)</call>"}
-{"prompt": "abre o free fire agora pfv silva", "completion": "<call>open_app(app_name=\"com.dts.freefireth\")</call>"}
-{"prompt": "silva calcula 12% de 900", "completion": "<call>calculate(expression=\"0.12 * 900\")</call>"}
-{"prompt": "ei silva quero silêncio total", "completion": "<call>set_dnd(state=True)</call>"}
-{"prompt": "Silva, música em 75 pfv", "completion": "<call>set_volume(stream=\"media\", level=75)</call>"}
-{"prompt": "Silva, pede um 99 pra Arena Pernambuco agora pfv", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
-{"prompt": "quanto é 7 elevado a 4 silva", "completion": "<call>calculate(expression=\"7 ** 4\")</call>"}
-{"prompt": "Bateria tá em quanto?", "completion": "<call>get_battery()</call>"}
-{"prompt": "silva sms pro 11911112222 texto tô ocupado", "completion": "<call>send_sms(number=\"11911112222\", message=\"to ocupado\")</call>"}
-{"prompt": "ei silva calcula 750 menos 250", "completion": "<call>calculate(expression=\"750 - 250\")</call>"}
-{"prompt": "qual a porcentagem da bateria", "completion": "<call>get_battery()</call>"}
-{"prompt": "ei silva quanto da 8 fatorial dividido por 6 fatorial", "completion": "<call>calculate(expression=\"factorial(8) / factorial(6)\")</call>"}
-{"prompt": "passa p/ proxima pfv", "completion": "<call>media_control(action=\"next\")</call>"}
-{"prompt": "Vê se o celular tá carregando", "completion": "<call>get_battery()</call>"}
-{"prompt": "Silva, envia sms pro 31933334446 dizendo tô no shopping", "completion": "<call>send_sms(number=\"31933334446\", message=\"to no shopping\")</call>"}
-{"prompt": "liga a lanterna do celular", "completion": "<call>set_torch(state=True)</call>"}
-{"prompt": "Manda um torpedo para a Camila dizendo tudo certo para amanhã", "completion": "<call>send_sms(number=\"Camila\", message=\"tudo certo para amanhã\")</call>"}
-{"prompt": "entrar no wifi Coworking_Net c/ senha cowork77 agr", "completion": "<call>connect_wifi(ssid=\"Coworking_Net\", password=\"cowork77\")</call>"}
-{"prompt": "quero pedir um pastel no ifood silva", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
-{"prompt": "me dá uma dica de filme", "completion": "<call>none()</call>"}
-{"prompt": "quais as notificações de agora?", "completion": "<call>get_notifications(app=\"\")</call>"}
-{"prompt": "Conta 30 minutos no timer", "completion": "<call>set_timer(minutes=30)</call>"}
-{"prompt": "Chama para o Amor no telefone", "completion": "<call>make_call(number=\"Amor\")</call>"}
-{"prompt": "silva calcula 1200 menos 450", "completion": "<call>calculate(expression=\"1200 - 450\")</call>"}
-{"prompt": "silva quanto e 22% de 3500", "completion": "<call>calculate(expression=\"(22 / 100) * 3500\")</call>"}
-{"prompt": "silva qual a melhor máscara de cílios?", "completion": "<call>none()</call>"}
-{"prompt": "silva instala o limpador de cache na play store", "completion": "<call>install_app(app_name=\"limpador de cache\")</call>"}
-{"prompt": "Silva, abre o sideshift pfv", "completion": "<call>open_app(app_name=\"ai.sideshift.app\")</call>"}
-{"prompt": "silva quanto e 3 elevado a 10 menos 3 elevado a 8", "completion": "<call>calculate(expression=\"3**10 - 3**8\")</call>"}
-{"prompt": "abre o TradingView silva", "completion": "<call>open_app(app_name=\"com.tradingview.tradingviewapp\")</call>"}
-{"prompt": "Silva, vê as not do nubank agora", "completion": "<call>get_notifications(app=\"nubank\")</call>"}
-{"prompt": "Silva, vê as notificações gerais", "completion": "<call>get_notifications(app=\"\")</call>"}
-{"prompt": "qual a senha do wifi do vizinho de cima?", "completion": "<call>recall_note(query=\"senha do wifi do vizinho de cima\")</call>"}
-{"prompt": "clima em brasília, df hj a noite pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"noite\", location=\"Brasília, DF\")</call>"}
-{"prompt": "timer de 39 minutos silva pfv", "completion": "<call>set_timer(minutes=39, label=\"\")</call>"}
-{"prompt": "Silva, filma 7 segundos na frontal agora pfv", "completion": "<call>record_video(duration=7, camera_id=1)</call>"}
-{"prompt": "pede um sanduíche pra minha casa pfv", "completion": "<call>order_food(query=\"sanduíche\", app=\"ifood\")</call>"}
-{"prompt": "silva onde tá o remédio de azia?", "completion": "<call>recall_note(query=\"onde esta o remedio de azia\")</call>"}
-{"prompt": "ei silva previsão do tempo na Zona Portuária pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Zona Portuária\")</call>"}
-{"prompt": "procura no google como emagrecer rapido", "completion": "<call>search_google(query=\"como emagrecer rápido\")</call>"}
-{"prompt": "ei silva quanto é 15 elevado a 2", "completion": "<call>calculate(expression=\"15 ** 2\")</call>"}
-{"prompt": "ei silva baixa o shein p/ mim", "completion": "<call>install_app(app_name=\"shein\")</call>"}
-{"prompt": "silva como vai estar o clima em Búzios amanhã pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Búzios\")</call>"}
-{"prompt": "Silva, notificações em 15 pfv", "completion": "<call>set_volume(stream=\"notification\", level=15)</call>"}
-{"prompt": "Avisa para o Gabriel por SMS que a reunião começou", "completion": "<call>send_sms(number=\"Gabriel\", message=\"que a reunião começou\")</call>"}
-{"prompt": "Silva, liga pra Portaria pra mim", "completion": "<call>make_call(number=\"Portaria\")</call>"}
-{"prompt": "abre o zap silva pfv", "completion": "<call>open_app(app_name=\"com.whatsapp\")</call>"}
-{"prompt": "o que tem na área de transferência?", "completion": "<call>get_clipboard()</call>"}
-{"prompt": "calcula o juro composto de 2500 a 3% ao mes por 4 meses", "completion": "<call>calculate(expression=\"2500 * (1 + 3 / 100)**4 - 2500\")</call>"}
-{"prompt": "Silva, chama um uber pra ir pra estação", "completion": "<call>request_ride(destination=\"estação\", app=\"uber\")</call>"}
-{"prompt": "ei silva filma 22 segundos na camera frontal pfv", "completion": "<call>record_video(duration=22, camera_id=1)</call>"}
-{"prompt": "Silva, manda um SMS para o Vô Pedro dizendo que não esquece de comprar o pão", "completion": "<call>send_sms(number=\"Vô Pedro\", message=\"não esquece de comprar o pão\")</call>"}
-{"prompt": "ei silva liga o gps agora pfv pfv pfv", "completion": "<call>set_location_state(state=True)</call>"}
-{"prompt": "silva não vibra não, deixa no silencioso", "completion": "<call>none()</call>"}
-{"prompt": "qual a capital da Argentina", "completion": "<call>none()</call>"}
-{"prompt": "Chama para o Lucas no telefone", "completion": "<call>make_call(number=\"Lucas\")</call>"}
-{"prompt": "me fala o endereço de agora pfv", "completion": "<call>get_location()</call>"}
-{"prompt": "busca um churrasco no ifood silva pfv", "completion": "<call>order_food(query=\"churrasco\", app=\"ifood\")</call>"}
-{"prompt": "ei silva marca reunião dia 30 às 15h", "completion": "<call>schedule_event(title=\"reuniao\", date=\"30\", time=\"15:00\")</call>"}
-{"prompt": "qual a melhor chuteira para futebol silva?", "completion": "<call>none()</call>"}
-{"prompt": "calcula 3 elevado a 7 dividido por 3 elevado a 4", "completion": "<call>calculate(expression=\"3**7 / 3**4\")</call>"}
-{"prompt": "busca um hambúrguer pra minha casa pfv", "completion": "<call>order_food(query=\"hambúrguer\", app=\"ifood\")</call>"}
-{"prompt": "silva quanto e 2 elevado a 8 dividido por 4", "completion": "<call>calculate(expression=\"2**8 / 4\")</call>"}
-{"prompt": "ei silva mostra a área de transferência", "completion": "<call>get_clipboard()</call>"}
-{"prompt": "silva confere o telegram pfv agora", "completion": "<call>get_notifications(app=\"telegram\")</call>"}
-{"prompt": "ei silva busca uma caipirinha pra Boa Vista", "completion": "<call>order_food(query=\"caipirinha\", app=\"ifood\")</call>"}
-{"prompt": "conectar wifi Faculdade_Alunos senha fac2026 blz", "completion": "<call>connect_wifi(ssid=\"Faculdade_Alunos\", password=\"fac2026\")</call>"}
-{"prompt": "Silva, previsão do tempo pra amanhã pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"\")</call>"}
-{"prompt": "lista os wifi disponiveis p/ conexao pfvr", "completion": "<call>scan_wifi()</call>"}
-{"prompt": "Silva, qual a senha do wifi da praia?", "completion": "<call>recall_note(query=\"senha do wifi da praia\")</call>"}
-{"prompt": "ei silva chama um uber p/ mim ir pro teatro agr", "completion": "<call>request_ride(destination=\"teatro\", app=\"uber\")</call>"}
-{"prompt": "Tira um print screen agora", "completion": "<call>take_screenshot()</call>"}
-{"prompt": "conecta agr no wifi Faculdade_Alunos c/ a senha fac2026 vlw", "completion": "<call>connect_wifi(ssid=\"Faculdade_Alunos\", password=\"fac2026\")</call>"}
-{"prompt": "ei silva agenda um timer de 1 hora", "completion": "<call>set_timer(minutes=60, label=\"\")</call>"}
-{"prompt": "Silva conecta o cel na rede Router_Cozinha c/ senha coz2026", "completion": "<call>connect_wifi(ssid=\"Router_Cozinha\", password=\"coz2026\")</call>"}
-{"prompt": "Silva, brilho em 37 agora pfv", "completion": "<call>set_brightness(level=37)</call>"}
-{"prompt": "Envia mensagem de texto para o Felipe avisando que não esquece de comprar o pão", "completion": "<call>send_sms(number=\"Felipe\", message=\"avisando que não esquece de comprar o pão\")</call>"}
-{"prompt": "ativa a vibração do celular", "completion": "<call>vibrate(duration_ms=500)</call>"}
-{"prompt": "silva abre o spotify", "completion": "<call>open_app(app_name=\"spotify\")</call>"}
-{"prompt": "Envia mensagem de texto para o Chefe avisando que te ligo mais tarde", "completion": "<call>send_sms(number=\"Chefe\", message=\"avisando que te ligo mais tarde\")</call>"}
-{"prompt": "Silva, como tá o clima hoje?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
-{"prompt": "silva poe um timer de 14 minutos", "completion": "<call>set_timer(minutes=14, label=\"\")</call>"}
-{"prompt": "silva o flash do celular atrapalhou a foto", "completion": "<call>none()</call>"}
-{"prompt": "qual a placa do carro?", "completion": "<call>recall_note(query=\"placa do carro\")</call>"}
-{"prompt": "ei silva previsão do tempo na Zona Oeste hoje", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Zona Oeste\")</call>"}
-{"prompt": "grava 15 segundos na frontal silva", "completion": "<call>record_video(duration=15, camera_id=1)</call>"}
-{"prompt": "silva baixa o santander na play store", "completion": "<call>install_app(app_name=\"santander\")</call>"}
-{"prompt": "Silva, bateria atual", "completion": "<call>get_battery()</call>"}
-{"prompt": "anota que o remédio de dor de cabeça tá na cozinha", "completion": "<call>remember_note(key=\"onde esta o remedio de dor de cabeca\", value=\"cozinha\")</call>"}
-{"prompt": "silva pausa a musica q ta rolando pfv", "completion": "<call>media_control(action=\"pause\")</call>"}
-{"prompt": "silva poe um timer de 32 minutos", "completion": "<call>set_timer(minutes=32, label=\"\")</call>"}
-{"prompt": "Status de energia do telefone", "completion": "<call>get_battery()</call>"}
-{"prompt": "silva calcula 486 dividido por 18", "completion": "<call>calculate(expression=\"486 / 18\")</call>"}
-{"prompt": "ei silva como limpar o fogão?", "completion": "<call>none()</call>"}
-{"prompt": "liga alarme pras 8h45 pfv silva", "completion": "<call>set_alarm(time=\"08:45\")</call>"}
-{"prompt": "baixa o jogo do dinossauro na play store p/ mim", "completion": "<call>install_app(app_name=\"jogo do dinossauro\")</call>"}
-{"prompt": "qual a diferença entre alarme e lembrete?", "completion": "<call>none()</call>"}
-{"prompt": "vai chover domingo a tarde?", "completion": "<call>get_weather(day=\"domingo\", time=\"tarde\", location=\"\")</call>"}
-{"prompt": "Desativa o bt", "completion": "<call>set_bluetooth_state(state=False)</call>"}
-{"prompt": "Pode ligar para o Rodrigo agora?", "completion": "<call>make_call(number=\"Rodrigo\")</call>"}
-{"prompt": "silva pede um 99 pra Fonte Nova em salvador pfv agora", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"99\")</call>"}
-{"prompt": "silva abre o spotify agora pfv", "completion": "<call>open_app(app_name=\"com.spotify.music\")</call>"}
-{"prompt": "ei silva vai chover em Porto Alegre hoje?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Porto Alegre\")</call>"}
-{"prompt": "silva pede um uber daqui pra praia", "completion": "<call>request_ride(destination=\"praia\", app=\"uber\")</call>"}
-{"prompt": "como vai estar o tempo em São José dos Campos amanhã?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"São José dos Campos\")</call>"}
-{"prompt": "silva mostra a última localização salva", "completion": "<call>get_last_location()</call>"}
-{"prompt": "não liga agora pfv", "completion": "<call>none()</call>"}
-{"prompt": "oq vc pode fazer p/ mim hj?", "completion": "<call>list_capabilities()</call>"}
-{"prompt": "Silva, copia o código 4587", "completion": "<call>set_clipboard(text=\"4587\")</call>"}
-{"prompt": "Silva, envia SMS para a Larissa falando que te ligo mais tarde", "completion": "<call>send_sms(number=\"Larissa\", message=\"te ligo mais tarde\")</call>"}
+{"prompt": "ei silva como fica o tempo em jaboatão depois de amn", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"Jaboatão\")</call>"}
 {"prompt": "Silva, acende o flash", "completion": "<call>set_torch(state=True)</call>"}
-{"prompt": "Silva, lê as notificações gerais agora", "completion": "<call>get_notifications(app=\"\")</call>"}
-{"prompt": "Silva, pede um macarrão no ifood", "completion": "<call>order_food(query=\"macarrão\", app=\"ifood\")</call>"}
-{"prompt": "proxima musica pfv", "completion": "<call>media_control(action=\"next\")</call>"}
-{"prompt": "conectar wifi Praia_Free senha vazia blz", "completion": "<call>connect_wifi(ssid=\"Praia_Free\", password=\"\")</call>"}
-{"prompt": "Silva, qual a senha do cartão de crédito?", "completion": "<call>recall_note(query=\"senha do cartao de credito\")</call>"}
-{"prompt": "Chama uma corrida na 99 para o trabalho", "completion": "<call>request_ride(destination=\"trabalho\", app=\"99\")</call>"}
-{"prompt": "abre a carteira da bitget pfv", "completion": "<call>open_app(app_name=\"com.bgwapp.official\")</call>"}
-{"prompt": "Silva, quem pintou a Mona Lisa?", "completion": "<call>none()</call>"}
-{"prompt": "Tô com fome, pede um hambúrguer artesanal", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
-{"prompt": "silva volume da mídia em 90", "completion": "<call>set_volume(stream=\"media\", level=90)</call>"}
-{"prompt": "silva agenda o carnaval de rua dia 10 às 15h", "completion": "<call>schedule_event(title=\"carnaval de rua\", date=\"10\", time=\"15:00\")</call>"}
-{"prompt": "ei silva previsao p/ sexta a noite blz", "completion": "<call>get_weather(day=\"sexta\", time=\"noite\", location=\"\")</call>"}
-{"prompt": "ei silva guarda que a placa do carro é XYZ9A88 e lê o último sms", "completion": "<call>remember_note(key=\"placa do carro\", value=\"XYZ9A88\")</call><call>get_last_sms()</call>"}
-{"prompt": "foto com a traseira agora silva pfv", "completion": "<call>take_photo(camera_id=0)</call>"}
-{"prompt": "qual a senha do wifi do hotel?", "completion": "<call>recall_note(query=\"senha do wifi do hotel\")</call>"}
-{"prompt": "Quantos porcento tá minha bateria?", "completion": "<call>get_battery()</call>"}
-{"prompt": "quanto é 84 mais 16 silva", "completion": "<call>calculate(expression=\"84 + 16\")</call>"}
-{"prompt": "ei silva bate uma selfie", "completion": "<call>take_photo(camera_id=1)</call>"}
-{"prompt": "silva como fazer um gol de cabeça?", "completion": "<call>none()</call>"}
-{"prompt": "calcula 26% de 5100 menos 11% de 2300", "completion": "<call>calculate(expression=\"(26 / 100) * 5100 - (11 / 100) * 2300\")</call>"}
-{"prompt": "busca uma marmita no ifood pfv silva", "completion": "<call>order_food(query=\"marmita\", app=\"ifood\")</call>"}
-{"prompt": "agenda lembrete pra 29 de novembro de 2026 'Cancelar Assinatura Streaming Audiobook'", "completion": "<call>schedule_event(title=\"Cancelar Assinatura Streaming Audiobook\", date=\"29/11/2026\", time=\"09:00\")</call>"}
-{"prompt": "qual a temperatura agora silva?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"\")</call>"}
-{"prompt": "silva pede um pastel pra minha casa pfv", "completion": "<call>order_food(query=\"pastel\", app=\"ifood\")</call>"}
-{"prompt": "calcula 9 elevado a 3 silva", "completion": "<call>calculate(expression=\"9 ** 3\")</call>"}
-{"prompt": "silva como fica o clima em Palmas amanhã pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Palmas\")</call>"}
-{"prompt": "Quanto tá um Uber pro centro?", "completion": "<call>request_ride(destination=\"centro\", app=\"uber\")</call>"}
-{"prompt": "como fazer maquiagem natural silva?", "completion": "<call>none()</call>"}
-{"prompt": "abre o pokemon go agora silva", "completion": "<call>open_app(app_name=\"com.nianticlabs.pokemongo\")</call>"}
-{"prompt": "silva vai chover amn de manha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"manhã\", location=\"\")</call>"}
-{"prompt": "Manda um torpedo para o Gabriel dizendo a reunião começou", "completion": "<call>send_sms(number=\"Gabriel\", message=\"a reunião começou\")</call>"}
-{"prompt": "Silva, agenda um alerta dia 15 de dezembro de 2026 'Renovar Seguro'", "completion": "<call>schedule_event(title=\"Renovar Seguro\", date=\"15/12/2026\", time=\"09:00\")</call>"}
-{"prompt": "qual a senha do wifi do clube?", "completion": "<call>recall_note(query=\"senha do wifi do clube\")</call>"}
-{"prompt": "Silva, apaga a lanterna do aparelho", "completion": "<call>set_torch(state=False)</call>"}
-{"prompt": "aumenta o volume da midia pra 70 e liga a lanterna", "completion": "<call>set_volume(stream=\"media\", level=70)</call><call>set_torch(state=True)</call>"}
-{"prompt": "ei silva quanto da 7 fatorial dividido por 14", "completion": "<call>calculate(expression=\"factorial(7) / 14\")</call>"}
-{"prompt": "como se diz obrigado em inglês?", "completion": "<call>none()</call>"}
-{"prompt": "desliga o gps pfv", "completion": "<call>set_location_state(state=False)</call>"}
-{"prompt": "essa reunião foi uma piada, ninguém decidiu nada", "completion": "<call>none()</call>"}
-{"prompt": "A bateria já tá em 100%?", "completion": "<call>get_battery()</call>"}
-{"prompt": "silva toque em 90 pfv", "completion": "<call>set_volume(stream=\"ring\", level=90)</call>"}
-{"prompt": "silva, hoje o dia tá corrido demais", "completion": "<call>none()</call>"}
-{"prompt": "Silva conecta o cel na rede Torre_5G c/ senha torre2026", "completion": "<call>connect_wifi(ssid=\"Torre_5G\", password=\"torre2026\")</call>"}
-{"prompt": "Chama para o Chefe no telefone", "completion": "<call>make_call(number=\"Chefe\")</call>"}
-{"prompt": "silva pede um almoço pra Geisel pfv", "completion": "<call>order_food(query=\"almoço\", app=\"ifood\")</call>"}
-{"prompt": "quanto é 4 elevado a 4 silva", "completion": "<call>calculate(expression=\"4 ** 4\")</call>"}
-{"prompt": "Silva, agenda reunião com contador quarta às 10h", "completion": "<call>schedule_event(title=\"reuniao com contador\", date=\"quarta\", time=\"10:00\")</call>"}
-{"prompt": "ei silva qual a senha do cadeado?", "completion": "<call>recall_note(query=\"senha do cadeado\")</call>"}
-{"prompt": "Silva, copie a url https://github.com/silva", "completion": "<call>set_clipboard(text=\"https://github.com/silva\")</call>"}
-{"prompt": "silva agenda alerta 29 de novembro de 2026 'Cancelar Assinatura Internet'", "completion": "<call>schedule_event(title=\"Cancelar Assinatura Internet\", date=\"29/11/2026\", time=\"09:00\")</call>"}
-{"prompt": "silva quero silêncio no celular", "completion": "<call>set_dnd(state=True)</call>"}
-{"prompt": "ei silva guarda que o código do portão é 1122 e tira uma selfie", "completion": "<call>remember_note(key=\"codigo do portao\", value=\"1122\")</call><call>take_photo(camera_id=1)</call>"}
-{"prompt": "Pedir comida no 99food", "completion": "<call>order_food(query=\"comida\", app=\"99food\")</call>"}
-{"prompt": "Mostra o SMS que acabei de receber", "completion": "<call>get_last_sms(limit=1)</call>"}
-{"prompt": "Silva, como melhorar no clash royale?", "completion": "<call>none()</call>"}
-{"prompt": "Silva, leia meus últimos SMS", "completion": "<call>get_last_sms(limit=5)</call>"}
-{"prompt": "Silva, timer de 59 min pro forno", "completion": "<call>set_timer(minutes=59, label=\"forno\")</call>"}
-{"prompt": "marca reunião de equipe técnica terça às 16h", "completion": "<call>schedule_event(title=\"reuniao de equipe tecnica\", date=\"terca\", time=\"16:00\")</call>"}
-{"prompt": "cria um alerta pra dia 29 de novembro de 2026 chamado 'Cancelar Assinatura Telefone'", "completion": "<call>schedule_event(title=\"Cancelar Assinatura Telefone\", date=\"29/11/2026\", time=\"09:00\")</call>"}
-{"prompt": "faz uma ligação pro 91976543218 silva", "completion": "<call>make_call(number=\"91976543218\")</call>"}
-{"prompt": "pelo amor de deus liga a lanterna", "completion": "<call>set_torch(state=True)</call>"}
-{"prompt": "Desliga a lanterna do celular", "completion": "<call>set_torch(state=False)</call>"}
-{"prompt": "quanto dá 980 dividido por 28 silva", "completion": "<call>calculate(expression=\"980 / 28\")</call>"}
-{"prompt": "Silva, abre o Pinterest", "completion": "<call>open_app(app_name=\"com.pinterest\")</call>"}
-{"prompt": "ei silva busca um kebab pra minha casa", "completion": "<call>order_food(query=\"kebab\", app=\"ifood\")</call>"}
-{"prompt": "fala algo pra eu rir", "completion": "<call>tell_joke()</call>"}
-{"prompt": "ei silva printa a tela", "completion": "<call>take_screenshot()</call>"}
-{"prompt": "ei silva guarda que a senha do cofre é 3344 e baixa o volume da mídia pra 25", "completion": "<call>remember_note(key=\"senha do cofre\", value=\"3344\")</call><call>set_volume(stream=\"media\", level=25)</call>"}
-{"prompt": "pausa a musica pfvr", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "o despertador tocou atrasado hoje de manhã", "completion": "<call>none()</call>"}
+{"prompt": "Silva, selfie agora", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "ei silva abre o Calendário", "completion": "<call>open_app(app_name=\"com.samsung.android.calendar\")</call>"}
+{"prompt": "Silva, liga pro Amor pra mim", "completion": "<call>make_call(number=\"Amor\")</call>"}
+{"prompt": "ei silva marca a trilha no domingo às 7h", "completion": "<call>schedule_event(title=\"trilha\", date=\"domingo\", time=\"07:00\")</call>"}
+{"prompt": "agenda terapia terça às 18h silva", "completion": "<call>schedule_event(title=\"terapia\", date=\"terça\", time=\"18:00\")</call>"}
+{"prompt": "silva abre o authenticator pfv agora", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva pesquisa como fazer iogurte caseiro", "completion": "<call>search_google(query=\"como fazer iogurte caseiro\")</call>"}
+{"prompt": "mostra o conteúdo da área de transferência silva", "completion": "<call>get_clipboard()</call>"}
+{"prompt": "silva abre a trust wallet pfv", "completion": "<call>open_app(app_name=\"com.wallet.crypto.trustapp\")</call>"}
+{"prompt": "Faz uma ligação para o Thiago", "completion": "<call>make_call(number=\"Thiago\")</call>"}
 {"prompt": "ei silva não manda sms pra ninguém agora", "completion": "<call>none()</call>"}
-{"prompt": "calcula 7 elevado a 3 dividido por 49 pfvr silva", "completion": "<call>calculate(expression=\"7**3 / 49\")</call>"}
-{"prompt": "escaneia td as redes wi-fi q ta rolando aqui", "completion": "<call>scan_wifi()</call>"}
-{"prompt": "pede um bolo pra Portal do Sol pfv", "completion": "<call>order_food(query=\"bolo\", app=\"ifood\")</call>"}
-{"prompt": "última localização salva pfv", "completion": "<call>get_last_location()</call>"}
-{"prompt": "qual o melhor jogo de luta silva?", "completion": "<call>none()</call>"}
+{"prompt": "silva memoriza que o remédio de azia tá na cozinha", "completion": "<call>remember_note(key=\"onde esta o remedio de azia\", value=\"cozinha\")</call>"}
+{"prompt": "Silva, entra em modo não perturbe", "completion": "<call>set_dnd(state=True)</call>"}
+{"prompt": "Manda um torpedo para o Dentista dizendo já cheguei em casa", "completion": "<call>send_sms(number=\"Dentista\", message=\"já cheguei em casa\")</call>"}
+{"prompt": "qual o número da reserva do hotel?", "completion": "<call>recall_note(query=\"numero da reserva do hotel\")</call>"}
+{"prompt": "ei silva valeu", "completion": "<call>none()</call>"}
+{"prompt": "Silva, pede um 99 pra Arena de Pernambuco da minha casa agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "agenda reunião de equipe terça às 14h silva", "completion": "<call>schedule_event(title=\"reunião de equipe\", date=\"terça\", time=\"14:00\")</call>"}
+{"prompt": "brilho no talo silva", "completion": "<call>set_brightness(level=100)</call>"}
+{"prompt": "silva volume da mídia em 45 pfv", "completion": "<call>set_volume(stream=\"media\", level=45)</call>"}
+{"prompt": "Silva, agenda reunião de equipe segunda às 11h", "completion": "<call>schedule_event(title=\"reuniao de equipe\", date=\"segunda\", time=\"11:00\")</call>"}
+{"prompt": "Silva, liga pra Mãe pra mim", "completion": "<call>make_call(number=\"Mãe\")</call>"}
+{"prompt": "continua a musica pfvr", "completion": "<call>media_control(action=\"play\")</call>"}
+{"prompt": "A bateria já tá em 100%?", "completion": "<call>get_battery()</call>"}
+{"prompt": "ei silva procura como plantar alface em casa", "completion": "<call>search_google(query=\"como plantar alface em casa\")</call>"}
+{"prompt": "silva poe um timer de 3 horas", "completion": "<call>set_timer(minutes=180, label=\"\")</call>"}
+{"prompt": "Silva, coloca o alarme no volume 85 e me mostra as notificações do whatsapp", "completion": "<call>set_volume(stream=\"alarm\", level=85)</call><call>get_notifications(app=\"whatsapp\")</call>"}
+{"prompt": "ei silva desliga o flash", "completion": "<call>set_torch(state=False)</call>"}
+{"prompt": "pede um 99 p/ mim ir no shopping agr pfvr", "completion": "<call>request_ride(destination=\"shopping\", app=\"99\")</call>"}
+{"prompt": "silva qual o melhor jogo de plataforma?", "completion": "<call>none()</call>"}
+{"prompt": "quais as rede wifi q ta funcionando aq perto", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Silva, ajuste o brilho da tela para 50%", "completion": "<call>set_brightness(level=50)</call>"}
+{"prompt": "ei silva, tô meio desanimado hoje", "completion": "<call>none()</call>"}
+{"prompt": "Silva, liga pro 31911112224 pfv", "completion": "<call>make_call(number=\"31911112224\")</call>"}
+{"prompt": "marca uma consulta médica sexta às 15h", "completion": "<call>schedule_event(title=\"consulta médica\", date=\"sexta\", time=\"15:00\")</call>"}
+{"prompt": "ei silva mostra a área de transferência", "completion": "<call>get_clipboard()</call>"}
+{"prompt": "Silva, brilho em 89 agora pfv", "completion": "<call>set_brightness(level=89)</call>"}
+{"prompt": "Consulta o nível de energia do aparelho", "completion": "<call>get_battery()</call>"}
+{"prompt": "Silva, me conta uma piada de animal", "completion": "<call>tell_joke()</call>"}
+{"prompt": "ei silva busca um risoto pra Casa Amarela", "completion": "<call>order_food(query=\"risoto\", app=\"ifood\")</call>"}
+{"prompt": "silva tira uma foto agora com a traseira", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "calcula 35% de 920 p/ mim blz", "completion": "<call>calculate(expression=\"(35 / 100) * 920\")</call>"}
+{"prompt": "silva bota alarme pras 5h15 pfv", "completion": "<call>set_alarm(time=\"05:15\")</call>"}
+{"prompt": "silva abre o app autenticador agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "pede um 99 pro restaurante pfv", "completion": "<call>request_ride(destination=\"restaurante\", app=\"99\")</call>"}
+{"prompt": "como fazer maquiagem natural silva?", "completion": "<call>none()</call>"}
+{"prompt": "qto ta a temperatura hj no recife?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Recife\")</call>"}
+{"prompt": "Manda um torpedo para o André dizendo tudo certo para amanhã", "completion": "<call>send_sms(number=\"André\", message=\"tudo certo para amanhã\")</call>"}
+{"prompt": "silva me fala o tempo de campo grande no sabado", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"Campo Grande\")</call>"}
+{"prompt": "qual o melhor pó compacto silva?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva me faz rir", "completion": "<call>tell_joke()</call>"}
+{"prompt": "como fica o tempo em Campinas hoje?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Campinas\")</call>"}
+{"prompt": "Localização anterior salva", "completion": "<call>get_last_location()</call>"}
+{"prompt": "silva chama um uber p/ eu ir pro trabalho agr", "completion": "<call>request_ride(destination=\"trabalho\", app=\"uber\")</call>"}
+{"prompt": "Consulta última coordenada offline", "completion": "<call>get_last_location()</call>"}
+{"prompt": "silva cria um timer de 2 horas", "completion": "<call>set_timer(minutes=120, label=\"\")</call>"}
+{"prompt": "silva brilho em 60 agora pfv", "completion": "<call>set_brightness(level=60)</call>"}
+{"prompt": "silva abre o app do autenticador pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "silva ve quais redes sem fio ta pegando aqui", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "silva pede um 99 pra Arena das Dunas da minha casa agora pfv pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Arena das Dunas\", app=\"99\")</call>"}
+{"prompt": "qual o gps atual silva?", "completion": "<call>get_location()</call>"}
+{"prompt": "Silva, ativa a vibração e abre o whatsapp", "completion": "<call>vibrate(duration_ms=500)</call><call>open_app(app_name=\"whatsapp\")</call>"}
+{"prompt": "abre as config do celular", "completion": "<call>open_app(app_name=\"configuracoes\")</call>"}
+{"prompt": "Coloca na área de transferência o cupom DESCONTO10", "completion": "<call>set_clipboard(text=\"DESCONTO10\")</call>"}
+{"prompt": "Copia o código de rastreio AA123456789BR", "completion": "<call>set_clipboard(text=\"AA123456789BR\")</call>"}
+{"prompt": "o que tem de novo no youtube silva?", "completion": "<call>get_notifications(app=\"youtube\")</call>"}
+{"prompt": "qual o número do RG do carro?", "completion": "<call>recall_note(query=\"numero do rg do carro\")</call>"}
+{"prompt": "silva vê as notificações gerais agora", "completion": "<call>get_notifications(app=\"\")</call>"}
+{"prompt": "mostra o ip local e a forca do sinal wifi blz", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "Volta para a música anterior", "completion": "<call>media_control(action=\"previous\")</call>"}
+{"prompt": "marca reunião de vendas amanhã às 9h30", "completion": "<call>schedule_event(title=\"reuniao de vendas\", date=\"amanha\", time=\"09:30\")</call>"}
+{"prompt": "silva tá chovendo aí?", "completion": "<call>none()</call>"}
+{"prompt": "silva como vai estar o tempo na Zona Central", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Zona Central\")</call>"}
+{"prompt": "silva cancela o alarme das 7 pfv", "completion": "<call>cancel_alarm()</call>"}
+{"prompt": "silva agenda o carnaval de rua dia 10 às 15h", "completion": "<call>schedule_event(title=\"carnaval de rua\", date=\"10\", time=\"15:00\")</call>"}
+{"prompt": "por que o céu é azul?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva calcula 1560 menos 780", "completion": "<call>calculate(expression=\"1560 - 780\")</call>"}
+{"prompt": "Lê a lista de tarefas", "completion": "<call>get_list(list_name=\"tarefas\")</call>"}
+{"prompt": "ei silva mostra o ip local do cel p/ eu abrir o :5000 no pc", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "silva pede um uber da minha casa pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "ei silva consulta a última localização agora", "completion": "<call>get_last_location()</call>"}
+{"prompt": "silva envia sms pro 81922223340 falando to no trabalho", "completion": "<call>send_sms(number=\"81922223340\", message=\"to no trabalho\")</call>"}
+{"prompt": "pede um 99 pra Arena de Pernambuco pfv", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "salva a tela num print", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "faz uma ligação pro 91976543218 silva", "completion": "<call>make_call(number=\"91976543218\")</call>"}
+{"prompt": "joga no google previsao do tempo amanha", "completion": "<call>search_google(query=\"previsão do tempo amanhã\")</call>"}
+{"prompt": "silva como limpar cortina sem tirar do lugar?", "completion": "<call>none()</call>"}
+{"prompt": "Silva, manda um SMS para a Beatriz dizendo que avisa quando chegar", "completion": "<call>send_sms(number=\"Beatriz\", message=\"avisa quando chegar\")</call>"}
+{"prompt": "agenda reunião de projeto terça às 8h30", "completion": "<call>schedule_event(title=\"reuniao de projeto\", date=\"terca\", time=\"08:30\")</call>"}
+{"prompt": "silva abre o spotify pfv", "completion": "<call>open_app(app_name=\"spotify\")</call>"}
+{"prompt": "Silva, qual o código do prédio?", "completion": "<call>recall_note(query=\"codigo do predio\")</call>"}
+{"prompt": "busca no google qual a populacao de portugal 2026", "completion": "<call>search_google(query=\"população de Portugal 2026\")</call>"}
+{"prompt": "ei silva conecta no wifi Sorveteria_2 senha gelo@2026", "completion": "<call>connect_wifi(ssid=\"Sorveteria_2\", password=\"gelo@2026\")</call>"}
+{"prompt": "ei silva como fica o clima no bairro Derby?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Derby\")</call>"}
+{"prompt": "Manda um whatsapp para João dizendo tô chegando", "completion": "<call>send_whatsapp(contact_name=\"João\", message=\"tô chegando\")</call>"}
+{"prompt": "silva lê o nubank pfv", "completion": "<call>get_notifications(app=\"nubank\")</call>"}
+{"prompt": "busca um hambúrguer artesanal pra Imbiribeira silva", "completion": "<call>order_food(query=\"hambúrguer artesanal\", app=\"ifood\")</call>"}
+{"prompt": "silva pede um remédio no ifood pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "quero pedir um remédio no ifood silva pfv", "completion": "<call>order_food(query=\"remédio\", app=\"ifood\")</call>"}
+{"prompt": "Silva, agenda um alerta dia 15 de dezembro de 2026 'Renovar Seguro'", "completion": "<call>schedule_event(title=\"Renovar Seguro\", date=\"15/12/2026\", time=\"09:00\")</call>"}
+{"prompt": "calcula a raiz quadrada de 225 vezes 6 pfv", "completion": "<call>calculate(expression=\"sqrt(225) * 6\")</call>"}
+{"prompt": "Silva, timer de 44 min pro pernil", "completion": "<call>set_timer(minutes=44, label=\"pernil\")</call>"}
+{"prompt": "silva qual o melhor goleiro do mundo?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva abre o youtube agora", "completion": "<call>open_app(app_name=\"com.google.android.youtube\")</call>"}
+{"prompt": "silva agenda o pagode sábado às 20h pfv", "completion": "<call>schedule_event(title=\"pagode\", date=\"sábado\", time=\"20:00\")</call>"}
+{"prompt": "ei silva sobe as notificações pra 70", "completion": "<call>set_volume(stream=\"notification\", level=70)</call>"}
+{"prompt": "Silva, música em 75 pfv", "completion": "<call>set_volume(stream=\"media\", level=75)</call>"}
+{"prompt": "previsão do tempo amanhã silva pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"\")</call>"}
+{"prompt": "silva foto com a traseira agora pfv", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "Tem alguma mensagem importante no SMS?", "completion": "<call>get_last_sms(limit=5)</call>"}
+{"prompt": "Silva, previsão do tempo na Zona Oeste do Rio amanhã", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Zona Oeste do Rio\")</call>"}
+{"prompt": "o sms do banco era golpe, ainda bem que ignorei", "completion": "<call>none()</call>"}
+{"prompt": "Silva, envia SMS para o Tio João falando que avisa quando chegar", "completion": "<call>send_sms(number=\"Tio João\", message=\"avisa quando chegar\")</call>"}
+{"prompt": "ei silva marca alerta dia 29 de novembro de 2026 'Cancelar Assinatura Streaming Jogos'", "completion": "<call>schedule_event(title=\"Cancelar Assinatura Streaming Jogos\", date=\"29/11/2026\", time=\"09:00\")</call>"}
+{"prompt": "queria q vc buscasse os wifi disponiveis ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "pesquisa oq é energia solar", "completion": "<call>search_google(query=\"o que é energia solar\")</call>"}
+{"prompt": "silva quanto e 19 fatorial dividido por 17 fatorial", "completion": "<call>calculate(expression=\"factorial(19) / factorial(17)\")</call>"}
+{"prompt": "abre o pubg mobile agora pfv silva", "completion": "<call>open_app(app_name=\"com.tencent.ig\")</call>"}
+{"prompt": "ei silva calcula 750 menos 250", "completion": "<call>calculate(expression=\"750 - 250\")</call>"}
+{"prompt": "silva desliga o flash e coloca o volume da notificação em 55", "completion": "<call>set_torch(state=False)</call><call>set_volume(stream=\"notification\", level=55)</call>"}
+{"prompt": "Silva, me conta uma charada", "completion": "<call>tell_joke()</call>"}
+{"prompt": "Tira uma foto selfie minha", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "busca no google quando é o proximo campeonato brasileiro", "completion": "<call>search_google(query=\"próximo Campeonato Brasileiro\")</call>"}
+{"prompt": "silva baixa o twitter na play store", "completion": "<call>install_app(app_name=\"twitter\")</call>"}
+{"prompt": "qual o melhor corretivo silva?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva abre o autenticador aí agora pfv pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "conecta pfv no wi-fi Recepcao_2 senha recep@2026", "completion": "<call>connect_wifi(ssid=\"Recepcao_2\", password=\"recep@2026\")</call>"}
+{"prompt": "qual o ip 192.168 q o cel pegou no wifi hj?", "completion": "<call>get_wifi_info()</call>"}
+{"prompt": "silva quanto é 1875 menos 940?", "completion": "<call>calculate(expression=\"1875 - 940\")</call>"}
+{"prompt": "Silva, calcula 920 menos 380", "completion": "<call>calculate(expression=\"920 - 380\")</call>"}
+{"prompt": "ei silva abre o spotify correndo", "completion": "<call>open_app(app_name=\"spotify\")</call>"}
+{"prompt": "Silva, abre o roblox agora", "completion": "<call>open_app(app_name=\"com.roblox.client\")</call>"}
+{"prompt": "vai chover domingo a tarde?", "completion": "<call>get_weather(day=\"domingo\", time=\"tarde\", location=\"\")</call>"}
+{"prompt": "ei silva como fazer uma tabela?", "completion": "<call>none()</call>"}
+{"prompt": "agenda um evento dia 28 às 14h", "completion": "<call>schedule_event(title=\"evento\", date=\"28\", time=\"14:00\")</call>"}
+{"prompt": "chama um uber pro Castelão daqui agora pfv silva", "completion": "<call>request_ride(destination=\"Castelão\", app=\"uber\")</call>"}
+{"prompt": "silva manda sms pro 71933332222 falando bom dia", "completion": "<call>send_sms(number=\"71933332222\", message=\"bom dia\")</call>"}
+{"prompt": "ei silva desliga a lanterna pfv agora", "completion": "<call>set_torch(state=False)</call>"}
+{"prompt": "faz uma ligação pro 21933334445", "completion": "<call>make_call(number=\"21933334445\")</call>"}
+{"prompt": "quero rir, conta uma piada", "completion": "<call>tell_joke()</call>"}
+{"prompt": "ei silva manda mensagem pro 61911112227 dizendo combinado", "completion": "<call>send_sms(number=\"61911112227\", message=\"combinado\")</call>"}
+{"prompt": "silva me informa a bateria", "completion": "<call>get_battery()</call>"}
+{"prompt": "Qual a temperatura prevista para as 12:00?", "completion": "<call>get_weather(day=\"hoje\", time=\"12:00\", location=\"\")</call>"}
+{"prompt": "silva volume da mídia em 90", "completion": "<call>set_volume(stream=\"media\", level=90)</call>"}
+{"prompt": "Me mostra o último lugar que você registrou", "completion": "<call>get_last_location()</call>"}
+{"prompt": "pausa o video pfvr", "completion": "<call>media_control(action=\"pause\")</call>"}
+{"prompt": "desconecta e desliga o wifi pfvr", "completion": "<call>set_wifi_state(state=False)</call>"}
+{"prompt": "me conta algo divertido pfv", "completion": "<call>tell_joke()</call>"}
+{"prompt": "ei silva chama um uber pra Fonte Nova da minha casa agora pfv pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "Silva, calcula 15% de 240", "completion": "<call>calculate(expression=\"0.15 * 240\")</call>"}
+{"prompt": "silva ativa o modo foco", "completion": "<call>set_dnd(state=True)</call>"}
+{"prompt": "ei silva como tá o clima amanha?", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"\")</call>"}
+{"prompt": "ei silva quero silêncio total", "completion": "<call>set_dnd(state=True)</call>"}
+{"prompt": "ei silva tem novidade no insta?", "completion": "<call>get_notifications(app=\"instagram\")</call>"}
+{"prompt": "silva, pede um ifood p/ mim pfv", "completion": "<call>order_food(query=\"comida\", app=\"ifood\")</call>"}
+{"prompt": "preciso carregar o cartão do ônibus hoje", "completion": "<call>none()</call>"}
+{"prompt": "Silva, selfie rápida pfv", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "bota no wi-fi Sala_Estar senha sofá@9090", "completion": "<call>connect_wifi(ssid=\"Sala_Estar\", password=\"sofa@9090\")</call>"}
+{"prompt": "silva memoriza que a senha do notebook é note2026", "completion": "<call>remember_note(key=\"senha do notebook\", value=\"note2026\")</call>"}
+{"prompt": "Vê o último card de localização gravado", "completion": "<call>get_last_location()</call>"}
+{"prompt": "qual a porcentagem da bateria", "completion": "<call>get_battery()</call>"}
+{"prompt": "chama um uber pro estádio Castelão agora silva pfv", "completion": "<call>request_ride(destination=\"Estádio Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, pede uma sobremesa pra minha casa", "completion": "<call>order_food(query=\"sobremesa\", app=\"ifood\")</call>"}
+{"prompt": "chama um uber pra Fonte Nova agora pfv pfv pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "pesquisa qual o melhor plano de internet 2026", "completion": "<call>search_google(query=\"melhor plano de internet 2026\")</call>"}
+{"prompt": "filma 90 segundos na frontal silva pfv", "completion": "<call>record_video(duration=90, camera_id=1)</call>"}
+{"prompt": "liga a lanterna do celular", "completion": "<call>set_torch(state=True)</call>"}
+{"prompt": "chama um uber pra Fonte Nova de casa agora silva pfv", "completion": "<call>request_ride(destination=\"Fonte Nova\", app=\"uber\")</call>"}
+{"prompt": "ei silva busca um café na 99 pfv agr", "completion": "<call>order_food(query=\"café\", app=\"99\")</call>"}
+{"prompt": "qual a diferença entre alarme e lembrete?", "completion": "<call>none()</call>"}
+{"prompt": "Silva, agenda reunião com contador quarta às 10h", "completion": "<call>schedule_event(title=\"reuniao com contador\", date=\"quarta\", time=\"10:00\")</call>"}
+{"prompt": "silva confere o telegram pfv agora", "completion": "<call>get_notifications(app=\"telegram\")</call>"}
+{"prompt": "Desliga a internet móvel", "completion": "<call>set_mobile_data_state(state=False)</call>"}
+{"prompt": "Silva, desativa o alarme das 7 agora", "completion": "<call>cancel_alarm()</call>"}
+{"prompt": "ei silva vê as not do insta agora pfv", "completion": "<call>get_notifications(app=\"instagram\")</call>"}
+{"prompt": "previsão do tempo depois de amanhã agora silva pfv pfv", "completion": "<call>get_weather(day=\"depois de amanhã\", time=\"\", location=\"\")</call>"}
+{"prompt": "previsão do tempo na Vila Madalena hoje silva", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Vila Madalena\")</call>"}
+{"prompt": "Verifica as notificações de SMS", "completion": "<call>get_last_sms(limit=3)</call>"}
+{"prompt": "anota que o número da casa é 456", "completion": "<call>remember_note(key=\"numero da casa\", value=\"456\")</call>"}
+{"prompt": "Alguém mandou SMS hoje?", "completion": "<call>get_last_sms(limit=5)</call>"}
+{"prompt": "baixa o nubank na play store p/ mim", "completion": "<call>install_app(app_name=\"nubank\")</call>"}
+{"prompt": "instala o kwai p/ mim agr pfv", "completion": "<call>install_app(app_name=\"kwai\")</call>"}
+{"prompt": "qual o melhor produto para limpar mármore silva?", "completion": "<call>none()</call>"}
+{"prompt": "silva bota o alarme em 70", "completion": "<call>set_volume(stream=\"alarm\", level=70)</call>"}
+{"prompt": "quanto da 7 elevado a 2 menos a raiz quadrada de 144", "completion": "<call>calculate(expression=\"7**2 - sqrt(144)\")</call>"}
+{"prompt": "chama um uber pra Arena Castelão agora pfv silva", "completion": "<call>request_ride(destination=\"Arena Castelão\", app=\"uber\")</call>"}
+{"prompt": "Silva, brilho em 34 agora pfv", "completion": "<call>set_brightness(level=34)</call>"}
+{"prompt": "essa reunião foi uma piada", "completion": "<call>none()</call>"}
+{"prompt": "ei silva filma 5 segundos na camera frontal", "completion": "<call>record_video(duration=5, camera_id=1)</call>"}
+{"prompt": "Silva, envia sms pro 91933334452 dizendo tô no ônibus", "completion": "<call>send_sms(number=\"91933334452\", message=\"to no onibus\")</call>"}
+{"prompt": "pede um 99 pra Arena Pernambuco da minha casa agora pfv", "completion": "<call>request_ride(destination=\"Arena Pernambuco\", app=\"99\")</call>"}
+{"prompt": "silva agenda o ensaio do samba quinta às 21h", "completion": "<call>schedule_event(title=\"ensaio do samba\", date=\"quinta\", time=\"21:00\")</call>"}
+{"prompt": "Silva, pede uma coca cola pra Setúbal", "completion": "<call>order_food(query=\"coca cola\", app=\"ifood\")</call>"}
+{"prompt": "grava um video de 40s na traseira", "completion": "<call>record_video(duration=40, camera_id=0)</call>"}
+{"prompt": "coloca um timer de 20 min e deixa o alarme no volume 90", "completion": "<call>set_timer(minutes=20, label=\"\")</call><call>set_volume(stream=\"alarm\", level=90)</call>"}
+{"prompt": "ei silva marca alerta dia 29 de novembro de 2026 'Cancelar Assinatura Cartão'", "completion": "<call>schedule_event(title=\"Cancelar Assinatura Cartao\", date=\"29/11/2026\", time=\"09:00\")</call>"}
+{"prompt": "grava 15 segundos na frontal silva", "completion": "<call>record_video(duration=15, camera_id=1)</call>"}
+{"prompt": "silva me fala sobre limpeza pesada", "completion": "<call>none()</call>"}
+{"prompt": "calcula o desconto de 35% sobre 1280 pfvr silva", "completion": "<call>calculate(expression=\"1280 * (1 - 35 / 100)\")</call>"}
+{"prompt": "o que tem na área de transferência?", "completion": "<call>get_clipboard()</call>"}
+{"prompt": "qual a senha do wifi do clube?", "completion": "<call>recall_note(query=\"senha do wifi do clube\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Fibra_Max com senha max#2026", "completion": "<call>connect_wifi(ssid=\"Fibra_Max\", password=\"max#2026\")</call>"}
+{"prompt": "silva abre o simulador do presidente pfv", "completion": "<call>open_app(app_name=\"com.oxiwyle.modernage3\")</call>"}
+{"prompt": "Silva, faz um timer de 5 min", "completion": "<call>set_timer(minutes=5, label=\"\")</call>"}
+{"prompt": "Quero pedir comida japonesa", "completion": "<call>order_food(query=\"comida japonesa\", app=\"ifood\")</call>"}
+{"prompt": "silva me ensina a limpar a cozinha rápido", "completion": "<call>none()</call>"}
+{"prompt": "ei silva entra na rede wifi Escritorio_2G senha master9988", "completion": "<call>connect_wifi(ssid=\"Escritorio_2G\", password=\"master9988\")</call>"}
+{"prompt": "qual a capital da Argentina", "completion": "<call>none()</call>"}
+{"prompt": "Silva, liga para a Portaria", "completion": "<call>make_call(number=\"Portaria\")</call>"}
+{"prompt": "abre o ChatGPT silva", "completion": "<call>open_app(app_name=\"com.openai.chatgpt\")</call>"}
+{"prompt": "silva proxima musica vlw", "completion": "<call>media_control(action=\"next\")</call>"}
+{"prompt": "grava 30s de video na frontal pfv", "completion": "<call>record_video(duration=30, camera_id=1)</call>"}
+{"prompt": "onde tá a encomenda?", "completion": "<call>recall_note(query=\"onde esta a encomenda\")</call>"}
+{"prompt": "ei silva qual o melhor zagueiro da atualidade?", "completion": "<call>none()</call>"}
+{"prompt": "apaga o despertador das 8 pfv silva", "completion": "<call>cancel_alarm()</call>"}
+{"prompt": "Como tá o clima em Fortaleza agora?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Fortaleza\")</call>"}
+{"prompt": "calcula 540 dividido por 18 silva", "completion": "<call>calculate(expression=\"540 / 18\")</call>"}
+{"prompt": "Silva, coloca um timer de 15 minutos para o bolo", "completion": "<call>set_timer(minutes=15, label=\"bolo\")</call>"}
+{"prompt": "silva screenshot da tela agora", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "Silva, calcula 28% de 1250", "completion": "<call>calculate(expression=\"0.28 * 1250\")</call>"}
+{"prompt": "conecta ai no wifi Esports_Arena c/ a senha frag2026 vlw", "completion": "<call>connect_wifi(ssid=\"Esports_Arena\", password=\"frag2026\")</call>"}
+{"prompt": "procura no google como fazer pão de queijo", "completion": "<call>search_google(query=\"como fazer pão de queijo\")</call>"}
+{"prompt": "Silva, confere o nubank aí pfv", "completion": "<call>get_notifications(app=\"nubank\")</call>"}
+{"prompt": "manda sms pro 2133334445 dizendo bom dia silva", "completion": "<call>send_sms(number=\"2133334445\", message=\"bom dia\")</call>"}
+{"prompt": "ei silva abre o autenticador do google agora pfv", "completion": "<call>open_app(app_name=\"com.google.android.apps.authenticator2\")</call>"}
+{"prompt": "agenda o réveillon dia 31 às 22h", "completion": "<call>schedule_event(title=\"reveillon\", date=\"31\", time=\"22:00\")</call>"}
+{"prompt": "Silva, pede um 99 pra Arena de Pernambuco em recife", "completion": "<call>request_ride(destination=\"Arena de Pernambuco\", app=\"99\")</call>"}
+{"prompt": "silva, tô pensando em mudar de celular", "completion": "<call>none()</call>"}
+{"prompt": "ei silva quanto da 15% de 4800 mais 20% de 3600", "completion": "<call>calculate(expression=\"(15 / 100) * 4800 + (20 / 100) * 3600\")</call>"}
+{"prompt": "Manda SMS para a Mãe: o almoço está pronto", "completion": "<call>send_sms(number=\"Mãe\", message=\"o almoço está pronto\")</call>"}
+{"prompt": "ei silva fala uma piada de professora", "completion": "<call>tell_joke()</call>"}
+{"prompt": "Qual minha operadora?", "completion": "<call>get_system_info()</call>"}
+{"prompt": "silva abre o spotify", "completion": "<call>open_app(app_name=\"spotify\")</call>"}
+{"prompt": "print da tela agora pfv", "completion": "<call>take_screenshot()</call>"}
+{"prompt": "mostra td as redes wifi q tem aqui ao redor", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "Quais foram as mensagens que recebi no chip?", "completion": "<call>get_last_sms(limit=5)</call>"}
+{"prompt": "Silva, timer de 46 min pro pudim", "completion": "<call>set_timer(minutes=46, label=\"pudim\")</call>"}
+{"prompt": "essa reunião foi uma piada, ninguém decidiu nada", "completion": "<call>none()</call>"}
+{"prompt": "não liga agora pfv", "completion": "<call>none()</call>"}
+{"prompt": "pede um uber daqui pro hotel silva pfv", "completion": "<call>request_ride(destination=\"hotel\", app=\"uber\")</call>"}
+{"prompt": "silva vai chover domingo de manha?", "completion": "<call>get_weather(day=\"domingo\", time=\"manhã\", location=\"\")</call>"}
+{"prompt": "silva quanto é 91 mais 9", "completion": "<call>calculate(expression=\"91 + 9\")</call>"}
+{"prompt": "Silva, calcula 2 elevado a 10 e liga a lanterna", "completion": "<call>calculate(expression=\"2 ** 10\")</call><call>set_torch(state=True)</call>"}
+{"prompt": "silva sms pro 11911112222 texto tô ocupado", "completion": "<call>send_sms(number=\"11911112222\", message=\"to ocupado\")</call>"}
+{"prompt": "ei silva vai ta frio hj de madrugada?", "completion": "<call>get_weather(day=\"hoje\", time=\"madrugada\", location=\"\")</call>"}
+{"prompt": "silva abre o zap agora pfv", "completion": "<call>open_app(app_name=\"com.whatsapp\")</call>"}
+{"prompt": "Mostra no mapa onde estive por último", "completion": "<call>get_last_location()</call>"}
+{"prompt": "previsão do tempo na Zona Oeste do Rio amanhã silva", "completion": "<call>get_weather(day=\"amanhã\", time=\"\", location=\"Zona Oeste do Rio\")</call>"}
+{"prompt": "pede um cuscuz pra Santa Rita pfv", "completion": "<call>order_food(query=\"cuscuz\", app=\"ifood\")</call>"}
+{"prompt": "Silva, faça o celular vibrar por 300 milissegundos", "completion": "<call>vibrate(duration_ms=300)</call>"}
+{"prompt": "entrar no wifi Auditorio c/ senha audit77 agr", "completion": "<call>connect_wifi(ssid=\"Auditorio\", password=\"audit77\")</call>"}
+{"prompt": "silva oq eu posso pedir p/ vc?", "completion": "<call>list_capabilities()</call>"}
+{"prompt": "silva chama no 62988887777", "completion": "<call>make_call(number=\"62988887777\")</call>"}
+{"prompt": "silva desativa a localização do aparelho agora", "completion": "<call>set_location_state(state=False)</call>"}
+{"prompt": "cancela o alarme das 5 pfv silva", "completion": "<call>cancel_alarm()</call>"}
+{"prompt": "silva cria um timer de 26 min pro frango", "completion": "<call>set_timer(minutes=26, label=\"frango\")</call>"}
+{"prompt": "marca um lembrete pra 29 de novembro de 2026 com o nome 'Cancelar Seguro'", "completion": "<call>schedule_event(title=\"Cancelar Seguro\", date=\"29/11/2026\", time=\"09:00\")</call>"}
+{"prompt": "silva coloca o toque no máximo e desliga o não perturbe", "completion": "<call>set_volume(stream=\"ring\", level=100)</call><call>set_dnd(state=False)</call>"}
+{"prompt": "ei silva chama um uber p/ mim ir no trabalho agr pfv", "completion": "<call>request_ride(destination=\"trabalho\", app=\"uber\")</call>"}
+{"prompt": "Silva, quem pintou a Mona Lisa?", "completion": "<call>none()</call>"}
+{"prompt": "ei silva agenda o festival de inverno dia 18 às 20h", "completion": "<call>schedule_event(title=\"festival de inverno\", date=\"18\", time=\"20:00\")</call>"}
+{"prompt": "ei silva brilho em 6 agora pfv", "completion": "<call>set_brightness(level=6)</call>"}
+{"prompt": "agenda lembrete pra 29 de novembro de 2026 'Pagar Mensalidade Música'", "completion": "<call>schedule_event(title=\"Pagar Mensalidade Musica\", date=\"29/11/2026\", time=\"09:00\")</call>"}
+{"prompt": "calcula o seno de 45 graus vezes 20 pfvr silva", "completion": "<call>calculate(expression=\"sin(45 * pi / 180) * 20\")</call>"}
+{"prompt": "Silva, pede uma tapioca pra minha casa", "completion": "<call>order_food(query=\"tapioca\", app=\"ifood\")</call>"}
+{"prompt": "anota que o remédio de dor de cabeça tá na cozinha", "completion": "<call>remember_note(key=\"onde esta o remedio de dor de cabeca\", value=\"cozinha\")</call>"}
+{"prompt": "ei silva coloca o brilho em 10", "completion": "<call>set_brightness(level=10)</call>"}
+{"prompt": "me fala o número da apólice", "completion": "<call>recall_note(query=\"numero da apolice\")</call>"}
+{"prompt": "Dá uma olhada na porcentagem de bateria", "completion": "<call>get_battery()</call>"}
+{"prompt": "ei silva agenda o futebol com os amigos sábado às 9h", "completion": "<call>schedule_event(title=\"futebol com os amigos\", date=\"sábado\", time=\"09:00\")</call>"}
+{"prompt": "calcula o cosseno de 90 graus vezes 60 pfvr", "completion": "<call>calculate(expression=\"cos(90 * pi / 180) * 60\")</call>"}
+{"prompt": "silva pede um camarão no ifood pfv", "completion": "<call>order_food(query=\"camarão\", app=\"ifood\")</call>"}
+{"prompt": "agenda reunião de alinhamento segunda às 13h30", "completion": "<call>schedule_event(title=\"reuniao de alinhamento\", date=\"segunda\", time=\"13:30\")</call>"}
+{"prompt": "foto traseira agora silva pfv", "completion": "<call>take_photo(camera_id=0)</call>"}
+{"prompt": "ei silva confere o instagram agora", "completion": "<call>get_notifications(app=\"instagram\")</call>"}
+{"prompt": "previsão do tempo na Brasilândia hoje silva pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Brasilândia\")</call>"}
+{"prompt": "cria alarme pras 9h35 silva", "completion": "<call>set_alarm(time=\"09:35\")</call>"}
+{"prompt": "ei silva conecta na rede Studio_Foto c/ senha foto2026", "completion": "<call>connect_wifi(ssid=\"Studio_Foto\", password=\"foto2026\")</call>"}
+{"prompt": "ei silva previsão do tempo em Caruaru hoje pfv", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Caruaru\")</call>"}
+{"prompt": "Silva, lê as notificações gerais agora", "completion": "<call>get_notifications(app=\"\")</call>"}
+{"prompt": "Silva, diminui o brilho pra 10 agora pfv", "completion": "<call>set_brightness(level=10)</call>"}
+{"prompt": "silva deixa o brilho em 33 pfv", "completion": "<call>set_brightness(level=33)</call>"}
+{"prompt": "Silva, envia sms pro 31933334446 dizendo tô no shopping", "completion": "<call>send_sms(number=\"31933334446\", message=\"to no shopping\")</call>"}
+{"prompt": "ei silva qual o código do escritório?", "completion": "<call>recall_note(query=\"codigo do escritorio\")</call>"}
+{"prompt": "silva brilho em 8 agora pfv", "completion": "<call>set_brightness(level=8)</call>"}
+{"prompt": "bota alarme pras 8h05 pfv", "completion": "<call>set_alarm(time=\"08:05\")</call>"}
+{"prompt": "Silva, guarda que a senha do notebook é note2026 e abre o chrome", "completion": "<call>remember_note(key=\"senha do notebook\", value=\"note2026\")</call><call>open_app(app_name=\"chrome\")</call>"}
+{"prompt": "Silva, qual o melhor campeonato de futebol?", "completion": "<call>none()</call>"}
+{"prompt": "Manda um Uber rapidinho pro hospital", "completion": "<call>request_ride(destination=\"hospital\", app=\"uber\")</call>"}
+{"prompt": "Consulta a última localização salva offline", "completion": "<call>get_last_location()</call>"}
+{"prompt": "ei silva vai chover na Zona Central do Rio hoje?", "completion": "<call>get_weather(day=\"hoje\", time=\"\", location=\"Zona Central do Rio\")</call>"}
+{"prompt": "silva quanto da 16% de 5400", "completion": "<call>calculate(expression=\"(16 / 100) * 5400\")</call>"}
+{"prompt": "ei silva abre o app do 99", "completion": "<call>open_app(app_name=\"com.taxis99\")</call>"}
+{"prompt": "silva baixa o jogo de xadrez na play store", "completion": "<call>install_app(app_name=\"jogo de xadrez\")</call>"}
+{"prompt": "Tem código de verificação no SMS?", "completion": "<call>get_last_sms(limit=3)</call>"}
+{"prompt": "Silva, faz um timer de 40 minutos", "completion": "<call>set_timer(minutes=40, label=\"\")</call>"}
+{"prompt": "silva brilho em 96 agora pfv", "completion": "<call>set_brightness(level=96)</call>"}
+{"prompt": "Silva, calcula 180 dividido por 6", "completion": "<call>calculate(expression=\"180 / 6\")</call>"}
+{"prompt": "marca reunião de equipe técnica terça às 16h", "completion": "<call>schedule_event(title=\"reuniao de equipe tecnica\", date=\"terca\", time=\"16:00\")</call>"}
+{"prompt": "Silva, faz conexao no wifi Hamburgueria_2 com senha lanche@88", "completion": "<call>connect_wifi(ssid=\"Hamburgueria_2\", password=\"lanche@88\")</call>"}
+{"prompt": "Silva, previsão do tempo em Recife amanhã às 20h pfv", "completion": "<call>get_weather(day=\"amanhã\", time=\"20:00\", location=\"Recife\")</call>"}
+{"prompt": "ei silva abre as configuracoes pfv agora", "completion": "<call>open_app(app_name=\"com.android.settings\")</call>"}
+{"prompt": "envia sms pro 3133334446 dizendo boa tarde", "completion": "<call>send_sms(number=\"3133334446\", message=\"boa tarde\")</call>"}
+{"prompt": "não mostra o clipboard não, esquece", "completion": "<call>none()</call>"}
+{"prompt": "silva quero silêncio no celular", "completion": "<call>set_dnd(state=True)</call>"}
+{"prompt": "Copia o texto 'Finalizado com sucesso' pra área de transferência", "completion": "<call>set_clipboard(text=\"Finalizado com sucesso\")</call>"}
+{"prompt": "Guarda na memória que estacionei no setor B3", "completion": "<call>remember_note(key=\"estacionamento\", value=\"setor B3\")</call>"}
+{"prompt": "Silva, calcula 64 dividido por 8 e liga o flash", "completion": "<call>calculate(expression=\"64 / 8\")</call><call>set_torch(state=True)</call>"}
+{"prompt": "agenda lembrete pra 29 de novembro de 2026 'Cancelar Assinatura Nubank'", "completion": "<call>schedule_event(title=\"Cancelar Assinatura Nubank\", date=\"29/11/2026\", time=\"09:00\")</call>"}
+{"prompt": "tira uma selfie pfv silva", "completion": "<call>take_photo(camera_id=1)</call>"}
+{"prompt": "Silva, previsão do tempo em Recife na terça pfv", "completion": "<call>get_weather(day=\"terça\", time=\"\", location=\"Recife\")</call>"}
+{"prompt": "preciso saber quais wi-fi ta no alcance do celular", "completion": "<call>scan_wifi()</call>"}
+{"prompt": "previsão do sábado silva pfv", "completion": "<call>get_weather(day=\"sábado\", time=\"\", location=\"\")</call>"}
+{"prompt": "calcula a area de um circulo c/ diametro 14 pfvr", "completion": "<call>calculate(expression=\"pi * (14 / 2)**2\")</call>"}
+{"prompt": "silva alarme em 35", "completion": "<call>set_volume(stream=\"alarm\", level=35)</call>"}
+{"prompt": "ei silva qual era o código do portão?", "completion": "<call>recall_note(query=\"codigo do portao\")</call>"}
+{"prompt": "Desliga o compartilhamento de internet", "completion": "<call>set_hotspot_state(state=False)</call>"}
+{"prompt": "Silva, notificações em 15 pfv", "completion": "<call>set_volume(stream=\"notification\", level=15)</call>"}

@@ -45,6 +45,7 @@ from .media import (
     take_screenshot,
     record_video,
     record_audio,
+    play_media,
     media_control,
 )
 
@@ -54,6 +55,8 @@ from .comms import (
     make_call,
     save_contact,
     get_contact,
+    send_whatsapp,
+    summarize_notifications,
     get_notifications,
     get_clipboard,
     set_clipboard,
@@ -78,6 +81,7 @@ from .weather_web import (
 
 from .apps_mobility import (
     open_app,
+    navigate_to,
     request_ride,
     order_food,
     install_app,
@@ -106,6 +110,9 @@ from .memory_schedule import (
     set_timer,
     SafeMathEvaluator,
     convert_units,
+    add_list_item,
+    get_list,
+    remove_list_item,
     calculate,
 )
 
@@ -159,6 +166,13 @@ AVAILABLE_TOOLS = {
     "set_hotspot_state": set_hotspot_state,
     "record_audio": record_audio,
     "convert_units": convert_units,
+    "send_whatsapp": send_whatsapp,
+    "summarize_notifications": summarize_notifications,
+    "navigate_to": navigate_to,
+    "play_media": play_media,
+    "add_list_item": add_list_item,
+    "get_list": get_list,
+    "remove_list_item": remove_list_item,
     "none": none,
 }
 
@@ -198,12 +212,15 @@ __all__ = [
     "take_screenshot",
     "record_video",
     "record_audio",
+    "play_media",
     "media_control",
     "get_last_sms",
     "send_sms",
     "make_call",
     "save_contact",
     "get_contact",
+    "send_whatsapp",
+    "summarize_notifications",
     "get_notifications",
     "get_clipboard",
     "set_clipboard",
@@ -222,6 +239,7 @@ __all__ = [
     "_fetch_wikipedia_summary",
     "search_google",
     "open_app",
+    "navigate_to",
     "request_ride",
     "order_food",
     "install_app",
@@ -247,6 +265,9 @@ __all__ = [
     "set_timer",
     "SafeMathEvaluator",
     "convert_units",
+    "add_list_item",
+    "get_list",
+    "remove_list_item",
     "calculate",
     "AVAILABLE_TOOLS",
 ]

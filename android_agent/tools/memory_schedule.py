@@ -5,25 +5,19 @@ Módulo Memória, Agendamento e Cálculo do Silva: SQLite FTS5, Alarmes, Eventos
 import ast
 import json
 import math
-import os
 import re
 import sqlite3
 import unicodedata
+import urllib.request
 import uuid
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .core import (
     DATA_DIR,
-    EVENTS_FILE,
     SIMULATE_HARDWARE,
     _FILE_LOCK,
-    _atomic_write_json,
-    _load_events,
-    _save_events,
     _run_termux_cmd,
-    _exec_android_intent,
 )
 
 MONTHS_PTBR = {
@@ -155,19 +149,78 @@ def parse_time_str(time_str: str) -> tuple[int, int]:
     return (9, 0)
 
 
+def parse_recurrence(text: str) -> str:
+    """Reconhece expressões naturais de recorrência em PT-BR."""
+    norm = _normalize_text(text)
+    if not norm:
+        return "none"
+    if any(w in norm for w in ("todo dia", "todos os dias", "diariamente", "daily")):
+        return "daily"
+    if any(w in norm for w in ("segunda a sexta", "dias uteis", "dia util", "weekdays")):
+        return "weekdays"
+    if any(w in norm for w in ("toda semana", "semanalmente", "weekly")):
+        return "weekly"
+    return "none"
+
+
+def compute_next_trigger(trigger_at_str: str, recurrence: str) -> Optional[str]:
+    """Calcula o próximo trigger_at ISO-8601 ('YYYY-MM-DD HH:MM:SS') para eventos recorrentes."""
+    rec = (recurrence or "none").strip().lower()
+    if rec == "none":
+        return None
+    try:
+        dt = datetime.strptime(trigger_at_str, "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return None
+
+    if rec == "daily":
+        return (dt + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+    if rec == "weekly":
+        return (dt + timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+    if rec == "weekdays":
+        nxt = dt + timedelta(days=1)
+        while nxt.weekday() >= 5:  # 5=sabado, 6=domingo
+            nxt += timedelta(days=1)
+        return nxt.strftime("%Y-%m-%d %H:%M:%S")
+    return None
+
+
 def set_alarm(time: str, label: str = "", days: str = "") -> Dict[str, Any]:
-    """Define um alarme no relógio nativo do Android via Intent."""
+    """Define um alarme no relógio nativo do Android e registra em scheduled_events (memory.db)."""
     hour, minute = parse_time_str(time)
     formatted_time = f"{hour:02d}:{minute:02d}"
     label_clean = str(label).strip()
     days_clean = str(days).strip()
+    recurrence = parse_recurrence(f"{days_clean} {label_clean}")
+
+    now = datetime.now()
+    target_dt = datetime(now.year, now.month, now.day, hour, minute)
+    if target_dt <= now:
+        target_dt += timedelta(days=1)
+    if recurrence == "weekdays":
+        while target_dt.weekday() >= 5:
+            target_dt += timedelta(days=1)
+    trigger_at = target_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            with conn:
+                conn.execute(
+                    "INSERT INTO scheduled_events (title, event_type, trigger_at, recurrence, status, spoken_alert) "
+                    "VALUES (?, 'alarm', ?, ?, 'pending', 1)",
+                    (label_clean or f"Alarme das {formatted_time}", trigger_at, recurrence),
+                )
+            conn.close()
+    except Exception:
+        pass
 
     if SIMULATE_HARDWARE:
         lbl_msg = f" com o rótulo '{label_clean}'" if label_clean else ""
         return {
             "status": "ok",
             "message": f"Silva: Alarme definido para {formatted_time}{lbl_msg}. [Simulado]",
-            "data": {"hour": hour, "minute": minute, "time": formatted_time, "label": label_clean, "days": days_clean}
+            "data": {"hour": hour, "minute": minute, "time": formatted_time, "label": label_clean, "days": days_clean, "recurrence": recurrence}
         }
 
     cmd = [
@@ -243,8 +296,8 @@ def cancel_alarm(time: str = "", day: str = "", label: str = "") -> Dict[str, An
         return {"status": "error", "message": f"Erro ao cancelar alarme: {str(e)}"}
 
 
-def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]:
-    """Cria um compromisso na agenda local do Silva e abre diretamente no Calendário Samsung sem diálogo de escolha."""
+def schedule_event(title: str, date: str = "", time: str = "", recurrence: str = "") -> Dict[str, Any]:
+    """Cria um compromisso na agenda unificada (memory.db/scheduled_events) e abre no Calendário."""
     title_clean = str(title).strip()
     if not title_clean:
         return {"status": "error", "message": "Título do compromisso não informado."}
@@ -254,25 +307,25 @@ def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]
     dt_event = datetime(target_date.year, target_date.month, target_date.day, hour, minute)
     begin_ms = int(dt_event.timestamp() * 1000)
     end_ms = begin_ms + (3600 * 1000)  # +1 hora
-    event_ts = int(dt_event.timestamp())
+    trigger_at = dt_event.strftime("%Y-%m-%d %H:%M:%S")
+    rec_val = recurrence.strip().lower() if recurrence.strip() else parse_recurrence(f"{date} {title_clean}")
 
     formatted_date = target_date.strftime("%d/%m/%Y")
     formatted_time = f"{hour:02d}:{minute:02d}"
     event_id = str(uuid.uuid4())[:8]
 
-    # 1. Persistência real na Agenda Local (android_agent/data/events.json)
-    event_record = {
-        "id": event_id,
-        "title": title_clean,
-        "date": target_date.strftime("%Y-%m-%d"),
-        "time": formatted_time,
-        "timestamp": event_ts,
-        "notified": False
-    }
+    # 1. Persistência transacional na Agenda Unificada (memory.db -> scheduled_events)
     with _FILE_LOCK:
-        events = _load_events()
-        events.append(event_record)
-        _save_events(events)
+        conn = _get_memory_db()
+        with conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO scheduled_events (title, event_type, trigger_at, recurrence, status, spoken_alert) "
+                "VALUES (?, 'event', ?, ?, 'pending', 1)",
+                (title_clean, trigger_at, rec_val),
+            )
+            event_id = str(cur.lastrowid or event_id)
+        conn.close()
 
     if SIMULATE_HARDWARE:
         return {
@@ -283,6 +336,8 @@ def schedule_event(title: str, date: str = "", time: str = "") -> Dict[str, Any]
                 "title": title_clean,
                 "date": target_date.strftime("%Y-%m-%d"),
                 "time": formatted_time,
+                "trigger_at": trigger_at,
+                "recurrence": rec_val,
                 "begin_ms": begin_ms,
                 "end_ms": end_ms
             }
@@ -395,6 +450,53 @@ def _get_memory_db() -> sqlite3.Connection:
             END;
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS scheduled_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                event_type TEXT DEFAULT 'event',
+                trigger_at TEXT NOT NULL,
+                recurrence TEXT DEFAULT 'none',
+                status TEXT DEFAULT 'pending',
+                spoken_alert INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        # Migração transparente de events.json legado para scheduled_events
+        events_legacy = DATA_DIR / "events.json"
+        events_migrated = DATA_DIR / "events.json.migrated"
+        if events_legacy.is_file():
+            try:
+                with open(events_legacy, "r", encoding="utf-8") as ef:
+                    old_events = json.load(ef)
+                if isinstance(old_events, list):
+                    cur_ev = conn.cursor()
+                    for ev in old_events:
+                        if not isinstance(ev, dict):
+                            continue
+                        ev_title = str(ev.get("title") or "Compromisso").strip()
+                        if ev.get("notified"):
+                            continue
+                        ts = ev.get("timestamp")
+                        if ts:
+                            trig = datetime.fromtimestamp(float(ts)).strftime("%Y-%m-%d %H:%M:%S")
+                        elif ev.get("date") and ev.get("time"):
+                            trig = f"{ev['date']} {ev['time']}:00"
+                        else:
+                            trig = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        cur_ev.execute(
+                            "INSERT INTO scheduled_events (title, event_type, trigger_at, recurrence, status, spoken_alert) "
+                            "VALUES (?, 'event', ?, 'none', 'pending', 1)",
+                            (ev_title, trig),
+                        )
+                try:
+                    events_legacy.rename(events_migrated)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
         # Migração automática zero-loss de memory.json para SQLite
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM memories")
@@ -433,6 +535,9 @@ def _migrate_json_to_sqlite() -> None:
     """Função explícita de migração para testes e manutenção."""
     conn = _get_memory_db()
     conn.close()
+
+
+_init_memory_db = _get_memory_db
 
 
 def _load_memory() -> dict:
@@ -618,18 +723,28 @@ def recall_note(query: str) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # 3. Busca em compromissos da agenda (events.json)
-    events = _load_events()
+    # 3. Busca em compromissos da agenda unificada (scheduled_events no memory.db)
     event_matches = []
-    if events:
+    try:
+        conn = _get_memory_db()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT title, event_type, trigger_at, status FROM scheduled_events "
+            "WHERE status IN ('pending', 'pre_alerted') ORDER BY trigger_at ASC"
+        )
+        rows = cur.fetchall()
+        conn.close()
         is_agenda_query = any(w in norm_query for w in ["agenda", "compromisso", "compromissos", "evento", "eventos", "reuniao", "lembrete", "lembretes"])
-        for ev in events:
-            ev_title = ev.get("title", "")
-            ev_date = ev.get("date", "")
-            ev_time = ev.get("time", "")
+        for r in rows:
+            ev_title = r["title"] or ""
+            trig = r["trigger_at"] or ""
+            ev_date = trig[:10]
+            ev_time = trig[11:16]
             norm_title = _normalize_text(ev_title)
             if is_agenda_query or norm_query in norm_title or norm_title in norm_query or set(query_tokens).intersection(set(norm_title.split())):
                 event_matches.append(f"'{ev_title}' em {ev_date} às {ev_time}")
+    except Exception:
+        pass
 
     if not matches and not event_matches:
         return {
@@ -802,6 +917,167 @@ class SafeMathEvaluator(ast.NodeVisitor):
                 raise ValueError("Logaritmo não definido para valores menores ou iguais a zero.")
 
         return self.ALLOWED_FUNCTIONS[fn_name](*args)
+
+
+_UNIT_ALIASES = {
+    # Distância
+    "km": "km", "quilometro": "km", "quilometros": "km", "kilometro": "km", "kilometros": "km",
+    "m": "m", "metro": "m", "metros": "m",
+    "cm": "cm", "centimetro": "cm", "centimetros": "cm",
+    "mm": "mm", "milimetro": "mm", "milimetros": "mm",
+    "mi": "mi", "milha": "mi", "milhas": "mi",
+    "yd": "yd", "jarda": "yd", "jardas": "yd",
+    "ft": "ft", "pe": "ft", "pes": "ft",
+    "in": "in", "polegada": "in", "polegadas": "in",
+    # Massa / Peso
+    "kg": "kg", "quilo": "kg", "quilos": "kg", "quilograma": "kg", "quilogramas": "kg", "kilo": "kg", "kilos": "kg",
+    "g": "g", "grama": "g", "gramas": "g",
+    "mg": "mg", "miligrama": "mg", "miligramas": "mg",
+    "t": "t", "ton": "t", "tonelada": "t", "toneladas": "t",
+    "lb": "lb", "lbs": "lb", "libra": "lb", "libras": "lb",
+    "oz": "oz", "onca": "oz", "oncas": "oz",
+    # Temperatura
+    "c": "c", "celsius": "c", "grau celsius": "c", "graus celsius": "c", "centigrados": "c",
+    "f": "f", "fahrenheit": "f", "grau fahrenheit": "f", "graus fahrenheit": "f",
+    "k": "k", "kelvin": "k",
+    # Volume
+    "l": "l", "litro": "l", "litros": "l",
+    "ml": "ml", "mililitro": "ml", "mililitros": "ml",
+    "gal": "gal", "galao": "gal", "galoes": "gal",
+    # Moedas
+    "brl": "brl", "real": "brl", "reais": "brl", "r$": "brl",
+    "usd": "usd", "dolar": "usd", "dolares": "usd", "us$": "usd", "$": "usd",
+    "eur": "eur", "euro": "eur", "euros": "eur",
+    "gbp": "gbp", "libra esterlina": "gbp", "libras esterlinas": "gbp",
+    "ars": "ars", "peso argentino": "ars", "pesos argentinos": "ars",
+    "jpy": "jpy", "iene": "jpy", "ienes": "jpy",
+}
+
+_DISTANCE_FACTORS_M = {
+    "km": 1000.0, "m": 1.0, "cm": 0.01, "mm": 0.001,
+    "mi": 1609.344, "yd": 0.9144, "ft": 0.3048, "in": 0.0254,
+}
+_MASS_FACTORS_G = {
+    "kg": 1000.0, "g": 1.0, "mg": 0.001, "t": 1_000_000.0,
+    "lb": 453.59237, "oz": 28.349523125,
+}
+_VOLUME_FACTORS_L = {
+    "l": 1.0, "ml": 0.001, "gal": 3.785411784,
+}
+_TEMP_UNITS = {"c", "f", "k"}
+_CURRENCY_RATES_TO_BRL = {
+    "brl": 1.0,
+    "usd": 5.80,
+    "eur": 6.15,
+    "gbp": 7.30,
+    "ars": 0.0058,
+    "jpy": 0.0375,
+}
+
+
+def _normalize_unit(unit_str: str) -> str:
+    norm = _normalize_text(unit_str).replace("°", "").strip()
+    norm = re.sub(r"\s+", " ", norm)
+    return _UNIT_ALIASES.get(norm, norm)
+
+
+def _format_physical_number(val: float) -> str:
+    if abs(val - round(val)) < 1e-9:
+        return str(int(round(val)))
+    formatted = f"{val:.4f}".rstrip("0").rstrip(".")
+    return formatted
+
+
+def _fetch_currency_rate(from_cur: str, to_cur: str) -> tuple[float, bool]:
+    """Retorna (taxa, is_online) consultando AwesomeAPI com fallback offline."""
+    if from_cur == to_cur:
+        return 1.0, True
+    pair_key = f"{from_cur.upper()}{to_cur.upper()}"
+    url = f"https://economia.awesomeapi.com.br/json/last/{from_cur.upper()}-{to_cur.upper()}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "SilvaAgent/1.0"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if pair_key in data and "bid" in data[pair_key]:
+                return float(data[pair_key]["bid"]), True
+    except Exception:
+        pass
+    rate = _CURRENCY_RATES_TO_BRL[from_cur] / _CURRENCY_RATES_TO_BRL[to_cur]
+    return rate, False
+
+
+def convert_units(amount: float, from_unit: str, to_unit: str) -> Dict[str, Any]:
+    """Converte medidas físicas (distância, massa, temperatura, volume) e moedas (online/offline)."""
+    try:
+        val = float(amount)
+    except (TypeError, ValueError):
+        return {"status": "error", "message": f"Valor numérico inválido para conversão: '{amount}'."}
+
+    u_from = _normalize_unit(from_unit)
+    u_to = _normalize_unit(to_unit)
+
+    if not u_from or not u_to:
+        return {"status": "error", "message": "Unidades de origem e destino não informadas."}
+
+    # 1. Moedas
+    if u_from in _CURRENCY_RATES_TO_BRL and u_to in _CURRENCY_RATES_TO_BRL:
+        rate, is_online = _fetch_currency_rate(u_from, u_to)
+        result_val = round(val * rate, 2)
+        src_note = "" if is_online else " (cotação offline estimada)"
+        return {
+            "status": "ok",
+            "message": f"Silva: {_format_physical_number(val)} {u_from.upper()} = {result_val:.2f} {u_to.upper()}{src_note}.",
+            "data": {
+                "amount": val, "from_unit": u_from.upper(), "to_unit": u_to.upper(),
+                "result": result_val, "rate": rate, "online": is_online, "category": "currency",
+            },
+        }
+
+    # 2. Temperatura
+    if u_from in _TEMP_UNITS and u_to in _TEMP_UNITS:
+        if u_from == u_to:
+            c_res = val
+        else:
+            if u_from == "c":
+                c_base = val
+            elif u_from == "f":
+                c_base = (val - 32.0) * 5.0 / 9.0
+            else:
+                c_base = val - 273.15
+
+            if u_to == "c":
+                c_res = c_base
+            elif u_to == "f":
+                c_res = (c_base * 9.0 / 5.0) + 32.0
+            else:
+                c_res = c_base + 273.15
+
+        res_fmt = _format_physical_number(c_res)
+        return {
+            "status": "ok",
+            "message": f"Silva: {_format_physical_number(val)} °{u_from.upper()} = {res_fmt} °{u_to.upper()}.",
+            "data": {"amount": val, "from_unit": u_from, "to_unit": u_to, "result": round(c_res, 4), "category": "temperature"},
+        }
+
+    # 3. Distância, Massa e Volume
+    for cat_name, table in (
+        ("distance", _DISTANCE_FACTORS_M),
+        ("mass", _MASS_FACTORS_G),
+        ("volume", _VOLUME_FACTORS_L),
+    ):
+        if u_from in table and u_to in table:
+            res_val = val * table[u_from] / table[u_to]
+            res_fmt = _format_physical_number(res_val)
+            return {
+                "status": "ok",
+                "message": f"Silva: {_format_physical_number(val)} {u_from} = {res_fmt} {u_to}.",
+                "data": {"amount": val, "from_unit": u_from, "to_unit": u_to, "result": round(res_val, 4), "category": cat_name},
+            }
+
+    return {
+        "status": "error",
+        "message": f"Não é possível converter '{from_unit}' para '{to_unit}' (unidades desconhecidas ou de categorias incompatíveis).",
+    }
 
 
 def calculate(expression: str) -> Dict[str, Any]:

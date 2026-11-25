@@ -57,6 +57,8 @@ ENABLE_VOICE_MODE = os.getenv("ENABLE_VOICE_MODE", "false").lower() in ("1", "tr
 VOSK_MODEL_PATH = os.getenv("VOSK_MODEL_PATH", "models/vosk-model-small-pt-0.3").strip()
 VOSK_USE_GRAMMAR = os.getenv("VOSK_USE_GRAMMAR", "false").lower() in ("1", "true", "yes")
 ENABLE_VOICE_TTS = os.getenv("ENABLE_VOICE_TTS", "false").lower() in ("1", "true", "yes")
+ENABLE_PROACTIVE_TTS = os.getenv("ENABLE_PROACTIVE_TTS", "true").lower() in ("1", "true", "yes")
+WEB_AUTO_TTS = os.getenv("WEB_AUTO_TTS", "false").lower() in ("1", "true", "yes")
 
 # System Prompt estrito do Silva para Function Calling
 SILVA_SYSTEM_PROMPT = (
@@ -70,8 +72,11 @@ SILVA_SYSTEM_PROMPT = (
     "remember_note(key, value), recall_note(query), get_notifications(app), set_volume(stream, level), "
     "set_brightness(level), set_timer(minutes, label), calculate(expression), search_google(query, open_browser), "
     "request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), "
-    "scan_wifi(), connect_wifi(ssid, password), get_wifi_info(), set_wifi_state(state), list_capabilities(), none().\n"
-    "Responda EXCLUSIVAMENTE com chamadas no formato: <call>get_battery()</call> ou <call>set_torch(state=True)</call>.\n"
+    "scan_wifi(), connect_wifi(ssid, password), get_wifi_info(), set_wifi_state(state), "
+    "get_datetime(), get_system_info(), read_screen(), save_contact(name, phone), get_contact(name), "
+    "set_bluetooth_state(state), set_mobile_data_state(state), set_airplane_mode(state), set_hotspot_state(state), "
+    "record_audio(duration), convert_units(amount, from_unit, to_unit), list_capabilities(), none().\n"
+    "Responda EXCLUSIVAMENTE com chamadas no formato: <call>get_battery()</call>, <call>record_audio(duration=15)</call>, <call>convert_units(amount=50, from_unit='usd', to_unit='brl')</call> ou <call>read_screen()</call>.\n"
     "Quando o usuário solicitar mais de uma ação na mesma frase, emita múltiplas tags em sequência (ex: <call>get_battery()</call><call>set_torch(state=True)</call>).\n"
     "Caso o comando não corresponda a nenhuma ferramenta ou seja uma conversa geral, responda apenas:\n"
     "<call>none()</call>\n"

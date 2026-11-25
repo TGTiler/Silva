@@ -5,7 +5,6 @@ sem root no Android 14/15 (One UI 7.0), mantendo 100% de compatibilidade caso o 
 """
 
 import os
-import re
 import shutil
 import subprocess
 import threading

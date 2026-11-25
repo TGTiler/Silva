@@ -2,13 +2,12 @@
 Módulo Mídia do Silva: Foto, Screenshot, Vídeo e Controle de Mídia.
 """
 
-import os
 import shutil
 import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from .core import (
     CAPTURES_DIR,
@@ -404,6 +403,80 @@ def media_control(action: str) -> Dict[str, Any]:
         "status": "ok",
         "message": msg,
         "data": {"action": normalized_action}
+    }
+
+
+def record_audio(duration: int = 10) -> Dict[str, Any]:
+    """Grava um áudio/nota de voz usando o microfone via termux-microphone-record (1 a 120s)."""
+    try:
+        dur = int(duration)
+    except (TypeError, ValueError):
+        dur = 10
+    dur = max(1, min(120, dur))
+
+    CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"audio_{int(time.time())}.m4a"
+    out_path = CAPTURES_DIR / filename
+    audio_url = f"/captures/{filename}"
+
+    if SIMULATE_HARDWARE:
+        out_path.write_bytes(b"\x00\x00\x00\x20ftypM4A \x00\x00\x00\x00M4A mp42isom\x00\x00\x00\x08free")
+        return {
+            "status": "ok",
+            "message": f"Silva: Áudio de {dur}s gravado com sucesso. [Simulado]",
+            "audio_url": audio_url,
+            "media_items": [{"type": "audio", "url": audio_url}],
+            "data": {"filename": filename, "duration": dur, "simulated": True},
+        }
+
+    try:
+        _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
+    except Exception:
+        pass
+
+    try:
+        res = _run_termux_cmd(
+            ["termux-microphone-record", "-f", str(out_path), "-l", str(dur), "-e", "aac"],
+            timeout=dur + 8,
+        )
+        time.sleep(0.4)
+        if res.returncode != 0 and not out_path.is_file():
+            return {
+                "status": "error",
+                "message": (
+                    f"Falha ao gravar áudio ({res.stderr.strip() or 'erro desconhecido'}). "
+                    "Verifique se a permissão de Microfone foi concedida ao aplicativo Termux:API nas Configurações do Android."
+                ),
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": (
+                f"Erro ao gravar áudio: {str(e)}. "
+                "Conceda permissão de Microfone ao Termux:API nas Configurações do Android."
+            ),
+        }
+    finally:
+        try:
+            _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
+        except Exception:
+            pass
+
+    if not out_path.is_file() or out_path.stat().st_size <= 0:
+        return {
+            "status": "error",
+            "message": (
+                "A gravação de áudio não gerou um arquivo válido (0 bytes). "
+                "Conceda a permissão de Microfone ao aplicativo Termux:API nas Configurações do Android."
+            ),
+        }
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Áudio de {dur}s gravado com sucesso ({filename}).",
+        "audio_url": audio_url,
+        "media_items": [{"type": "audio", "url": audio_url}],
+        "data": {"filename": filename, "duration": dur, "size_bytes": out_path.stat().st_size},
     }
 
 

@@ -5,8 +5,6 @@ Suporta modo Servidor Web LAN (--web) e modo Terminal Interativo (--cli).
 """
 
 import argparse
-import sys
-import os
 
 try:
     from config import WEB_HOST, WEB_PORT, ACCESS_PIN, LLAMA_SERVER_URL, SIMULATE_HARDWARE
@@ -65,7 +63,7 @@ def run_cli_mode():
                 latency = 0.0
                 err = None
             else:
-                raw_call, latency, err = client.generate_call(user_input)
+                raw_call, latency, err = client.generate_call(user_input, session_id="cli_local")
 
             if err:
                 if "Não reconheci esse comando no modo rápido" in err:
@@ -74,7 +72,7 @@ def run_cli_mode():
                     print(f"\n[Silva Erro]: {err}\n")
                 continue
 
-            result = execute_call(raw_call)
+            result = execute_call(raw_call, session_id="cli_local", user_text=user_input)
 
             print("\n-------------------------------------------------------")
             print(f"Silva: {result.get('message')}")

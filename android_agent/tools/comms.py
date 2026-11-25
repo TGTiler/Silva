@@ -8,6 +8,7 @@ import re
 import subprocess
 import time
 import unicodedata
+import urllib.parse
 from typing import Any, Dict, Optional, Tuple
 
 from .core import (
@@ -17,7 +18,19 @@ from .core import (
     resolve_contact_or_number,
     sanitize_phone_number,
 )
-from .adb_bridge import run_adb_shell
+from .adb_bridge import ensure_adb_connected, run_adb_shell
+from .contacts import (
+    resolve_contact_detailed,
+    save_contact_to_memory,
+    format_disambiguation_message,
+)
+from .ui_automator import (
+    dump_ui_nodes,
+    find_ui_node,
+    tap_coords,
+    tap_element,
+    type_text_unicode,
+)
 
 _CONTACTS_CACHE: Dict[str, Any] = {"timestamp": 0.0, "contacts": []}
 
@@ -163,11 +176,195 @@ def get_last_sms(limit: int = 5) -> Dict[str, Any]:
         return {"status": "error", "message": f"Erro ao listar SMS: {str(e)}"}
 
 
-def send_sms(number: str, message: str) -> Dict[str, Any]:
-    """Envia SMS para o número ou contato especificado."""
-    clean_target = resolve_contact_or_number(number)
+def _format_whatsapp_phone(raw_phone: str) -> Optional[str]:
+    """Normaliza telefone para formato internacional sem '+' (adiciona DDI 55 se BR)."""
+    digits = re.sub(r"\D", "", str(raw_phone or ""))
+    if len(digits) < 8:
+        return None
+    if len(digits) in (10, 11) and not digits.startswith("55"):
+        digits = "55" + digits
+    return digits
+
+
+def _resolve_whatsapp_target(recipient: str) -> Tuple[Optional[str], str]:
+    """
+    Resolve destinatário do WhatsApp usando o resolvedor unificado de contatos
+    (número direto -> memory.db -> agenda Android).
+    """
+    clean_recipient = str(recipient or "").strip()
+    if not clean_recipient:
+        return None, ""
+
+    info = resolve_contact_detailed(clean_recipient)
+    if info.get("number"):
+        wa_num = _format_whatsapp_phone(info["number"])
+        display = info.get("name") or clean_recipient
+        return wa_num, display
+
+    return None, clean_recipient
+
+
+def _automate_whatsapp_send(recipient: str, message: str) -> Dict[str, Any]:
+    """
+    Automatiza o envio de mensagem no WhatsApp:
+    1. Resolve contato (memory.db / agenda) para DDI 55.
+    2. Abre chat via Deep Link oficial (ou busca na UI quando só há nome).
+    3. Se ADB local conectado, localiza e toca no botão 'Enviar' via uiautomator.
+    """
+    clean_recipient = str(recipient or "").strip()
+    clean_message = str(message or "").strip()
+    if not clean_recipient:
+        return {"status": "error", "message": "Destinatário do WhatsApp inválido."}
+    if not clean_message:
+        return {"status": "error", "message": "Mensagem do WhatsApp vazia."}
+
+    wa_num, display_target = _resolve_whatsapp_target(clean_recipient)
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        return {
+            "status": "ok",
+            "message": f"Silva: Mensagem enviada no WhatsApp para {display_target}: '{clean_message}'. [Simulado]",
+            "data": {"recipient": display_target, "phone": wa_num, "message": clean_message, "channel": "whatsapp"},
+        }
+
+    opened = False
+    if wa_num:
+        encoded_msg = urllib.parse.quote(clean_message)
+        deep_link = f"https://api.whatsapp.com/send?phone={wa_num}&text={encoded_msg}"
+        for pkg in ("com.whatsapp", "com.whatsapp.w4b"):
+            if adb_serial:
+                ok_am, out_am = run_adb_shell(
+                    ["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, "-p", pkg],
+                    timeout=6.0,
+                )
+                if ok_am and "Error:" not in out_am:
+                    opened = True
+                    break
+            else:
+                if _exec_android_intent(["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, "-p", pkg]):
+                    opened = True
+                    break
+    elif adb_serial:
+        # Fallback por nome sem telefone: abre WhatsApp, pesquisa contato e digita mensagem
+        ok_open, _ = run_adb_shell(
+            ["monkey", "-p", "com.whatsapp", "-c", "android.intent.category.LAUNCHER", "1"],
+            timeout=6.0,
+        )
+        if ok_open:
+            time.sleep(1.2)
+            ok_search, _ = tap_element("Pesquisar", timeout=3.0)
+            if not ok_search:
+                ok_search, _ = tap_element("com.whatsapp:id/menuitem_search", timeout=2.0)
+            if ok_search:
+                type_text_unicode(clean_recipient)
+                time.sleep(0.8)
+                tap_element(clean_recipient, timeout=3.0)
+                time.sleep(0.8)
+                type_text_unicode(clean_message)
+                opened = True
+
+    if not opened:
+        return {
+            "status": "error",
+            "message": f"Não foi possível abrir o WhatsApp para '{display_target}'.",
+            "data": {"recipient": display_target, "phone": wa_num, "channel": "whatsapp"},
+        }
+
+    if adb_serial:
+        time.sleep(1.5)
+        nodes = dump_ui_nodes()
+        send_node = (
+            find_ui_node("Enviar", nodes=nodes, clickable_only=True)
+            or find_ui_node("Send", nodes=nodes, clickable_only=True)
+            or find_ui_node("com.whatsapp:id/send", nodes=nodes, clickable_only=True)
+        )
+        if send_node:
+            ok_tap, _ = tap_coords(send_node["cx"], send_node["cy"])
+            if ok_tap:
+                return {
+                    "status": "ok",
+                    "message": f"Mensagem enviada no WhatsApp para {display_target}: '{clean_message}'.",
+                    "data": {
+                        "recipient": display_target,
+                        "phone": wa_num,
+                        "message": clean_message,
+                        "channel": "whatsapp",
+                        "sent": True,
+                    },
+                }
+
+    return {
+        "status": "ok",
+        "message": (
+            f"Conversa aberta no WhatsApp para {display_target} com a mensagem pronta. "
+            "Toque em enviar (conecte o ADB local para envio automático sem toques)."
+        ),
+        "data": {
+            "recipient": display_target,
+            "phone": wa_num,
+            "message": clean_message,
+            "channel": "whatsapp",
+            "sent": False,
+        },
+    }
+
+
+def save_contact(name: str, phone: str) -> Dict[str, Any]:
+    """Cadastra ou atualiza um contato (nome e telefone) na memória persistente (memory.db)."""
+    return save_contact_to_memory(name, phone)
+
+
+def get_contact(name: str) -> Dict[str, Any]:
+    """Consulta um contato no memory.db e na agenda nativa do Android."""
+    clean_name = str(name or "").strip()
+    if not clean_name:
+        return {"status": "error", "message": "Informe o nome do contato para consultar."}
+
+    info = resolve_contact_detailed(clean_name)
+    if info.get("ambiguous"):
+        return {
+            "status": "ok",
+            "message": format_disambiguation_message(clean_name, info.get("candidates", [])),
+            "data": {"found": True, "ambiguous": True, "candidates": info.get("candidates", [])},
+        }
+
+    if info.get("number"):
+        disp_name = info.get("name") or clean_name
+        num = info["number"]
+        src = info.get("source", "agenda")
+        return {
+            "status": "ok",
+            "message": f"Silva: Contato encontrado — {disp_name}: {num} (fonte: {src}).",
+            "data": {"found": True, "name": disp_name, "phone": num, "source": src},
+        }
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Não encontrei nenhum contato chamado '{clean_name}' na memória ou na agenda.",
+        "data": {"found": False, "name": clean_name},
+    }
+
+
+def send_sms(number: str, message: str, channel: str = "sms") -> Dict[str, Any]:
+    """Envia SMS ou mensagem no WhatsApp (quando channel='whatsapp') para o contato/número."""
+    if str(channel or "sms").strip().lower() in ("whatsapp", "zap", "wpp"):
+        return _automate_whatsapp_send(number, message)
+
+    info = resolve_contact_detailed(number)
+    if info.get("ambiguous"):
+        return {
+            "status": "error",
+            "message": format_disambiguation_message(number, info.get("candidates", [])),
+            "data": {"candidates": info.get("candidates", [])},
+        }
+
+    clean_target = info.get("number") or resolve_contact_or_number(number)
     if not clean_target:
-        return {"status": "error", "message": "Destinatário do SMS inválido."}
+        return {"status": "error", "message": f"Contato ou número '{number}' não encontrado."}
+
+    display_name = info.get("name")
+    display_target = f"{display_name} ({clean_target})" if display_name and display_name != clean_target else clean_target
 
     clean_text = str(message).strip()
     if not clean_text:
@@ -176,8 +373,8 @@ def send_sms(number: str, message: str) -> Dict[str, Any]:
     if SIMULATE_HARDWARE:
         return {
             "status": "ok",
-            "message": f"Silva: SMS enviado com sucesso para {clean_target}: '{clean_text}'. [Simulado]",
-            "data": {"number": clean_target, "message": clean_text}
+            "message": f"Silva: SMS enviado com sucesso para {display_target}: '{clean_text}'. [Simulado]",
+            "data": {"number": clean_target, "name": display_name, "message": clean_text}
         }
 
     try:
@@ -186,8 +383,8 @@ def send_sms(number: str, message: str) -> Dict[str, Any]:
             return {"status": "error", "message": f"Falha ao enviar SMS: {res.stderr.strip()}"}
         return {
             "status": "ok",
-            "message": f"Silva: SMS enviado com sucesso para {clean_target}.",
-            "data": {"number": clean_target, "message": clean_text}
+            "message": f"Silva: SMS enviado com sucesso para {display_target}.",
+            "data": {"number": clean_target, "name": display_name, "message": clean_text}
         }
     except Exception as e:
         return {"status": "error", "message": f"Erro ao disparar SMS: {str(e)}"}
@@ -197,15 +394,26 @@ def send_sms(number: str, message: str) -> Dict[str, Any]:
 def make_call(number: str = "", target: str = "") -> Dict[str, Any]:
     """
     Inicia uma chamada telefônica para o número ou contato informado.
-    Utiliza discagem resiliente em 2 camadas:
-      - Camada 1: termux-telephony-call direto.
+    Utiliza resolvedor unificado de contatos + discagem resiliente em 2 camadas:
+      - Camada 0/1: ADB ACTION_CALL / termux-telephony-call direto.
       - Camada 2: Fallback universal via Intent ACTION_DIAL nativo.
     """
     raw_target = (target or number).strip()
     if not raw_target:
         return {"status": "error", "message": "Destinatário de discagem inválido. Informe o número ou contato."}
 
-    clean_num, matched_name = _resolve_contact_number(raw_target)
+    info = resolve_contact_detailed(raw_target)
+    if info.get("ambiguous"):
+        return {
+            "status": "error",
+            "message": format_disambiguation_message(raw_target, info.get("candidates", [])),
+            "data": {"target": raw_target, "candidates": info.get("candidates", [])},
+        }
+
+    clean_num = info.get("number")
+    matched_name = info.get("name")
+    if not clean_num:
+        clean_num, matched_name = _resolve_contact_number(raw_target)
     if not clean_num:
         return {
             "status": "error",

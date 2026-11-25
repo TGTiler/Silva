@@ -10,9 +10,16 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, Optional, Tuple
 
-from config import LLAMA_SERVER_URL, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
-from intent_fallback import match_intent_fallback
-from tools import AVAILABLE_TOOLS
+try:
+    from config import LLAMA_SERVER_URL, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
+    from intent_fallback import match_intent_fallback
+    from conversation_context import resolve_anaphora, format_recent_context
+    from tools import AVAILABLE_TOOLS
+except ImportError:
+    from android_agent.config import LLAMA_SERVER_URL, LLM_TIMEOUT_SECONDS, SILVA_SYSTEM_PROMPT
+    from android_agent.intent_fallback import match_intent_fallback
+    from android_agent.conversation_context import resolve_anaphora, format_recent_context
+    from android_agent.tools import AVAILABLE_TOOLS
 
 
 class SilvaLLMClient:
@@ -37,7 +44,7 @@ class SilvaLLMClient:
             except Exception as e:
                 return {"online": False, "status": "offline", "error": str(e), "url": self.base_url}
 
-    def generate_call(self, user_prompt: str) -> Tuple[Optional[str], float, Optional[str]]:
+    def generate_call(self, user_prompt: str, session_id: str = "default") -> Tuple[Optional[str], float, Optional[str]]:
         """
         Envia o prompt do usuário para o llama-server e retorna:
         (raw_call_output, latency_ms, error_message)
@@ -46,15 +53,25 @@ class SilvaLLMClient:
         if not prompt:
             return "<call>none()</call>", 0.0, None
 
+        # 0. Resolução anafórica determinística com contexto de curto prazo
+        resolved_prompt = resolve_anaphora(prompt, session_id)
+        if resolved_prompt.startswith("<call>") and resolved_prompt.endswith("</call>"):
+            return resolved_prompt, 1.5, None
+
         # 1. Roteamento de ultra-baixa latência (<2ms) para intenções imediatas
-        fast_call = match_intent_fallback(prompt)
+        fast_call = match_intent_fallback(resolved_prompt)
         if fast_call:
             return fast_call, 1.5, None
 
         # 2. Inferência via LLM local (llama-server) para consultas complexas
+        ctx_block = format_recent_context(session_id, max_turns=2)
+        user_block = (
+            f"Contexto recente:\n{ctx_block}\n\nPedido atual: {resolved_prompt}"
+            if ctx_block else resolved_prompt
+        )
         formatted_prompt = (
             f"<|im_start|>system\n{SILVA_SYSTEM_PROMPT}<|im_end|>\n"
-            f"<|im_start|>user\n{prompt}<|im_end|>\n"
+            f"<|im_start|>user\n{user_block}<|im_end|>\n"
             f"<|im_start|>assistant\n<call>"
         )
 

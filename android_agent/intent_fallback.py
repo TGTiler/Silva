@@ -16,20 +16,9 @@ try:
         normalize_colloquial_ptbr,
         ScoredIntentRouter,
         normalize_text,
-        _strip_accents,
         _prepare_texts,
-        _sanitize_entity_arg,
         _format_call,
         _protect_compound_names,
-        _unprotect_compound_names,
-        _normalize_math_expression,
-        _clean_ride_destination,
-        _clean_food_query,
-        _clean_install_app_name,
-        _clean_weather_location,
-        _clean_search_query,
-        _strip_leading_articles,
-        ALLOWED_MATH_NAMES,
     )
 except ImportError:
     from nlp import (
@@ -37,20 +26,9 @@ except ImportError:
         normalize_colloquial_ptbr,
         ScoredIntentRouter,
         normalize_text,
-        _strip_accents,
         _prepare_texts,
-        _sanitize_entity_arg,
         _format_call,
         _protect_compound_names,
-        _unprotect_compound_names,
-        _normalize_math_expression,
-        _clean_ride_destination,
-        _clean_food_query,
-        _clean_install_app_name,
-        _clean_weather_location,
-        _clean_search_query,
-        _strip_leading_articles,
-        ALLOWED_MATH_NAMES,
     )
 
 # Dicionário de compatibilidade retroativa
@@ -74,12 +52,95 @@ COMMAND_VERBS = {
     "bote", "bota", "botar", "defina", "define", "definir", "configure", "configura", "configurar",
     "chama", "chame", "chamar", "peça", "peca", "pede", "pedir", "envie", "envia", "enviar",
     "manda", "mande", "mandar", "lembra", "lembre", "lembrar", "anote", "anota", "anotar",
-    "salve", "salva", "salvar", "pesquise", "pesquisa", "pesquisar", "busque", "busca", "buscar",
+    "salve", "salva", "salvar", "guarda", "guarde", "guardar",
+    "pesquise", "pesquisa", "pesquisar", "busque", "busca", "buscar",
     "baixe", "baixa", "baixar", "instale", "instala", "instalar", "leia", "ler", "mostre", "mostrar",
     "veja", "ver", "ve", "vê", "qual", "quais", "quanto", "quantos", "tempo", "clima", "calcula", "calcule",
     "vibra", "vibrar", "aumenta", "aumentar", "diminui", "diminuir", "tire", "tira", "tirar",
     "grave", "grava", "gravar", "silencie", "silencia", "muta", "mutar"
 }
+
+_ANAPHORA_REF_RE = (
+    r"(?:isso|disso|esse\s+resultado|o\s+resultado|essa\s+informa[çc][ãa]o|"
+    r"esse\s+valor|o\s+valor|a\s+previs[ãa]o|a\s+cota[çc][ãa]o|quanto\s+deu)"
+)
+
+_PIPE_WPP_RE = re.compile(
+    rf"^(?:envia|enviar|envie|manda|mandar|mande|fala|falar|fale)\s+"
+    rf"(?:{_ANAPHORA_REF_RE}\s+)?(?:no|pelo|via)?\s*(?:whatsapp|zap|wpp)\s+"
+    rf"(?:para|pro|pra|com)\s+(?:o\s+|a\s+)?(.+?)$",
+    re.IGNORECASE,
+)
+
+_PIPE_SMS_RE = re.compile(
+    rf"^(?:envia|enviar|envie|manda|mandar|mande)\s+{_ANAPHORA_REF_RE}\s+"
+    rf"(?:por\s+sms\s+)?(?:para|pro|pra)\s+(.+?)(?:\s+por\s+sms)?$",
+    re.IGNORECASE,
+)
+
+_PIPE_SAVE_RE = re.compile(
+    rf"^(?:anota|anotar|anote|salva|salvar|salve|lembra|lembrar|lembre|guarda|guardar|guarde)"
+    rf"(?:\s+{_ANAPHORA_REF_RE})?"
+    rf"(?:\s+(?:na\s+mem[óo]ria))?"
+    rf"(?:\s+como\s+(.+?))?"
+    rf"(?:\s+(?:na\s+mem[óo]ria))?$",
+    re.IGNORECASE,
+)
+
+
+def _infer_key_from_prev_call(prev_call: str) -> str:
+    """Infere uma chave descritiva curta a partir da chamada <call> anterior."""
+    m_query = re.search(r"query=(['\"])(.*?)\1", prev_call)
+    if m_query and m_query.group(2).strip():
+        return m_query.group(2).strip()[:60]
+    m_loc = re.search(r"location=(['\"])(.*?)\1", prev_call)
+    if m_loc and m_loc.group(2).strip():
+        return f"clima {m_loc.group(2).strip()}"[:60]
+    m_func = re.match(r"<call>([a-zA-Z0-9_]+)\(", prev_call.strip())
+    func = m_func.group(1) if m_func else ""
+    defaults = {
+        "get_battery": "bateria",
+        "get_weather": "previsão do tempo",
+        "calculate": "cálculo",
+        "search_google": "pesquisa",
+        "get_location": "localização",
+        "get_wifi_info": "wi-fi",
+        "read_screen": "conteúdo da tela",
+        "get_datetime": "data e hora",
+        "get_system_info": "sistema",
+    }
+    return defaults.get(func, "anotação")
+
+
+def _resolve_piped_clause(clause: str, prev_calls: List[str]) -> Optional[str]:
+    """
+    Resolve cláusulas dependentes que referenciam o resultado da cláusula anterior
+    via pronomes anafóricos ('isso', 'o resultado', 'esse valor', etc.),
+    emitindo chamadas com o token '$prev_result'.
+    """
+    if not prev_calls:
+        return None
+    clean_clause = clause.strip().rstrip("?!.,;:")
+    m_wpp = _PIPE_WPP_RE.match(clean_clause)
+    if m_wpp:
+        target = m_wpp.group(1).strip()
+        if target:
+            return _format_call("send_sms", number=target, message="$prev_result", channel="whatsapp")
+
+    m_sms = _PIPE_SMS_RE.match(clean_clause)
+    if m_sms:
+        target = m_sms.group(1).strip()
+        if target:
+            return _format_call("send_sms", number=target, message="$prev_result")
+
+    m_save = _PIPE_SAVE_RE.match(clean_clause)
+    if m_save:
+        custom_key = (m_save.group(1) or "").strip()
+        key = custom_key if custom_key else _infer_key_from_prev_call(prev_calls[-1])
+        return _format_call("remember_note", key=key, value="$prev_result")
+
+    return None
+
 
 # Instância singleton do roteador de pontuação
 _ROUTER = ScoredIntentRouter()
@@ -167,7 +228,8 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
     matched_calls = []
     if len(clauses) > 1:
         for clause in clauses:
-            call = _ROUTER.route(clause)
+            piped_call = _resolve_piped_clause(clause, matched_calls)
+            call = piped_call if piped_call else _ROUTER.route(clause)
             if call:
                 matched_calls.append(call)
 

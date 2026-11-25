@@ -7,6 +7,15 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+BACKGROUND_MODE=false
+for arg in "$@"; do
+    case "$arg" in
+        --background|--daemon|-d)
+            BACKGROUND_MODE=true
+            ;;
+    esac
+done
+
 ENV_TARGET="$SCRIPT_DIR/android_agent/.env"
 ROOT_ENV="$SCRIPT_DIR/.env"
 
@@ -79,7 +88,27 @@ sleep 1
 # 3. Gerenciamento de Ciclo de Vida e Sinais (Trap)
 # ------------------------------------------------------------------------------
 LLAMA_PID=""
+WEB_PID=""
 PIDS_FILE="$DATA_DIR/runtime.pids"
+LLAMA_LOG="$LOG_DIR/llama.log"
+WEB_LOG="$LOG_DIR/web.log"
+
+_write_pids_file() {
+    {
+        echo "llama_pid=${LLAMA_PID}"
+        echo "web_pid=${WEB_PID}"
+    } > "$PIDS_FILE"
+}
+
+_spawn_detached() {
+    local logfile="$1"
+    shift
+    if command -v setsid >/dev/null 2>&1; then
+        setsid "$@" </dev/null >> "$logfile" 2>&1 &
+    else
+        nohup "$@" </dev/null >> "$logfile" 2>&1 &
+    fi
+}
 
 cleanup() {
     trap - EXIT INT TERM
@@ -91,13 +120,19 @@ cleanup() {
         if [ -n "$LLAMA_PID" ] && kill -0 "$LLAMA_PID" 2>/dev/null; then
             kill "$LLAMA_PID" 2>/dev/null || true
         fi
+        if [ -n "$WEB_PID" ] && kill -0 "$WEB_PID" 2>/dev/null; then
+            kill "$WEB_PID" 2>/dev/null || true
+        fi
         rm -f "$DATA_DIR/llama.pid" "$PIDS_FILE" 2>/dev/null || true
         termux-wake-unlock 2>/dev/null || true
     fi
     echo -e "${GREEN}[OK] Serviços encerrados com segurança. Até logo!${RESET}"
     exit 0
 }
-trap cleanup EXIT INT TERM
+
+if [ "$BACKGROUND_MODE" != "true" ]; then
+    trap cleanup INT TERM
+fi
 
 # ------------------------------------------------------------------------------
 # 4. Inicialização do llama-server (se configurado)
@@ -143,9 +178,10 @@ if is_llama_online; then
 elif [ -n "$LLAMA_BIN" ] && [ -x "$LLAMA_BIN" ] && [ -n "$TARGET_MODEL" ] && [ -f "$TARGET_MODEL" ]; then
     MODEL_NAME="$(basename "$TARGET_MODEL")"
     echo -e "${CYAN}[*] Iniciando llama-server local com modelo: ${MODEL_NAME}...${RESET}"
-    "$LLAMA_BIN" -m "$TARGET_MODEL" --host 127.0.0.1 --port "$LLM_PORT" -c 1024 -t 4 > "$LOG_DIR/llama_server.log" 2>&1 &
+    : > "$LLAMA_LOG"
+    _spawn_detached "$LLAMA_LOG" "$LLAMA_BIN" -m "$TARGET_MODEL" --host 127.0.0.1 --port "$LLM_PORT" -c 1024 -t 4
     LLAMA_PID=$!
-    echo "$LLAMA_PID" > "$PIDS_FILE"
+    _write_pids_file
     echo "$LLAMA_PID" > "$DATA_DIR/llama.pid"
 
     echo -n "    Aguardando inicialização do llama-server"
@@ -157,7 +193,7 @@ elif [ -n "$LLAMA_BIN" ] && [ -x "$LLAMA_BIN" ] && [ -n "$TARGET_MODEL" ] && [ -
         fi
         if ! kill -0 "$LLAMA_PID" 2>/dev/null; then
             echo ""
-            echo -e "${RED}    [!] Processo llama-server finalizou prematuramente. Verifique logs em $LOG_DIR/llama_server.log${RESET}"
+            echo -e "${RED}    [!] Processo llama-server finalizou prematuramente. Verifique logs em $LLAMA_LOG${RESET}"
             break
         fi
         sleep 1
@@ -201,7 +237,7 @@ if [ -n "$LOCAL_IP" ] && [ "$LOCAL_IP" != "127.0.0.1" ]; then
     echo -e "  Acesso na Rede:    ${CYAN}http://${LOCAL_IP}:${WEB_PORT}${RESET}"
 fi
 echo -e "  PIN de Segurança:  ${BOLD}${PIN_DISPLAY}${RESET}"
-echo -e "  Arquivo de Logs:   ${SCRIPT_DIR}/android_agent/logs/llama_server.log"
+echo -e "  Logs LLM / Web:    ${LLAMA_LOG} | ${WEB_LOG}"
 echo -e "${BOLD}========================================================${RESET}"
 echo -e "  Pressione ${RED}Ctrl+C${RESET} a qualquer momento para encerrar."
 echo -e "  Para encerrar em segundo plano: ${CYAN}./stop-silva.sh${RESET}"
@@ -209,10 +245,17 @@ echo -e "${BOLD}--------------------------------------------------------${RESET}
 echo ""
 
 # ------------------------------------------------------------------------------
-# 6. Execução do Servidor Web
+# 6. Execução do Servidor Web (Desacoplado)
 # ------------------------------------------------------------------------------
 cd "$SCRIPT_DIR/android_agent"
-python3 main.py --web --port "$WEB_PORT" &
+: > "$WEB_LOG"
+_spawn_detached "$WEB_LOG" python3 main.py --web --port "$WEB_PORT"
 WEB_PID=$!
-echo "$WEB_PID" >> "$PIDS_FILE"
+_write_pids_file
+
+if [ "$BACKGROUND_MODE" = "true" ]; then
+    echo -e "${GREEN}[OK] Serviços iniciados em background (llama_pid=${LLAMA_PID:-N/A}, web_pid=${WEB_PID}).${RESET}"
+    exit 0
+fi
+
 wait "$WEB_PID"

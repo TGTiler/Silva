@@ -266,20 +266,24 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertIn("Área de transferência vazia (ou bloqueada em segundo plano pelo Android — libere READ_CLIPBOARD via ADB para o Termux:API).", res_empty["message"])
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
-    def test_all_39_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 39 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 39, "O catálogo formal deve conter exatamente 39 ferramentas.")
+    def test_all_50_tools_smoke_execution(self):
+        """Testa a execução smoke de todas as 50 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 50, "O catálogo formal deve conter exatamente 50 ferramentas.")
 
         sample_args = {
             "calculate": {"expression": "2 + 2"},
             "cancel_alarm": {"time": "07:00"},
             "connect_wifi": {"ssid": "TesteNet", "password": "123"},
+            "convert_units": {"amount": 10.0, "from_unit": "km", "to_unit": "mi"},
             "get_battery": {},
             "get_clipboard": {},
+            "get_contact": {"name": "Teste"},
+            "get_datetime": {},
             "get_last_location": {},
             "get_last_sms": {"limit": 3},
             "get_location": {},
             "get_notifications": {"app": "whatsapp"},
+            "get_system_info": {},
             "get_weather": {"day": "hoje", "location": "Recife"},
             "get_wifi_info": {},
             "install_app": {"app_name": "spotify"},
@@ -289,19 +293,26 @@ class TestToolsAndMemory(unittest.TestCase):
             "none": {},
             "open_app": {"app_name": "YouTube"},
             "order_food": {"query": "pizza"},
+            "read_screen": {},
             "recall_note": {"query": "teste"},
+            "record_audio": {"duration": 5},
             "record_video": {"duration": 5, "camera_id": 0},
             "remember_note": {"key": "teste", "value": "123"},
             "request_ride": {"destination": "Shopping"},
+            "save_contact": {"name": "Teste", "phone": "11999998888"},
             "scan_wifi": {},
             "schedule_event": {"title": "Reuniao", "date": "amanha", "time": "14:00"},
             "search_google": {"query": "Python", "open_browser": False},
             "send_sms": {"number": "11999999999", "message": "ola"},
+            "set_airplane_mode": {"state": False},
             "set_alarm": {"time": "07:00", "label": "Acordar"},
+            "set_bluetooth_state": {"state": True},
             "set_brightness": {"level": 50},
             "set_clipboard": {"text": "conteudo de teste"},
             "set_dnd": {"state": True},
+            "set_hotspot_state": {"state": False},
             "set_location_state": {"state": True},
+            "set_mobile_data_state": {"state": True},
             "set_timer": {"minutes": 10},
             "set_torch": {"state": True},
             "set_volume": {"stream": "music", "level": 50},
@@ -312,17 +323,148 @@ class TestToolsAndMemory(unittest.TestCase):
             "vibrate": {"duration_ms": 500},
         }
 
-        for tool_name, fn in tools.AVAILABLE_TOOLS.items():
-            args = sample_args.get(tool_name, {})
-            with self.subTest(tool=tool_name):
-                try:
-                    res = fn(**args)
-                except Exception as err:
-                    self.fail(f"Ferramenta '{tool_name}' lançou exceção inesperada: {type(err).__name__}: {err}")
+        with patch("android_agent.tools.apps_mobility.ensure_adb_connected", return_value="127.0.0.1:5555"), \
+             patch("android_agent.tools.apps_mobility.dump_ui_nodes", return_value=[{"text": "Tela OK", "content_desc": ""}]):
+            for tool_name, fn in tools.AVAILABLE_TOOLS.items():
+                args = sample_args.get(tool_name, {})
+                with self.subTest(tool=tool_name):
+                    try:
+                        res = fn(**args)
+                    except Exception as err:
+                        self.fail(f"Ferramenta '{tool_name}' lançou exceção inesperada: {type(err).__name__}: {err}")
 
-                self.assertIsInstance(res, dict, f"Ferramenta '{tool_name}' deve retornar um dict.")
-                self.assertIn("status", res, f"Ferramenta '{tool_name}' deve retornar campo 'status'.")
-                self.assertEqual(res["status"], "ok", f"Ferramenta '{tool_name}' falhou: {res.get('message')}")
+                    self.assertIsInstance(res, dict, f"Ferramenta '{tool_name}' deve retornar um dict.")
+                    self.assertIn("status", res, f"Ferramenta '{tool_name}' deve retornar campo 'status'.")
+                    self.assertEqual(res["status"], "ok", f"Ferramenta '{tool_name}' falhou: {res.get('message')}")
+
+    def test_datetime_system_info_and_read_screen_with_nlp(self):
+        """Testa get_datetime, get_system_info, read_screen (ADB online/offline) e roteamento NLP."""
+        from android_agent.intent_fallback import match_intent_fallback
+
+        # 1. get_datetime
+        dt_res = tools.get_datetime()
+        self.assertEqual(dt_res["status"], "ok")
+        self.assertIn("Hoje é", dt_res["message"])
+        self.assertIn(dt_res["data"]["period"], ("madrugada", "manhã", "tarde", "noite"))
+        self.assertEqual(match_intent_fallback("que horas são?"), "<call>get_datetime()</call>")
+        self.assertEqual(match_intent_fallback("qual a data de hoje?"), "<call>get_datetime()</call>")
+        self.assertEqual(match_intent_fallback("que dia da semana é hoje?"), "<call>get_datetime()</call>")
+
+        # 2. get_system_info
+        sys_res = tools.get_system_info()
+        self.assertEqual(sys_res["status"], "ok")
+        self.assertGreater(sys_res["data"]["storage_total_gb"], 0)
+        self.assertIn("Armazenamento:", sys_res["message"])
+        self.assertIn("RAM:", sys_res["message"])
+        self.assertEqual(match_intent_fallback("quanto tenho de espaço livre?"), "<call>get_system_info()</call>")
+        self.assertEqual(match_intent_fallback("como está a memória ram?"), "<call>get_system_info()</call>")
+        self.assertEqual(match_intent_fallback("qual minha operadora?"), "<call>get_system_info()</call>")
+
+        # 3. read_screen (ADB offline -> fallback amigável)
+        with patch("android_agent.tools.apps_mobility.ensure_adb_connected", return_value=None):
+            off_res = tools.read_screen()
+            self.assertEqual(off_res["status"], "error")
+            self.assertIn("ADB local está offline", off_res["message"])
+
+        # 4. read_screen (ADB online -> XML mockado filtrando duplicatas/ruído)
+        mock_nodes = [
+            {"text": "WhatsApp", "content_desc": ""},
+            {"text": "WhatsApp", "content_desc": ""},
+            {"text": "com.whatsapp:id/toolbar_title", "content_desc": ""},
+            {"text": "Olá, tudo bem?", "content_desc": ""},
+            {"text": "", "content_desc": "Enviar"},
+        ]
+        with patch("android_agent.tools.apps_mobility.ensure_adb_connected", return_value="127.0.0.1:5555"), \
+             patch("android_agent.tools.apps_mobility.dump_ui_nodes", return_value=mock_nodes):
+            on_res = tools.read_screen()
+            self.assertEqual(on_res["status"], "ok")
+            self.assertIn("WhatsApp", on_res["message"])
+            self.assertIn("Olá, tudo bem?", on_res["message"])
+            self.assertNotIn("com.whatsapp:id/toolbar_title", on_res["message"])
+
+        self.assertEqual(match_intent_fallback("o que está escrito na minha tela?"), "<call>read_screen()</call>")
+        self.assertEqual(match_intent_fallback("lê a tela"), "<call>read_screen()</call>")
+        piped_screen = match_intent_fallback("Leia a tela e anote")
+        self.assertIn("<call>read_screen()</call>", piped_screen)
+        self.assertIn("remember_note(", piped_screen)
+        self.assertIn("$prev_result", piped_screen)
+
+    def test_record_audio_and_convert_units_with_parser_and_nlp(self):
+        """Testa record_audio (limites, mock Termux, media_items), convert_units (físico, moeda online/offline), coerção float no parser e NLP."""
+        import io
+        import subprocess
+        from android_agent.intent_fallback import match_intent_fallback
+        from android_agent.parser import parse_function_calls, execute_call
+
+        # 1. record_audio limites e execução real mockada
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cap_dir = Path(tmpdir)
+            rec_cmds = []
+
+            def fake_record(cmd, timeout=15):
+                rec_cmds.append(cmd)
+                if "-f" in cmd:
+                    f_path = Path(cmd[cmd.index("-f") + 1])
+                    f_path.write_bytes(b"FAKE_AAC_AUDIO_BYTES")
+                return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+
+            with patch("android_agent.tools.media.CAPTURES_DIR", cap_dir), \
+                 patch("android_agent.tools.media.SIMULATE_HARDWARE", False), \
+                 patch("android_agent.tools.media.time.sleep", return_value=None), \
+                 patch("android_agent.tools.media._run_termux_cmd", side_effect=fake_record):
+                aud_res = tools.record_audio(duration=999)  # deve limitar a 120s
+                self.assertEqual(aud_res["status"], "ok")
+                self.assertEqual(aud_res["data"]["duration"], 120)
+                self.assertTrue(aud_res["audio_url"].startswith("/captures/audio_"))
+                self.assertEqual(aud_res["media_items"], [{"type": "audio", "url": aud_res["audio_url"]}])
+                self.assertTrue(any("-l" in c and "120" in c for c in rec_cmds))
+                self.assertEqual(rec_cmds[-1], ["termux-microphone-record", "-q"])
+
+            # execute_call propaga audio_url e media_items
+            with patch("android_agent.tools.media.CAPTURES_DIR", cap_dir):
+                exec_aud = execute_call("<call>record_audio(duration=5)</call>")
+                self.assertEqual(exec_aud["status"], "ok")
+                self.assertTrue(exec_aud["audio_url"].startswith("/captures/audio_"))
+                self.assertEqual(exec_aud["media_items"][0]["type"], "audio")
+
+        # 2. convert_units medidas físicas e erro de categorias incompatíveis
+        self.assertIn("6.2137 mi", tools.convert_units(10, "km", "milhas")["message"])
+        self.assertIn("89.6 °F", tools.convert_units(32, "celsius", "fahrenheit")["message"])
+        self.assertIn("kg", tools.convert_units(5, "libras", "quilos")["message"])
+        incompat = tools.convert_units(10, "kg", "km")
+        self.assertEqual(incompat["status"], "error")
+
+        # 3. convert_units moeda online (HTTP mock) e offline (fallback)
+        class _FakeResp(io.BytesIO):
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+
+        with patch("android_agent.tools.memory_schedule.urllib.request.urlopen", return_value=_FakeResp(b'{"USDBRL":{"bid":"5.50"}}')):
+            cur_on = tools.convert_units(50, "dólares", "reais")
+            self.assertEqual(cur_on["status"], "ok")
+            self.assertTrue(cur_on["data"]["online"])
+            self.assertIn("275.00 BRL", cur_on["message"])
+
+        with patch("android_agent.tools.memory_schedule.urllib.request.urlopen", side_effect=OSError("offline")):
+            cur_off = tools.convert_units(100, "euros", "reais")
+            self.assertEqual(cur_off["status"], "ok")
+            self.assertFalse(cur_off["data"]["online"])
+            self.assertIn("cotação offline estimada", cur_off["message"])
+
+        # 4. Coerção int -> float no parser AST
+        parsed = parse_function_calls("<call>convert_units(amount=50, from_unit='usd', to_unit='brl')</call>")
+        self.assertEqual(parsed[0][0], "convert_units")
+        self.assertIsInstance(parsed[0][1]["amount"], float)
+        self.assertEqual(parsed[0][1]["amount"], 50.0)
+
+        # 5. Roteamento NLP
+        self.assertEqual(match_intent_fallback("grava um áudio de 15 segundos"), "<call>record_audio(duration=15)</call>")
+        self.assertEqual(match_intent_fallback("gravar som por 1 minuto"), "<call>record_audio(duration=60)</call>")
+        self.assertIn("convert_units(", match_intent_fallback("converter 50 dólares para reais"))
+        self.assertIn("convert_units(", match_intent_fallback("quantos reais são 100 euros?"))
+        self.assertIn("convert_units(", match_intent_fallback("32 graus celsius em fahrenheit"))
 
     def test_open_app_resilience_and_fuzzy(self):
         """Testa remoção de ruídos (hoje, o, agora, app) e fuzzy matching em open_app."""

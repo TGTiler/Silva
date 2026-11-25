@@ -5,21 +5,20 @@ Módulo Hardware do Silva: Bateria, Lanterna, DND, Vibração, Volume, Brilho e 
 import json
 import os
 import re
+import shutil
 import socket
 import struct
-import time
-from pathlib import Path
+import subprocess
 from typing import Any, Dict
 
 from .core import (
     DATA_DIR,
     SIMULATE_HARDWARE,
-    _FILE_LOCK,
     _atomic_write_json,
-    _run_termux_cmd,
     _exec_android_intent,
+    _run_termux_cmd,
 )
-from .adb_bridge import run_adb_shell
+from .adb_bridge import ensure_adb_connected, run_adb_shell
 
 def get_battery() -> Dict[str, Any]:
     """Obtém status da bateria: porcentagem, status e temperatura."""
@@ -42,7 +41,6 @@ def get_battery() -> Dict[str, Any]:
         
         data = json.loads(res.stdout)
         pct = data.get("percentage", 0)
-        status = data.get("status", "UNKNOWN")
         temp = data.get("temperature", 0)
         plugged = data.get("plugged", "UNPLUGGED")
 
@@ -822,6 +820,234 @@ def set_wifi_state(state: bool) -> Dict[str, Any]:
         "status": "ok",
         "message": f"Silva: O Android bloqueou a alteração direta de Wi-Fi em segundo plano. Abrindo configurações para você {action_txt} o Wi-Fi manualmente.",
         "data": {"state": state_bool, "settings_opened": True, "fallback": True}
+    }
+
+
+def _read_ram_stats_mb() -> Dict[str, float]:
+    """Lê RAM total e disponível (MB) de /proc/meminfo com fallback para 'free -m'."""
+    try:
+        with open("/proc/meminfo", "r", encoding="utf-8") as f:
+            content = f.read()
+        m_total = re.search(r"MemTotal:\s+(\d+)\s+kB", content)
+        m_avail = re.search(r"MemAvailable:\s+(\d+)\s+kB", content)
+        if m_total and m_avail:
+            return {
+                "total_mb": round(int(m_total.group(1)) / 1024.0, 1),
+                "available_mb": round(int(m_avail.group(1)) / 1024.0, 1),
+            }
+        m_free = re.search(r"MemFree:\s+(\d+)\s+kB", content)
+        if m_total and m_free:
+            return {
+                "total_mb": round(int(m_total.group(1)) / 1024.0, 1),
+                "available_mb": round(int(m_free.group(1)) / 1024.0, 1),
+            }
+    except Exception:
+        pass
+
+    try:
+        res = subprocess.run(["free", "-m"], capture_output=True, text=True, timeout=3, check=False)
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                if line.lower().startswith("mem:"):
+                    parts = line.split()
+                    if len(parts) >= 7:
+                        return {"total_mb": float(parts[1]), "available_mb": float(parts[6])}
+                    if len(parts) >= 4:
+                        return {"total_mb": float(parts[1]), "available_mb": float(parts[3])}
+    except Exception:
+        pass
+    return {"total_mb": 0.0, "available_mb": 0.0}
+
+
+def _format_mem_size(mb_val: float) -> str:
+    if mb_val >= 1024.0:
+        return f"{mb_val / 1024.0:.2f} GB"
+    return f"{int(round(mb_val))} MB"
+
+
+def get_system_info() -> Dict[str, Any]:
+    """Retorna telemetria consolidada do sistema: armazenamento, memória RAM e rede móvel/operadora."""
+    usage = shutil.disk_usage("/")
+    free_gb = round(usage.free / (1024 ** 3), 2)
+    total_gb = round(usage.total / (1024 ** 3), 2)
+
+    ram = _read_ram_stats_mb()
+    ram_avail_str = _format_mem_size(ram["available_mb"])
+    ram_total_str = _format_mem_size(ram["total_mb"])
+
+    carrier = "Desconhecida"
+    net_type = "N/A"
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        carrier = "Operadora Simulada"
+        net_type = "4G/LTE"
+    else:
+        got_telephony = False
+        if not SIMULATE_HARDWARE:
+            try:
+                res = _run_termux_cmd(["termux-telephony-deviceinfo"], timeout=4)
+                if res.returncode == 0 and res.stdout.strip():
+                    t_info = json.loads(res.stdout)
+                    carrier = (t_info.get("network_operator_name") or t_info.get("sim_operator_name") or carrier).strip() or carrier
+                    net_type = (t_info.get("network_type") or net_type).strip() or net_type
+                    got_telephony = True
+            except Exception:
+                pass
+
+        if not got_telephony and adb_serial:
+            ok_adb, out_adb = run_adb_shell(["dumpsys", "telephony.registry"], timeout=5.0)
+            if ok_adb and out_adb:
+                m_op = re.search(r"mOperatorAlphaLong=([^\s,}\n]+)", out_adb)
+                m_net = re.search(r"mDataNetworkType=(\w+)", out_adb)
+                if m_op and m_op.group(1) not in ("null", "None", ""):
+                    carrier = m_op.group(1).strip()
+                if m_net and m_net.group(1) not in ("UNKNOWN", "0"):
+                    net_type = m_net.group(1).strip()
+
+    msg = (
+        f"Silva: Sistema — Armazenamento: {free_gb:.2f} GB livres de {total_gb:.2f} GB | "
+        f"RAM: {ram_avail_str} disponíveis de {ram_total_str} | "
+        f"Rede móvel: {carrier} ({net_type})."
+    )
+    return {
+        "status": "ok",
+        "message": msg,
+        "data": {
+            "storage_free_gb": free_gb,
+            "storage_total_gb": total_gb,
+            "ram_available_mb": ram["available_mb"],
+            "ram_total_mb": ram["total_mb"],
+            "carrier": carrier,
+            "network_type": net_type,
+        },
+    }
+
+
+def _adb_error_free(ok: bool, out: str) -> bool:
+    return ok and not any(err in (out or "") for err in ("SecurityException", "Permission denied", "Error:", "Exception"))
+
+
+def set_bluetooth_state(state: bool) -> Dict[str, Any]:
+    """Liga ou desliga o Bluetooth via ADB local com fallback para configurações."""
+    state_bool = bool(state)
+    action = "enable" if state_bool else "disable"
+    txt = "ligado" if state_bool else "desligado"
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        return {"status": "ok", "message": f"Silva: Bluetooth {txt} com sucesso. [Simulado]", "data": {"state": state_bool}}
+
+    if adb_serial:
+        ok1, out1 = run_adb_shell(["svc", "bluetooth", action], timeout=5.0)
+        if _adb_error_free(ok1, out1):
+            return {"status": "ok", "message": f"Silva: Bluetooth {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_svc"}}
+
+        ok2, out2 = run_adb_shell(["cmd", "bluetooth_manager", action], timeout=5.0)
+        if _adb_error_free(ok2, out2):
+            return {"status": "ok", "message": f"Silva: Bluetooth {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_cmd"}}
+
+        run_adb_shell(["am", "start", "-a", "android.settings.BLUETOOTH_SETTINGS"], timeout=4.0)
+    else:
+        _exec_android_intent(["am", "start", "-a", "android.settings.BLUETOOTH_SETTINGS"])
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Não foi possível alternar o Bluetooth diretamente (restrição Android/ADB). Abrindo configurações de Bluetooth.",
+        "data": {"state": state_bool, "fallback": True, "settings_opened": True},
+    }
+
+
+def set_mobile_data_state(state: bool) -> Dict[str, Any]:
+    """Liga ou desliga os dados móveis via ADB local com fallback para configurações."""
+    state_bool = bool(state)
+    action = "enable" if state_bool else "disable"
+    txt = "ligados" if state_bool else "desligados"
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        return {"status": "ok", "message": f"Silva: Dados móveis {txt} com sucesso. [Simulado]", "data": {"state": state_bool}}
+
+    if adb_serial:
+        ok1, out1 = run_adb_shell(["svc", "data", action], timeout=5.0)
+        if _adb_error_free(ok1, out1):
+            return {"status": "ok", "message": f"Silva: Dados móveis {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_svc"}}
+        run_adb_shell(["am", "start", "-a", "android.settings.DATA_ROAMING_SETTINGS"], timeout=4.0)
+    else:
+        _exec_android_intent(["am", "start", "-a", "android.settings.DATA_ROAMING_SETTINGS"])
+
+    return {
+        "status": "ok",
+        "message": "Silva: O Android/operadora restringiu a alteração direta dos dados móveis. Abrindo configurações de rede móvel.",
+        "data": {"state": state_bool, "fallback": True, "settings_opened": True},
+    }
+
+
+def set_airplane_mode(state: bool) -> Dict[str, Any]:
+    """Ativa ou desativa o Modo Avião via ADB local com fallback de settings/configurações."""
+    state_bool = bool(state)
+    action = "enable" if state_bool else "disable"
+    val_num = "1" if state_bool else "0"
+    val_bool = "true" if state_bool else "false"
+    txt = "ativado" if state_bool else "desativado"
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        return {"status": "ok", "message": f"Silva: Modo Avião {txt} com sucesso. [Simulado]", "data": {"state": state_bool}}
+
+    if adb_serial:
+        ok1, out1 = run_adb_shell(["cmd", "connectivity", "airplane-mode", action], timeout=5.0)
+        if _adb_error_free(ok1, out1):
+            return {"status": "ok", "message": f"Silva: Modo Avião {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_cmd"}}
+
+        ok2, out2 = run_adb_shell(["settings", "put", "global", "airplane_mode_on", val_num], timeout=4.0)
+        if _adb_error_free(ok2, out2):
+            run_adb_shell(
+                ["am", "broadcast", "-a", "android.intent.action.AIRPLANE_MODE", "--ez", "state", val_bool],
+                timeout=4.0,
+            )
+            return {
+                "status": "ok",
+                "message": f"Silva: Modo Avião {txt} via settings ADB (se o Android exigir confirmação manual, toque na opção na tela).",
+                "data": {"state": state_bool, "method": "adb_settings"},
+            }
+        run_adb_shell(["am", "start", "-a", "android.settings.AIRPLANE_MODE_SETTINGS"], timeout=4.0)
+    else:
+        _exec_android_intent(["am", "start", "-a", "android.settings.AIRPLANE_MODE_SETTINGS"])
+
+    return {
+        "status": "ok",
+        "message": "Silva: O Android bloqueou a alteração automática do Modo Avião. Abrindo configurações para confirmação manual.",
+        "data": {"state": state_bool, "fallback": True, "settings_opened": True},
+    }
+
+
+def set_hotspot_state(state: bool) -> Dict[str, Any]:
+    """Liga ou desliga o Roteador Wi-Fi (Hotspot) via ADB local com fallback para TetherSettings."""
+    state_bool = bool(state)
+    txt = "ligado" if state_bool else "desligado"
+    adb_serial = ensure_adb_connected()
+
+    if SIMULATE_HARDWARE and not adb_serial:
+        return {"status": "ok", "message": f"Silva: Roteador Wi-Fi (Hotspot) {txt} com sucesso. [Simulado]", "data": {"state": state_bool}}
+
+    if adb_serial:
+        cmd_args = (
+            ["cmd", "wifi", "start-softap", "SilvaHotspot", "wpa2", "12345678"]
+            if state_bool
+            else ["cmd", "wifi", "stop-softap"]
+        )
+        ok1, out1 = run_adb_shell(cmd_args, timeout=5.0)
+        if _adb_error_free(ok1, out1):
+            return {"status": "ok", "message": f"Silva: Roteador Wi-Fi (Hotspot) {txt} com sucesso via ADB.", "data": {"state": state_bool, "method": "adb_softap"}}
+        run_adb_shell(["am", "start", "-n", "com.android.settings/.TetherSettings"], timeout=4.0)
+    else:
+        _exec_android_intent(["am", "start", "-n", "com.android.settings/.TetherSettings"])
+
+    return {
+        "status": "ok",
+        "message": "Silva: A fabricante restringiu o controle direto do Hotspot. Abrindo configurações de Roteador/Tethering.",
+        "data": {"state": state_bool, "fallback": True, "settings_opened": True},
     }
 
 

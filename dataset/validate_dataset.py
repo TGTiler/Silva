@@ -66,6 +66,8 @@ def validate_args_against_schema(tool_name: str, args: dict, tool_def: dict) -> 
             expected_type = meta.get("type")
             if expected_type == "integer" and not (isinstance(val, int) and not isinstance(val, bool)):
                 errors.append(f"Tipo inválido para '{param_name}': esperado int, recebido {type(val).__name__}.")
+            elif expected_type in ("number", "float") and (isinstance(val, bool) or not isinstance(val, (int, float))):
+                errors.append(f"Tipo inválido para '{param_name}': esperado float/number, recebido {type(val).__name__}.")
             elif expected_type == "boolean" and not isinstance(val, bool):
                 errors.append(f"Tipo inválido para '{param_name}': esperado bool, recebido {type(val).__name__}.")
             elif expected_type == "string" and not isinstance(val, str):

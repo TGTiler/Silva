@@ -203,10 +203,14 @@ while true; do
             current_tts="$(get_env_val ENABLE_VOICE_TTS "false")"
             if [ "$current_tts" = "true" ]; then
                 set_env_val "ENABLE_VOICE_TTS" "false"
-                echo -e "${YELLOW}[OK] TTS (Síntese por Voz) DESATIVADO.${RESET}"
+                set_env_val "ENABLE_PROACTIVE_TTS" "false"
+                set_env_val "WEB_AUTO_TTS" "false"
+                echo -e "${YELLOW}[OK] TTS (Voz do Assistente e Alertas Proativos) DESATIVADO.${RESET}"
             else
                 set_env_val "ENABLE_VOICE_TTS" "true"
-                echo -e "${GREEN}[OK] TTS (Síntese por Voz) ATIVADO.${RESET}"
+                set_env_val "ENABLE_PROACTIVE_TTS" "true"
+                set_env_val "WEB_AUTO_TTS" "true"
+                echo -e "${GREEN}[OK] TTS (Voz do Assistente e Alertas Proativos) ATIVADO.${RESET}"
             fi
             sleep 1.2
             ;;

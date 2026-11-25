@@ -70,8 +70,8 @@ log_info "${CYAN}[1/3] Encerrando processos do Silva (PIDs e instâncias ativas)
 PIDS_TO_KILL=()
 
 if [ -f "$PIDS_FILE" ]; then
-    while IFS= read -r pid; do
-        pid_clean="$(echo "$pid" | tr -d '[:space:]')"
+    while IFS= read -r line; do
+        pid_clean="$(echo "$line" | sed 's/^[^=]*=//' | tr -d '[:space:]')"
         if [ -n "$pid_clean" ] && [ "$pid_clean" -eq "$pid_clean" ] 2>/dev/null; then
             PIDS_TO_KILL+=("$pid_clean")
         fi

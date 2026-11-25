@@ -32,6 +32,11 @@ from .hardware import (
     connect_wifi,
     get_wifi_info,
     set_wifi_state,
+    get_system_info,
+    set_bluetooth_state,
+    set_mobile_data_state,
+    set_airplane_mode,
+    set_hotspot_state,
 )
 
 from .media import (
@@ -39,6 +44,7 @@ from .media import (
     take_photo,
     take_screenshot,
     record_video,
+    record_audio,
     media_control,
 )
 
@@ -46,6 +52,8 @@ from .comms import (
     get_last_sms,
     send_sms,
     make_call,
+    save_contact,
+    get_contact,
     get_notifications,
     get_clipboard,
     set_clipboard,
@@ -76,6 +84,8 @@ from .apps_mobility import (
     _LAST_JOKE,
     tell_joke,
     list_capabilities,
+    get_datetime,
+    read_screen,
     none,
 )
 
@@ -95,6 +105,7 @@ from .memory_schedule import (
     recall_note,
     set_timer,
     SafeMathEvaluator,
+    convert_units,
     calculate,
 )
 
@@ -137,6 +148,17 @@ AVAILABLE_TOOLS = {
     "connect_wifi": connect_wifi,
     "get_wifi_info": get_wifi_info,
     "set_wifi_state": set_wifi_state,
+    "get_datetime": get_datetime,
+    "get_system_info": get_system_info,
+    "read_screen": read_screen,
+    "save_contact": save_contact,
+    "get_contact": get_contact,
+    "set_bluetooth_state": set_bluetooth_state,
+    "set_mobile_data_state": set_mobile_data_state,
+    "set_airplane_mode": set_airplane_mode,
+    "set_hotspot_state": set_hotspot_state,
+    "record_audio": record_audio,
+    "convert_units": convert_units,
     "none": none,
 }
 
@@ -166,14 +188,22 @@ __all__ = [
     "connect_wifi",
     "get_wifi_info",
     "set_wifi_state",
+    "get_system_info",
+    "set_bluetooth_state",
+    "set_mobile_data_state",
+    "set_airplane_mode",
+    "set_hotspot_state",
     "_is_valid_png",
     "take_photo",
     "take_screenshot",
     "record_video",
+    "record_audio",
     "media_control",
     "get_last_sms",
     "send_sms",
     "make_call",
+    "save_contact",
+    "get_contact",
     "get_notifications",
     "get_clipboard",
     "set_clipboard",
@@ -198,6 +228,8 @@ __all__ = [
     "_LAST_JOKE",
     "tell_joke",
     "list_capabilities",
+    "get_datetime",
+    "read_screen",
     "none",
     "parse_ptbr_date",
     "parse_time_str",
@@ -214,6 +246,7 @@ __all__ = [
     "recall_note",
     "set_timer",
     "SafeMathEvaluator",
+    "convert_units",
     "calculate",
     "AVAILABLE_TOOLS",
 ]

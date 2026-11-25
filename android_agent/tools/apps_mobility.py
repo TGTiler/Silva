@@ -4,23 +4,23 @@ Módulo Apps, Mobilidade e Utilidades do Silva: Abertura de Apps, Uber/99, iFood
 
 import difflib
 import json
-import os
 import random
 import re
 import unicodedata
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from .core import (
     APP_PACKAGES,
     RESOLVED_APP_ACTIVITIES,
     SIMULATE_HARDWARE,
-    _run_termux_cmd,
     _exec_android_intent,
     load_last_location,
 )
 from .adb_bridge import ensure_adb_connected, run_adb_shell
+from .ui_automator import dump_ui_nodes, tap_element
 from .comms import set_clipboard
 from .memory_schedule import _load_memory, _normalize_text, recall_note
 
@@ -64,8 +64,64 @@ APP_NOISE_WORDS = {
     "hoje", "agora", "por favor", "pfv", "silva", "ei silva", "ai", "aí"
 }
 
-def open_app(app_name: str) -> Dict[str, Any]:
-    """Abre um aplicativo pelo nome ou pacote Android com tolerância a ruído e fuzzy matching."""
+def interact_screen(action: str, label: str = "") -> Dict[str, Any]:
+    """
+    Interage com a tela atual do Android via uiautomator + ADB local:
+    - action='tap': localiza 'label' e toca no botão/container clicável.
+    - action='read': lê e resume os textos visíveis na tela atual.
+    """
+    act = str(action or "").strip().lower()
+    clean_label = str(label or "").strip()
+
+    if not ensure_adb_connected():
+        return {
+            "status": "error",
+            "message": "ADB local não conectado. Conecte a depuração por Wi-Fi para interagir com a tela.",
+        }
+
+    if act == "read":
+        nodes = dump_ui_nodes()
+        texts = []
+        seen = set()
+        for n in nodes:
+            txt = (n.get("text") or n.get("content_desc") or "").strip()
+            if txt and txt not in seen:
+                seen.add(txt)
+                texts.append(txt)
+        if not texts:
+            return {"status": "ok", "message": "Nenhum texto visível foi encontrado na tela atual.", "data": []}
+        preview = " | ".join(texts[:25])
+        return {
+            "status": "ok",
+            "message": f"Elementos visíveis na tela ({len(texts)}): {preview}",
+            "data": texts[:25],
+        }
+
+    if act == "tap":
+        if not clean_label:
+            return {"status": "error", "message": "Informe o texto do botão ou elemento para tocar."}
+        ok, msg = tap_element(clean_label, timeout=4.0)
+        return {
+            "status": "ok" if ok else "error",
+            "message": f"Silva: {msg}",
+            "data": {"action": "tap", "label": clean_label, "success": ok},
+        }
+
+    return {"status": "error", "message": f"Ação de tela desconhecida: '{action}'."}
+
+
+def open_app(app_name: str, action: str = "", label: str = "") -> Dict[str, Any]:
+    """Abre um aplicativo pelo nome ou pacote Android, ou executa interação na tela atual."""
+    act = str(action or "").strip().lower()
+    raw_name = str(app_name or "").strip()
+    if act in ("tap", "read"):
+        return interact_screen(act, label=label or raw_name)
+    if raw_name.startswith("ui:"):
+        parts = raw_name.split(":", 2)
+        ui_act = parts[1] if len(parts) > 1 else "read"
+        ui_label = parts[2] if len(parts) > 2 else ""
+        return interact_screen(ui_act, label=label or ui_label)
+
     raw_key = str(app_name).strip().lower()
 
     # 1. Limpeza de termos de cortesia/tempo/ruído nas bordas
@@ -748,6 +804,91 @@ def list_capabilities() -> Dict[str, Any]:
                 "system", "media", "telephony", "apps", "time", "location", "transport", "utilities", "network"
             ]
         }
+    }
+
+
+_WEEKDAYS_PTBR = [
+    "segunda-feira", "terça-feira", "quarta-feira",
+    "quinta-feira", "sexta-feira", "sábado", "domingo",
+]
+_MONTHS_PTBR = [
+    "", "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+]
+
+
+def get_datetime() -> Dict[str, Any]:
+    """Retorna data completa, dia da semana, hora exata e período do dia em PT-BR."""
+    now = datetime.now()
+    weekday = _WEEKDAYS_PTBR[now.weekday()]
+    month_name = _MONTHS_PTBR[now.month]
+    date_str = f"{now.day:02d} de {month_name} de {now.year}"
+    time_str = now.strftime("%H:%M:%S")
+    hour = now.hour
+
+    if hour < 6:
+        period = "madrugada"
+    elif hour < 12:
+        period = "manhã"
+    elif hour < 18:
+        period = "tarde"
+    else:
+        period = "noite"
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Hoje é {weekday}, {date_str}. Agora são {time_str} ({period}).",
+        "data": {
+            "date": now.strftime("%Y-%m-%d"),
+            "date_br": now.strftime("%d/%m/%Y"),
+            "weekday": weekday,
+            "time": time_str,
+            "period": period,
+            "iso": now.isoformat(timespec="seconds"),
+        },
+    }
+
+
+def read_screen() -> Dict[str, Any]:
+    """Extrai e resume o conteúdo legível da tela atual via uiautomator + ADB."""
+    if not ensure_adb_connected():
+        return {
+            "status": "error",
+            "message": "Não foi possível ler a tela porque o ADB local está offline. Conecte a depuração por Wi-Fi para habilitar a leitura de tela.",
+            "data": {"texts": [], "count": 0},
+        }
+
+    nodes = dump_ui_nodes()
+    filtered = []
+    last_added = None
+    for n in nodes:
+        raw_txt = (n.get("text") or "").strip()
+        raw_desc = (n.get("content_desc") or "").strip()
+        for candidate in (raw_txt, raw_desc):
+            if not candidate or len(candidate) <= 1:
+                continue
+            # Filtra ruídos puramente técnicos (resource-ids ou separadores)
+            if re.match(r"^[a-z0-9_]+\.[a-z0-9_.]+:[a-z0-9_/]+$", candidate, re.IGNORECASE):
+                continue
+            if candidate == last_added:
+                continue
+            filtered.append(candidate)
+            last_added = candidate
+
+    if not filtered:
+        return {
+            "status": "ok",
+            "message": "A tela atual parece estar vazia ou bloqueada (nenhum texto legível encontrado).",
+            "data": {"texts": [], "count": 0},
+        }
+
+    joined = " | ".join(filtered[:30])
+    if len(joined) > 520:
+        joined = joined[:517].rstrip() + "..."
+    return {
+        "status": "ok",
+        "message": f"Conteúdo visível na tela: {joined}",
+        "data": {"texts": filtered[:30], "count": len(filtered)},
     }
 
 

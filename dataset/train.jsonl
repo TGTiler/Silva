@@ -6145,3 +6145,461 @@
 {"instruction": "Vira 180 graus à direita", "output": "<call>none()</call>"}
 {"instruction": "O tempo passou rápido hoje", "output": "<call>none()</call>"}
 {"instruction": "Ignora a previsão do tempo de amanhã", "output": "<call>none()</call>"}
+{"instruction": "Que horas são agora?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Silva, poderia me dizer que dia é hoje?", "output": "<call>get_datetime()</call>"}
+{"instruction": "qual o dia da semana", "output": "<call>get_datetime()</call>"}
+{"instruction": "Me fala a data de hoje e a hora exata", "output": "<call>get_datetime()</call>"}
+{"instruction": "Estamos em que mês e ano?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Quanto tenho de memória RAM livre?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Qual o espaço de armazenamento disponível no celular?", "output": "<call>get_system_info()</call>"}
+{"instruction": "como ta a memoria do celular", "output": "<call>get_system_info()</call>"}
+{"instruction": "Verifica o status do sistema pra mim", "output": "<call>get_system_info()</call>"}
+{"instruction": "Tô com quanto de espaço livre e qual a operadora?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Lê o que está na minha tela", "output": "<call>read_screen()</call>"}
+{"instruction": "Silva, pode resumir o que está aparecendo aqui?", "output": "<call>read_screen()</call>"}
+{"instruction": "le a tela atual", "output": "<call>read_screen()</call>"}
+{"instruction": "O que está escrito nessa mensagem aberta?", "output": "<call>read_screen()</call>"}
+{"instruction": "Dá uma olhada no texto que está na tela", "output": "<call>read_screen()</call>"}
+{"instruction": "Qual o telefone do João?", "output": "<call>get_contact(name='João')</call>"}
+{"instruction": "Silva, me passa o número da Maria", "output": "<call>get_contact(name='Maria')</call>"}
+{"instruction": "qual o numero do pedro", "output": "<call>get_contact(name='Pedro')</call>"}
+{"instruction": "Preciso do contato da Ana, pode buscar?", "output": "<call>get_contact(name='Ana')</call>"}
+{"instruction": "Acha o telefone do Lucas pra mim", "output": "<call>get_contact(name='Lucas')</call>"}
+{"instruction": "Salva o contato Carlos com o número 11999998888", "output": "<call>save_contact(name='Carlos', phone='11999998888')</call>"}
+{"instruction": "Silva, cadastra a Fernanda no telefone 21988887777", "output": "<call>save_contact(name='Fernanda', phone='21988887777')</call>"}
+{"instruction": "adiciona o rafael 11977776666 na agenda", "output": "<call>save_contact(name='Rafael', phone='11977776666')</call>"}
+{"instruction": "Cria um contato novo pra Juliana, número 31966665555", "output": "<call>save_contact(name='Juliana', phone='31966665555')</call>"}
+{"instruction": "Guarda o número do Bruno: 41955554444", "output": "<call>save_contact(name='Bruno', phone='41955554444')</call>"}
+{"instruction": "Liga o bluetooth aí", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Silva, desativa o Bluetooth por favor", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "liga o bt", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Pode desligar o bluetooth do celular?", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "Ativa o bluetooth pra eu conectar o fone", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desativa os dados móveis", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "ativa o 4g", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Silva, poderia desligar a internet móvel?", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "Liga os dados móveis que preciso acessar", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "desliga o 5g aí", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "Coloca o celular no modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Silva, tira o modo avião que já pousei", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "ativa o modo offline", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Pode desativar o modo avião agora?", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "Entra em modo avião pra economizar bateria", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Liga o roteador Wi-Fi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Silva, desliga o hotspot que já terminei", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "roteia a internet aí", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Pode desativar o compartilhamento de internet?", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Ativa o ponto de acesso pra galera conectar", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Grava um áudio de 20 segundos", "output": "<call>record_audio(duration=20)</call>"}
+{"instruction": "Silva, pode gravar uma nota de voz de 30 segundos?", "output": "<call>record_audio(duration=30)</call>"}
+{"instruction": "grava um audio ai", "output": "<call>record_audio(duration=10)</call>"}
+{"instruction": "Quero gravar o som do ambiente por 1 minuto", "output": "<call>record_audio(duration=60)</call>"}
+{"instruction": "Faz uma gravação de 45 segundos do que eu falar", "output": "<call>record_audio(duration=45)</call>"}
+{"instruction": "Quanto dá 50 dólares em reais?", "output": "<call>convert_units(amount=50.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Silva, converte 100 euros pra reais", "output": "<call>convert_units(amount=100.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "converte 25 dolares pra real", "output": "<call>convert_units(amount=25.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quantos quilômetros são 5 milhas?", "output": "<call>convert_units(amount=5.0, from_unit='mi', to_unit='km')</call>"}
+{"instruction": "Transforma 30 graus celsius em fahrenheit", "output": "<call>convert_units(amount=30.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Lê a tela atual e salva numa nota", "output": "<call>read_screen()</call><call>remember_note(key='tela', value='$prev_result')</call>"}
+{"instruction": "Consulta o telefone do João e salva o número numa nota", "output": "<call>get_contact(name='João')</call><call>remember_note(key='contato_joao', value='$prev_result')</call>"}
+{"instruction": "Liga o bluetooth e depois grava um áudio de 15 segundos", "output": "<call>set_bluetooth_state(state=True)</call><call>record_audio(duration=15)</call>"}
+{"instruction": "Que horas são agora?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Qual é a data de hoje?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Me diz que dia da semana é hoje", "output": "<call>get_datetime()</call>"}
+{"instruction": "preciso saber a hora atual e a data", "output": "<call>get_datetime()</call>"}
+{"instruction": "Que dia é hoje e que horas são?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Quanto de RAM livre eu tenho?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Qual o espaço de armazenamento disponível no aparelho?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Como está o status do sistema, memória e armazenamento?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Qual operadora estou usando e como está a rede móvel?", "output": "<call>get_system_info()</call>"}
+{"instruction": "me mostra a memoria ram livre e o espaco em disco", "output": "<call>get_system_info()</call>"}
+{"instruction": "Lê o que está na tela pra mim", "output": "<call>read_screen()</call>"}
+{"instruction": "Resume o conteúdo que está aparecendo na minha tela", "output": "<call>read_screen()</call>"}
+{"instruction": "O que está escrito na tela agora?", "output": "<call>read_screen()</call>"}
+{"instruction": "Lê o conteúdo\nda minha tela", "output": "<call>read_screen()</call>"}
+{"instruction": "consegue ler a tela atual e me resumir", "output": "<call>read_screen()</call>"}
+{"instruction": "Qual o telefone da Ana?", "output": "<call>get_contact(name='Ana')</call>"}
+{"instruction": "Me passa o número do Carlos", "output": "<call>get_contact(name='Carlos')</call>"}
+{"instruction": "qual o numero do pedro", "output": "<call>get_contact(name='Pedro')</call>"}
+{"instruction": "Preciso do contato da Juliana, qual o telefone dela?", "output": "<call>get_contact(name='Juliana')</call>"}
+{"instruction": "Busca o número de telefone do meu contato Rafael", "output": "<call>get_contact(name='Rafael')</call>"}
+{"instruction": "Salva o contato Fernanda com o número 21977776666", "output": "<call>save_contact(name='Fernanda', phone='21977776666')</call>"}
+{"instruction": "Cadastra o Lucas no telefone 11955554444", "output": "<call>save_contact(name='Lucas', phone='11955554444')</call>"}
+{"instruction": "adiciona a beatriz com numero 31988881111 na agenda", "output": "<call>save_contact(name='Beatriz', phone='31988881111')</call>"}
+{"instruction": "Cria um contato novo: Thiago, telefone 41999992222", "output": "<call>save_contact(name='Thiago', phone='41999992222')</call>"}
+{"instruction": "Guarda o contato da Camila no número 51966663333", "output": "<call>save_contact(name='Camila', phone='51966663333')</call>"}
+{"instruction": "Liga o bluetooth aí por favor", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desliga o bt do celular", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "Ativa o bluetooth pra conectar o fone", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "pode desligar o bluetooth agora", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "Liga o bluetooth do aparelho", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desliga os dados móveis do celular", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "Ativa o 4G pra mim", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Quero desligar a internet móvel", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "liga os dados moveis que eu preciso acessar a internet", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Coloca o aparelho no modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Desativa o modo avião, já pousei", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "ativa o modo aviao agora", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Tira o celular do modo avião por favor", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "Ativa o roteador Wi-Fi pra mim", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Liga o hotspot que eu vou compartilhar a internet", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "roteia a internet pra galera aqui", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Desliga o compartilhamento de internet", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Grava um áudio de 30 segundos", "output": "<call>record_audio(duration=30)</call>"}
+{"instruction": "Quero gravar um áudio de 1 minuto", "output": "<call>record_audio(duration=60)</call>"}
+{"instruction": "Faz uma gravação de voz de 2 minutos", "output": "<call>record_audio(duration=120)</call>"}
+{"instruction": "grava um audio rapidinho de 15 segundos", "output": "<call>record_audio(duration=15)</call>"}
+{"instruction": "Inicia uma gravação de áudio", "output": "<call>record_audio(duration=10)</call>"}
+{"instruction": "Converte 100 dólares em reais", "output": "<call>convert_units(amount=100.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto tá o dólar pra real? Quero converter 50 dólares", "output": "<call>convert_units(amount=50.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Transforma 10 quilômetros em milhas", "output": "<call>convert_units(amount=10.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Converte 25 graus celsius pra fahrenheit", "output": "<call>convert_units(amount=25.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Quero saber quanto é 5 kg em libras", "output": "<call>convert_units(amount=5.0, from_unit='kg', to_unit='lb')</call>"}
+{"instruction": "converte 2 litros em mililitros", "output": "<call>convert_units(amount=2.0, from_unit='l', to_unit='ml')</call>"}
+{"instruction": "Não precisa ligar o bluetooth agora", "output": "<call>none()</call>"}
+{"instruction": "Que horas você costuma dormir?", "output": "<call>none()</call>"}
+{"instruction": "Eu viajei de avião ontem", "output": "<call>none()</call>"}
+{"instruction": "A tela do meu notebook quebrou", "output": "<call>none()</call>"}
+{"instruction": "Você pode me passar os dados do cliente por e-mail?", "output": "<call>none()</call>"}
+{"instruction": "Não quero gravar áudio nenhum", "output": "<call>none()</call>"}
+{"instruction": "Oi, tudo bem com você?", "output": "<call>none()</call>"}
+{"instruction": "Perdi o contato da minha mãe, que tristeza", "output": "<call>none()</call>"}
+{"instruction": "Qual a hora exata neste momento?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Me fala a data de amanhã", "output": "<call>get_datetime()</call>"}
+{"instruction": "Em que dia da semana estamos?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Que horas são e qual a data completa?", "output": "<call>get_datetime()</call>"}
+{"instruction": "qual e o dia de hoje", "output": "<call>get_datetime()</call>"}
+{"instruction": "Me diz a hora atual e o dia da semana", "output": "<call>get_datetime()</call>"}
+{"instruction": "Quanta memória RAM está livre no momento?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Qual o espaço livre de armazenamento?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Como está a saúde do sistema, RAM e disco?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Qual a operadora e o status da rede móvel?", "output": "<call>get_system_info()</call>"}
+{"instruction": "mostra quanto de ram e armazenamento tem livre", "output": "<call>get_system_info()</call>"}
+{"instruction": "Lê a tela atual e me diz o que tem lá", "output": "<call>read_screen()</call>"}
+{"instruction": "Resume rapidamente o que está na tela", "output": "<call>read_screen()</call>"}
+{"instruction": "O que aparece escrito na minha tela neste momento?", "output": "<call>read_screen()</call>"}
+{"instruction": "consegue ler o conteudo da tela", "output": "<call>read_screen()</call>"}
+{"instruction": "Faz uma leitura do que está\nexibido na tela", "output": "<call>read_screen()</call>"}
+{"instruction": "Qual o número da Mariana?", "output": "<call>get_contact(name='Mariana')</call>"}
+{"instruction": "Me passa o telefone do Gustavo", "output": "<call>get_contact(name='Gustavo')</call>"}
+{"instruction": "qual o telefone da larissa", "output": "<call>get_contact(name='Larissa')</call>"}
+{"instruction": "Preciso ligar pro Felipe, qual o número dele?", "output": "<call>get_contact(name='Felipe')</call>"}
+{"instruction": "Busca o contato do Rodrigo na agenda", "output": "<call>get_contact(name='Rodrigo')</call>"}
+{"instruction": "Salva a Patrícia com o número 11933332222", "output": "<call>save_contact(name='Patrícia', phone='11933332222')</call>"}
+{"instruction": "Cadastra o Bruno no telefone 21944445555", "output": "<call>save_contact(name='Bruno', phone='21944445555')</call>"}
+{"instruction": "adiciona a sofia com numero 31955556666", "output": "<call>save_contact(name='Sofia', phone='31955556666')</call>"}
+{"instruction": "Cria um contato pra Diego com o número 41977778888", "output": "<call>save_contact(name='Diego', phone='41977778888')</call>"}
+{"instruction": "Guarda o contato da Renata no 51922223333", "output": "<call>save_contact(name='Renata', phone='51922223333')</call>"}
+{"instruction": "Liga o bluetooth pra parear o fone", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desativa o bluetooth do aparelho", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "ativa o bt agora", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Pode desligar o bluetooth", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "Quero conectar via bluetooth, liga ele", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desliga o 4G do celular", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "Liga os dados móveis pra mim", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Desativa a internet móvel agora", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "ativa o 5g que eu preciso usar a internet", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Ativa o modo avião por favor", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Desliga o modo avião, já cheguei", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "coloca o celular no modo aviao", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Tira o modo avião do aparelho", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "Liga o hotspot pra compartilhar internet", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Ativa o roteamento Wi-Fi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "compartilha a internet pelo hotspot", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Desliga o roteador Wi-Fi", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Grava um áudio de 45 segundos", "output": "<call>record_audio(duration=45)</call>"}
+{"instruction": "Quero gravar 3 minutos de áudio", "output": "<call>record_audio(duration=180)</call>"}
+{"instruction": "Faz uma gravação de voz de 20 segundos", "output": "<call>record_audio(duration=20)</call>"}
+{"instruction": "grava um audio de meio minuto", "output": "<call>record_audio(duration=30)</call>"}
+{"instruction": "Começa a gravar áudio", "output": "<call>record_audio(duration=10)</call>"}
+{"instruction": "Converte 200 euros em reais", "output": "<call>convert_units(amount=200.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Quanto é 30 dólares em reais?", "output": "<call>convert_units(amount=30.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Transforma 15 milhas em quilômetros", "output": "<call>convert_units(amount=15.0, from_unit='mi', to_unit='km')</call>"}
+{"instruction": "Converte 80 fahrenheit pra celsius", "output": "<call>convert_units(amount=80.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Quero saber quanto é 3 kg em gramas", "output": "<call>convert_units(amount=3.0, from_unit='kg', to_unit='g')</call>"}
+{"instruction": "converte 500 mililitros em litros", "output": "<call>convert_units(amount=500.0, from_unit='ml', to_unit='l')</call>"}
+{"instruction": "Não liga o bluetooth não", "output": "<call>none()</call>"}
+{"instruction": "Que horas você acorda normalmente?", "output": "<call>none()</call>"}
+{"instruction": "Peguei um avião pra São Paulo semana passada", "output": "<call>none()</call>"}
+{"instruction": "A tela do meu celular tá trincada", "output": "<call>none()</call>"}
+{"instruction": "Você pode me enviar os dados por WhatsApp?", "output": "<call>none()</call>"}
+{"instruction": "Não quero gravar nenhum áudio hoje", "output": "<call>none()</call>"}
+{"instruction": "Bom dia, como você está?", "output": "<call>none()</call>"}
+{"instruction": "Esqueci o contato da minha tia em casa", "output": "<call>none()</call>"}
+{"instruction": "Me diz que horas são neste exato momento", "output": "<call>get_datetime()</call>"}
+{"instruction": "Qual é a data de hoje no calendário?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Que dia da semana é hoje?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Preciso da hora e da data atuais", "output": "<call>get_datetime()</call>"}
+{"instruction": "me fala as horas e que dia eh hoje", "output": "<call>get_datetime()</call>"}
+{"instruction": "Qual o dia de hoje e o horário agora?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Quanto de RAM e armazenamento estão livres?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Me informa o status do sistema e a memória disponível", "output": "<call>get_system_info()</call>"}
+{"instruction": "Qual o espaço livre no armazenamento do aparelho?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Como está a rede móvel e qual a operadora?", "output": "<call>get_system_info()</call>"}
+{"instruction": "quanto de memoria ram ta livre e quanto de espaco sobrou", "output": "<call>get_system_info()</call>"}
+{"instruction": "Lê pra mim o que está escrito na tela", "output": "<call>read_screen()</call>"}
+{"instruction": "Resume o conteúdo da tela atual", "output": "<call>read_screen()</call>"}
+{"instruction": "O que tem na tela agora? Lê pra mim", "output": "<call>read_screen()</call>"}
+{"instruction": "faz a leitura do conteudo\nda tela atual", "output": "<call>read_screen()</call>"}
+{"instruction": "Consegue resumir o que está aparecendo na tela?", "output": "<call>read_screen()</call>"}
+{"instruction": "Qual o telefone da Bianca?", "output": "<call>get_contact(name='Bianca')</call>"}
+{"instruction": "Me passa o número do André", "output": "<call>get_contact(name='André')</call>"}
+{"instruction": "qual o numero da paula", "output": "<call>get_contact(name='Paula')</call>"}
+{"instruction": "Preciso do telefone do Marcelo, você tem?", "output": "<call>get_contact(name='Marcelo')</call>"}
+{"instruction": "Consulta o número de telefone da Vanessa", "output": "<call>get_contact(name='Vanessa')</call>"}
+{"instruction": "Salva o contato Eduardo com o número 11911112222", "output": "<call>save_contact(name='Eduardo', phone='11911112222')</call>"}
+{"instruction": "Cadastra a Isabela no telefone 21922223333", "output": "<call>save_contact(name='Isabela', phone='21922223333')</call>"}
+{"instruction": "adiciona o vinicius com numero 31933334444", "output": "<call>save_contact(name='Vinícius', phone='31933334444')</call>"}
+{"instruction": "Cria um contato novo pra Aline, número 41944445555", "output": "<call>save_contact(name='Aline', phone='41944445555')</call>"}
+{"instruction": "Guarda a Letícia na agenda com o número 51955556666", "output": "<call>save_contact(name='Letícia', phone='51955556666')</call>"}
+{"instruction": "Liga o bluetooth pra eu conectar no carro", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desliga o bluetooth, não tô usando", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "ativa o bluetooth ai", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Pode desativar o bluetooth do celular", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "Quero ligar o bt pra transferir arquivo", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desativa os dados móveis, tô sem franquia", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "Ativa o 4G que eu preciso mandar mensagem", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Desliga o 5G agora", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "liga os dados moveis pra mim", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Ativa o modo avião pro celular", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Desativa o modo avião, já pousei", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "coloca em modo aviao por favor", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Tira do modo avião que eu preciso de sinal", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "Ativa o hotspot que eu vou usar o notebook", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Liga o roteador Wi-Fi do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "roteia a internet aqui pra mim", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Desativa o hotspot, já terminei", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Grava um áudio de 40 segundos", "output": "<call>record_audio(duration=40)</call>"}
+{"instruction": "Quero gravar 2 minutos de áudio", "output": "<call>record_audio(duration=120)</call>"}
+{"instruction": "Faz uma gravação de voz de 25 segundos", "output": "<call>record_audio(duration=25)</call>"}
+{"instruction": "grava um audio de 1 minuto e meio", "output": "<call>record_audio(duration=90)</call>"}
+{"instruction": "Inicia uma gravação de áudio padrão", "output": "<call>record_audio(duration=10)</call>"}
+{"instruction": "Converte 150 libras em reais", "output": "<call>convert_units(amount=150.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"instruction": "Quanto é 75 dólares em reais?", "output": "<call>convert_units(amount=75.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Transforma 8 metros em centímetros", "output": "<call>convert_units(amount=8.0, from_unit='m', to_unit='cm')</call>"}
+{"instruction": "Converte 300 kelvin pra celsius", "output": "<call>convert_units(amount=300.0, from_unit='kelvin', to_unit='celsius')</call>"}
+{"instruction": "Quero saber quanto é 2 libras em gramas", "output": "<call>convert_units(amount=2.0, from_unit='lb', to_unit='g')</call>"}
+{"instruction": "converte 1.5 litros em mililitros", "output": "<call>convert_units(amount=1.5, from_unit='l', to_unit='ml')</call>"}
+{"instruction": "Não ativa o bluetooth não, deixa desligado", "output": "<call>none()</call>"}
+{"instruction": "Que horas você costuma almoçar?", "output": "<call>none()</call>"}
+{"instruction": "Vou pegar um avião amanhã cedo", "output": "<call>none()</call>"}
+{"instruction": "A tela do meu monitor queimou", "output": "<call>none()</call>"}
+{"instruction": "Você pode me mandar os dados do relatório?", "output": "<call>none()</call>"}
+{"instruction": "Não quero gravar áudio nenhum agora", "output": "<call>none()</call>"}
+{"instruction": "E aí, tudo certo com você?", "output": "<call>none()</call>"}
+{"instruction": "Não achei o contato da minha prima na agenda", "output": "<call>none()</call>"}
+{"instruction": "Me diz a hora certa e o dia de hoje", "output": "<call>get_datetime()</call>"}
+{"instruction": "Qual a data e o horário neste momento?", "output": "<call>get_datetime()</call>"}
+{"instruction": "Hoje é que dia da semana?", "output": "<call>get_datetime()</call>"}
+{"instruction": "que horas sao e qual a data", "output": "<call>get_datetime()</call>"}
+{"instruction": "Preciso saber o dia da semana e a hora", "output": "<call>get_datetime()</call>"}
+{"instruction": "Quanto de memória RAM está disponível?", "output": "<call>get_system_info()</call>"}
+{"instruction": "Qual o armazenamento livre e o status da rede?", "output": "<call>get_system_info()</call>"}
+{"instruction": "me fala a ram livre e o espaco de disco", "output": "<call>get_system_info()</call>"}
+{"instruction": "Lê o conteúdo da tela e me resume", "output": "<call>read_screen()</call>"}
+{"instruction": "O que está sendo exibido na tela?", "output": "<call>read_screen()</call>"}
+{"instruction": "le a tela\ne me diz o que tem", "output": "<call>read_screen()</call>"}
+{"instruction": "Qual o telefone da Cristina?", "output": "<call>get_contact(name='Cristina')</call>"}
+{"instruction": "Me passa o número do Alexandre", "output": "<call>get_contact(name='Alexandre')</call>"}
+{"instruction": "qual o numero da tatiane", "output": "<call>get_contact(name='Tatiane')</call>"}
+{"instruction": "Salva o contato Otávio com o número 11966667777", "output": "<call>save_contact(name='Otávio', phone='11966667777')</call>"}
+{"instruction": "Cadastra a Priscila no telefone 21977778888", "output": "<call>save_contact(name='Priscila', phone='21977778888')</call>"}
+{"instruction": "adiciona o henrique com numero 31988889999", "output": "<call>save_contact(name='Henrique', phone='31988889999')</call>"}
+{"instruction": "Liga o bluetooth pra usar o fone sem fio", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Desliga o bt do aparelho", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"instruction": "ativa o bluetooth pra mim", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"instruction": "Ativa os dados móveis que eu preciso", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"instruction": "Desliga a internet móvel, por favor", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "desativa o 4g agora", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"instruction": "Coloca o celular no modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Desativa o modo avião que já aterrissei", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"instruction": "ativa o modo aviao ai", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"instruction": "Liga o hotspot pra compartilhar a internet", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Desliga o roteamento Wi-Fi", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "ativa o roteador wifi do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Grava um áudio de 35 segundos", "output": "<call>record_audio(duration=35)</call>"}
+{"instruction": "Quero gravar 4 minutos de áudio", "output": "<call>record_audio(duration=240)</call>"}
+{"instruction": "Converte 60 euros em reais", "output": "<call>convert_units(amount=60.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"instruction": "Transforma 20 quilômetros em metros", "output": "<call>convert_units(amount=20.0, from_unit='km', to_unit='m')</call>"}
+{"instruction": "Não liga o bluetooth agora não", "output": "<call>none()</call>"}
+{"instruction": "Que horas você vai dormir hoje?", "output": "<call>none()</call>"}
+{"instruction": "Converte 100 dólares em reais", "output": "<call>convert_units(amount=100.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto é 50 doláres em reais?", "output": "<call>convert_units(amount=50.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Transforma 200 dollars em reais", "output": "<call>convert_units(amount=200.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Converte 30 dólar pra real", "output": "<call>convert_units(amount=30.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto ta 75 dolares em brl", "output": "<call>convert_units(amount=75.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Converte 25 graus celsius pra fahrenheit", "output": "<call>convert_units(amount=25.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Quanto é 30 celsius em fahrenheit?", "output": "<call>convert_units(amount=30.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Transforma 15 graus celsius em fahrenheit", "output": "<call>convert_units(amount=15.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Converte 40 celsius pra fahrenheit", "output": "<call>convert_units(amount=40.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "quanto sao 22 graus celsius em fahrenheit", "output": "<call>convert_units(amount=22.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Converte 90 fahrenheit pra celsius", "output": "<call>convert_units(amount=90.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Quanto é 100 fahrenheit em celsius?", "output": "<call>convert_units(amount=100.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Transforma 75 fahrenheit em celsius", "output": "<call>convert_units(amount=75.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Converte 60 fahrenheit pra celsius", "output": "<call>convert_units(amount=60.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "quanto da 50 fahrenheit em celsius", "output": "<call>convert_units(amount=50.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Transforma 10 quilômetros em milhas", "output": "<call>convert_units(amount=10.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Quanto é 5 quilometros em milhas?", "output": "<call>convert_units(amount=5.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Converte 20 km pra milhas", "output": "<call>convert_units(amount=20.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Transforma 15 kilometros em milhas", "output": "<call>convert_units(amount=15.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "quanto sao 30 quilometros em milhas", "output": "<call>convert_units(amount=30.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Ativa o roteamento wifi pra mim", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Liga o roteador wi-fi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Ativa o roteamento wi fi do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o wifi roteamento pra compartilhar internet", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Ativa o rotiamento wifi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Desliga o roteamento wi-fi", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Desativa o roteador wifi agora", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o rotiamento wifi", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Desativa o roteamento wi fi do aparelho", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o wifi roteamento", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Converte 120 dolares em reais", "output": "<call>convert_units(amount=120.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto ta 45 doláres em reais", "output": "<call>convert_units(amount=45.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Transforma 18 graus celsius em fahrenheit", "output": "<call>convert_units(amount=18.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Converte 85 fahrenheit pra celsius", "output": "<call>convert_units(amount=85.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Transforma 12 quilometros em milhas", "output": "<call>convert_units(amount=12.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Quanto é 7 quilômetros em milhas?", "output": "<call>convert_units(amount=7.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "ativa o roteamento wifi pra galera", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Liga o roteador wi fi do aparelho", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Converte 250 dolares em reais", "output": "<call>convert_units(amount=250.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto sao 35 celsius em fahrenheit", "output": "<call>convert_units(amount=35.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Transforma 95 fahrenheit em celsius", "output": "<call>convert_units(amount=95.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Converte 25 quilometros pra milhas", "output": "<call>convert_units(amount=25.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "desliga o roteamento wi-fi por favor", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Quanto ta 80 dolares em reais", "output": "<call>convert_units(amount=80.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Converte 28 graus celsius em fahrenheit", "output": "<call>convert_units(amount=28.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Transforma 70 fahrenheit pra celsius", "output": "<call>convert_units(amount=70.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "quanto é 9 quilometros em milhas", "output": "<call>convert_units(amount=9.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "ativa o roteamento wi fi agora", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Converte 300 dolares pra reais", "output": "<call>convert_units(amount=300.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Quanto é 42 celsius em fahrenheit?", "output": "<call>convert_units(amount=42.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Transforma 55 fahrenheit em celsius", "output": "<call>convert_units(amount=55.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Converte 40 quilometros em milhas", "output": "<call>convert_units(amount=40.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Desliga o roteamento wi fi do celular", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "quanto ta 90 dolares em reais", "output": "<call>convert_units(amount=90.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "Converte 19 graus celsius pra fahrenheit", "output": "<call>convert_units(amount=19.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "Transforma 88 fahrenheit em celsius", "output": "<call>convert_units(amount=88.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "Quanto é 3 quilometros em milhas?", "output": "<call>convert_units(amount=3.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "Ativa o roteamento wi-fi do aparelho", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "Desativa o roteamento wifi", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "Converte 500 dolares em reais", "output": "<call>convert_units(amount=500.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto tá o dolar pra real, 100 pila", "output": "<call>convert_units(amount=100.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "me vê 50 verdinhas em reais", "output": "<call>convert_units(amount=50.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "converte 200 conto americano pra real", "output": "<call>convert_units(amount=200.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto vale 30 mango em brl", "output": "<call>convert_units(amount=30.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "faz a conta de 75 dolares pra real", "output": "<call>convert_units(amount=75.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto eh 120 usd em reais", "output": "<call>convert_units(amount=120.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "troca 45 dollar por real", "output": "<call>convert_units(amount=45.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "me diz quanto é 250 doleta em real", "output": "<call>convert_units(amount=250.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto ta 80 obamas em reais", "output": "<call>convert_units(amount=80.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "transforma 300 doláres pra reais", "output": "<call>convert_units(amount=300.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto ta 25 graus c em f", "output": "<call>convert_units(amount=25.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "converte 30 celsius pra fahreinheit", "output": "<call>convert_units(amount=30.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "15 graus celsius sao quantos fahrenheit", "output": "<call>convert_units(amount=15.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "quanto eh 40 graus celsus em fahrenheit", "output": "<call>convert_units(amount=40.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "faz 22 celsius virar fahrenheit", "output": "<call>convert_units(amount=22.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "quanto da 35 c em fahrenheit", "output": "<call>convert_units(amount=35.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "converte 18 graus celsius pra fah", "output": "<call>convert_units(amount=18.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "me fala quanto é 28 celsos em fahrenheit", "output": "<call>convert_units(amount=28.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "42 graus celsius em farenheit, quanto dá", "output": "<call>convert_units(amount=42.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "transforma 19 c em fahrenheit", "output": "<call>convert_units(amount=19.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "quanto eh 90 fahreinheit em celsius", "output": "<call>convert_units(amount=90.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "converte 100 f pra c", "output": "<call>convert_units(amount=100.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "75 fahrenheit sao quantos celsus", "output": "<call>convert_units(amount=75.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "quanto da 60 farenheit em celsius", "output": "<call>convert_units(amount=60.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "faz 50 fahrenheit virar celsius", "output": "<call>convert_units(amount=50.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "quanto eh 85 f em c", "output": "<call>convert_units(amount=85.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "converte 95 fahreinheit pra celsius", "output": "<call>convert_units(amount=95.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "me diz 70 fahrenheit em celsos", "output": "<call>convert_units(amount=70.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "55 farenheit da quanto em celsius", "output": "<call>convert_units(amount=55.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "transforma 88 f pra celsius", "output": "<call>convert_units(amount=88.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "quanto eh 10 km em milhas", "output": "<call>convert_units(amount=10.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "converte 5 quilometros pra milha", "output": "<call>convert_units(amount=5.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "20 km sao quantas milhas", "output": "<call>convert_units(amount=20.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "quanto da 15 kilometros em milhas", "output": "<call>convert_units(amount=15.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "faz 30 km virar milhas", "output": "<call>convert_units(amount=30.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "quanto eh 12 km em mi", "output": "<call>convert_units(amount=12.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "converte 7 quilometros pra milha", "output": "<call>convert_units(amount=7.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "me fala 25 km em milhas", "output": "<call>convert_units(amount=25.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "9 kilometros da quantas milhas", "output": "<call>convert_units(amount=9.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "transforma 40 km pra milhas", "output": "<call>convert_units(amount=40.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "ativa o roteamento wi-fi ai", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o roteador wifi do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o roteamento wi fi pra galera", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o wifi roteamento agora", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o rotiamento wi-fi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o roteamento wi-fi do aparelho", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o roteador wi fi pra compartilhar", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o roteamento wifi ai por favor", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o wifi roteamento do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o rotiamento wi fi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "desliga o roteamento wi-fi agora", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o roteador wifi do celular", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o roteamento wi fi ai", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o wifi roteamento", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o rotiamento wi-fi por favor", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o roteamento wi-fi do aparelho", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o roteador wi fi agora", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o roteamento wifi ai", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o wifi roteamento do celular", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o rotiamento wi fi", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "converte 100 dolares em reais", "output": "<call>convert_units(amount=100.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "qnto ta 50 dolars em reais", "output": "<call>convert_units(amount=50.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "converte 200 dolares pra reias", "output": "<call>convert_units(amount=200.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto eh 30 dolares em reasi", "output": "<call>convert_units(amount=30.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "converte 75 dolares em reauis", "output": "<call>convert_units(amount=75.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "qunto ta 120 dolares em reais", "output": "<call>convert_units(amount=120.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "converte 45 dolar em reais", "output": "<call>convert_units(amount=45.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "quanto ta 250 dolares em reias", "output": "<call>convert_units(amount=250.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "converte 80 dolares pra reais", "output": "<call>convert_units(amount=80.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "qnto eh 300 dolares em reais", "output": "<call>convert_units(amount=300.0, from_unit='USD', to_unit='BRL')</call>"}
+{"instruction": "converte 25 graus celsus em fahrenheit", "output": "<call>convert_units(amount=25.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "qnto eh 30 celsius em farenheit", "output": "<call>convert_units(amount=30.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "converte 15 graus celsius pra fahrenheit", "output": "<call>convert_units(amount=15.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "quanto da 40 celsus em fahrenheit", "output": "<call>convert_units(amount=40.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "converte 22 celsius em farenheit", "output": "<call>convert_units(amount=22.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "qnto ta 35 graus celsius em fahrenheit", "output": "<call>convert_units(amount=35.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "converte 18 celsus pra fahrenheit", "output": "<call>convert_units(amount=18.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "quanto eh 28 graus celsius em farenheit", "output": "<call>convert_units(amount=28.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "converte 42 celsius em fahrenheit", "output": "<call>convert_units(amount=42.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "qnto da 19 graus celsus em fahrenheit", "output": "<call>convert_units(amount=19.0, from_unit='celsius', to_unit='fahrenheit')</call>"}
+{"instruction": "converte 90 farenheit em celsius", "output": "<call>convert_units(amount=90.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "qnto eh 100 fahrenheit em celsus", "output": "<call>convert_units(amount=100.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "converte 75 farenheit pra celsius", "output": "<call>convert_units(amount=75.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "quanto da 60 fahrenheit em celsus", "output": "<call>convert_units(amount=60.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "converte 50 farenheit em celsius", "output": "<call>convert_units(amount=50.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "qnto ta 85 fahrenheit em celsius", "output": "<call>convert_units(amount=85.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "converte 95 farenheit pra celsus", "output": "<call>convert_units(amount=95.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "quanto eh 70 fahrenheit em celsus", "output": "<call>convert_units(amount=70.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "converte 55 farenheit em celsius", "output": "<call>convert_units(amount=55.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "qnto da 88 fahrenheit em celsus", "output": "<call>convert_units(amount=88.0, from_unit='fahrenheit', to_unit='celsius')</call>"}
+{"instruction": "converte 10 quilometros em milhas", "output": "<call>convert_units(amount=10.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "qnto eh 5 quilometros em milhas", "output": "<call>convert_units(amount=5.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "converte 20 kilometros pra milhas", "output": "<call>convert_units(amount=20.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "quanto da 15 quilometros em milhas", "output": "<call>convert_units(amount=15.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "converte 30 quilometros em milhas", "output": "<call>convert_units(amount=30.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "qnto ta 12 quilometros em milhas", "output": "<call>convert_units(amount=12.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "converte 7 kilometros em milhas", "output": "<call>convert_units(amount=7.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "quanto eh 25 quilometros em milhas", "output": "<call>convert_units(amount=25.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "converte 9 quilometros pra milhas", "output": "<call>convert_units(amount=9.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "qnto da 40 quilometros em milhas", "output": "<call>convert_units(amount=40.0, from_unit='km', to_unit='mi')</call>"}
+{"instruction": "ativa o roteameto wifi ai", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o roteador wifi do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o roteameto wi-fi pra galera", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o wifi roteameto agora", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o roteamento wifi ai", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o roteador wi fi do aparelho", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o roteameto wi fi pra compartilhar", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o roteamento wifi ai por favor", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "ativa o wifi roteameto do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "liga o roteameto wi fi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"instruction": "desliga o roteameto wifi agora", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o roteador wifi do celular", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o roteameto wi fi ai", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o wifi roteameto", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o roteamento wifi por favor", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o roteameto wi-fi do aparelho", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o roteador wi fi agora", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o roteameto wifi ai", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desliga o wifi roteameto do celular", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"instruction": "desativa o roteameto wi fi", "output": "<call>set_hotspot_state(state=False)</call>"}

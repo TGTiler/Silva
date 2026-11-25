@@ -8,19 +8,17 @@ import errno
 import hmac
 import json
 import mimetypes
-import os
 import signal
-import sys
 import threading
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from config import ACCESS_PIN, CAPTURES_DIR, WEB_HOST, WEB_PORT
+from config import ACCESS_PIN, CAPTURES_DIR, WEB_AUTO_TTS, WEB_HOST, WEB_PORT
 from llm_client import SilvaLLMClient
 from parser import execute_call
+import scheduler
 from scheduler import start_events_scheduler
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -126,7 +124,9 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
             return self._send_json({
                 "status": "ok",
                 "agent": "Silva",
-                "llm": llm_health
+                "llm": llm_health,
+                "web_auto_tts": WEB_AUTO_TTS,
+                "triggered_alerts": scheduler.pop_triggered_alerts(),
             })
 
         self.send_error(HTTPStatus.NOT_FOUND, "Rota não encontrada.")
@@ -163,6 +163,14 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                     status=HTTPStatus.BAD_REQUEST
                 )
 
+            session_id = (
+                self.headers.get("X-Session-Id")
+                or body.get("session_id")
+                or (self.client_address[0] if self.client_address else "")
+                or "default"
+            )
+            session_id = str(session_id).strip() or "default"
+
             # Se o usuário enviou uma chamada direta para testes manuais (ex: <call>get_battery()</call>)
             if user_message.startswith("<call>") and user_message.endswith("</call>"):
                 raw_call = user_message
@@ -170,7 +178,7 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                 err_llm = None
             else:
                 # Envia ao micro-modelo via llama-server
-                raw_call, latency_ms, err_llm = llm_client.generate_call(user_message)
+                raw_call, latency_ms, err_llm = llm_client.generate_call(user_message, session_id=session_id)
 
             if err_llm:
                 if "Não reconheci esse comando no modo rápido" in err_llm:
@@ -192,7 +200,7 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                 })
 
             # Execução segura através do parser
-            result = execute_call(raw_call)
+            result = execute_call(raw_call, session_id=session_id, user_text=user_message)
             result["latency_ms"] = latency_ms
 
             if "tool_data" not in result:

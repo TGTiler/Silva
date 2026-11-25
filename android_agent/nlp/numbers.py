@@ -5,7 +5,7 @@ composição aritmética de grupos inteiros (centenas, dezenas, unidades e multi
 """
 
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 
 # Unidades

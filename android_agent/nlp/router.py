@@ -8,7 +8,7 @@ import ast
 import difflib
 import re
 import unicodedata
-from typing import Callable, Dict, List, Optional, Tuple, Any
+from typing import Callable, List, Optional, Tuple
 
 
 def normalize_text(text: str) -> str:
@@ -1001,7 +1001,17 @@ def extract_install_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 
 def extract_open_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Abertura de aplicativos."""
+    """Abertura de aplicativos e interação de toque com elementos da tela atual via uiautomator."""
+    m_tap = re.search(
+        r"^(?:silva,?\s*)?(?:clica|clique|clicar|toca|toque|tocar|aperta|aperte|apertar|pressiona|pressione)\s+(?:em|no|na)\s+(?:o\s+bot[aã]o\s+|bot[aã]o\s+)?(.+)$",
+        raw.strip().rstrip("?!.,;:"),
+        re.IGNORECASE,
+    )
+    if m_tap:
+        label = m_tap.group(1).strip().strip("'\"")
+        if label:
+            return 0.94, _format_call("open_app", app_name=f"ui:tap:{label}", action="tap", label=label)
+
     m_open = re.search(
         r"\b(?:abre|abra|abrir|inicia|inicie|iniciar|roda|rode|rodar|executa|execute|executar)\s+(?:o|a)?\s*(?:o\s+app\s+|o\s+aplicativo\s+|app\s+|aplicativo\s+)?([^\n\r,\.;?!]+)",
         raw,
@@ -1023,12 +1033,14 @@ def extract_open_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Chamada telefônica prioritária sobre lanterna/Wi-Fi quando acompanhada de alvo humano ou numérico."""
-    # Nunca rotear pedidos de corrida/transporte (Uber, 99, carro, corrida) para make_call
-    if any(w in norm for w in ["uber", "corrida", "carro"]) or re.search(r"\b99\b|noventa\s+e\s+nove", norm):
+    # Nunca rotear pedidos de corrida/transporte (Uber, 99, carro, corrida) ou consulta de telefone para make_call
+    if any(w in norm for w in ["uber", "corrida", "carro", "qual o telefone", "qual e o telefone", "qual o numero", "qual e o numero"]) or re.search(r"\b99\b|noventa\s+e\s+nove", norm):
         return 0.0, None
 
     system_devices = {
-        "lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth",
+        "lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "bt",
+        "dados moveis", "dados", "internet movel", "4g", "5g", "3g",
+        "modo aviao", "hotspot", "roteador", "compartilhamento de internet",
         "alarme", "timer", "volume", "som", "brilho", "gps", "camera", "tela",
         "uber", "carro", "corrida", "taxi", "99"
     }
@@ -1071,7 +1083,7 @@ def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         return 0.0, None
 
     norm_target = normalize_text(target)
-    if norm_target in system_devices or any(w in norm_target for w in ["lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "uber", "carro", "corrida"]):
+    if norm_target in system_devices or any(w in norm_target for w in ["lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "dados moveis", "modo aviao", "hotspot", "roteador", "uber", "carro", "corrida"]):
         return 0.0, None
 
     # Prioridade máxima (0.97) sobre lanterna/Wi-Fi quando acompanhado de alvo humano ou numérico
@@ -1079,9 +1091,37 @@ def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 
 def extract_send_sms(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Envio de SMS."""
+    """Envio de SMS e mensagens no WhatsApp."""
+    # 1. WhatsApp (prioridade 0.97)
+    m_wpp_explicit = re.search(
+        r"(?:envia|enviar|envie|manda|mandar|mande|escreve|escrever|fala|falar|fale)\s+"
+        r"(?:uma\s+)?(?:mensagem\s+)?(?:no|pelo|via)?\s*(?:whatsapp|zap|wpp)\s+"
+        r"(?:para|pro|pra|com)\s+(?:o\s+|a\s+)?(.+?)\s*(?::|dizendo|falando|que)\s*(.+)",
+        raw,
+        re.IGNORECASE,
+    )
+    if m_wpp_explicit:
+        to_target = re.sub(r"^(?:o|a)\s+", "", m_wpp_explicit.group(1).strip(), flags=re.IGNORECASE).strip()
+        msg_body = m_wpp_explicit.group(2).strip()
+        if to_target and msg_body:
+            return 0.97, _format_call("send_sms", number=to_target, message=msg_body, channel="whatsapp")
+
+    m_wpp_short = re.search(
+        r"(?:envia|enviar|envie|manda|mandar|mande)\s+"
+        r"(?:uma\s+)?(?:mensagem\s+)?(?:no|pelo|via)?\s*(?:whatsapp|zap|wpp)\s+"
+        r"(?:para|pro|pra)\s+(?:o\s+|a\s+)?([^\s:]+)\s+(.+)",
+        raw,
+        re.IGNORECASE,
+    )
+    if m_wpp_short:
+        to_target = m_wpp_short.group(1).strip()
+        msg_body = m_wpp_short.group(2).strip()
+        if to_target and msg_body:
+            return 0.97, _format_call("send_sms", number=to_target, message=msg_body, channel="whatsapp")
+
+    # 2. SMS tradicional (aceita números, nomes próprios acentuados e apelidos)
     m_sms = re.search(
-        r"(?:envia|enviar|manda|mandar|escreve|escrever)\s+(?:um\s+)?(?:sms|mensagem\s+de\s+texto|torpedo)\s+(?:para|pro|pra)?\s*([a-zA-Z0-9_\+\s]+?)\s+(?:falando|dizendo|com a mensagem|que|de)\s+(.+)",
+        r"(?:envia|enviar|envie|manda|mandar|mande|escreve|escrever)\s+(?:um\s+)?(?:sms|mensagem\s+de\s+texto|torpedo)\s+(?:para|pro|pra)\s+(?:o\s+|a\s+)?([a-zA-ZÀ-ÿ0-9_\+\s]+?)\s+(?:falando|dizendo|com a mensagem|que|de)\s+(.+)",
         raw,
         re.IGNORECASE
     )
@@ -1447,6 +1487,157 @@ def extract_search(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def extract_datetime(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Data, hora e dia da semana."""
+    if any(w in norm for w in ["alarme", "timer", "cronometro", "despertador", "agenda", "agendar", "reuniao", "previsao", "clima"]):
+        return 0.0, None
+    datetime_patterns = (
+        r"\bque\s+horas?\s+(?:sao|e)\b",
+        r"\b(?:qual|me\s+diga|diga|diz)\s+(?:a|as)\s+horas?\b",
+        r"\b(?:qual\s+(?:e\s+)?a\s+data|data\s+de\s+hoje)\b",
+        r"\bque\s+dia\s+(?:da\s+semana\s+)?(?:e|é)\s+hoje\b",
+        r"\bque\s+dia\s+e\s+hoje\b",
+        r"\bque\s+dia\s+da\s+semana\b",
+    )
+    if any(re.search(pat, norm) for pat in datetime_patterns):
+        return 0.95, _format_call("get_datetime")
+    return 0.0, None
+
+
+def extract_system_info(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Telemetria do sistema: armazenamento, RAM e operadora."""
+    sys_triggers = (
+        "espaco livre", "armazenamento", "memoria ram", "quanta ram", "quanto de ram",
+        "status do sistema", "info do sistema", "informacoes do sistema",
+        "qual minha operadora", "qual a operadora", "minha operadora", "rede movel",
+    )
+    if any(t in norm for t in sys_triggers) or re.search(r"\b(?:quanto|qual)\b.*\b(?:espaco|armazenamento|ram)\b", norm):
+        return 0.95, _format_call("get_system_info")
+    return 0.0, None
+
+
+def extract_read_screen(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Leitura do conteúdo legível da tela atual via uiautomator."""
+    screen_patterns = (
+        r"\bo\s+que\s+(?:esta|tem)\s+(?:escrito\s+)?na\s+(?:minha\s+)?tela\b",
+        r"\b(?:le|leia|ler|resuma|resumir|mostra|mostre)\s+(?:o\s+que\s+(?:esta|tem)\s+na\s+(?:minha\s+)?tela|conteudo\s+da\s+tela|a\s+(?:minha\s+)?tela)\b",
+        r"\bresumo\s+da\s+tela\b",
+    )
+    if any(re.search(pat, norm) for pat in screen_patterns):
+        return 0.96, _format_call("read_screen")
+    return 0.0, None
+
+
+def extract_save_contact(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Cadastro direto de contato (nome e telefone)."""
+    m_save = re.search(
+        r"(?:salva|salve|salvar|cadastra|cadastre|cadastrar|adiciona|adicione|adicionar|guarda|guarde|guardar)\s+"
+        r"(?:o\s+)?(?:contato|n[uú]mero|telefone)(?:\s+(?:do|da|de))?\s+"
+        r"([a-zA-ZÀ-ÿ\s]{2,45}?)\s*(?:como|:|é|e)?\s*(\+?\d[\d\s\-()]{6,18}\d)\b",
+        raw,
+        re.IGNORECASE,
+    )
+    if m_save:
+        c_name = re.sub(r"^(?:do|da|de|o|a)\s+", "", m_save.group(1).strip(), flags=re.IGNORECASE).strip()
+        c_phone = re.sub(r"[\s\-()]", "", m_save.group(2).strip())
+        if c_name and c_phone:
+            return 0.97, _format_call("save_contact", name=c_name, phone=c_phone)
+    return 0.0, None
+
+
+def extract_get_contact(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Consulta de contato na memória e na agenda."""
+    m_get = re.search(
+        r"(?:qual\s+(?:é\s+|e\s+)?(?:o\s+)?(?:telefone|n[uú]mero|celular|contato|whatsapp|zap)|"
+        r"me\s+passa\s+(?:o\s+)?(?:contato|n[uú]mero|telefone)|"
+        r"busca(?:r)?\s+(?:o\s+)?contato|procura(?:r)?\s+(?:o\s+)?contato)\s+"
+        r"(?:do|da|de)\s+([a-zA-ZÀ-ÿ0-9\s]{2,45})",
+        raw.strip().rstrip("?!.,;:"),
+        re.IGNORECASE,
+    )
+    if m_get:
+        c_name = re.sub(r"^(?:do|da|de|o|a)\s+", "", m_get.group(1).strip(), flags=re.IGNORECASE).strip()
+        if c_name:
+            return 0.98, _format_call("get_contact", name=c_name)
+    return 0.0, None
+
+
+def extract_connectivity_controls(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Controles de conectividade via ADB: Bluetooth, Dados Móveis, Modo Avião e Hotspot."""
+    on_verbs = ("liga", "ligar", "ligue", "ativa", "ativar", "ative", "habilita", "habilitar", "habilite", "entra", "coloca", "bota", "abre")
+    off_verbs = ("desliga", "desligar", "desligue", "desativa", "desativar", "desative", "desabilita", "desabilitar", "desabilite", "tira", "sai", "remove", "fecha")
+
+    is_on = any(re.search(rf"\b{v}\b", norm) for v in on_verbs)
+    is_off = any(re.search(rf"\b{v}\b", norm) for v in off_verbs)
+    if not (is_on or is_off):
+        return 0.0, None
+
+    state_val = False if is_off else True
+
+    if re.search(r"\b(?:bluetooth|bt)\b", norm):
+        return 0.96, _format_call("set_bluetooth_state", state=state_val)
+
+    if any(t in norm for t in ("dados moveis", "internet movel", "rede movel")) or re.search(r"\b(?:os\s+dados|4g|5g|3g)\b", norm):
+        return 0.96, _format_call("set_mobile_data_state", state=state_val)
+
+    if "modo aviao" in norm:
+        return 0.96, _format_call("set_airplane_mode", state=state_val)
+
+    if any(t in norm for t in ("hotspot", "roteador", "compartilhamento de internet", "tethering", "ancoragem")):
+        return 0.96, _format_call("set_hotspot_state", state=state_val)
+
+    return 0.0, None
+
+
+def extract_record_audio(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Gravação de áudio / nota de voz."""
+    if any(t in norm for t in ("gravar audio", "grava audio", "grava um audio", "gravar um audio", "nota de voz", "gravar som", "grava som", "gravar voz", "grava voz")):
+        dur = 10
+        m_min = re.search(r"(\d+)\s*(?:min|minuto|minutos)\b", norm)
+        m_sec = re.search(r"(\d+)\s*(?:s|seg|segundo|segundos)\b", norm)
+        if m_min:
+            dur = int(m_min.group(1)) * 60
+        elif m_sec:
+            dur = int(m_sec.group(1))
+        dur = max(1, min(120, dur))
+        return 0.95, _format_call("record_audio", duration=dur)
+    return 0.0, None
+
+
+def extract_convert_units(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Conversão de unidades físicas e moedas."""
+    clean_raw = raw.strip().rstrip("?!.,;:")
+
+    # Padrão invertido: "quantos reais são 100 euros?"
+    m_inv = re.search(
+        r"quantos?\s+([a-zA-ZÀ-ÿ$\s]{1,25}?)\s+(?:s[aã]o|tem|equivalem?\s+a)\s+(\d+(?:[.,]\d+)?)\s*(?:graus?\s+)?([a-zA-ZÀ-ÿ$°\s]{1,25})$",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_inv:
+        to_u = re.sub(r"^(?:em|de|graus?)\s+", "", m_inv.group(1).strip(), flags=re.IGNORECASE).strip()
+        amt = float(m_inv.group(2).replace(",", "."))
+        from_u = re.sub(r"^(?:de|graus?)\s+", "", m_inv.group(3).strip(), flags=re.IGNORECASE).strip()
+        if from_u and to_u:
+            return 0.96, _format_call("convert_units", amount=amt, from_unit=from_u, to_unit=to_u)
+
+    # Padrão direto: "converter 50 dólares para reais", "32 graus celsius em fahrenheit", "quanto dá 5 libras em quilos"
+    m_dir = re.search(
+        r"(?:(?:converter|converte|converta|transformar|transforma|quanto\s+(?:d[aá]|[eé]|valem?))\s+)?(\d+(?:[.,]\d+)?)\s*(?:graus?\s+)?([a-zA-ZÀ-ÿ$°\s]{1,25}?)\s+(?:para|em|pra)\s+(?:graus?\s+)?([a-zA-ZÀ-ÿ$°\s]{1,25})$",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_dir:
+        amt = float(m_dir.group(1).replace(",", "."))
+        from_u = re.sub(r"^(?:de|graus?)\s+", "", m_dir.group(2).strip(), flags=re.IGNORECASE).strip()
+        to_u = re.sub(r"^(?:de|graus?)\s+", "", m_dir.group(3).strip(), flags=re.IGNORECASE).strip()
+        # Evita falsos positivos com comandos de alarmes/timer/clima
+        if from_u and to_u and not any(w in normalize_text(from_u + " " + to_u) for w in ("minuto", "hora", "segundo", "recife", "sp", "uber")):
+            return 0.96, _format_call("convert_units", amount=amt, from_unit=from_u, to_unit=to_u)
+
+    return 0.0, None
+
+
 def extract_none(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Comando nulo explícito."""
     if norm in ["nada", "ignorar", "nenhuma acao", "nenhuma ação", "cancela", "cancelar"]:
@@ -1468,6 +1659,14 @@ class ScoredIntentRouter:
         self.extractors: List[Callable[[str, str], Tuple[float, Optional[str]]]] = [
             extract_help,
             extract_math,
+            extract_datetime,
+            extract_system_info,
+            extract_read_screen,
+            extract_save_contact,
+            extract_get_contact,
+            extract_connectivity_controls,
+            extract_record_audio,
+            extract_convert_units,
             extract_torch,
             extract_battery,
             extract_wifi_and_notes,

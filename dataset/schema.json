@@ -429,6 +429,113 @@
         }
       }
     },
+    "get_datetime": {
+      "description": "Retorna data completa, dia da semana, hora exata e período do dia.",
+      "parameters": {}
+    },
+    "get_system_info": {
+      "description": "Retorna telemetria consolidada do sistema: armazenamento, memória RAM e operadora/rede móvel.",
+      "parameters": {}
+    },
+    "read_screen": {
+      "description": "Lê e resume os textos visíveis na tela atual do Android via uiautomator.",
+      "parameters": {}
+    },
+    "save_contact": {
+      "description": "Cadastra ou atualiza um contato (nome e telefone) na memória persistente.",
+      "parameters": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Nome ou apelido do contato."
+        },
+        "phone": {
+          "type": "string",
+          "required": true,
+          "description": "Número de telefone do contato."
+        }
+      }
+    },
+    "get_contact": {
+      "description": "Consulta um contato pelo nome ou apelido na memória e na agenda do Android.",
+      "parameters": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Nome ou apelido do contato a consultar."
+        }
+      }
+    },
+    "set_bluetooth_state": {
+      "description": "Liga ou desliga o Bluetooth do dispositivo.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "True para ligar, False para desligar"
+        }
+      }
+    },
+    "set_mobile_data_state": {
+      "description": "Liga ou desliga os dados móveis do dispositivo.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "True para ligar, False para desligar"
+        }
+      }
+    },
+    "set_airplane_mode": {
+      "description": "Ativa ou desativa o Modo Avião do dispositivo.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "True para ativar, False para desativar"
+        }
+      }
+    },
+    "set_hotspot_state": {
+      "description": "Liga ou desliga o Roteador Wi-Fi (Hotspot) do dispositivo.",
+      "parameters": {
+        "state": {
+          "type": "boolean",
+          "required": true,
+          "description": "True para ligar, False para desligar"
+        }
+      }
+    },
+    "record_audio": {
+      "description": "Grava um áudio ou nota de voz pelo microfone do dispositivo.",
+      "parameters": {
+        "duration": {
+          "type": "integer",
+          "required": false,
+          "description": "Duração da gravação em segundos (1 a 120, padrão 10)."
+        }
+      }
+    },
+    "convert_units": {
+      "description": "Converte unidades físicas (distância, massa, temperatura, volume) e moedas.",
+      "parameters": {
+        "amount": {
+          "type": "number",
+          "required": true,
+          "description": "Valor numérico a converter."
+        },
+        "from_unit": {
+          "type": "string",
+          "required": true,
+          "description": "Unidade ou moeda de origem."
+        },
+        "to_unit": {
+          "type": "string",
+          "required": true,
+          "description": "Unidade ou moeda de destino."
+        }
+      }
+    },
     "none": {
       "description": "Chamada nula emitida quando o usuário faz uma pergunta geral, saudação ou comando sem ferramenta correspondente.",
       "parameters": {}

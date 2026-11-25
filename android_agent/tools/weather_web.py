@@ -15,16 +15,13 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .core import (
     CAPTURES_DIR,
     LAST_LOCATION_FILE,
     SIMULATE_HARDWARE,
-    _atomic_write_json,
     _run_termux_cmd,
-    _exec_android_intent,
     save_last_location,
     load_last_location,
 )
@@ -896,12 +893,6 @@ def get_weather(day: str = "hoje", time: str = "", location: str = "") -> Dict[s
             "message": "Não foi possível obter a previsão do tempo no momento (verifique a conexão com a internet).",
             "data": {"error": str(e), "location": city_name}
         }
-        return {
-            "status": "error",
-            "message": "Não foi possível obter a previsão do tempo no momento (verifique a conexão com a internet).",
-            "data": {"error": str(e), "location": city_name}
-        }
-
 
 
 class DuckDuckGoHTMLParser(HTMLParser):

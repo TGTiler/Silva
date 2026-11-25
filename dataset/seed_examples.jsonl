@@ -181,3 +181,42 @@
 {"prompt": "Pede um lanche no iFood", "completion": "<call>order_food(query=\"lanche\", app=\"ifood\")</call>"}
 {"prompt": "Pedir comida no 99food", "completion": "<call>order_food(query=\"comida\", app=\"99food\")</call>"}
 {"prompt": "Pede um sushi pelo iFood", "completion": "<call>order_food(query=\"sushi\", app=\"ifood\")</call>"}
+{"prompt": "Que horas são?", "completion": "<call>get_datetime()</call>"}
+{"prompt": "Qual a data de hoje?", "completion": "<call>get_datetime()</call>"}
+{"prompt": "Que dia da semana é hoje?", "completion": "<call>get_datetime()</call>"}
+{"prompt": "Me diga a hora atual", "completion": "<call>get_datetime()</call>"}
+{"prompt": "Quanto tenho de espaço livre?", "completion": "<call>get_system_info()</call>"}
+{"prompt": "Como está a memória RAM do celular?", "completion": "<call>get_system_info()</call>"}
+{"prompt": "Status do sistema", "completion": "<call>get_system_info()</call>"}
+{"prompt": "Qual minha operadora?", "completion": "<call>get_system_info()</call>"}
+{"prompt": "O que está escrito na minha tela?", "completion": "<call>read_screen()</call>"}
+{"prompt": "Lê a tela pra mim", "completion": "<call>read_screen()</call>"}
+{"prompt": "Ler conteúdo da tela", "completion": "<call>read_screen()</call>"}
+{"prompt": "Resuma o que está na tela", "completion": "<call>read_screen()</call>"}
+{"prompt": "Salva o contato Carlos 11999998888", "completion": "<call>save_contact(name=\"Carlos\", phone=\"11999998888\")</call>"}
+{"prompt": "Adiciona o número da Ana 21988887777", "completion": "<call>save_contact(name=\"Ana\", phone=\"21988887777\")</call>"}
+{"prompt": "Cadastrar contato Pedro 81977776666", "completion": "<call>save_contact(name=\"Pedro\", phone=\"81977776666\")</call>"}
+{"prompt": "Qual o telefone do João?", "completion": "<call>get_contact(name=\"João\")</call>"}
+{"prompt": "Qual o número da Maria?", "completion": "<call>get_contact(name=\"Maria\")</call>"}
+{"prompt": "Me passa o contato do Pedro", "completion": "<call>get_contact(name=\"Pedro\")</call>"}
+{"prompt": "Liga o bluetooth", "completion": "<call>set_bluetooth_state(state=True)</call>"}
+{"prompt": "Desativa o bt", "completion": "<call>set_bluetooth_state(state=False)</call>"}
+{"prompt": "Ativa o bluetooth do celular", "completion": "<call>set_bluetooth_state(state=True)</call>"}
+{"prompt": "Liga os dados móveis", "completion": "<call>set_mobile_data_state(state=True)</call>"}
+{"prompt": "Desativa o 4G", "completion": "<call>set_mobile_data_state(state=False)</call>"}
+{"prompt": "Desliga a internet móvel", "completion": "<call>set_mobile_data_state(state=False)</call>"}
+{"prompt": "Ativa o modo avião", "completion": "<call>set_airplane_mode(state=True)</call>"}
+{"prompt": "Tira do modo avião", "completion": "<call>set_airplane_mode(state=False)</call>"}
+{"prompt": "Desliga o modo avião", "completion": "<call>set_airplane_mode(state=False)</call>"}
+{"prompt": "Liga o roteador", "completion": "<call>set_hotspot_state(state=True)</call>"}
+{"prompt": "Ativa o hotspot", "completion": "<call>set_hotspot_state(state=True)</call>"}
+{"prompt": "Desliga o compartilhamento de internet", "completion": "<call>set_hotspot_state(state=False)</call>"}
+{"prompt": "Gravar áudio", "completion": "<call>record_audio(duration=10)</call>"}
+{"prompt": "Grava um áudio de 15 segundos", "completion": "<call>record_audio(duration=15)</call>"}
+{"prompt": "Gravar nota de voz", "completion": "<call>record_audio(duration=10)</call>"}
+{"prompt": "Gravar som por 1 minuto", "completion": "<call>record_audio(duration=60)</call>"}
+{"prompt": "Converter 50 dólares para reais", "completion": "<call>convert_units(amount=50, from_unit=\"dolares\", to_unit=\"reais\")</call>"}
+{"prompt": "Quantos reais são 100 euros?", "completion": "<call>convert_units(amount=100, from_unit=\"euros\", to_unit=\"reais\")</call>"}
+{"prompt": "Converter 10 km em milhas", "completion": "<call>convert_units(amount=10, from_unit=\"km\", to_unit=\"milhas\")</call>"}
+{"prompt": "32 graus celsius em fahrenheit", "completion": "<call>convert_units(amount=32, from_unit=\"celsius\", to_unit=\"fahrenheit\")</call>"}
+{"prompt": "Quanto dá 5 libras em quilos?", "completion": "<call>convert_units(amount=5, from_unit=\"libras\", to_unit=\"quilos\")</call>"}

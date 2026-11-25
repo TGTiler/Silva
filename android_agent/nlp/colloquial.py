@@ -93,7 +93,6 @@ def normalize_colloquial_ptbr(text: str) -> str:
             result_tokens.append(tok)
             continue
 
-        raw_low = tok.lower()
         norm_low = _normalize_token_simple(tok)
 
         # Se tiver menos de 5 caracteres ou for dígito ou stopword, mantém

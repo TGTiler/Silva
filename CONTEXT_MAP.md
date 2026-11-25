@@ -1,6 +1,6 @@
 # Silva — Context Map Técnico
 
-> Documento de referência gerado por inspeção estática do projeto. Escopo inspecionado: `2026-11-24`, checkout `silva-agent` em `d477c44` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código. Suíte de testes: 41 testes unitários com 100% de aprovação (`Ran 41 tests in 1.38s, OK`).
+> Documento de referência atualizado por inspeção do projeto. Escopo inspecionado: `2026-11-24` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código. Suíte de testes: 73 testes unitários com 100% de aprovação (`Ran 73 tests in 2.44s, OK`).
 
 ## 1. Estrutura de Pastas e Árvore de Arquivos
 
@@ -10,18 +10,10 @@ A árvore abaixo cobre a raiz do workspace, o repositório autoral `silva-agent/
 
 ```text
 Silva/
-├── apply_tools_update.sh                    # autoral: substitui tools.py no Termux e reinicia o agente
-├── install_model_and_restart.sh             # autoral: instala novo GGUF, arquiva o anterior e reinicia
-├── resolved_activities.py                   # autoral: cópia do mapa de activities Android
-├── screen_termux.png                        # artefato: captura de tela de uma execução anterior
-├── silva_deploy.tar.gz                      # artefato: pacote de implantação desatualizado
-├── silva_update.tar.gz                      # artefato: patch de implantação desatualizado
-├── start_silva_bootstrap.sh                 # autoral: extrai, instala e inicia o Silva no Termux
+├── _archive_legacy/                         # arquivo morto: scripts, tarballs e capturas legadas movidos da raiz
+├── update_direct.sh                         # autoral: sincroniza arquivos via ADB no Termux, reinicia com --background e valida PIDs + /api/health
 ├── termux-api-fdroid.apk                    # artefato: APK binário Termux:API (F-Droid)
 ├── termux-api.apk                           # artefato: APK binário Termux:API
-├── test_open.py                             # autoral: teste manual de abertura da calculadora
-├── update_and_restart.sh                    # autoral: extrai patch, encerra API Python e reinicia
-├── update_direct.sh                         # autoral: sincroniza arquivos modificados via ADB no Termux (/data/data/com.termux/files/home/silva-agent) e reinicia
 ├── platform-tools/                          # artefato de terceiros: Android platform-tools 37.0.3
 │   ├── NOTICE.txt                           # licença do pacote platform-tools
 │   ├── adb                                  # cliente ADB compilado
@@ -46,28 +38,32 @@ Silva/
     ├── stop-silva.sh                        # autoral: [4/4] encerramento seguro e cirúrgico (runtime.pids, portas, wake-unlock)
     ├── .git/                                # artefato gerado: metadados e objetos do Git
     ├── android_agent/                       # runtime de produção no Termux
-    │   ├── config.py                        # autoral: configuração, paths e prompt do LLM
-    │   ├── intent_fallback.py               # autoral: roteador determinístico PT-BR com normalização estrutural e splitter de cláusulas
-    │   ├── llm_client.py                    # autoral: cliente do llama-server e fallback local
+    │   ├── config.py                        # autoral: configuração, paths, TTS flags e prompt do LLM
+    │   ├── conversation_context.py          # autoral: memória conversacional de curto prazo (multi-turno, TTL 30m) e resolução anafórica
+    │   ├── intent_fallback.py               # autoral: roteador determinístico PT-BR com normalização estrutural e splitter com $prev_result
+    │   ├── llm_client.py                    # autoral: cliente do llama-server com resolução anafórica e injeção de histórico recente
     │   ├── main.py                          # autoral: entrypoint CLI/Web
-    │   ├── parser.py                        # autoral: parser AST, whitelist e executor de calls
-    │   ├── scheduler.py                     # autoral: daemon background que monitora compromissos locais e dispara alertas
+    │   ├── parser.py                        # autoral: parser AST, whitelist, encadeamento $prev_result e executor de calls
+    │   ├── scheduler.py                     # autoral: daemon proativo (10s) sobre scheduled_events com pré-alerta, TTS (termux-tts-speak) e fila Web
     │   ├── start_silva.sh                   # autoral: wrapper de compatibilidade delegando para ../start_silva.sh
     │   ├── stop-silva.sh                    # autoral: wrapper de compatibilidade delegando para ../stop-silva.sh
     │   ├── nlp/                             # autoral: pacote modular de Processamento de Linguagem Natural
     │   │   ├── __init__.py                  # inicializador do pacote e exports principais
     │   │   ├── numbers.py                   # parser numérico composto extenso PT-BR
     │   │   ├── colloquial.py                # normalizador de gírias, níveis e correção de erros tipográficos (typos)
-    │   │   └── router.py                    # roteador por pontuação de intenção (39 ferramentas) com regras de clima relativo
+    │   │   └── router.py                    # roteador por pontuação de intenção (39 ferramentas), WhatsApp, tela UI e clima relativo
     │   ├── tools/                           # autoral: pacote modular das 39 ferramentas Android auditado via AST
     │   │   ├── __init__.py                  # re-export retrocompatível e AVAILABLE_TOOLS
+    │   │   ├── adb_bridge.py                # ponte ADB local (127.0.0.1/Wi-Fi) com auto-reconexão e fallback Termux:API
+    │   │   ├── contacts.py                  # resolvedor unificado de contatos (número -> memory.db -> termux-contact-list + desambiguação)
+    │   │   ├── ui_automator.py              # motor de visão/interação Android via uiautomator XML + input tap/clipboard PT-BR
     │   │   ├── core.py                      # paths, locks, processos, telefones, apps e cache de localização (save/load)
     │   │   ├── hardware.py                  # bateria, lanterna, DND, vibração, volume, brilho, ecossistema Wi-Fi
     │   │   ├── media.py                     # foto, screenshot, gravação de vídeo, media_control
-    │   │   ├── comms.py                     # SMS, discagem, notificações, clipboard
+    │   │   ├── comms.py                     # SMS, automação WhatsApp, discagem com contatos, notificações, clipboard
     │   │   ├── weather_web.py               # GPS, mapa, previsão Open-Meteo em 3 níveis com cache, e busca web multi-fonte
-    │   │   ├── apps_mobility.py             # open_app, uber, ifood, play store, piadas, list_capabilities
-    │   │   └── memory_schedule.py           # SQLite FTS5, alarmes, agenda, timer e calculadora AST
+    │   │   ├── apps_mobility.py             # open_app, interact_screen, uber, ifood, play store, piadas, list_capabilities
+    │   │   └── memory_schedule.py           # SQLite FTS5 + scheduled_events (migração events.json), alarmes, recorrência e calculadora AST
     │   ├── web_server.py                    # autoral: servidor ReusableThreadingHTTPServer com SO_REUSEADDR, fallback de porta e API REST
     │   ├── __pycache__/                     # artefato gerado: bytecode Python 3.12
     │   ├── captures/                        # diretório de estado gerado: fotos, vídeos, prints e mapas
@@ -99,12 +95,16 @@ Silva/
     │   ├── train_sft.py                     # autoral: pipeline SFT local, sem chamada à função train()
     │   ├── export_gguf.py                   # autoral: merge, conversão e quantização GGUF
     │   └── requirements_pc.txt              # autoral: dependências do pipeline desktop
-    └── tests/                               # autoral: suíte de testes unitários e de integração (41 testes 100% passando)
+    └── tests/                               # autoral: suíte de testes unitários e de integração (69 testes 100% passando)
         ├── __init__.py                      # marcador de pacote de testes
+        ├── test_adb_bridge.py               # testes da ponte ADB local e fallback Termux:API
+        ├── test_contacts_and_scheduler.py   # testes de contacts.py, migração scheduled_events e scheduler proativo TTS
         ├── test_contracts.py                # validação de schemas (39 tools), dataset consolidado e prompts sincronizados
+        ├── test_conversation_pipeline.py    # testes de memória multi-turno, isolamento de sessões e $prev_result
         ├── test_intent_fallback.py          # testes de casamento de intenções, clima relativo e desambiguação
         ├── test_parser_and_fallback.py      # testes de AST, whitelist, fallback e tolerâncias
         ├── test_tools_and_memory.py         # testes de FTS5, calculadora, fallback de clima em 3 níveis e smoke test das 39 tools
+        ├── test_ui_automator.py             # testes de uiautomator XML, WhatsApp e interação de tela
         └── test_web_server.py               # testes HTTP, autenticação PIN e proteção contra Path Traversal
 ```
 
@@ -114,33 +114,28 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 
 | Caminho | Papel |
 |---|---|
-| `apply_tools_update.sh` (10 linhas) | Atualização ad hoc de `tools.py` e restart no Termux. |
-| `install_model_and_restart.sh` (22 linhas) | Troca do GGUF ativo, backup de modelos e restart. |
-| `resolved_activities.py` (70 linhas) | Mapa auxiliar de 70 pacotes Android para activities. |
-| `start_silva_bootstrap.sh` (17 linhas) | Bootstrap de implantação Termux. |
-| `test_open.py` (9 linhas) | Teste manual de `open_app("calculadora")`. |
-| `update_and_restart.sh` (10 linhas) | Aplicação de patch e restart da API. |
-| `update_direct.sh` (120 linhas) | Sincronização direta via ADB para `/data/data/com.termux/files/home/silva-agent`, correção de aninhamentos e reinício controlado no Termux. |
-| `silva-agent/.env.example` (20 linhas) | Contrato de variáveis de ambiente. |
-| `silva-agent/.gitignore` (41 linhas) | Exclusões de secrets, mídia, modelos, caches e backups. |
-| `silva-agent/README.md` (319 linhas) | Documentação principal completa com arquitetura, fluxo Plug & Play em 4 scripts, ciclo de vida de processos, catálogo das 39 ferramentas e resolução de problemas. |
-| `silva-agent/install-silva.sh` (251 linhas) | [1/4] Instalador completo e idempotente (Termux/Desktop): dependências base, compilação/instalação de llama-server, diretórios e .env. |
-| `silva-agent/config-silva.sh` (296 linhas) | [2/4] Assistente interativo CLI para configuração de PIN, porta web, TTS, hardware e cidade padrão no .env. |
-| `silva-agent/start_silva.sh` (218 linhas) | [3/4] Inicializador unificado com auto-setup, wake-lock, liberação de portas, background llama-server, tracking de PIDs (`data/runtime.pids`) e web server. |
-| `silva-agent/stop-silva.sh` (149 linhas) | [4/4] Encerramento seguro e cirúrgico de instâncias via `data/runtime.pids` (SIGTERM/SIGKILL), liberação de portas e wake-unlock. |
-| `silva-agent/android_agent/config.py` (75 linhas) | Configuração, paths e prompt de function calling. |
-| `silva-agent/android_agent/intent_fallback.py` (186 linhas) | Roteador determinístico de intenções PT-BR com normalização estrutural (`_prepare_texts`) e divisão inteligente de comandos múltiplos. |
-| `silva-agent/android_agent/nlp/` (1.952 linhas totais) | Pacote modular NLP: `numbers.py` (308 linhas), `colloquial.py` (120 linhas), `router.py` (1.455 linhas), `__init__.py` (69 linhas). |
-| `silva-agent/android_agent/llm_client.py` (132 linhas) | Cliente HTTP do `llama-server` com medição de latência e fallback local. |
-| `silva-agent/android_agent/main.py` (117 linhas) | Entry point CLI/Web com inicialização segura do daemon `scheduler`. |
-| `silva-agent/android_agent/parser.py` (186 linhas) | Parser AST, whitelist de 39 ferramentas, execução e propagação de status real (`ok`, `partial_error`, `error`). |
-| `silva-agent/android_agent/scheduler.py` (83 linhas) | Daemon em background thread-safe e reentrante para monitoramento de eventos e alarmes locais. |
-| `silva-agent/android_agent/start_silva.sh` (5 linhas) | Wrapper leve de compatibilidade que delega a execução para `../start_silva.sh`. |
-| `silva-agent/android_agent/stop-silva.sh` (5 linhas) | Wrapper leve de compatibilidade que delega o encerramento para `../stop-silva.sh`. |
-| `silva-agent/android_agent/tools/` (4.681 linhas totais) | Pacote modular das 39 ferramentas em 8 submódulos (`core`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), auditado contra símbolos não definidos via AST. |
-| `silva-agent/android_agent/web_server.py` (288 linhas) | Servidor HTTP com SO_REUSEADDR, autenticação por PIN no chat e em `/captures/*`, proteção anti-path traversal e fallback de porta. |
-| `silva-agent/android_agent/static/index.html` (2.656 linhas) | Frontend responsivo estilo Claude/DeepSeek com modo de voz interativo "Segure para falar", ondas sonoras senoidais em canvas, gesto mobile de cancelar e zero emojis. |
-| `silva-agent/tests/` (984 linhas totais) | Suíte de testes automatizados unitários e de integração (41 testes 100% passando, incluindo fallback de clima em 3 níveis e smoke test das 39 ferramentas). |
+| `update_direct.sh` | Sincronização direta via ADB para `/data/data/com.termux/files/home/silva-agent`, reinício via `./start_silva.sh --background` e validação real de PIDs (`kill -0`) + `GET /api/health`. |
+| `silva-agent/.env.example` | Contrato de variáveis de ambiente (inclui `ADB_TARGET`, `ENABLE_PROACTIVE_TTS`, `WEB_AUTO_TTS`). |
+| `silva-agent/.gitignore` | Exclusões de secrets, mídia, modelos, caches e backups. |
+| `silva-agent/README.md` | Documentação principal completa com arquitetura, fluxo Plug & Play em 4 scripts, ciclo de vida de processos, catálogo das 39 ferramentas e resolução de problemas. |
+| `silva-agent/install-silva.sh` | [1/4] Instalador completo e idempotente (Termux/Desktop): dependências base, compilação/instalação de llama-server, diretórios e .env. |
+| `silva-agent/config-silva.sh` | [2/4] Assistente interativo CLI para configuração de PIN, porta web, TTS (`ENABLE_VOICE_TTS`, `ENABLE_PROACTIVE_TTS`, `WEB_AUTO_TTS`), hardware e cidade padrão no .env. |
+| `silva-agent/start_silva.sh` | [3/4] Inicializador unificado com modo `--background`/`--daemon`, desacoplamento via `setsid`/`nohup` (`</dev/null`, `logs/llama.log`, `logs/web.log`), wake-lock e tracking em `data/runtime.pids` (`llama_pid=`, `web_pid=`). |
+| `silva-agent/stop-silva.sh` | [4/4] Encerramento seguro e cirúrgico de instâncias via `data/runtime.pids` (suporta `chave=PID` e `PID` puro), liberação de portas e wake-unlock. |
+| `silva-agent/android_agent/config.py` | Configuração, paths, flags ADB/TTS e prompt de function calling. |
+| `silva-agent/android_agent/conversation_context.py` | Memória conversacional de curto prazo (TTL 30m, até 6 turnos), resolução anafórica e contexto compacto para o LLM. |
+| `silva-agent/android_agent/intent_fallback.py` | Roteador determinístico de intenções PT-BR com normalização estrutural (`_prepare_texts`) e splitter com encadeamento `$prev_result`. |
+| `silva-agent/android_agent/nlp/` | Pacote modular NLP (`numbers.py`, `colloquial.py`, `router.py`, `__init__.py`), incluindo gatilhos de WhatsApp e interação de tela UI. |
+| `silva-agent/android_agent/llm_client.py` | Cliente HTTP do `llama-server` com resolução anafórica, histórico recente e medição de latência. |
+| `silva-agent/android_agent/main.py` | Entry point CLI/Web com `session_id="cli_local"` no modo CLI e inicialização do daemon `scheduler`. |
+| `silva-agent/android_agent/parser.py` | Parser AST, whitelist de 39 ferramentas, substituição dinâmica de `$prev_result` (até 600 chars) e atualização da sessão. |
+| `silva-agent/android_agent/scheduler.py` | Daemon proativo (poll 10s) sobre `scheduled_events` no `memory.db` com pré-alerta (10 min), vibração, notificação, `termux-tts-speak`, recorrências (`daily`/`weekdays`/`weekly`) e fila `pop_triggered_alerts()`. |
+| `silva-agent/android_agent/start_silva.sh` | Wrapper leve de compatibilidade que delega a execução para `../start_silva.sh`. |
+| `silva-agent/android_agent/stop-silva.sh` | Wrapper leve de compatibilidade que delega o encerramento para `../stop-silva.sh`. |
+| `silva-agent/android_agent/tools/` | Pacote modular das **50 ferramentas** em 11 arquivos (`core`, `adb_bridge`, `contacts`, `ui_automator`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), incluindo `record_audio`, `convert_units`, `get_datetime`, `get_system_info`, `read_screen`, `save_contact`, `get_contact` e controles de conectividade ADB, auditado via AST. |
+| `silva-agent/android_agent/web_server.py` | Servidor HTTP com `SO_REUSEADDR`, `X-Session-Id`/`session_id` em `POST /api/chat`, `triggered_alerts` + `web_auto_tts` em `GET /api/health`, PIN e proteção anti-path traversal. |
+| `silva-agent/android_agent/static/index.html` | Frontend responsivo estilo Claude/DeepSeek com `session_id` por conversa, modo "Segure para falar", botão de voz TTS (`window.speechSynthesis` PT-BR) e toast de alertas proativos. |
+| `silva-agent/tests/` | Suíte de testes automatizados unitários e de integração (**69 testes 100% passando** em `2.50s`). |
 | `silva-agent/dataset/schema.json` (450 linhas) | Contrato estrito de 39 ferramentas e 44 parâmetros. |
 | `silva-agent/dataset/seed_examples.jsonl` (149 linhas) | Base canônica de 149 exemplos com casos de clima relativo e variações de temperatura. |
 | `silva-agent/dataset/train.jsonl` (5.743 linhas) | Estado local de treino enriquecido com novas ferramentas e casos de uso. |

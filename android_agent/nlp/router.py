@@ -27,14 +27,64 @@ def _strip_accents(text: str) -> str:
     return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
+def _mask_protected_entities(text: str) -> str:
+    """
+    Camada 1: Mascaramento reversível de marcas/tecnologias numéricas antes de numbers.py e colloquial.py.
+    """
+    if not text:
+        return ""
+    s = re.sub(r"\b99\s*food\b", "__APP_99FOOD__", text, flags=re.IGNORECASE)
+    s = re.sub(
+        r"\b(um|o|de|no|na|pelo|pela|chama|chamar|pe[çc]a|pede|pedir)\s+99\b",
+        r"\1 __APP_99__",
+        s,
+        flags=re.IGNORECASE,
+    )
+    s = re.sub(r"\b99\s*pop\b", "__APP_99__", s, flags=re.IGNORECASE)
+    s = re.sub(r"\b4g\b", "__REDE_4G__", s, flags=re.IGNORECASE)
+    s = re.sub(r"\b5g\b", "__REDE_5G__", s, flags=re.IGNORECASE)
+    s = re.sub(r"\b3g\b", "__REDE_3G__", s, flags=re.IGNORECASE)
+    return s
+
+
+def _unmask_protected_entities(text: str) -> str:
+    """Restaura placeholders protegidos da Camada 1."""
+    if not text:
+        return ""
+    s = text.replace("__APP_99FOOD__", "99food")
+    s = s.replace("__APP_99__", "99")
+    s = s.replace("__REDE_4G__", "4g")
+    s = s.replace("__REDE_5G__", "5g")
+    s = s.replace("__REDE_3G__", "3g")
+    return s
+
+
+def _strip_conversational_fillers(text: str) -> str:
+    """
+    Camada 2: Limpeza centralizada de vocativos iniciais e sufixos de cortesia finais.
+    """
+    if not text:
+        return ""
+    s = str(text).strip()
+    lead_pat = r"(?i)^(?:(?:ei|oi|ol[aá])\s+silva[\s,!.:;-]*|silva[\s,!.:;-]+|(?:por\s+favor|pfv|pfvr)[\s,!.:;-]+)"
+    trail_pat = r"(?i)[\s,]+(?:para\s+mim|pra\s+mim|por\s+favor|pfv|pfvr|por\s+gentileza|agora\s+mesmo|a[ií])$"
+    for _ in range(5):
+        prev = s
+        s = re.sub(lead_pat, "", s).strip()
+        s = re.sub(trail_pat, "", s).strip()
+        if s == prev:
+            break
+    return s
+
+
 def _prepare_texts(user_text: str) -> Tuple[str, str]:
     """
-    Normalização estrutural única na entrada:
-    1. raw_clean: unifica quebras de linha (\n, \r), tabs e espaços duplos em um único espaço,
-       preservando 100% das letras maiúsculas e símbolos técnicos (HENRIQUE_NET//FERNANDA, @, #, !, etc).
+    Normalização estrutural única na entrada (com limpeza de bordas da Camada 2):
+    1. raw_clean: unifica espaços/quebras e remove vocativos/cortesias de borda.
     2. norm_clean: normaliza acentos e caixa baixa para detecção de intenção.
     """
     raw_clean = re.sub(r"\s+", " ", user_text or "").strip()
+    raw_clean = _strip_conversational_fillers(raw_clean)
     norm_clean = normalize_text(raw_clean)
     return raw_clean, norm_clean
 
@@ -112,7 +162,7 @@ def _format_call(func_name: str, **kwargs) -> str:
     args = []
     for k, v in kwargs.items():
         if isinstance(v, str):
-            v_clean = _unprotect_compound_names(v)
+            v_clean = _unmask_protected_entities(_unprotect_compound_names(v))
             args.append(f"{k}={repr(v_clean)}")
         else:
             args.append(f"{k}={v}")
@@ -353,6 +403,7 @@ def _clean_food_query(raw_query: str) -> str:
     prefix_patterns = [
         r"(?i)^(?:silva|ei|oi)\b[,\s]*",
         r"(?i)^(?:t[oô]\s+com\s+fome|estou\s+com\s+fome|com\s+fome)\b[,\s]*",
+        r"(?i)^(?:pe[çc]a|peca|pede|pedir|quero|compra|comprar|compre|busca|buscar|procura|me\s+v[eê]|chama|chamar|traz|manda)\s+(?:um\s+|uma\s+)?(?:99\s*food\s+de\s+|ifood\s+de\s+)?",
         r"(?i)^(?:abre\s+o\s+ifood\s+e\s+pede|abre\s+o\s+ifood\s+e\s+peça|abre\s+o\s+ifood\s+e\s+peca|abre\s+o\s+ifood\s+e\s+pedir)\b\s*",
         r"(?i)^(?:abre\s+o\s+99\s+e\s+pede|abre\s+a\s+99\s+e\s+pede)\b\s*",
         r"(?i)^(?:quero\s+pedir|quero|gostaria\s+de\s+pedir|gostaria\s+de|me\s+vê|me\s+ve)\b\s*",
@@ -903,7 +954,7 @@ RIDE_KEYWORDS = (
 )
 
 _FOOD_KW_RE = re.compile(r"\b(?:" + "|".join(FOOD_KEYWORDS) + r")(?:s)?\b")
-_FOOD_APP_RE = re.compile(r"\b(?:ifood|99\s*food)\b")
+_FOOD_APP_RE = re.compile(r"\b(?:ifood|99\s*food|__app_99food__)\b")
 
 
 def _has_food_domain(norm: str) -> bool:
@@ -914,6 +965,10 @@ def _has_food_domain(norm: str) -> bool:
 def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Solicitação de transporte (Uber / 99) governada por vocabulário de mobilidade/trajeto e verbos coloquiais."""
     if _has_food_domain(norm):
+        return 0.0, None
+    if norm.startswith(("anota", "anote", "lembra", "lembre", "salva", "salve", "guarda", "guarde")) or "vaga" in norm:
+        return 0.0, None
+    if any(w in norm for w in ("converte", "converter", "converta", "transforma", "dolar", "dolares", "euro", "euros", "reais", "brl", "usd", "eur")):
         return 0.0, None
 
     has_direction_prep = bool(re.search(r"\b(?:para|pra|pro|ate|p/)\s+\S+", norm))
@@ -932,7 +987,7 @@ def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     ]
     has_ride_verb = any(v in norm for v in ride_verbs)
     is_uber = "uber" in norm
-    is_99 = bool(re.search(r"\b99\b|noventa\s+e\s+nove", norm))
+    is_99 = bool(re.search(r"\b99\b|noventa\s+e\s+nove|__app_99__", norm))
 
     if is_uber or has_ride_kw or (is_99 and (has_direction_prep or has_ride_verb)):
         app = "99" if is_99 else "uber"
@@ -941,7 +996,7 @@ def extract_ride(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         if m_dest:
             dest = _clean_ride_destination(m_dest.group(1))
         if not dest:
-            m_alt = re.search(r"\b(?:uber|99|noventa\s+e\s+nove|carro|corrida|taxi)\s+([^\n\r,\.;?!]+)", raw, re.IGNORECASE)
+            m_alt = re.search(r"\b(?:uber|99|__APP_99__|noventa\s+e\s+nove|carro|corrida|taxi)\s+([^\n\r,\.;?!]+)", raw, re.IGNORECASE)
             if m_alt:
                 dest = _clean_ride_destination(m_alt.group(1))
         if not dest:
@@ -966,7 +1021,7 @@ def extract_food(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     has_food_kw = bool(_FOOD_KW_RE.search(norm))
     is_food_app = bool(_FOOD_APP_RE.search(norm))
     is_delivery = "delivery" in norm
-    is_99 = bool(re.search(r"\b99\b|99\s*food|noventa\s+e\s+nove", norm))
+    is_99 = bool(re.search(r"\b99\b|99\s*food|__app_99__|__app_99food__|noventa\s+e\s+nove", norm))
 
     if norm.startswith(("abre ", "abra ", "abrir ")) and not has_food_kw:
         return 0.0, None
@@ -976,7 +1031,7 @@ def extract_food(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
     if (has_food_kw and (has_food_verb or is_food_app or is_99 or is_delivery or "fome" in norm or "comer" in norm)) or is_food_app or is_delivery:
         app = "99food" if (is_99 and "ifood" not in norm) else "ifood"
-        query = _clean_food_query(raw)
+        query = _clean_food_query(_unmask_protected_entities(raw))
         if not query or query.lower() in ("algo", "alguma coisa", "qualquer coisa"):
             query = "comida"
         return 0.96, _format_call("order_food", query=query, app=app)
@@ -1030,7 +1085,13 @@ def extract_open_app(raw: str, norm: str) -> Tuple[float, Optional[str]]:
             "lanterna", "camera", "foto", "timer", "alarme", "print", "screenshot", "tela",
             "volume", "brilho", "wifi", "wi-fi", "bluetooth", "gps", "localizacao", "localização"
         }
-        if app_name and norm_app not in system_tools:
+        other_domain_verbs = ("pedir", "chamar", "mandar", "tocar", "lembrar", "converter")
+        has_explicit_open = bool(re.match(r"^(?:abre|abra|abrir|inicia|inicie|iniciar)\b", norm))
+        if (
+            app_name
+            and norm_app not in system_tools
+            and (has_explicit_open or not any(v in norm_app for v in other_domain_verbs))
+        ):
             return 0.88, _format_call("open_app", app_name=app_name)
     return 0.0, None
 
@@ -1045,7 +1106,7 @@ def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
     system_devices = {
         "lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "bt",
-        "dados moveis", "dados", "internet movel", "4g", "5g", "3g",
+        "dados moveis", "dados", "internet movel", "4g", "5g", "3g", "__rede_4g__", "__rede_5g__", "__rede_3g__",
         "modo aviao", "hotspot", "roteador", "compartilhamento de internet",
         "alarme", "timer", "volume", "som", "brilho", "gps", "camera", "tela",
         "uber", "carro", "corrida", "taxi", "99"
@@ -1101,7 +1162,7 @@ def extract_send_sms(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     # 1. WhatsApp (prioridade 0.97)
     m_wpp_explicit = re.search(
         r"(?:envia|enviar|envie|manda|mandar|mande|escreve|escrever|fala|falar|fale)\s+"
-        r"(?:uma\s+)?(?:mensagem\s+)?(?:no|pelo|via)?\s*(?:whatsapp|zap|wpp)\s+"
+        r"(?:um\s+|uma\s+)?(?:mensagem\s+)?(?:no|pelo|via)?\s*(?:whatsapp|zap|wpp)\s+"
         r"(?:para|pro|pra|com)\s+(?:o\s+|a\s+)?(.+?)\s*(?::|dizendo|falando|que)\s*(.+)",
         raw,
         re.IGNORECASE,
@@ -1527,16 +1588,26 @@ def _extract_level(norm: str, default: int = 50) -> int:
 
 
 def extract_volume(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Volume e som."""
+    """Volume e som (Camada 3: valida faixa 0..100 para números explícitos)."""
     if "volume" in norm or (("som" in norm or "musica" in norm) and any(w in norm for w in ["aumenta", "diminui", "bota", "coloca"])):
+        m_num = re.search(r"(-?\d+)", norm)
+        if m_num:
+            val = int(m_num.group(1))
+            if val < 0 or val > 100:
+                return 0.0, None
         level = _extract_level(norm, default=50)
         return 0.92, _format_call("set_volume", stream="music", level=level)
     return 0.0, None
 
 
 def extract_brightness(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Brilho da tela."""
+    """Brilho da tela (Camada 3: valida faixa 0..100 para números explícitos)."""
     if "brilho" in norm:
+        m_num = re.search(r"(-?\d+)", norm)
+        if m_num:
+            val = int(m_num.group(1))
+            if val < 0 or val > 100:
+                return 0.0, None
         level = _extract_level(norm, default=50)
         return 0.92, _format_call("set_brightness", level=level)
     return 0.0, None
@@ -1693,7 +1764,7 @@ def extract_connectivity_controls(raw: str, norm: str) -> Tuple[float, Optional[
     if re.search(r"\b(?:bluetooth|bt)\b", norm):
         return 0.96, _format_call("set_bluetooth_state", state=state_val)
 
-    if any(t in norm for t in ("dados moveis", "internet movel", "rede movel")) or re.search(r"\b(?:os\s+dados|4g|5g|3g)\b", norm):
+    if any(t in norm for t in ("dados moveis", "internet movel", "rede movel")) or re.search(r"\b(?:os\s+dados|4g|5g|3g|__rede_4g__|__rede_5g__|__rede_3g__)\b", norm):
         return 0.96, _format_call("set_mobile_data_state", state=state_val)
 
     if "modo aviao" in norm:
@@ -1888,13 +1959,14 @@ def extract_navigate_to(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
     nav_cues = (
         "me leva", "leva ate", "inicia rota", "iniciar rota", "traca rota", "tracar rota",
+        "rota para", "rota pra", "rota pro",
         "navegacao", "navegar", "como chegar", "waze", "google maps", "no maps",
     )
     if not any(c in norm for c in nav_cues):
         return 0.0, None
 
     m_nav = re.search(
-        r"(?:me\s+leva|leva|levar|inicia|iniciar|abre|abrir|tra[çc]a|tra[çc]ar|como\s+chegar|navega|navegar)\s+"
+        r"(?:me\s+leva|leva|levar|inicia|iniciar|abre|abrir|tra[çc]a|tra[çc]ar|como\s+chegar|navega|navegar|rota)\s+"
         r"(?:uma\s+)?(?:rota|navega[çc][ãa]o|caminho)?\s*(?:para|pro|pra|at[eé]|no|na)\s+(.+)",
         raw.strip().rstrip("?!.,;:"),
         re.IGNORECASE,
@@ -2093,6 +2165,59 @@ class ScoredIntentRouter:
                 return True
         return False
 
+    MIN_CONFIDENCE_MARGIN = 0.12
+
+    @staticmethod
+    def _extract_func_name(call_str: str) -> str:
+        m = re.match(r"<call>([a-zA-Z0-9_]+)\(", (call_str or "").strip())
+        return m.group(1) if m else ""
+
+    @staticmethod
+    def _is_negation_or_past_narrative(norm_cmd: str) -> bool:
+        """Camada 4: Guarda global de negações explícitas e narrativas no passado sem imperativo."""
+        if re.match(r"^(?:nao|nunca|jamais|para\s+de|pare\s+de)\s+", norm_cmd):
+            return True
+        if norm_cmd.startswith(("cancela isso", "deixa pra la", "nao precisa")):
+            return True
+        if re.match(
+            r"^(?:ontem\s+eu|hoje\s+eu\s+(?:ja|gastei|comprei|pedi|fui|viajei|paguei)|semana\s+passada\s+eu|eu\s+comprei|eu\s+viajei|eu\s+gastei|gastei)\b",
+            norm_cmd,
+        ):
+            return True
+        return False
+
+    def _resolve_tie_break(self, candidates: List[Tuple[float, str, str]], norm_cmd: str) -> Optional[str]:
+        """Camada 5: Tabela explícita de desempate quando top1 - top2 < MIN_CONFIDENCE_MARGIN."""
+        top1_score, top1_call, top1_fn = candidates[0]
+        top2_score, top2_call, top2_fn = candidates[1]
+        pair = {top1_fn, top2_fn}
+
+        # 1. recall_note > connect_wifi / get_wifi_info quando houver "senha" ou "qual e"
+        if "recall_note" in pair and (pair & {"connect_wifi", "get_wifi_info"}) and any(
+            w in norm_cmd for w in ("senha", "qual e", "qual a")
+        ):
+            return top1_call if top1_fn == "recall_note" else top2_call
+
+        # 2. request_ride > convert_units quando houver verbo de transporte ou destino
+        if pair == {"request_ride", "convert_units"}:
+            return top1_call if top1_fn == "request_ride" else top2_call
+
+        # 3. order_food > open_app quando houver referência a comida/prato/pedido
+        if pair == {"order_food", "open_app"} and _has_food_domain(norm_cmd):
+            return top1_call if top1_fn == "order_food" else top2_call
+
+        # 4. send_whatsapp / send_sms > request_ride / open_app quando a ação principal é enviar mensagem
+        if (pair & {"send_whatsapp", "send_sms"}) and (pair & {"request_ride", "open_app"}):
+            return top1_call if top1_fn in ("send_whatsapp", "send_sms") else top2_call
+
+        # 5. remind_on_wifi > set_wifi_state / set_bluetooth_state / connect_wifi quando condicional
+        if "remind_on_wifi" in pair and (pair & {"set_wifi_state", "set_bluetooth_state", "connect_wifi"}):
+            return top1_call if top1_fn == "remind_on_wifi" else top2_call
+
+        if top1_score < 0.65:
+            return None
+        return top1_call
+
     def route(self, raw_cmd: str) -> Optional[str]:
         """Avalia todos os extratores e retorna a chamada da melhor intenção."""
         if not raw_cmd or not raw_cmd.strip():
@@ -2102,24 +2227,35 @@ class ScoredIntentRouter:
         if not raw_clean or not norm_cmd:
             return None
 
+        # Camada 4: Guarda global de negações explícitas e narrativas no passado
+        if self._is_negation_or_past_narrative(norm_cmd):
+            return _format_call("none")
+
         # Bloqueia perguntas conceituais para que o LLM responda
         if self.is_conceptual_question(norm_cmd):
             return None
 
-        best_score = 0.0
-        best_call = None
-
+        candidates: List[Tuple[float, str, str]] = []
         for extractor in self.extractors:
             try:
                 score, call_str = extractor(raw_clean, norm_cmd)
-                if score > best_score and call_str:
-                    best_score = score
-                    best_call = call_str
+                if score > 0 and call_str:
+                    candidates.append((score, call_str, self._extract_func_name(call_str)))
             except Exception:
                 continue
 
-        # Threshold mínimo de confiança
-        if best_score >= 0.5:
-            return best_call
+        if not candidates:
+            return None
 
-        return None
+        candidates.sort(key=lambda c: c[0], reverse=True)
+        top1_score, top1_call, top1_fn = candidates[0]
+        if top1_score < 0.5:
+            return None
+
+        # Camada 5: Margem mínima de confiança + desempate explícito
+        if len(candidates) >= 2:
+            top2_score, _, top2_fn = candidates[1]
+            if top1_fn != top2_fn and (top1_score - top2_score) < self.MIN_CONFIDENCE_MARGIN:
+                return self._resolve_tie_break(candidates, norm_cmd)
+
+        return top1_call

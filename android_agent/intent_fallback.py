@@ -19,6 +19,7 @@ try:
         _prepare_texts,
         _format_call,
         _protect_compound_names,
+        _mask_protected_entities,
     )
 except ImportError:
     from nlp import (
@@ -29,6 +30,7 @@ except ImportError:
         _prepare_texts,
         _format_call,
         _protect_compound_names,
+        _mask_protected_entities,
     )
 
 # Dicionário de compatibilidade retroativa
@@ -159,10 +161,30 @@ def parse_single_intent(raw_cmd: str) -> Optional[str]:
     if not raw_clean:
         return None
 
-    parsed_cmd = parse_ptbr_numbers(raw_clean)
+    masked_cmd = _mask_protected_entities(raw_clean)
+    parsed_cmd = parse_ptbr_numbers(masked_cmd)
     normalized_cmd = normalize_colloquial_ptbr(parsed_cmd)
 
     return _ROUTER.route(normalized_cmd)
+
+
+def _should_skip_clause_split(text: str) -> bool:
+    """
+    Camada 6: Protege cláusulas únicas de serem quebradas em 'e' / 'depois' / ';'
+    quando pertencem a listas de itens, corpo de mensagem (WhatsApp/SMS) ou rotas/destinos.
+    """
+    norm = normalize_text(text)
+    if re.search(r"\b(?:na|da|do)\s+lista\b", norm) and any(
+        v in norm for v in ("coloca", "coloque", "adiciona", "adicione", "bota", "bote", "tira", "tire", "remove", "remova")
+    ):
+        return True
+    if re.search(r"\b(?:whatsapp|zap|wpp|sms)\b", norm) and re.search(
+        r"\b(?:dizendo|falando|escrevendo|com\s+a\s+mensagem)\b", norm
+    ):
+        return True
+    if re.search(r"\b(?:rota|como\s+chegar|navega(?:r)?)\b", norm):
+        return True
+    return False
 
 
 def match_intent_fallback(user_prompt: str) -> Optional[str]:
@@ -190,14 +212,23 @@ def match_intent_fallback(user_prompt: str) -> Optional[str]:
         if single:
             return single
 
-    # 2. Protege nomes compostos como "Abreu e Lima"
-    protected = _protect_compound_names(raw_clean)
+    # 2. Protege nomes compostos e entidades numéricas de marcas/redes (Camada 1)
+    protected = _protect_compound_names(_mask_protected_entities(raw_clean))
 
     # 3. Converte números compostos (Pilar A) ANTES do splitter de frases
     num_normalized = parse_ptbr_numbers(protected)
 
     # 4. Normaliza gírias e erros de digitação (Pilar B)
     colloquial_normalized = normalize_colloquial_ptbr(num_normalized)
+
+    # Camada 6: Evita split de cláusulas únicas (listas, corpo de mensagem, rotas compostas)
+    if _should_skip_clause_split(colloquial_normalized):
+        return _ROUTER.route(colloquial_normalized)
+
+    # Fast-path: sem conectores compostos, roteia diretamente (< 2ms)
+    low_col = colloquial_normalized.lower()
+    if ";" not in low_col and " e " not in low_col and " depois " not in low_col and " em seguida " not in low_col:
+        return _ROUTER.route(colloquial_normalized)
 
     # 5. Divisão primária por separadores fortes
     strong_delims = r";|\s+(?:e\s+tamb[eé]m|depois|em\s+seguida)\s+"

@@ -1,6 +1,6 @@
 # Silva — Context Map Técnico
 
-> Documento de referência atualizado por inspeção do projeto. Escopo inspecionado: `2026-11-24` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código. Suíte de testes: 81 testes unitários com 100% de aprovação (`Ran 81 tests in 3.51s, OK`).
+> Documento de referência atualizado por inspeção do projeto. Escopo inspecionado: `2026-11-25` (`main`). Convenções: `arquivo:linha` identifica a implementação; nomes de chaves, rotas e funções aparecem exatamente como no código. Suíte de testes: 86 testes unitários com 100% de aprovação (`Ran 86 tests in 3.54s, OK`).
 
 ## 1. Estrutura de Pastas e Árvore de Arquivos
 
@@ -124,8 +124,8 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/stop-silva.sh` | [4/4] Encerramento seguro e cirúrgico de instâncias via `data/runtime.pids` (suporta `chave=PID` e `PID` puro), liberação de portas e wake-unlock. |
 | `silva-agent/android_agent/config.py` | Configuração, paths, flags ADB/TTS e prompt de function calling. |
 | `silva-agent/android_agent/conversation_context.py` | Memória conversacional de curto prazo (TTL 30m, até 6 turnos), resolução anafórica e contexto compacto para o LLM. |
-| `silva-agent/android_agent/intent_fallback.py` | Roteador determinístico de intenções PT-BR com normalização estrutural (`_prepare_texts`) e splitter com encadeamento `$prev_result`. |
-| `silva-agent/android_agent/nlp/` | Pacote modular NLP (`numbers.py`, `colloquial.py`, `router.py`, `__init__.py`), incluindo gatilhos de WhatsApp e interação de tela UI. |
+| `silva-agent/android_agent/intent_fallback.py` | Roteador determinístico de intenções PT-BR com mascaramento de entidades (Camada 1), splitter protegido contra contexto (Camada 6) e encadeamento `$prev_result`. |
+| `silva-agent/android_agent/nlp/` | Pacote modular NLP (`numbers.py`, `colloquial.py`, `router.py`, `__init__.py`) com blindagem em 6 camadas: mascaramento reversível (`_mask_protected_entities`), limpeza de vocativos/cortesia (`_strip_conversational_fillers`), validação estrita de slots, guarda global de negações/passado (`none()`), margem de confiança (`MIN_CONFIDENCE_MARGIN=0.12`) e tabela de desempate. |
 | `silva-agent/android_agent/llm_client.py` | Cliente HTTP do `llama-server` com resolução anafórica, Recordação Ativa Pré-LLM (`active_recall_search` sobre `memories_fts`), histórico recente e medição de latência. |
 | `silva-agent/android_agent/main.py` | Entry point CLI/Web com `session_id="cli_local"` no modo CLI e inicialização do daemon `scheduler`. |
 | `silva-agent/android_agent/parser.py` | Parser AST, whitelist de 63 ferramentas, substituição dinâmica de `$prev_result` (até 600 chars) e atualização da sessão. |
@@ -135,7 +135,7 @@ Contagens usam linhas físicas. Arquivos de dados JSONL são autorais; binários
 | `silva-agent/android_agent/tools/` | Pacote modular das **63 ferramentas** em 11 arquivos (`core`, `adb_bridge`, `contacts`, `ui_automator`, `hardware`, `media`, `comms`, `weather_web`, `apps_mobility`, `memory_schedule`, `__init__`), incluindo Notas & Lembretes Multimodais (`save_voice_note`, `get_voice_notes`, `check_voice_note` na tabela `voice_notes`), Memória Inteligente 2.0 (`remember_note` com captura livre e TTL, `recall_note` com tempo relativo e auto-clipboard, `forget_note`, `list_memories`, `remind_on_wifi`), listas dinâmicas (`add_list_item`, `get_list`, `remove_list_item` na tabela `lists` do `memory.db`), `navigate_to`, `play_media`, `send_whatsapp`, `summarize_notifications`, `record_audio`, `convert_units`, `get_datetime`, `get_system_info`, `read_screen`, `save_contact`, `get_contact` e controles de conectividade ADB, auditado via AST. |
 | `silva-agent/android_agent/web_server.py` | Servidor HTTP com `SO_REUSEADDR`, `X-Session-Id`/`session_id` em `POST /api/chat`, `POST /api/voice-notes/check`, `POST /api/voice-notes/upload`, `triggered_alerts` + `web_auto_tts` em `GET /api/health`, PIN e proteção anti-path traversal. |
 | `silva-agent/android_agent/static/index.html` | Frontend responsivo estilo Claude/DeepSeek com `session_id` por conversa, modo "Segure para falar", atalho rápido "🎙️ Nota" (`MediaRecorder`), checklist interativo multimodal com player `<audio>` e checkbox animado, botão de voz TTS (`window.speechSynthesis` PT-BR), botão `"📋 Copiar"` para `clipboard_text` e toast de alertas proativos. |
-| `silva-agent/tests/` | Suíte de testes automatizados unitários e de integração (**81 testes 100% passando** em `3.51s`). |
+| `silva-agent/tests/` | Suíte de testes automatizados unitários, adversariais (`test_router_conflicts.py`) e de integração (**86 testes 100% passando** em `3.54s`). |
 | `silva-agent/dataset/schema.json` (450 linhas) | Contrato estrito de 39 ferramentas e 44 parâmetros. |
 | `silva-agent/dataset/seed_examples.jsonl` (149 linhas) | Base canônica de 149 exemplos com casos de clima relativo e variações de temperatura. |
 | `silva-agent/dataset/train.jsonl` (5.743 linhas) | Estado local de treino enriquecido com novas ferramentas e casos de uso. |

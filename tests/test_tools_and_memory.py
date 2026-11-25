@@ -895,6 +895,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "<call>remind_on_wifi(ssid='Trabalho', reminder='falar com o Marcos')</call>",
         )
         self.assertIn("schedule_event(", match_intent_fallback("Me lembra de tomar remédio às 20h"))
+        self.assertIn("schedule_event(", match_intent_fallback("Me lembra de tomar água às 23:59"))
         self.assertIn("schedule_event(", match_intent_fallback("Lembra de ligar pro banco amanhã às 10h"))
         self.assertIn("remember_note(", match_intent_fallback("Lembra que a senha do cadeado é 4512"))
         self.assertIn("remember_note(", match_intent_fallback("Anota aí que o protocolo é 98765"))

@@ -1282,7 +1282,10 @@ def extract_schedule(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     triggers = ["agenda", "agende", "agendar", "marca", "marque", "marcar", "compromisso", "reuniao", "lembrete"]
     has_temporal_reminder = bool(
         re.search(r"\b(?:me\s+)?(?:lembra|lembre|lembrar)\s+(?:de|do|da)\b", norm)
-        and re.search(r"\b(?:\d{1,2}[:h]\d{0,2}|amanha|hoje|depois de amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d{1,2}/\d{1,2})\b", norm)
+        and (
+            re.search(r"\b\d{1,2}[:h]\d{0,2}\b", raw, re.IGNORECASE)
+            or re.search(r"\b(?:amanha|hoje|depois de amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d{1,2}/\d{1,2})\b", norm)
+        )
     )
     if (any(t in norm for t in triggers) or has_temporal_reminder) and not (norm.startswith(("abre", "abra", "abrir")) and any(a in norm for a in ["agenda", "calendario"])):
         time_val = ""

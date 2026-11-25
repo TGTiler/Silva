@@ -173,7 +173,10 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
         # 3. Health check -> /api/health
         if path == "/api/health":
             llm_health = llm_client.check_health()
-            from .tools.sleep_monitor import pop_pending_sleep_reports
+            try:
+                from .tools.sleep_monitor import pop_pending_sleep_reports
+            except ImportError:
+                from tools.sleep_monitor import pop_pending_sleep_reports
             return self._send_json({
                 "status": "ok",
                 "agent": "Silva",
@@ -234,7 +237,10 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
         if path == "/api/chat":
             if not self._verify_access_pin(self.headers.get("X-Access-Pin", "").strip()):
                 return
-            from .tools.sleep_monitor import record_web_activity
+            try:
+                from .tools.sleep_monitor import record_web_activity
+            except ImportError:
+                from tools.sleep_monitor import record_web_activity
             record_web_activity()
 
             body_bytes = self._read_post_body_bytes()

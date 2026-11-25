@@ -200,17 +200,42 @@
       }
     },
     "remember_note": {
-      "description": "Salva uma nota ou informação pessoal na memória persistente do dispositivo.",
+      "description": "Salva uma nota ou informação pessoal na memória persistente do dispositivo (suporta captura livre e TTL).",
       "parameters": {
         "key": {
           "type": "string",
           "required": true,
-          "description": "Chave, assunto ou identificador da anotação."
+          "description": "Chave, assunto ou frase completa da anotação."
         },
         "value": {
           "type": "string",
+          "required": false,
+          "description": "Conteúdo ou valor da anotação (opcional em captura livre)."
+        },
+        "ttl_hours": {
+          "type": "integer",
+          "required": false,
+          "description": "Tempo de expiração automática em horas (0 = permanente)."
+        }
+      }
+    },
+    "forget_note": {
+      "description": "Apaga uma anotação específica da memória local.",
+      "parameters": {
+        "query": {
+          "type": "string",
           "required": true,
-          "description": "Conteúdo ou valor da anotação a ser lembrada."
+          "description": "Chave ou termo da anotação a remover."
+        }
+      }
+    },
+    "list_memories": {
+      "description": "Lista todas as memórias ativas agrupadas por categoria (ou filtradas).",
+      "parameters": {
+        "category": {
+          "type": "string",
+          "required": false,
+          "description": "Filtro opcional de categoria (wifi, senha, estudo, pessoal, geral)."
         }
       }
     },

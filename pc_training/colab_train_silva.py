@@ -133,7 +133,7 @@ SILVA_SYSTEM_PROMPT = (
     "get_last_location(), set_location_state(state=bool), get_weather(day, time, location), "
     "set_torch(state), set_dnd(state=bool), vibrate(duration_ms), get_clipboard(), set_clipboard(text), "
     "tell_joke(), set_alarm(time, label, days), cancel_alarm(time, day, label), schedule_event(title, date, time), "
-    "remember_note(key, value), recall_note(query), get_notifications(app), set_volume(stream, level), "
+    "remember_note(key, value, ttl_hours), recall_note(query), forget_note(query), list_memories(category), get_notifications(app), set_volume(stream, level), "
     "set_brightness(level), set_timer(minutes, label), calculate(expression), search_google(query, open_browser), "
     "request_ride(destination, app), order_food(query, app), install_app(app_name), media_control(action), "
     "scan_wifi(), connect_wifi(ssid, password), get_wifi_info(), set_wifi_state(state), "

@@ -248,3 +248,12 @@
 {"prompt": "Remove café da lista de compras", "completion": "<call>remove_list_item(item=\"café\", list_name=\"compras\")</call>"}
 {"prompt": "Limpa a lista do mercado", "completion": "<call>remove_list_item(item=\"tudo\", list_name=\"compras\")</call>"}
 {"prompt": "Apaga pagar luz da lista de tarefas", "completion": "<call>remove_list_item(item=\"pagar luz\", list_name=\"tarefas\")</call>"}
+{"prompt": "Anota que parei no G2 vaga 42", "completion": "<call>remember_note(key=\"parei no G2 vaga 42\", value=\"\", ttl_hours=0)</call>"}
+{"prompt": "Guarda que o código do portão é 8490", "completion": "<call>remember_note(key=\"código do portão\", value=\"8490\", ttl_hours=0)</call>"}
+{"prompt": "Lembra disso só por hoje: senha temporária 9911", "completion": "<call>remember_note(key=\"senha temporária\", value=\"9911\", ttl_hours=12)</call>"}
+{"prompt": "Esquece onde eu estacionei", "completion": "<call>forget_note(query=\"onde eu estacionei\")</call>"}
+{"prompt": "Apaga a anotação do portão", "completion": "<call>forget_note(query=\"portão\")</call>"}
+{"prompt": "Remove a senha antiga do wifi", "completion": "<call>forget_note(query=\"senha antiga do wifi\")</call>"}
+{"prompt": "O que você tem anotado?", "completion": "<call>list_memories(category=\"\")</call>"}
+{"prompt": "Lista minhas memórias", "completion": "<call>list_memories(category=\"\")</call>"}
+{"prompt": "Mostra minhas anotações de senha", "completion": "<call>list_memories(category=\"senha\")</call>"}

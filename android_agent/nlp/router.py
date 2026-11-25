@@ -1281,23 +1281,70 @@ def extract_schedule(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 
 def extract_memory(raw: str, norm: str) -> Tuple[float, Optional[str]]:
-    """Notas e lembranças de longo prazo."""
-    if any(w in norm for w in ["lembra que", "lembrar que", "anota que", "salva que", "guarda que", "anote que", "salve que", "guarde que"]):
-        content = re.sub(r"(?i)^(?:silva,?\s*)?(?:lembra|lembrar|lembre|anota|anotar|anote|salva|salvar|salve|guarda|guardar|guarde)\s+que\s+", "", raw).strip()
+    """Notas, lembranças de longo prazo, captura livre com TTL, listagem e esquecimento."""
+    clean_raw = raw.strip().rstrip("?!.,;:")
+
+    # 1. list_memories ("o que você tem anotado?", "lista minhas memórias", "mostra minhas anotações de senha")
+    if (
+        any(t in norm for t in ("o que voce tem anotado", "o que vc tem anotado", "lista minhas memorias", "listar memorias", "minhas memorias", "todas as memorias"))
+        or re.search(r"\b(?:mostra|mostre|lista|liste|ver|veja)\s+(?:as\s+)?minhas\s+(?:anotac(?:ao|oes)|notas|memorias)\b", norm)
+    ):
+        cat = ""
+        m_cat = re.search(r"(?:anotac(?:ao|oes)|notas|memorias)\s+(?:de|da|do)\s+([a-zA-ZÀ-ÿ0-9_]+)", norm)
+        if m_cat:
+            cat = m_cat.group(1).strip()
+            if cat in ("senha", "senhas"):
+                cat = "senha"
+        return 0.95, _format_call("list_memories", category=cat)
+
+    # 2. forget_note ("esquece onde eu estacionei", "apaga a anotação do portão", "remove a senha antiga do wifi")
+    m_forget = re.search(
+        r"^(?:silva,?\s*)?(?:esquece|esquecer|esqueca|esqueça|apaga|apagar|apague|remove|remover|remova|deleta|deletar|delete)\s+(.+)$",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_forget and not any(w in norm for w in ("lista", "alarme", "compromisso")):
+        target_q = re.sub(
+            r"^(?:(?:a\s+)?anota[cç][aã]o\s*(?:do|da|de)?\s*|(?:a\s+)?nota\s*(?:do|da|de)?\s*|(?:a\s+)?lembran[cç]a\s*(?:do|da|de)?\s*|a\s+|o\s+)",
+            "",
+            m_forget.group(1).strip(),
+            flags=re.IGNORECASE,
+        ).strip()
+        if target_q and ("esquece" in norm or "esquec" in norm or any(w in norm for w in ("anotac", "nota", "memoria", "senha", "portao", "vaga"))):
+            return 0.95, _format_call("forget_note", query=target_q)
+
+    # 3. remember_note (estruturado, captura livre e TTL)
+    if any(w in norm for w in ["lembra que", "lembrar que", "lembre que", "anota que", "anotar que", "anote que", "salva que", "salvar que", "salve que", "guarda que", "guardar que", "guarde que", "lembra disso"]):
+        ttl_hours = 0
+        m_ttl_h = re.search(r"\bpor\s+(\d+)\s*horas?\b", norm)
+        if m_ttl_h:
+            ttl_hours = max(1, int(m_ttl_h.group(1)))
+        elif "so por hoje" in norm or "apenas hoje" in norm:
+            ttl_hours = 12
+        elif "ate amanha" in norm:
+            ttl_hours = 24
+
+        content = re.sub(
+            r"(?i)^(?:silva,?\s*)?(?:lembra|lembrar|lembre|anota|anotar|anote|salva|salvar|salve|guarda|guardar|guarde)\s+(?:disso\s+|que\s+)",
+            "",
+            raw,
+        ).strip()
+        content = re.sub(r"(?i)^(?:s[oó]\s+por\s+hoje|apenas\s+hoje|at[eé]\s+amanh[aã]|por\s+\d+\s+horas?)\s*:\s*", "", content).strip()
+
         if "=" in content:
             k, v = content.split("=", 1)
-        elif re.search(r"\s+[eé]\s*:\s*", content, re.IGNORECASE):
+            return 0.95, _format_call("remember_note", key=k.strip(), value=v.strip(), ttl_hours=ttl_hours)
+        if re.search(r"\s+[eé]\s*:\s*", content, re.IGNORECASE):
             parts = re.split(r"\s+[eé]\s*:\s*", content, maxsplit=1, flags=re.IGNORECASE)
-            k, v = parts[0], parts[1]
-        elif re.search(r"\s+[eé]\s+", content, re.IGNORECASE):
+            return 0.95, _format_call("remember_note", key=parts[0].strip(), value=parts[1].strip(), ttl_hours=ttl_hours)
+        if re.search(r"\s+[eé]\s+", content, re.IGNORECASE):
             parts = re.split(r"\s+[eé]\s+", content, maxsplit=1, flags=re.IGNORECASE)
-            k, v = parts[0], parts[1]
-        elif ":" in content:
+            return 0.95, _format_call("remember_note", key=parts[0].strip(), value=parts[1].strip(), ttl_hours=ttl_hours)
+        if ":" in content:
             parts = content.split(":", 1)
-            k, v = parts[0], parts[1]
-        else:
-            k, v = "nota", content
-        return 0.95, _format_call("remember_note", key=k.strip(), value=v.strip())
+            return 0.95, _format_call("remember_note", key=parts[0].strip(), value=parts[1].strip(), ttl_hours=ttl_hours)
+        # Captura livre em uma frase: passa frase em key para extração semântica automática
+        return 0.95, _format_call("remember_note", key=content.strip(), value="", ttl_hours=ttl_hours)
 
     # Bloqueio explícito de perguntas de conhecimento geral / enciclopédicas ou termos matemáticos
     blocking_terms = [

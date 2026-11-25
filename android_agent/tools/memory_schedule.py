@@ -507,6 +507,15 @@ def _get_memory_db() -> sqlite3.Connection:
             except Exception:
                 pass
 
+        # Migração idempotente de colunas TTL e sensibilidade em memories
+        cur_cols = conn.cursor()
+        cur_cols.execute("PRAGMA table_info(memories)")
+        existing_cols = {r["name"] for r in cur_cols.fetchall()}
+        if "expires_at" not in existing_cols:
+            conn.execute("ALTER TABLE memories ADD COLUMN expires_at TEXT DEFAULT NULL")
+        if "is_sensitive" not in existing_cols:
+            conn.execute("ALTER TABLE memories ADD COLUMN is_sensitive INTEGER DEFAULT 0")
+
         # Migração automática zero-loss de memory.json para SQLite
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM memories")
@@ -605,54 +614,202 @@ def _normalize_text(text: str) -> str:
     return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
 
 
-def remember_note(key: str, value: str) -> Dict[str, Any]:
+def _purge_expired_memories(conn: sqlite3.Connection) -> int:
+    """Remove memórias temporárias expiradas (mantendo memories_fts sincronizado via trigger)."""
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM memories WHERE expires_at IS NOT NULL AND expires_at <= ?",
+            (now_str,),
+        )
+        return cur.rowcount
+
+
+def _format_relative_time(timestamp_str: str) -> str:
+    """Formata timestamp em texto relativo amigável em PT-BR."""
+    raw = str(timestamp_str or "").strip()
+    if not raw:
+        return "salvo recentemente"
+    dt = None
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+        try:
+            dt = datetime.strptime(raw[:19], fmt)
+            break
+        except ValueError:
+            continue
+    if dt is None:
+        return f"salvo em {raw}"
+
+    now = datetime.now()
+    diff_sec = (now - dt).total_seconds()
+    if 0 <= diff_sec < 60:
+        return "salvo agora"
+    if 60 <= diff_sec < 3600:
+        mins = int(diff_sec // 60)
+        return f"salvo há {mins} min"
+    if dt.date() == now.date():
+        return f"salvo hoje às {dt.strftime('%H:%M')}"
+    if dt.date() == (now.date() - timedelta(days=1)):
+        return "salvo ontem"
+    return f"salvo em {dt.strftime('%d/%m/%Y')}"
+
+
+def _is_sensitive_memory(key: str, value: str, category: str) -> int:
+    if category in ("senha", "wifi"):
+        return 1
+    norm = _normalize_text(f"{key} {value}")
+    if any(w in norm for w in ("senha", "password", "pin", "codigo", "pix", "cpf", "token", "chave")):
+        return 1
+    return 0
+
+
+def _extract_ttl_hours(text: str, explicit_ttl: int = 0) -> int:
+    if explicit_ttl and int(explicit_ttl) > 0:
+        return int(explicit_ttl)
+    norm = _normalize_text(text)
+    m_h = re.search(r"\bpor\s+(\d+)\s*horas?\b", norm)
+    if m_h:
+        return max(1, int(m_h.group(1)))
+    if "so por hoje" in norm or "apenas hoje" in norm:
+        return 12
+    if "ate amanha" in norm:
+        return 24
+    return 0
+
+
+def _extract_semantic_key_and_value(raw_text: str) -> tuple[str, str]:
+    """Extrai (chave_semantica, valor_completo) para captura livre em uma frase."""
+    clean = str(raw_text or "").strip()
+    if "=" in clean:
+        k, v = clean.split("=", 1)
+        return k.strip(), v.strip()
+    if ":" in clean:
+        k, v = clean.split(":", 1)
+        if len(k.strip()) <= 45:
+            return k.strip(), v.strip()
+    m_eq = re.split(r"\s+[eé]\s+", clean, maxsplit=1, flags=re.IGNORECASE)
+    if len(m_eq) == 2 and len(m_eq[0].split()) <= 6:
+        k_clean = re.sub(r"^(?:o|a|meu|minha)\s+", "", m_eq[0].strip(), flags=re.IGNORECASE).strip()
+        return k_clean or m_eq[0].strip(), m_eq[1].strip()
+
+    norm = _normalize_text(clean)
+    if any(w in norm for w in ("estacionei", "parei", "vaga", "carro")):
+        return "vaga do carro", clean
+    if any(w in norm for w in ("portao", "porta", "interfone")):
+        return "código do portão", clean
+    if "pix" in norm:
+        return "chave pix", clean
+
+    words = [w for w in clean.split() if len(w) > 2]
+    short_key = " ".join(words[:4]) if words else clean[:32]
+    return short_key.strip(".,;:?! "), clean
+
+
+def _find_overlapping_key(conn: sqlite3.Connection, target_key: str) -> Optional[str]:
+    """Encontra chave existente equivalente ou com alta sobreposição semântica para upsert limpo."""
+    cur = conn.cursor()
+    cur.execute("SELECT key FROM memories WHERE lower(key) = lower(?)", (target_key,))
+    row = cur.fetchone()
+    if row:
+        return row["key"]
+
+    noise = {"o", "a", "os", "as", "de", "do", "da", "meu", "minha", "onde", "qual"}
+    target_tokens = {t for t in _normalize_text(target_key).split() if t not in noise and len(t) >= 3}
+    if not target_tokens:
+        return None
+
+    cur.execute("SELECT key FROM memories")
+    for r in cur.fetchall():
+        existing_k = r["key"]
+        existing_tokens = {t for t in _normalize_text(existing_k).split() if t not in noise and len(t) >= 3}
+        if not existing_tokens:
+            continue
+        inter = target_tokens.intersection(existing_tokens)
+        union = target_tokens.union(existing_tokens)
+        if union and (len(inter) / len(union)) >= 0.65:
+            return existing_k
+    return None
+
+
+def remember_note(key: str, value: str = "", ttl_hours: int = 0) -> Dict[str, Any]:
     """
     Salva, atualiza ou remove uma anotação persistente na memória local do Silva (SQLite FTS5).
-    Se value for vazio ou comando de exclusão ('apagar', 'remover', 'deletar'), a nota é removida.
+    Suporta captura livre em uma frase (value vazio), upsert sem duplicatas e TTL (ttl_hours).
     """
-    clean_key = str(key).strip()
-    clean_val = str(value).strip()
-    if not clean_key:
-        return {"status": "error", "message": "Chave da anotação não informada."}
+    raw_key = str(key or "").strip()
+    raw_val = str(value or "").strip()
+    if not raw_key:
+        return {"status": "error", "message": "Chave ou conteúdo da anotação não informado."}
 
-    with _FILE_LOCK:
-        try:
-            conn = _get_memory_db()
-            # Caso de exclusão de anotação
-            if clean_val.lower() in ("", "apagar", "remover", "deletar", "excluir"):
+    # Caso explícito de exclusão via remember_note(..., 'apagar')
+    if raw_val.lower() in ("apagar", "remover", "deletar", "excluir"):
+        with _FILE_LOCK:
+            try:
+                conn = _get_memory_db()
+                _purge_expired_memories(conn)
                 with conn:
                     cur = conn.cursor()
-                    cur.execute("DELETE FROM memories WHERE lower(key) = lower(?)", (clean_key,))
+                    cur.execute("DELETE FROM memories WHERE lower(key) = lower(?)", (raw_key,))
                     deleted = cur.rowcount > 0
                 conn.close()
                 if deleted:
                     return {
                         "status": "ok",
-                        "message": f"Silva: Anotação '{clean_key}' removida da memória.",
-                        "data": {"key": clean_key, "action": "deleted"}
+                        "message": f"Silva: Anotação '{raw_key}' removida da memória.",
+                        "data": {"key": raw_key, "action": "deleted"},
                     }
-                else:
-                    return {
-                        "status": "ok",
-                        "message": f"Silva: Nenhuma anotação encontrada com a chave '{clean_key}' para remover.",
-                        "data": {"key": clean_key, "action": "not_found"}
-                    }
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Nenhuma anotação encontrada com a chave '{raw_key}' para remover.",
+                    "data": {"key": raw_key, "action": "not_found"},
+                }
+            except Exception as e:
+                return {"status": "error", "message": f"Erro ao remover da memória: {str(e)}"}
 
-            # Inserção ou Atualização (UPSERT)
-            category = _classify_memory_category(clean_key)
+    if not raw_val:
+        clean_key, clean_val = _extract_semantic_key_and_value(raw_key)
+    else:
+        clean_key, clean_val = raw_key, raw_val
+
+    eff_ttl = _extract_ttl_hours(f"{raw_key} {raw_val}", ttl_hours)
+    expires_at = (
+        (datetime.now() + timedelta(hours=eff_ttl)).strftime("%Y-%m-%d %H:%M:%S")
+        if eff_ttl > 0 else None
+    )
+
+    with _FILE_LOCK:
+        try:
+            conn = _get_memory_db()
+            _purge_expired_memories(conn)
+            category = _classify_memory_category(f"{clean_key} {clean_val}")
+            is_sens = _is_sensitive_memory(clean_key, clean_val, category)
             now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            existing_key = _find_overlapping_key(conn, clean_key)
             with conn:
-                conn.execute(
-                    "INSERT INTO memories (key, value, category, updated_at) VALUES (?, ?, ?, ?) "
-                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value, category=excluded.category, updated_at=excluded.updated_at",
-                    (clean_key, clean_val, category, now_str)
-                )
+                if existing_key:
+                    conn.execute(
+                        "UPDATE memories SET key = ?, value = ?, category = ?, updated_at = ?, "
+                        "expires_at = ?, is_sensitive = ? WHERE key = ?",
+                        (clean_key, clean_val, category, now_str, expires_at, is_sens, existing_key),
+                    )
+                else:
+                    conn.execute(
+                        "INSERT INTO memories (key, value, category, updated_at, expires_at, is_sensitive) "
+                        "VALUES (?, ?, ?, ?, ?, ?)",
+                        (clean_key, clean_val, category, now_str, expires_at, is_sens),
+                    )
             conn.close()
 
+            ttl_msg = f" (expira automaticamente em {eff_ttl}h)" if eff_ttl > 0 else ""
             return {
                 "status": "ok",
-                "message": f"Silva: Anotado: {clean_key} = {clean_val}.",
-                "data": {"key": clean_key, "value": clean_val, "category": category}
+                "message": f"Silva: Anotado: {clean_key} = {clean_val}{ttl_msg}.",
+                "data": {
+                    "key": clean_key, "value": clean_val, "category": category,
+                    "expires_at": expires_at, "is_sensitive": bool(is_sens),
+                },
             }
         except Exception as e:
             return {"status": "error", "message": f"Erro ao salvar na memória: {str(e)}"}
@@ -683,6 +840,7 @@ def recall_note(query: str) -> Dict[str, Any]:
     with _FILE_LOCK:
         try:
             conn = _get_memory_db()
+            _purge_expired_memories(conn)
             cur = conn.cursor()
 
             # 1. Busca FTS5 com prefixos '*'
@@ -691,7 +849,7 @@ def recall_note(query: str) -> Dict[str, Any]:
                 fts_query_str = " OR ".join(fts_query_parts)
                 try:
                     cur.execute(
-                        "SELECT m.key, m.value, m.category, m.updated_at, bm25(memories_fts) as rank "
+                        "SELECT m.key, m.value, m.category, m.updated_at, m.is_sensitive, bm25(memories_fts) as rank "
                         "FROM memories_fts f "
                         "JOIN memories m ON f.rowid = m.id "
                         "WHERE memories_fts MATCH ? "
@@ -705,6 +863,7 @@ def recall_note(query: str) -> Dict[str, Any]:
                             "value": row["value"],
                             "category": row["category"],
                             "updated_at": row["updated_at"],
+                            "is_sensitive": row["is_sensitive"],
                             "score": -float(row["rank"])
                         })
                 except Exception:
@@ -715,7 +874,7 @@ def recall_note(query: str) -> Dict[str, Any]:
                 for token in query_tokens:
                     like_pattern = f"%{token}%"
                     cur.execute(
-                        "SELECT key, value, category, updated_at FROM memories "
+                        "SELECT key, value, category, updated_at, is_sensitive FROM memories "
                         "WHERE key LIKE ? OR value LIKE ? "
                         "LIMIT 5",
                         (like_pattern, like_pattern)
@@ -727,6 +886,7 @@ def recall_note(query: str) -> Dict[str, Any]:
                                 "value": row["value"],
                                 "category": row["category"],
                                 "updated_at": row["updated_at"],
+                                "is_sensitive": row["is_sensitive"],
                                 "score": 1.0
                             })
             conn.close()
@@ -764,23 +924,183 @@ def recall_note(query: str) -> Dict[str, Any]:
         }
 
     parts = []
+    clipboard_text = None
     if matches:
-        notes_str = "; ".join(f"{m['key']}: {m['value']}" for m in matches[:3])
+        notes_str = "; ".join(
+            f"{m['key']}: {m['value']} ({_format_relative_time(m.get('updated_at', ''))})"
+            for m in matches[:3]
+        )
         parts.append(f"Memória: {notes_str}")
+
+        top_m = matches[0]
+        top_val = str(top_m.get("value") or "").strip()
+        should_copy = (
+            bool(top_m.get("is_sensitive"))
+            or top_m.get("category") in ("senha", "wifi")
+            or (
+                0 < len(top_val) <= 120
+                and any(w in _normalize_text(top_m.get("key", "")) for w in ("pix", "cpf", "codigo", "senha", "wifi", "telefone", "cep"))
+            )
+        )
+        if should_copy and top_val:
+            try:
+                from .comms import set_clipboard
+                set_clipboard(top_val)
+                clipboard_text = top_val
+            except Exception:
+                pass
+
     if event_matches:
         ev_str = "; ".join(event_matches[:4])
         parts.append(f"Agenda: {ev_str}")
 
-    msg = "Silva: " + " | ".join(parts) + "."
+    clip_note = " Copiado automaticamente para sua área de transferência." if clipboard_text else ""
+    msg = "Silva: " + " | ".join(parts) + "." + clip_note
 
     return {
         "status": "ok",
         "message": msg,
         "data": {
             "found": True,
-            "notes": [{"key": m["key"], "value": m["value"], "category": m.get("category", "geral")} for m in matches[:5]],
-            "events": event_matches
+            "notes": [
+                {
+                    "key": m["key"], "value": m["value"],
+                    "category": m.get("category", "geral"), "updated_at": m.get("updated_at"),
+                }
+                for m in matches[:5]
+            ],
+            "events": event_matches,
+            "clipboard_text": clipboard_text,
+        },
+    }
+
+
+def forget_note(query: str) -> Dict[str, Any]:
+    """Busca e remove uma anotação da memória local (com pedido de desambiguação se houver múltiplas)."""
+    clean_q = str(query or "").strip()
+    if not clean_q:
+        return {"status": "error", "message": "Informe qual anotação você deseja esquecer."}
+
+    norm_q = _normalize_text(clean_q)
+    noise = {"a", "o", "as", "os", "de", "do", "da", "anotacao", "nota", "lembranca", "antiga", "antigo"}
+    tokens = [t for t in norm_q.split() if t not in noise and len(t) >= 2] or norm_q.split()
+
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            _purge_expired_memories(conn)
+            cur = conn.cursor()
+
+            cur.execute("SELECT id, key FROM memories WHERE lower(key) = lower(?)", (clean_q,))
+            exact = cur.fetchall()
+            if exact:
+                with conn:
+                    cur.execute("DELETE FROM memories WHERE id = ?", (exact[0]["id"],))
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Anotação '{exact[0]['key']}' removida da memória.",
+                    "data": {"deleted": exact[0]["key"]},
+                }
+
+            found_rows = []
+            fts_parts = [f'"{re.sub(r"[^\w]", "", t)}"*' for t in tokens if re.sub(r"[^\w]", "", t)]
+            if fts_parts:
+                try:
+                    cur.execute(
+                        "SELECT m.id, m.key FROM memories_fts f JOIN memories m ON f.rowid = m.id "
+                        "WHERE memories_fts MATCH ? LIMIT 5",
+                        (" OR ".join(fts_parts),),
+                    )
+                    found_rows = cur.fetchall()
+                except Exception:
+                    found_rows = []
+
+            if not found_rows:
+                for tok in tokens:
+                    cur.execute(
+                        "SELECT id, key FROM memories WHERE key LIKE ? OR value LIKE ? LIMIT 5",
+                        (f"%{tok}%", f"%{tok}%"),
+                    )
+                    for r in cur.fetchall():
+                        if not any(fr["id"] == r["id"] for fr in found_rows):
+                            found_rows.append(r)
+
+            if not found_rows:
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Nenhuma anotação encontrada sobre '{clean_q}' para apagar.",
+                    "data": {"deleted": None},
+                }
+
+            if len(found_rows) > 1:
+                opts = ", ".join(f"'{r['key']}'" for r in found_rows[:5])
+                return {
+                    "status": "ok",
+                    "message": f"Silva: Encontrei mais de uma anotação para '{clean_q}': {opts}. Qual delas você quer apagar?",
+                    "data": {"ambiguous": True, "candidates": [r["key"] for r in found_rows[:5]]},
+                }
+
+            target_row = found_rows[0]
+            with conn:
+                cur.execute("DELETE FROM memories WHERE id = ?", (target_row["id"],))
+            return {
+                "status": "ok",
+                "message": f"Silva: Anotação '{target_row['key']}' removida da memória.",
+                "data": {"deleted": target_row["key"]},
+            }
+        finally:
+            conn.close()
+
+
+def list_memories(category: str = "") -> Dict[str, Any]:
+    """Lista todas as memórias ativas não expiradas agrupadas por categoria (ou filtradas)."""
+    clean_cat = _normalize_text(category)
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            _purge_expired_memories(conn)
+            cur = conn.cursor()
+            if clean_cat:
+                cur.execute(
+                    "SELECT key, value, category, updated_at, expires_at FROM memories "
+                    "WHERE lower(category) = ? ORDER BY id DESC",
+                    (clean_cat,),
+                )
+            else:
+                cur.execute(
+                    "SELECT key, value, category, updated_at, expires_at FROM memories "
+                    "ORDER BY category ASC, id DESC"
+                )
+            rows = cur.fetchall()
+        finally:
+            conn.close()
+
+    if not rows:
+        scope = f" na categoria '{category}'" if clean_cat else ""
+        return {
+            "status": "ok",
+            "message": f"Silva: Nenhuma memória salva{scope} no momento.",
+            "data": {"total": 0, "groups": {}},
         }
+
+    groups: Dict[str, list] = {}
+    for r in rows:
+        cat = r["category"] or "geral"
+        rel = _format_relative_time(r["updated_at"])
+        groups.setdefault(cat, []).append({
+            "key": r["key"], "value": r["value"], "relative_time": rel, "expires_at": r["expires_at"],
+        })
+
+    lines = [f"Silva: Memórias salvas ({len(rows)}):"]
+    for cat, items in groups.items():
+        lines.append(f"[{cat.upper()}]")
+        for it in items:
+            lines.append(f"• {it['key']}: {it['value']} ({it['relative_time']})")
+
+    return {
+        "status": "ok",
+        "message": "\n".join(lines),
+        "data": {"total": len(rows), "groups": groups},
     }
 
 

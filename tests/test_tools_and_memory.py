@@ -266,9 +266,9 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertIn("Área de transferência vazia (ou bloqueada em segundo plano pelo Android — libere READ_CLIPBOARD via ADB para o Termux:API).", res_empty["message"])
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
-    def test_all_57_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 57 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 57, "O catálogo formal deve conter exatamente 57 ferramentas.")
+    def test_all_59_tools_smoke_execution(self):
+        """Testa a execução smoke de todas as 59 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 59, "O catálogo formal deve conter exatamente 59 ferramentas.")
 
         sample_args = {
             "add_list_item": {"item": "café", "list_name": "compras"},
@@ -276,6 +276,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "cancel_alarm": {"time": "07:00"},
             "connect_wifi": {"ssid": "TesteNet", "password": "123"},
             "convert_units": {"amount": 10.0, "from_unit": "km", "to_unit": "mi"},
+            "forget_note": {"query": "teste"},
             "get_battery": {},
             "get_clipboard": {},
             "get_contact": {"name": "Teste"},
@@ -290,6 +291,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "get_wifi_info": {},
             "install_app": {"app_name": "spotify"},
             "list_capabilities": {},
+            "list_memories": {"category": ""},
             "make_call": {"number": "11999999999"},
             "media_control": {"action": "play"},
             "navigate_to": {"destination": "Shopping Recife", "app": "maps"},
@@ -581,6 +583,57 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertEqual(match_intent_fallback("quais são minhas listas?"), "<call>get_list(list_name='todas')</call>")
         self.assertEqual(match_intent_fallback("tira o leite da lista"), "<call>remove_list_item(item='leite', list_name='compras')</call>")
         self.assertEqual(match_intent_fallback("limpa a lista do mercado"), "<call>remove_list_item(item='tudo', list_name='mercado')</call>")
+
+    def test_memory_v2_free_capture_ttl_upsert_clipboard_forget_and_list(self):
+        """Testa Memória 2.0: captura livre, upsert sem duplicatas, TTL, timestamp relativo, auto-clipboard, forget_note, list_memories e NLP."""
+        from android_agent.intent_fallback import match_intent_fallback
+        from android_agent.tools import memory_schedule
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_data = Path(tmpdir)
+            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_data):
+                # 1. Captura livre em uma frase + Upsert sem duplicatas
+                r1 = tools.remember_note("estacionei o carro no G2 vaga 42")
+                self.assertEqual(r1["status"], "ok")
+                self.assertEqual(r1["data"]["key"], "vaga do carro")
+
+                r2 = tools.remember_note("vaga carro", "G3 vaga 10")
+                self.assertEqual(r2["status"], "ok")
+                listed = tools.list_memories()
+                self.assertEqual(listed["data"]["total"], 1)  # upsert substituiu sem duplicar
+
+                # 2. Auto-clipboard em senha/PIX + timestamp relativo
+                tools.remember_note("chave pix", "12345678900")
+                with patch("android_agent.tools.comms.set_clipboard", return_value={"status": "ok"}) as mock_clip:
+                    rec_pix = tools.recall_note("pix")
+                    self.assertEqual(rec_pix["data"]["clipboard_text"], "12345678900")
+                    self.assertIn("Copiado automaticamente", rec_pix["message"])
+                    self.assertIn("salvo ", rec_pix["message"])
+                    mock_clip.assert_called_once_with("12345678900")
+
+                # 3. TTL expirado é purgado automaticamente
+                tools.remember_note("codigo temporario", "9911", ttl_hours=1)
+                conn = memory_schedule._get_memory_db()
+                with conn:
+                    conn.execute("UPDATE memories SET expires_at = '2020-01-01 00:00:00' WHERE key = 'codigo temporario'")
+                conn.close()
+                rec_exp = tools.recall_note("codigo temporario")
+                self.assertFalse(rec_exp["data"]["found"])
+
+                # 4. list_memories e forget_note
+                all_mem = tools.list_memories()
+                self.assertEqual(all_mem["data"]["total"], 2)
+                f_res = tools.forget_note("chave pix")
+                self.assertEqual(f_res["data"]["deleted"], "chave pix")
+                self.assertEqual(tools.list_memories()["data"]["total"], 1)
+
+        # 5. Roteamento NLP Memória 2.0
+        self.assertIn("remember_note(", match_intent_fallback("anota que parei no G2 vaga 42"))
+        self.assertIn("ttl_hours=12", match_intent_fallback("lembra disso só por hoje: senha temporária 9911"))
+        self.assertEqual(match_intent_fallback("esquece onde eu estacionei"), "<call>forget_note(query='onde eu estacionei')</call>")
+        self.assertEqual(match_intent_fallback("apaga a anotação do portão"), "<call>forget_note(query='portão')</call>")
+        self.assertEqual(match_intent_fallback("o que você tem anotado?"), "<call>list_memories(category='')</call>")
+        self.assertEqual(match_intent_fallback("mostra minhas anotações de senha"), "<call>list_memories(category='senha')</call>")
 
     def test_open_app_resilience_and_fuzzy(self):
         """Testa remoção de ruídos (hoje, o, agora, app) e fuzzy matching em open_app."""

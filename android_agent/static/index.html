@@ -2279,6 +2279,58 @@
           }
         });
 
+        // Botão compacto Copiar quando houver clipboard_text (ex: senha/PIX/código em recall_note)
+        let clipText = null;
+        if (toolData && toolData.clipboard_text) {
+          clipText = toolData.clipboard_text;
+        } else if (Array.isArray(data)) {
+          for (let ci = 0; ci < data.length; ci++) {
+            if (data[ci] && data[ci].clipboard_text) {
+              clipText = data[ci].clipboard_text;
+              break;
+            }
+          }
+        }
+        if (clipText) {
+          const copyWrap = document.createElement("div");
+          copyWrap.style.cssText = "margin-top:8px;display:flex;align-items:center;";
+          const copyBtn = document.createElement("button");
+          copyBtn.type = "button";
+          copyBtn.textContent = "📋 Copiar";
+          copyBtn.style.cssText = "padding:4px 10px;border-radius:8px;border:1px solid rgba(167,139,250,0.4);background:rgba(123,31,162,0.22);color:#e9d5ff;font-size:0.78rem;cursor:pointer;transition:background 0.2s;";
+          copyBtn.addEventListener("click", function () {
+            const onCopied = function () {
+              copyBtn.textContent = "✓ Copiado!";
+              setTimeout(function () { copyBtn.textContent = "📋 Copiar"; }, 2000);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(clipText).then(onCopied).catch(function () {
+                const ta = document.createElement("textarea");
+                ta.value = clipText;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand("copy"); } catch (e) {}
+                document.body.removeChild(ta);
+                onCopied();
+              });
+            } else {
+              const ta = document.createElement("textarea");
+              ta.value = clipText;
+              ta.style.position = "fixed";
+              ta.style.opacity = "0";
+              document.body.appendChild(ta);
+              ta.select();
+              try { document.execCommand("copy"); } catch (e) {}
+              document.body.removeChild(ta);
+              onCopied();
+            }
+          });
+          copyWrap.appendChild(copyBtn);
+          bubble.appendChild(copyWrap);
+        }
+
         wrap.appendChild(bubble);
 
         // Metadados da Chamada

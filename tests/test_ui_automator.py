@@ -323,7 +323,7 @@ class TestUiAutomator(unittest.TestCase):
              patch.object(apps_mobility, "dump_ui_nodes", return_value=[]), \
              patch("time.sleep"):
             self.assertEqual(apps_mobility._dismiss_99_promo(promo_no_close, 1080, 2400), [])
-            mock_tap.assert_called_once_with(540, 1944)
+            mock_tap.assert_called_once_with(540, 1788)
             # Sem modal: nada é tocado
             mock_tap.reset_mock()
             self.assertIsNone(apps_mobility._dismiss_99_promo([], 1080, 2400))
@@ -426,6 +426,70 @@ class TestUiAutomator(unittest.TestCase):
         self.assertEqual(taps, [(760, 1350), (540, 1420), (560, 305), (540, 600)])
         self.assertNotIn((320, 1350), taps)
         mock_type.assert_called_once_with("shopping tacaruna")
+
+    def test_99food_coupon_60_off_compact_imageview_x_before_search(self):
+        """Modal 'CUPONS DE ATÉ 60% OFF' com ImageView sem texto em (50%, 74.5%) é fechado antes da busca."""
+        from contextlib import ExitStack
+        _, _, food_home = self._99_screens()
+        promo_60 = [
+            self._n("CUPONS DE ATÉ 60% OFF", bounds=(120, 820, 960, 920)),
+            self._n("ENTREGA GRÁTIS", bounds=(200, 980, 880, 1050)),
+            self._n("APROVEITE JÁ", "", "com.taxis99:id/cta_btn", "android.widget.Button", True, (180, 1450, 900, 1560)),
+            self._n("", "", "", "android.widget.ImageView", True, (495, 1743, 585, 1833)),
+        ]
+        dumps = [promo_60, food_home]
+        with ExitStack() as stack:
+            for p in self._99_common_patches(dumps):
+                stack.enter_context(p)
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            mock_type = stack.enter_context(patch.object(apps_mobility, "type_text_unicode", return_value=(True, "ok")))
+            mock_key = stack.enter_context(patch.object(apps_mobility, "press_key"))
+            res = apps_mobility.order_food(query="pizza", app="99food")
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["data"]["method"], "ui_automator_search")
+        taps = [c.args for c in mock_tap.call_args_list]
+        # 1º: X compacto ImageView (540, 1788) — NUNCA 'APROVEITE JÁ' (540, 1505); 2º: barra de busca (540, 348)
+        self.assertEqual(taps, [(540, 1788), (540, 348)])
+        self.assertNotIn((540, 1505), taps)
+        mock_type.assert_called_once_with("pizza")
+        mock_key.assert_called_once_with(66)
+
+    def test_ifood_activates_abertos_agora_filter_after_search(self):
+        """Após enviar busca no iFood, toca no chip 'Abertos agora' na faixa y=18%–35%."""
+        import subprocess
+        home_nodes = [
+            self._n("O que vai pedir hoje?", "", "br.com.brainweb.ifood:id/search_bar", "android.widget.TextView", True, (40, 120, 1040, 240)),
+        ]
+        search_focus_nodes = [
+            self._n("", "Buscar em todo o iFood", "br.com.brainweb.ifood:id/input_query", "android.widget.EditText", True, (120, 120, 1020, 230)),
+        ]
+        results_nodes = [
+            self._n("Ordenar", "Ordenar", "br.com.brainweb.ifood:id/chip_sort", "android.widget.TextView", True, (40, 560, 240, 640)),
+            self._n("Abertos agora", "Abertos agora", "br.com.brainweb.ifood:id/chip_open_now", "android.widget.TextView", True, (260, 560, 520, 640)),
+        ]
+
+        with patch.object(apps_mobility, "SIMULATE_HARDWARE", False), \
+             patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:33169"), \
+             patch.object(apps_mobility, "is_screen_unlocked", return_value=(True, "ok")), \
+             patch.object(apps_mobility, "_exec_android_intent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="Starting: Intent", stderr="")), \
+             patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)), \
+             patch.object(apps_mobility, "dump_ui_nodes", side_effect=[home_nodes, search_focus_nodes, results_nodes]), \
+             patch.object(apps_mobility, "tap_coords") as mock_tap, \
+             patch.object(apps_mobility, "type_text_unicode", return_value=(True, "ok")) as mock_type, \
+             patch.object(apps_mobility, "press_key") as mock_key, \
+             patch.object(apps_mobility, "set_clipboard"), \
+             patch("time.sleep"):
+            res = apps_mobility.order_food(query="pizza", app="ifood")
+
+        self.assertEqual(res["status"], "ok")
+        self.assertTrue(res["data"]["open_now_filter"])
+        self.assertIn("Abertos agora", res["message"])
+        taps = [c.args for c in mock_tap.call_args_list]
+        # 1º: barra (540, 180); 2º: EditText (570, 175); 3º: chip 'Abertos agora' (390, 600)
+        self.assertEqual(taps, [(540, 180), (570, 175), (390, 600)])
+        mock_type.assert_called_once_with("pizza")
+        mock_key.assert_called_once_with(66)
 
 
 if __name__ == "__main__":

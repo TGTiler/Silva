@@ -388,7 +388,10 @@ def _intent_succeeded(res: Any) -> bool:
 # ---------------------------------------------------------------------------
 # Super-app 99 (com.taxis99 / com.taxis99.food): helpers de UI Automator
 # ---------------------------------------------------------------------------
-_99_PROMO_HINTS = ("cupons", "cupom", "peca ja", "aproveite agora")
+_99_PROMO_HINTS = (
+    "cupons", "cupom", "peca ja", "aproveite agora",
+    "cupons de ate", "aproveite ja", "entrega gratis",
+)
 _99_CLOSE_LABELS = {"fechar", "close", "cancelar", "agora nao", "x", "dispensar"}
 _99_RIDE_FIELD_HINT = "para onde vamos"
 _99_RIDE_TAB_LABELS = {"corrida", "taxi", "corridas"}
@@ -401,15 +404,34 @@ def _node_label(n: Dict[str, Any]) -> str:
 
 
 def _is_99_promo_visible(nodes: list) -> bool:
-    """Detecta o modal promocional do 99 ('R$99 em cupons só pra você!', 'Peça já!', 'Aproveite agora')."""
+    """Detecta o modal promocional do 99 ('CUPONS DE ATÉ 60% OFF', 'R$99 em cupons', 'Peça já!', 'Aproveite já')."""
     return any(any(h in _node_label(n) for h in _99_PROMO_HINTS) for n in nodes or [])
+
+
+def _find_99_compact_close_node(nodes: list, screen_w: int, screen_h: int) -> Optional[Dict[str, Any]]:
+    """
+    Etapa 2: Localiza o 'X' circular (ex.: ImageView sem texto/desc) abaixo do card promocional:
+    nó clicável compacto (<= 140x140 px) na faixa central (x: 40%–60%, y: 70%–86%).
+    """
+    x_min, x_max = int(screen_w * 0.40), int(screen_w * 0.60)
+    y_min, y_max = int(screen_h * 0.70), int(screen_h * 0.86)
+    for n in nodes or []:
+        if not n.get("clickable"):
+            continue
+        cx, cy = int(n.get("cx") or 0), int(n.get("cy") or 0)
+        w = int(n.get("x2") or 0) - int(n.get("x1") or 0)
+        h = int(n.get("y2") or 0) - int(n.get("y1") or 0)
+        if x_min <= cx <= x_max and y_min <= cy <= y_max and 0 < w <= 140 and 0 < h <= 140:
+            return n
+    return None
 
 
 def _dismiss_99_promo(nodes: list, screen_w: int, screen_h: int) -> Optional[list]:
     """
-    Fecha o modal de cupons do 99 tocando no 'X' (rótulo Fechar/Close/Cancelar/Agora não ou
-    resource-id close/dismiss), nunca em 'Peça já!'. Fallback: coordenada segura (50%, 81%).
-    Retorna a nova árvore de UI se algo foi dispensado; None se não havia modal.
+    Fecha o modal de cupons do 99 em 3 etapas:
+    1. Nó com rótulo Fechar/Close/Cancelar/Agora não/X ou resource-id close/dismiss/iv_close;
+    2. Nó clicável compacto (<= 140x140 px) centralizado abaixo do card (x: 40–60%, y: 70–86%);
+    3. Fallback seguro em (50%, 74.5%), verificando se sumiu; se persistir, tenta (50%, 81%) e KEYCODE_BACK.
     """
     if not _is_99_promo_visible(nodes):
         return None
@@ -422,16 +444,32 @@ def _dismiss_99_promo(nodes: list, screen_w: int, screen_h: int) -> Optional[lis
         t_norm = _normalize_text(str(n.get("text") or ""))
         d_norm = _normalize_text(str(n.get("content_desc") or ""))
         res_id = str(n.get("resource_id") or "").lower()
-        if t_norm in _99_CLOSE_LABELS or d_norm in _99_CLOSE_LABELS or any(k in res_id for k in ("close", "dismiss")):
+        if t_norm in _99_CLOSE_LABELS or d_norm in _99_CLOSE_LABELS or any(k in res_id for k in ("close", "dismiss", "iv_close")):
             close_node = n
             break
 
+    if not close_node:
+        close_node = _find_99_compact_close_node(nodes, screen_w, screen_h)
+
     if close_node:
         tap_coords(int(close_node["cx"]), int(close_node["cy"]))
+        time.sleep(1.0)
+        nodes_after = dump_ui_nodes()
     else:
-        tap_coords(int(screen_w * 0.50), int(screen_h * 0.81))
-    time.sleep(1.0)
-    return dump_ui_nodes()
+        tap_coords(int(screen_w * 0.50), int(screen_h * 0.745))
+        time.sleep(1.0)
+        nodes_after = dump_ui_nodes()
+        if _is_99_promo_visible(nodes_after):
+            tap_coords(int(screen_w * 0.50), int(screen_h * 0.81))
+            time.sleep(1.0)
+            nodes_after = dump_ui_nodes()
+
+    if _is_99_promo_visible(nodes_after):
+        press_key(4)  # KEYCODE_BACK
+        time.sleep(1.0)
+        nodes_after = dump_ui_nodes()
+
+    return nodes_after
 
 
 def _has_99_ride_field(nodes: list) -> bool:
@@ -699,6 +737,14 @@ def _automate_99_food_search_via_ui(clean_query: str) -> Optional[str]:
         if not prep["ok"]:
             return None
         nodes, screen_w, screen_h = prep["nodes"], prep["screen_w"], prep["screen_h"]
+
+        # Trava de segurança: só busca após confirmar que o modal de cupons sumiu do XML
+        if _is_99_promo_visible(nodes):
+            retried = _dismiss_99_promo(nodes, screen_w, screen_h)
+            if retried is not None:
+                nodes = retried
+            if _is_99_promo_visible(nodes):
+                return None
 
         search_node = _find_99_food_search_node(nodes, screen_w, screen_h)
         if search_node:
@@ -1062,12 +1108,43 @@ def _find_food_search_node(
     return candidates[0][1]
 
 
-def _automate_food_search_via_ui(clean_query: str) -> bool:
+def _tap_ifood_open_now_filter(screen_h: int) -> bool:
+    """
+    Aguarda 1.8s após enviar a pesquisa no iFood e toca no chip/pílula 'Abertos agora'
+    na faixa superior de filtros (y entre 18% e 35% da altura). Não gera erro se ausente.
+    """
+    time.sleep(1.8)
+    try:
+        nodes = dump_ui_nodes()
+    except Exception:
+        nodes = []
+    if not nodes:
+        return False
+
+    y_min, y_max = int(screen_h * 0.18), int(screen_h * 0.35)
+    candidates = []
+    for n in nodes:
+        cy = int(n.get("cy") or 0)
+        if not (y_min <= cy <= y_max):
+            continue
+        if "abertos agora" in _node_label(n):
+            candidates.append((1 if n.get("clickable") else 0, n))
+
+    if not candidates:
+        return False
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    chip = candidates[0][1]
+    tap_coords(int(chip["cx"]), int(chip["cy"]))
+    return True
+
+
+def _automate_food_search_via_ui(clean_query: str, state_out: Optional[Dict[str, bool]] = None) -> bool:
     """
     Camada 2 ativa (ADB + UI Automator):
     1. Aguarda estabilização (3.0s) e dispensa modais promocionais.
     2. Localiza a barra superior (y < 22%, ignorando rodapé y > 85%) ou usa coordenada segura (52%, 7.5%).
     3. Toca na barra, aguarda foco no EditText (0.8s), digita com acentos PT-BR e envia Enter (66).
+    4. Toca automaticamente no chip 'Abertos agora' se presente na tela de resultados.
     """
     adb_ser = ensure_adb_connected()
     if not adb_ser:
@@ -1110,6 +1187,9 @@ def _automate_food_search_via_ui(clean_query: str) -> bool:
             return False
         time.sleep(0.3)
         press_key(66)
+        open_now_ok = _tap_ifood_open_now_filter(screen_h)
+        if state_out is not None:
+            state_out["open_now"] = open_now_ok
         return True
 
 
@@ -1139,14 +1219,22 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
         # Camada 1: Deep Link de busca interno / Intent direto no pacote do iFood
         res1 = _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url_deep}"')
         if _intent_succeeded(res1):
-            ui_ok = _automate_food_search_via_ui(clean_query)
+            ui_state: Dict[str, bool] = {}
+            ui_ok = _automate_food_search_via_ui(clean_query, state_out=ui_state)
+            open_now = bool(ui_state.get("open_now"))
+            msg = (
+                f"Buscando '{clean_query}' no iFood com filtro 'Abertos agora' ativado."
+                if open_now
+                else f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência)."
+            )
             return {
                 "status": "ok",
-                "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência).",
+                "message": msg,
                 "data": {
                     "query": clean_query,
                     "app": "ifood",
                     "url": url_deep,
+                    "open_now_filter": open_now,
                     "method": "ui_automator_search" if ui_ok else "deep_link",
                 }
             }
@@ -1155,14 +1243,22 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
             f'am start -a android.intent.action.VIEW -d "{url_app_view}" -p br.com.brainweb.ifood'
         )
         if _intent_succeeded(res_pkg_view):
-            ui_ok = _automate_food_search_via_ui(clean_query)
+            ui_state = {}
+            ui_ok = _automate_food_search_via_ui(clean_query, state_out=ui_state)
+            open_now = bool(ui_state.get("open_now"))
+            msg = (
+                f"Buscando '{clean_query}' no iFood com filtro 'Abertos agora' ativado."
+                if open_now
+                else f"Buscando '{clean_query}' no iFood."
+            )
             return {
                 "status": "ok",
-                "message": f"Buscando '{clean_query}' no iFood.",
+                "message": msg,
                 "data": {
                     "query": clean_query,
                     "app": "ifood",
                     "url": url_app_view,
+                    "open_now_filter": open_now,
                     "method": "ui_automator_search" if ui_ok else "intent_package",
                 }
             }
@@ -1170,18 +1266,25 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
         # Camada 2: Abrir App Principal (br.com.brainweb.ifood) + busca ativa via UI Automator
         res2 = _exec_android_intent("monkey -p br.com.brainweb.ifood -c android.intent.category.LAUNCHER 1")
         if _intent_succeeded(res2):
-            ui_ok = _automate_food_search_via_ui(clean_query)
+            ui_state = {}
+            ui_ok = _automate_food_search_via_ui(clean_query, state_out=ui_state)
+            open_now = bool(ui_state.get("open_now"))
             return {
                 "status": "ok",
                 "message": (
-                    f"Buscando '{clean_query}' no iFood."
-                    if ui_ok
-                    else f"Abrindo iFood para buscar '{clean_query}' (termo copiado para a área de transferência)."
+                    f"Buscando '{clean_query}' no iFood com filtro 'Abertos agora' ativado."
+                    if open_now
+                    else (
+                        f"Buscando '{clean_query}' no iFood."
+                        if ui_ok
+                        else f"Abrindo iFood para buscar '{clean_query}' (termo copiado para a área de transferência)."
+                    )
                 ),
                 "data": {
                     "query": clean_query,
                     "app": "ifood",
                     "package": "br.com.brainweb.ifood",
+                    "open_now_filter": open_now,
                     "method": "ui_automator_search" if ui_ok else "package_fallback",
                 }
             }

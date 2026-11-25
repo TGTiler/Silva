@@ -174,16 +174,16 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
         if path == "/api/health":
             llm_health = llm_client.check_health()
             try:
-                from .tools.sleep_monitor import pop_pending_sleep_reports
+                from .tools.sleep_monitor import get_undelivered_sleep_reports
             except ImportError:
-                from tools.sleep_monitor import pop_pending_sleep_reports
+                from tools.sleep_monitor import get_undelivered_sleep_reports
             return self._send_json({
                 "status": "ok",
                 "agent": "Silva",
                 "llm": llm_health,
                 "web_auto_tts": WEB_AUTO_TTS,
                 "triggered_alerts": scheduler.pop_triggered_alerts(),
-                "sleep_reports": pop_pending_sleep_reports(),
+                "sleep_reports": get_undelivered_sleep_reports(),
             })
 
         self.send_error(HTTPStatus.NOT_FOUND, "Rota não encontrada.")
@@ -409,6 +409,31 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                 "media_items": [{"type": "audio", "url": audio_url}],
                 "data": {"id": note_id, "title": title, "note_type": "audio", "url": audio_url},
             })
+
+        if path == "/api/sleep/ack":
+            if not self._verify_access_pin(self.headers.get("X-Access-Pin", "").strip()):
+                return
+            raw_bytes = self._read_post_body_bytes()
+            if raw_bytes is None:
+                return
+            try:
+                body = json.loads(raw_bytes.decode("utf-8")) if raw_bytes else {}
+            except Exception:
+                return self._send_json(
+                    {"status": "error", "message": "JSON inválido."},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+            ids_list = []
+            if isinstance(body.get("ids"), list):
+                ids_list.extend(body["ids"])
+            if body.get("id") is not None:
+                ids_list.append(body["id"])
+            try:
+                from .tools.sleep_monitor import ack_sleep_reports
+            except ImportError:
+                from tools.sleep_monitor import ack_sleep_reports
+            acked = ack_sleep_reports(ids_list)
+            return self._send_json({"status": "ok", "acked": acked})
 
         self.send_error(HTTPStatus.NOT_FOUND, "Endpoint POST não encontrado.")
 

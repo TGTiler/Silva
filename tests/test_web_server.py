@@ -276,6 +276,60 @@ class TestWebServer(unittest.TestCase):
             if audio_file.exists():
                 audio_file.unlink()
 
+    def test_transactional_sleep_report_health_and_ack(self):
+        """Valida fluxo transacional GET /api/health (delivered_to_chat=0) -> POST /api/sleep/ack -> delivered_to_chat=1."""
+        import sqlite3
+        import tempfile
+        from unittest.mock import patch
+        from android_agent.tools import sleep_monitor
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "memory.db"
+
+            def factory():
+                conn = sqlite3.connect(str(db_path), timeout=5.0)
+                conn.row_factory = sqlite3.Row
+                return conn
+
+            with patch.object(sleep_monitor, "_get_memory_db", side_effect=factory):
+                conn = factory()
+                sleep_monitor._ensure_sleep_tables(conn)
+                with conn:
+                    cur = conn.execute(
+                        "INSERT INTO sleep_logs (sleep_start_ts, wake_up_ts, duration_minutes, sleep_score, cycles_estimated, trend_status, report_markdown, delivered_to_chat) "
+                        "VALUES ('2026-11-24T23:30:00', '2026-11-25T07:00:00', 450, 95, 5.0, 'baseline', 'Relatório Teste', 0)"
+                    )
+                    rep_id = int(cur.lastrowid)
+                conn.close()
+
+                # 1. GET /api/health retorna o relatório sem marcar como entregue
+                with urllib.request.urlopen(f"{self.base_url}/api/health", timeout=5) as resp1:
+                    h1 = json.loads(resp1.read().decode("utf-8"))
+                self.assertEqual(len(h1["sleep_reports"]), 1)
+                self.assertEqual(h1["sleep_reports"][0]["id"], rep_id)
+                self.assertEqual(h1["sleep_reports"][0]["report_markdown"], "Relatório Teste")
+
+                # 2. Segundo GET /api/health ainda retorna (pois não houve ack)
+                with urllib.request.urlopen(f"{self.base_url}/api/health", timeout=5) as resp2:
+                    h2 = json.loads(resp2.read().decode("utf-8"))
+                self.assertEqual(len(h2["sleep_reports"]), 1)
+
+                # 3. POST /api/sleep/ack com PIN válido marca delivered_to_chat = 1
+                req_ack = urllib.request.Request(
+                    f"{self.base_url}/api/sleep/ack",
+                    data=json.dumps({"id": rep_id}).encode("utf-8"),
+                    headers={"Content-Type": "application/json", "X-Access-Pin": ACCESS_PIN},
+                )
+                with urllib.request.urlopen(req_ack, timeout=5) as resp_ack:
+                    ack_data = json.loads(resp_ack.read().decode("utf-8"))
+                self.assertEqual(ack_data["status"], "ok")
+                self.assertEqual(ack_data["acked"], 1)
+
+                # 4. GET /api/health agora vem vazio
+                with urllib.request.urlopen(f"{self.base_url}/api/health", timeout=5) as resp3:
+                    h3 = json.loads(resp3.read().decode("utf-8"))
+                self.assertEqual(h3["sleep_reports"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

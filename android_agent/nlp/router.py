@@ -1866,6 +1866,20 @@ def extract_voice_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def extract_manage_sleep(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Comandos manuais do monitor de sono: start_now, discard_last, status."""
+    if re.search(r"\b(?:vou\s+(?:dormir|deitar)|indo\s+(?:dormir|deitar)|ja\s+vou\s+(?:dormir|deitar))\b", norm):
+        return 0.97, _format_call("manage_sleep", action="start_now")
+    if (
+        "sono" in norm
+        and any(v in norm for v in ("desconsidera", "desconsiderar", "apaga", "apagar", "exclui", "excluir", "remove", "remover", "descarta", "descartar"))
+    ):
+        return 0.97, _format_call("manage_sleep", action="discard_last")
+    if "status" in norm and "sono" in norm:
+        return 0.97, _format_call("manage_sleep", action="status")
+    return 0.0, None
+
+
 def extract_sleep_report(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Relatório científico e evolução longitudinal do sono noturno."""
     sleep_triggers = (
@@ -2165,6 +2179,7 @@ class ScoredIntentRouter:
             extract_navigate_to,
             extract_play_media,
             extract_lists,
+            extract_manage_sleep,
             extract_sleep_report,
             extract_voice_notes,
             extract_record_audio,

@@ -273,3 +273,8 @@
 {"prompt": "Meu sono está melhorando ou piorando?", "completion": "<call>get_sleep_report(days=7)</call>"}
 {"prompt": "Relatório do meu sono", "completion": "<call>get_sleep_report(days=7)</call>"}
 {"prompt": "Evolução do meu sono na semana", "completion": "<call>get_sleep_report(days=7)</call>"}
+{"prompt": "Silva, vou dormir agora", "completion": "<call>manage_sleep(action=\"start_now\")</call>"}
+{"prompt": "Boa noite, vou dormir", "completion": "<call>manage_sleep(action=\"start_now\")</call>"}
+{"prompt": "Desconsidera o sono de hoje", "completion": "<call>manage_sleep(action=\"discard_last\")</call>"}
+{"prompt": "Apaga o último relatório de sono", "completion": "<call>manage_sleep(action=\"discard_last\")</call>"}
+{"prompt": "Status do monitoramento de sono", "completion": "<call>manage_sleep(action=\"status\")</call>"}

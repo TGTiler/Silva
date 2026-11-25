@@ -3,51 +3,29 @@ Motor de Monitoramento Autônomo de Sono Noturno, Arquitetura Estimada do Sono
 e Análise Longitudinal Persistente em SQLite (memory.db).
 """
 
+import statistics
 import threading
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from .adb_bridge import ensure_adb_connected, is_screen_unlocked
+from .adb_bridge import ensure_adb_connected, is_screen_unlocked, run_adb_shell
 from .core import _FILE_LOCK
 from .memory_schedule import _get_memory_db
 
 _WEB_ACTIVITY_LOCK = threading.Lock()
 _LAST_WEB_ACTIVITY_TS: Optional[datetime] = None
 
-_SLEEP_QUEUE_LOCK = threading.Lock()
-_PENDING_SLEEP_REPORTS: List[Dict[str, Any]] = []
-
 _INACTIVITY_SLEEP_SECONDS = 7200  # 2 horas
 _MIN_SLEEP_LOG_MINUTES = 150      # 2h30min
+_FALSE_SLEEP_AWAKE_MINUTES = 15   # >= 15 min ativo antes da 01:00 descarta falso sono
+_MERGE_WINDOW_MAX_AWAKE = 20      # < 20 min acordado antes das 04:30 funde blocos
 _IDEAL_SLEEP_MINUTES = 450        # 7h30 (5 ciclos de 90 min)
 _IDEAL_BEDTIME_HOUR = 23
 _IDEAL_BEDTIME_MINUTE = 30
 
 
-def record_web_activity(ts: Optional[datetime] = None) -> None:
-    """Registra atividade recente do usuário na Web UI para compor a detecção de vigília."""
-    global _LAST_WEB_ACTIVITY_TS
-    with _WEB_ACTIVITY_LOCK:
-        _LAST_WEB_ACTIVITY_TS = ts or datetime.now()
-
-
-def pop_pending_sleep_reports() -> List[Dict[str, Any]]:
-    """Retorna e limpa a fila de relatórios de sono pendentes para entrega no Web Chat."""
-    with _SLEEP_QUEUE_LOCK:
-        if not _PENDING_SLEEP_REPORTS:
-            return []
-        items = list(_PENDING_SLEEP_REPORTS)
-        _PENDING_SLEEP_REPORTS.clear()
-        return items
-
-
-def _queue_sleep_report(payload: Dict[str, Any]) -> None:
-    with _SLEEP_QUEUE_LOCK:
-        _PENDING_SLEEP_REPORTS.append(payload)
-
-
 def _ensure_sleep_tables(conn) -> None:
-    """Garante a existência das tabelas sleep_state e sleep_logs no memory.db."""
+    """Garante e migra de forma idempotente as tabelas sleep_state e sleep_logs no memory.db."""
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS sleep_state (
@@ -55,7 +33,10 @@ def _ensure_sleep_tables(conn) -> None:
             current_status TEXT NOT NULL DEFAULT 'awake',
             last_active_ts TEXT NOT NULL,
             sleep_start_ts TEXT DEFAULT NULL,
-            monitoring_enabled INTEGER NOT NULL DEFAULT 1
+            monitoring_enabled INTEGER NOT NULL DEFAULT 1,
+            awake_minutes_accumulated INTEGER NOT NULL DEFAULT 0,
+            brief_awake_since TEXT DEFAULT NULL,
+            manual_sleep_override INTEGER NOT NULL DEFAULT 0
         )
         """
     )
@@ -71,15 +52,134 @@ def _ensure_sleep_tables(conn) -> None:
             bedtime_deviation_minutes INTEGER DEFAULT 0,
             trend_status TEXT NOT NULL DEFAULT 'baseline',
             report_markdown TEXT NOT NULL,
+            awake_minutes INTEGER NOT NULL DEFAULT 0,
+            delivered_to_chat INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
     )
 
+    state_cols = {r["name"] for r in conn.execute("PRAGMA table_info(sleep_state)").fetchall()}
+    if "awake_minutes_accumulated" not in state_cols:
+        conn.execute("ALTER TABLE sleep_state ADD COLUMN awake_minutes_accumulated INTEGER NOT NULL DEFAULT 0")
+    if "brief_awake_since" not in state_cols:
+        conn.execute("ALTER TABLE sleep_state ADD COLUMN brief_awake_since TEXT DEFAULT NULL")
+    if "manual_sleep_override" not in state_cols:
+        conn.execute("ALTER TABLE sleep_state ADD COLUMN manual_sleep_override INTEGER NOT NULL DEFAULT 0")
+
+    log_cols = {r["name"] for r in conn.execute("PRAGMA table_info(sleep_logs)").fetchall()}
+    if "awake_minutes" not in log_cols:
+        conn.execute("ALTER TABLE sleep_logs ADD COLUMN awake_minutes INTEGER NOT NULL DEFAULT 0")
+    if "delivered_to_chat" not in log_cols:
+        conn.execute("ALTER TABLE sleep_logs ADD COLUMN delivered_to_chat INTEGER NOT NULL DEFAULT 0")
+
+
+def record_web_activity(ts: Optional[datetime] = None) -> None:
+    """Registra atividade recente na Web UI e atualiza last_active_ts em sleep_state (anti-Doze)."""
+    global _LAST_WEB_ACTIVITY_TS
+    now_dt = ts or datetime.now()
+    with _WEB_ACTIVITY_LOCK:
+        _LAST_WEB_ACTIVITY_TS = now_dt
+
+    now_iso = now_dt.isoformat(timespec="seconds")
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            _ensure_sleep_tables(conn)
+            row = conn.execute("SELECT current_status FROM sleep_state WHERE id = 1").fetchone()
+            with conn:
+                if row is None:
+                    conn.execute(
+                        "INSERT INTO sleep_state (id, current_status, last_active_ts, sleep_start_ts, monitoring_enabled) "
+                        "VALUES (1, 'awake', ?, NULL, 1)",
+                        (now_iso,),
+                    )
+                elif str(row["current_status"]) == "awake":
+                    conn.execute("UPDATE sleep_state SET last_active_ts = ? WHERE id = 1", (now_iso,))
+        finally:
+            conn.close()
+
+
+def get_undelivered_sleep_reports() -> List[Dict[str, Any]]:
+    """Retorna relatórios de sleep_logs com delivered_to_chat = 0 sem marcá-los como entregues."""
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            _ensure_sleep_tables(conn)
+            rows = conn.execute(
+                "SELECT id, report_markdown, created_at FROM sleep_logs "
+                "WHERE delivered_to_chat = 0 ORDER BY id ASC"
+            ).fetchall()
+            return [
+                {
+                    "id": int(r["id"]),
+                    "report_markdown": str(r["report_markdown"]),
+                    "created_at": str(r["created_at"] or ""),
+                }
+                for r in rows
+            ]
+        finally:
+            conn.close()
+
+
+def ack_sleep_reports(report_ids: List[int]) -> int:
+    """Marca relatórios como entregues (delivered_to_chat = 1) após confirmação do cliente."""
+    clean_ids = []
+    for rid in report_ids or []:
+        try:
+            clean_ids.append(int(rid))
+        except (TypeError, ValueError):
+            continue
+    if not clean_ids:
+        return 0
+
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            _ensure_sleep_tables(conn)
+            updated = 0
+            with conn:
+                for rid in clean_ids:
+                    cur = conn.execute(
+                        "UPDATE sleep_logs SET delivered_to_chat = 1 WHERE id = ?",
+                        (rid,),
+                    )
+                    updated += int(cur.rowcount or 0)
+            return updated
+        finally:
+            conn.close()
+
 
 def _is_night_window(dt: datetime) -> bool:
     """Janela de monitoramento noturno: 19:15 até 11:59 do dia seguinte."""
     return (dt.hour > 19 or (dt.hour == 19 and dt.minute >= 15)) or (dt.hour < 12)
+
+
+def _is_before_0100(dt: datetime) -> bool:
+    """Retorna True se estiver no início da noite (19:00–23:59 ou 00:00–00:59)."""
+    return dt.hour >= 19 or dt.hour < 1
+
+
+def _is_before_0430(dt: datetime) -> bool:
+    """Retorna True se estiver na janela de consolidação da madrugada (< 04:30)."""
+    return dt.hour < 4 or (dt.hour == 4 and dt.minute < 30)
+
+
+def _is_weekend_night(sleep_start_dt: datetime) -> bool:
+    """Retorna True para noites de sexta->sábado (weekday=4) e sábado->domingo (weekday=5)."""
+    evening_dt = sleep_start_dt if sleep_start_dt.hour >= 18 else (sleep_start_dt - timedelta(days=1))
+    return evening_dt.weekday() in (4, 5)
+
+
+def _is_media_playing() -> bool:
+    """Verifica via ADB dumpsys media_session se há reprodução de áudio/vídeo ou cast ativo (state=3)."""
+    adb_ser = ensure_adb_connected()
+    if not adb_ser:
+        return False
+    ok, out = run_adb_shell(["dumpsys", "media_session"], timeout=4.0)
+    if not ok or not out:
+        return False
+    return "state=3" in out or "PlaybackState {state=3" in out
 
 
 def _detect_device_activity(now: datetime) -> bool:
@@ -114,106 +214,48 @@ def _format_duration_hm(total_minutes: int) -> str:
 def _compute_bedtime_deviation(sleep_start_dt: datetime) -> int:
     """
     Desvio em minutos em relação ao horário-alvo de dormir (23:30 daquela noite).
-    Positivo = dormiu depois das 23:30; negativo = dormiu antes das 23:30.
+    Em fins de semana (sexta->sábado e sábado->domingo), relaxa em até 60 min o horário-alvo.
     """
-    if sleep_start_dt.hour >= 18:
-        ideal_dt = sleep_start_dt.replace(
-            hour=_IDEAL_BEDTIME_HOUR,
-            minute=_IDEAL_BEDTIME_MINUTE,
-            second=0,
-            microsecond=0,
-        )
-    else:
-        prev_day = sleep_start_dt - timedelta(days=1)
-        ideal_dt = prev_day.replace(
-            hour=_IDEAL_BEDTIME_HOUR,
-            minute=_IDEAL_BEDTIME_MINUTE,
-            second=0,
-            microsecond=0,
-        )
+    evening_dt = sleep_start_dt if sleep_start_dt.hour >= 18 else (sleep_start_dt - timedelta(days=1))
+    ideal_dt = evening_dt.replace(
+        hour=_IDEAL_BEDTIME_HOUR,
+        minute=_IDEAL_BEDTIME_MINUTE,
+        second=0,
+        microsecond=0,
+    )
+    if _is_weekend_night(sleep_start_dt):
+        ideal_dt += timedelta(minutes=60)
     return int((sleep_start_dt - ideal_dt).total_seconds() // 60)
 
 
-def _compute_sleep_score(duration_minutes: int, bedtime_deviation_minutes: int) -> int:
+def _compute_sleep_score(duration_minutes: int, bedtime_deviation_minutes: int, is_weekend: bool = False) -> int:
     """Pontuação de 0 a 100 combinando duração (70 pts) e regularidade circadiana (30 pts)."""
-    if 450 <= duration_minutes <= 510:
+    max_opt = 540 if is_weekend else 510
+    min_opt = 420 if is_weekend else 450
+    if min_opt <= duration_minutes <= max_opt:
         dur_score = 70.0
-    elif duration_minutes < 450:
-        dur_score = max(10.0, 70.0 * (duration_minutes / 450.0))
+    elif duration_minutes < min_opt:
+        dur_score = max(10.0, 70.0 * (duration_minutes / float(min_opt)))
     else:
-        excess = duration_minutes - 510
+        excess = duration_minutes - max_opt
         dur_score = max(35.0, 70.0 - (excess * 0.25))
 
     abs_dev = abs(bedtime_deviation_minutes)
-    if abs_dev <= 20:
+    tolerance = 45 if is_weekend else 20
+    if abs_dev <= tolerance:
         reg_score = 30.0
+    elif is_weekend:
+        reg_score = max(18.0, 30.0 - ((abs_dev - tolerance) * 0.1))
     else:
-        reg_score = max(0.0, 30.0 - ((abs_dev - 20) * 0.2))
+        reg_score = max(0.0, 30.0 - ((abs_dev - tolerance) * 0.2))
 
     return int(max(0, min(100, round(dur_score + reg_score))))
 
 
-def _analyze_sleep_trend(
-    conn,
-    current_duration_min: int,
-    current_score: int,
-    sleep_start_dt: datetime,
-) -> Dict[str, Any]:
-    """
-    Compara a noite atual com as últimas 7 noites em sleep_logs e classifica:
-    'baseline' | 'improving' | 'worsening' | 'stable'.
-    Sincroniza também o resumo em memories (key='sleep_evolution_summary').
-    """
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT duration_minutes, sleep_score, bedtime_deviation_minutes, sleep_start_ts "
-        "FROM sleep_logs ORDER BY id DESC LIMIT 7"
-    )
-    prev_rows = cur.fetchall()
-
-    if len(prev_rows) == 0:
-        trend_status = "baseline"
-        avg_dur = current_duration_min
-        avg_score = current_score
-        delta_min = 0
-        delta_score = 0
-        verdict = "Noite de referência registrada para acompanhar sua evolução"
-    else:
-        avg_dur = int(round(sum(int(r["duration_minutes"]) for r in prev_rows) / len(prev_rows)))
-        avg_score = int(round(sum(int(r["sleep_score"]) for r in prev_rows) / len(prev_rows)))
-        delta_min = current_duration_min - avg_dur
-        delta_score = current_score - avg_score
-        short_streak = sum(1 for r in prev_rows[:2] if int(r["duration_minutes"]) < 390)
-
-        if (delta_score >= 5 or delta_min >= 25) and current_duration_min <= 570 and current_duration_min >= 390:
-            trend_status = "improving"
-            sign = "+" if delta_min >= 0 else ""
-            verdict = (
-                f"📈 Seu sono está melhorando: você dormiu {sign}{delta_min} min "
-                f"em relação à sua média recente de {_format_duration_hm(avg_dur)}"
-            )
-        elif delta_min <= -30 or delta_score <= -5 or (current_duration_min < 390 and short_streak >= 1):
-            trend_status = "worsening"
-            if current_duration_min < 360 and short_streak >= 2:
-                verdict = "📉 Alerta de piora: terceira noite seguida abaixo de 6h, acumulando débito de sono"
-            else:
-                verdict = (
-                    f"📉 Alerta de piora: variação de {delta_min} min e {delta_score:+d} pts "
-                    f"frente à média recente de {_format_duration_hm(avg_dur)}"
-                )
-        else:
-            trend_status = "stable"
-            verdict = (
-                f"⚖️ Sono estável: mantendo consistência próxima à média recente de "
-                f"{_format_duration_hm(avg_dur)} ({delta_score:+d} pts)"
-            )
-
-    summary_mem = (
-        f"Último sono ({sleep_start_dt.strftime('%d/%m')}): {_format_duration_hm(current_duration_min)}, "
-        f"nota {current_score}/100, tendência={trend_status}. {verdict}."
-    )
+def _sync_sleep_memory(conn, summary_mem: str) -> None:
+    """Atualiza a chave sleep_evolution_summary na tabela memories."""
     now_iso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cur.execute(
+    conn.execute(
         """
         INSERT INTO memories (key, value, category, updated_at)
         VALUES ('sleep_evolution_summary', ?, 'saude', ?)
@@ -225,10 +267,71 @@ def _analyze_sleep_trend(
         (summary_mem, now_iso),
     )
 
+
+def _analyze_sleep_trend(
+    conn,
+    current_duration_min: int,
+    current_score: int,
+    sleep_start_dt: datetime,
+) -> Dict[str, Any]:
+    """
+    Compara a noite atual com a MEDIANA móvel das últimas 7 noites em sleep_logs (anti-outlier)
+    e classifica: 'baseline' | 'improving' | 'worsening' | 'stable'.
+    """
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT duration_minutes, sleep_score, bedtime_deviation_minutes, sleep_start_ts "
+        "FROM sleep_logs ORDER BY id DESC LIMIT 7"
+    )
+    prev_rows = cur.fetchall()
+
+    if len(prev_rows) == 0:
+        trend_status = "baseline"
+        med_dur = current_duration_min
+        med_score = current_score
+        delta_min = 0
+        delta_score = 0
+        verdict = "Noite de referência registrada para acompanhar sua evolução"
+    else:
+        med_dur = int(round(statistics.median(int(r["duration_minutes"]) for r in prev_rows)))
+        med_score = int(round(statistics.median(int(r["sleep_score"]) for r in prev_rows)))
+        delta_min = current_duration_min - med_dur
+        delta_score = current_score - med_score
+        short_streak = sum(1 for r in prev_rows[:2] if int(r["duration_minutes"]) < 390)
+
+        if (delta_score >= 5 or delta_min >= 25) and 390 <= current_duration_min <= 570:
+            trend_status = "improving"
+            sign = "+" if delta_min >= 0 else ""
+            verdict = (
+                f"📈 Seu sono está melhorando: você dormiu {sign}{delta_min} min "
+                f"em relação à sua mediana recente de {_format_duration_hm(med_dur)}"
+            )
+        elif delta_min <= -30 or delta_score <= -5 or (current_duration_min < 390 and short_streak >= 1):
+            trend_status = "worsening"
+            if current_duration_min < 360 and short_streak >= 2:
+                verdict = "📉 Alerta de piora: terceira noite seguida abaixo de 6h, acumulando débito de sono"
+            else:
+                verdict = (
+                    f"📉 Alerta de piora: variação de {delta_min} min e {delta_score:+d} pts "
+                    f"frente à mediana recente de {_format_duration_hm(med_dur)}"
+                )
+        else:
+            trend_status = "stable"
+            verdict = (
+                f"⚖️ Sono estável: mantendo consistência próxima à mediana recente de "
+                f"{_format_duration_hm(med_dur)} ({delta_score:+d} pts)"
+            )
+
+    summary_mem = (
+        f"Último sono ({sleep_start_dt.strftime('%d/%m')}): {_format_duration_hm(current_duration_min)}, "
+        f"nota {current_score}/100, tendência={trend_status}. {verdict}."
+    )
+    _sync_sleep_memory(conn, summary_mem)
+
     return {
         "trend_status": trend_status,
-        "avg_prev_duration": avg_dur,
-        "avg_prev_score": avg_score,
+        "median_prev_duration": med_dur,
+        "median_prev_score": med_score,
         "delta_minutes": delta_min,
         "delta_score": delta_score,
         "verdict": verdict,
@@ -242,6 +345,7 @@ def build_scientific_sleep_report(
     sleep_score: int,
     cycles_estimated: float,
     trend_info: Dict[str, Any],
+    awake_minutes: int = 0,
 ) -> str:
     """Gera o relatório científico completo em Markdown com 4 blocos obrigatórios."""
     nrem_total = int(round(duration_minutes * 0.775))
@@ -287,12 +391,14 @@ def build_scientific_sleep_report(
         )
     plan_line_2 = (
         "Evite cafeína após as **14:00** e busque **10–15 min de luz solar matinal** ao acordar "
-        "para ancorar seu ritmo circadiano."
+        "para ancorar o ritmo circadiano."
     )
+
+    awake_note = f" (descontados {awake_minutes} min acordado na madrugada)" if awake_minutes > 0 else ""
 
     return "\n".join([
         "### 1. Resumo & Evolução ao Passar das Noites",
-        f"- **Duração dormida:** {_format_duration_hm(duration_minutes)} "
+        f"- **Duração dormida:** {_format_duration_hm(duration_minutes)}{awake_note} "
         f"({sleep_start_dt.strftime('%H:%M')} → {wake_up_dt.strftime('%H:%M')})",
         f"- **Nota do Sono:** {sleep_score}/100 | **Ciclos estimados (90 min):** {cycles_estimated:.1f}",
         f"- **Evolução:** {trend_info.get('verdict', 'Noite de referência registrada')}",
@@ -318,14 +424,107 @@ def build_scientific_sleep_report(
     ])
 
 
+def _finalize_sleep_session(
+    conn,
+    sleep_start_dt: datetime,
+    wake_up_dt: datetime,
+    awake_minutes: int,
+) -> Dict[str, Any]:
+    """Calcula duração líquida, persiste em sleep_logs e retorna payload do relatório."""
+    now_iso = wake_up_dt.isoformat(timespec="seconds")
+    gross_minutes = max(0, int((wake_up_dt - sleep_start_dt).total_seconds() // 60))
+    duration_minutes = max(0, gross_minutes - max(0, int(awake_minutes)))
+
+    with conn:
+        conn.execute(
+            "UPDATE sleep_state SET current_status = 'awake', last_active_ts = ?, "
+            "sleep_start_ts = NULL, awake_minutes_accumulated = 0, "
+            "brief_awake_since = NULL, manual_sleep_override = 0 WHERE id = 1",
+            (now_iso,),
+        )
+
+        if duration_minutes < _MIN_SLEEP_LOG_MINUTES:
+            return {
+                "status": "awake",
+                "duration_minutes": duration_minutes,
+                "report_generated": False,
+            }
+
+        cycles_estimated = round(duration_minutes / 90.0, 2)
+        bedtime_dev = _compute_bedtime_deviation(sleep_start_dt)
+        sleep_score = _compute_sleep_score(
+            duration_minutes,
+            bedtime_dev,
+            is_weekend=_is_weekend_night(sleep_start_dt),
+        )
+        trend_info = _analyze_sleep_trend(conn, duration_minutes, sleep_score, sleep_start_dt)
+        report_md = build_scientific_sleep_report(
+            sleep_start_dt=sleep_start_dt,
+            wake_up_dt=wake_up_dt,
+            duration_minutes=duration_minutes,
+            sleep_score=sleep_score,
+            cycles_estimated=cycles_estimated,
+            trend_info=trend_info,
+            awake_minutes=awake_minutes,
+        )
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO sleep_logs (
+                sleep_start_ts, wake_up_ts, duration_minutes, sleep_score,
+                cycles_estimated, bedtime_deviation_minutes, trend_status,
+                report_markdown, awake_minutes, delivered_to_chat
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            """,
+            (
+                sleep_start_dt.isoformat(timespec="seconds"),
+                now_iso,
+                duration_minutes,
+                sleep_score,
+                cycles_estimated,
+                bedtime_dev,
+                trend_info["trend_status"],
+                report_md,
+                int(awake_minutes),
+            ),
+        )
+        log_id = int(cur.lastrowid)
+
+    trend_label_map = {
+        "improving": "Melhorando",
+        "worsening": "Piorando",
+        "stable": "Estável",
+        "baseline": "Referência",
+    }
+    trend_pt = trend_label_map.get(trend_info["trend_status"], "Estável")
+    notif_summary = (
+        f"Você dormiu {_format_duration_hm(duration_minutes)} (Nota {sleep_score}/100) • "
+        f"Tendência: {trend_pt}"
+    )
+    return {
+        "status": "awake",
+        "report_generated": True,
+        "id": log_id,
+        "title": "☀️ Bom dia! Relatório & Evolução do Sono",
+        "summary": notif_summary,
+        "duration_minutes": duration_minutes,
+        "awake_minutes": int(awake_minutes),
+        "sleep_score": sleep_score,
+        "trend_status": trend_info["trend_status"],
+        "report_markdown": report_md,
+        "wake_up_ts": now_iso,
+    }
+
+
 def evaluate_sleep_cycle(
     now: Optional[datetime] = None,
     is_user_active: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
-    Máquina de estados autônoma do monitoramento noturno de sono:
-    - awake -> sleeping após >= 2h de inatividade na janela noturna (19:15–11:59)
-    - sleeping -> awake ao detectar retorno do usuário; se >= 150 min, persiste e gera relatório.
+    Máquina de estados blindada do monitoramento noturno de sono:
+    - Bloqueia transição para 'sleeping' se houver mídia ativa (_is_media_playing).
+    - Descarta falso sono antes da 01:00 se atividade durar >= 15 min (sem manual_sleep_override).
+    - Merge Window antes das 04:30: despertares < 20 min são fundidos e descontados em awake_minutes_accumulated.
     """
     cur_dt = now or datetime.now()
     active = _detect_device_activity(cur_dt) if is_user_active is None else bool(is_user_active)
@@ -335,9 +534,11 @@ def evaluate_sleep_cycle(
         conn = _get_memory_db()
         try:
             _ensure_sleep_tables(conn)
-            cur = conn.cursor()
-            cur.execute("SELECT current_status, last_active_ts, sleep_start_ts, monitoring_enabled FROM sleep_state WHERE id = 1")
-            row = cur.fetchone()
+            row = conn.execute(
+                "SELECT current_status, last_active_ts, sleep_start_ts, monitoring_enabled, "
+                "awake_minutes_accumulated, brief_awake_since, manual_sleep_override "
+                "FROM sleep_state WHERE id = 1"
+            ).fetchone()
             if row is None:
                 with conn:
                     conn.execute(
@@ -353,6 +554,9 @@ def evaluate_sleep_cycle(
             current_status = str(row["current_status"] or "awake")
             last_active_dt = datetime.fromisoformat(str(row["last_active_ts"]))
             sleep_start_str = row["sleep_start_ts"]
+            awake_acc = int(row["awake_minutes_accumulated"] or 0)
+            brief_since_str = row["brief_awake_since"]
+            manual_override = int(row["manual_sleep_override"] or 0)
 
             if current_status == "awake":
                 if active:
@@ -362,91 +566,209 @@ def evaluate_sleep_cycle(
 
                 idle_sec = (cur_dt - last_active_dt).total_seconds()
                 if _is_night_window(cur_dt) and idle_sec >= _INACTIVITY_SLEEP_SECONDS:
+                    if _is_media_playing():
+                        with conn:
+                            conn.execute("UPDATE sleep_state SET last_active_ts = ? WHERE id = 1", (now_iso,))
+                        return {"status": "awake", "media_blocked": True, "report_generated": False}
+
                     retro_start = last_active_dt.isoformat(timespec="seconds")
                     with conn:
                         conn.execute(
-                            "UPDATE sleep_state SET current_status = 'sleeping', sleep_start_ts = ? WHERE id = 1",
+                            "UPDATE sleep_state SET current_status = 'sleeping', sleep_start_ts = ?, "
+                            "awake_minutes_accumulated = 0, brief_awake_since = NULL, manual_sleep_override = 0 "
+                            "WHERE id = 1",
                             (retro_start,),
                         )
                     return {"status": "sleeping", "sleep_start_ts": retro_start, "report_generated": False}
                 return {"status": "awake", "report_generated": False}
 
             # current_status == 'sleeping'
+            sleep_start_dt = datetime.fromisoformat(str(sleep_start_str or row["last_active_ts"]))
+
             if not active:
+                if brief_since_str:
+                    brief_dt = datetime.fromisoformat(str(brief_since_str))
+                    brief_mins = max(0, int((cur_dt - brief_dt).total_seconds() // 60))
+                    if brief_mins < _MERGE_WINDOW_MAX_AWAKE:
+                        new_acc = awake_acc + brief_mins
+                        with conn:
+                            conn.execute(
+                                "UPDATE sleep_state SET awake_minutes_accumulated = ?, brief_awake_since = NULL WHERE id = 1",
+                                (new_acc,),
+                            )
+                        return {
+                            "status": "sleeping",
+                            "sleep_start_ts": sleep_start_str,
+                            "awake_minutes_accumulated": new_acc,
+                            "merged_brief_awake": True,
+                            "report_generated": False,
+                        }
+                    # Ficou >= 20 min ativo antes de voltar a ficar inativo -> encerra naquele despertar
+                    return _finalize_sleep_session(conn, sleep_start_dt, brief_dt, awake_acc)
                 return {"status": "sleeping", "sleep_start_ts": sleep_start_str, "report_generated": False}
 
-            sleep_start_dt = datetime.fromisoformat(str(sleep_start_str or row["last_active_ts"]))
-            duration_minutes = max(0, int((cur_dt - sleep_start_dt).total_seconds() // 60))
-
-            with conn:
-                conn.execute(
-                    "UPDATE sleep_state SET current_status = 'awake', last_active_ts = ?, sleep_start_ts = NULL WHERE id = 1",
-                    (now_iso,),
-                )
-
-                if duration_minutes < _MIN_SLEEP_LOG_MINUTES:
+            # Usuário está ativo enquanto current_status == 'sleeping'
+            if not brief_since_str:
+                # Filtro de falso sono (< 01:00 sem override) ou Merge Window (< 04:30)
+                if (manual_override == 0 and _is_before_0100(cur_dt)) or _is_before_0430(cur_dt):
+                    with conn:
+                        conn.execute(
+                            "UPDATE sleep_state SET brief_awake_since = ? WHERE id = 1",
+                            (now_iso,),
+                        )
                     return {
-                        "status": "awake",
-                        "duration_minutes": duration_minutes,
+                        "status": "sleeping",
+                        "sleep_start_ts": sleep_start_str,
+                        "brief_awake_since": now_iso,
                         "report_generated": False,
                     }
+                return _finalize_sleep_session(conn, sleep_start_dt, cur_dt, awake_acc)
 
-                cycles_estimated = round(duration_minutes / 90.0, 2)
-                bedtime_dev = _compute_bedtime_deviation(sleep_start_dt)
-                sleep_score = _compute_sleep_score(duration_minutes, bedtime_dev)
-                trend_info = _analyze_sleep_trend(conn, duration_minutes, sleep_score, sleep_start_dt)
-                report_md = build_scientific_sleep_report(
-                    sleep_start_dt=sleep_start_dt,
-                    wake_up_dt=cur_dt,
-                    duration_minutes=duration_minutes,
-                    sleep_score=sleep_score,
-                    cycles_estimated=cycles_estimated,
-                    trend_info=trend_info,
-                )
-                conn.execute(
-                    """
-                    INSERT INTO sleep_logs (
-                        sleep_start_ts, wake_up_ts, duration_minutes, sleep_score,
-                        cycles_estimated, bedtime_deviation_minutes, trend_status, report_markdown
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        sleep_start_dt.isoformat(timespec="seconds"),
-                        now_iso,
-                        duration_minutes,
-                        sleep_score,
-                        cycles_estimated,
-                        bedtime_dev,
-                        trend_info["trend_status"],
-                        report_md,
+            brief_dt = datetime.fromisoformat(str(brief_since_str))
+            brief_mins = max(0, int((cur_dt - brief_dt).total_seconds() // 60))
+
+            # 1. Filtro de pausa noturna (falso sono antes da 01:00)
+            if manual_override == 0 and _is_before_0100(cur_dt):
+                if brief_mins >= _FALSE_SLEEP_AWAKE_MINUTES:
+                    with conn:
+                        conn.execute(
+                            "UPDATE sleep_state SET current_status = 'awake', last_active_ts = ?, "
+                            "sleep_start_ts = NULL, awake_minutes_accumulated = 0, "
+                            "brief_awake_since = NULL, manual_sleep_override = 0 WHERE id = 1",
+                            (now_iso,),
+                        )
+                    return {"status": "awake", "discarded_false_sleep": True, "report_generated": False}
+                return {
+                    "status": "sleeping",
+                    "sleep_start_ts": sleep_start_str,
+                    "brief_awake_since": brief_since_str,
+                    "report_generated": False,
+                }
+
+            # 2. Merge Window antes das 04:30
+            if _is_before_0430(cur_dt):
+                if brief_mins < _MERGE_WINDOW_MAX_AWAKE:
+                    return {
+                        "status": "sleeping",
+                        "sleep_start_ts": sleep_start_str,
+                        "brief_awake_since": brief_since_str,
+                        "report_generated": False,
+                    }
+                return _finalize_sleep_session(conn, sleep_start_dt, cur_dt, awake_acc)
+
+            # 3. >= 04:30: encerra a noite e gera o relatório matinal
+            return _finalize_sleep_session(conn, sleep_start_dt, cur_dt, awake_acc)
+        finally:
+            conn.close()
+
+
+def manage_sleep(action: str = "status") -> Dict[str, Any]:
+    """
+    Controle manual do monitoramento noturno de sono:
+    - 'start_now': inicia monitoramento imediatamente ('vou dormir agora').
+    - 'discard_last': remove o último relatório salvo em sleep_logs e recalcula resumo.
+    - 'status': retorna o estado atual do monitoramento.
+    """
+    act = str(action or "status").strip().lower()
+    now_dt = datetime.now()
+    now_iso = now_dt.isoformat(timespec="seconds")
+
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            _ensure_sleep_tables(conn)
+            if act == "start_now":
+                with conn:
+                    conn.execute(
+                        """
+                        INSERT INTO sleep_state (
+                            id, current_status, last_active_ts, sleep_start_ts,
+                            monitoring_enabled, awake_minutes_accumulated,
+                            brief_awake_since, manual_sleep_override
+                        ) VALUES (1, 'sleeping', ?, ?, 1, 0, NULL, 1)
+                        ON CONFLICT(id) DO UPDATE SET
+                            current_status = 'sleeping',
+                            last_active_ts = excluded.last_active_ts,
+                            sleep_start_ts = excluded.sleep_start_ts,
+                            monitoring_enabled = 1,
+                            awake_minutes_accumulated = 0,
+                            brief_awake_since = NULL,
+                            manual_sleep_override = 1
+                        """,
+                        (now_iso, now_iso),
+                    )
+                return {
+                    "status": "ok",
+                    "message": (
+                        f"Boa noite! Monitoramento de sono iniciado manualmente às {now_dt.strftime('%H:%M')}. "
+                        "Quando você acordar, prepararei seu relatório completo."
                     ),
-                )
+                    "data": {"action": "start_now", "current_status": "sleeping", "sleep_start_ts": now_iso},
+                }
 
-            trend_label_map = {
-                "improving": "Melhorando",
-                "worsening": "Piorando",
-                "stable": "Estável",
-                "baseline": "Referência",
-            }
-            trend_pt = trend_label_map.get(trend_info["trend_status"], "Estável")
-            notif_summary = (
-                f"Você dormiu {_format_duration_hm(duration_minutes)} (Nota {sleep_score}/100) • "
-                f"Tendência: {trend_pt}"
+            if act == "discard_last":
+                last_row = conn.execute(
+                    "SELECT id, sleep_start_ts, wake_up_ts, duration_minutes FROM sleep_logs ORDER BY id DESC LIMIT 1"
+                ).fetchone()
+                if not last_row:
+                    return {
+                        "status": "ok",
+                        "message": "Não há nenhum relatório de sono registrado para descartar.",
+                        "data": {"action": "discard_last", "deleted": False},
+                    }
+                with conn:
+                    conn.execute("DELETE FROM sleep_logs WHERE id = ?", (int(last_row["id"]),))
+                    prev_latest = conn.execute(
+                        "SELECT sleep_start_ts, duration_minutes, sleep_score, trend_status "
+                        "FROM sleep_logs ORDER BY id DESC LIMIT 1"
+                    ).fetchone()
+                    if prev_latest:
+                        prev_dt = datetime.fromisoformat(str(prev_latest["sleep_start_ts"]))
+                        _sync_sleep_memory(
+                            conn,
+                            f"Último sono ({prev_dt.strftime('%d/%m')}): "
+                            f"{_format_duration_hm(int(prev_latest['duration_minutes']))}, "
+                            f"nota {int(prev_latest['sleep_score'])}/100, tendência={prev_latest['trend_status']}.",
+                        )
+                    else:
+                        conn.execute("DELETE FROM memories WHERE key = 'sleep_evolution_summary'")
+                return {
+                    "status": "ok",
+                    "message": (
+                        f"Último relatório de sono ({_format_duration_hm(int(last_row['duration_minutes']))}) "
+                        "descartado e histórico longitudinal recalculado."
+                    ),
+                    "data": {"action": "discard_last", "deleted": True, "deleted_id": int(last_row["id"])},
+                }
+
+            row = conn.execute(
+                "SELECT current_status, last_active_ts, sleep_start_ts, awake_minutes_accumulated, manual_sleep_override "
+                "FROM sleep_state WHERE id = 1"
+            ).fetchone()
+            if not row:
+                return {
+                    "status": "ok",
+                    "message": "Monitoramento de sono ativo (estado inicial: awake). Janela noturna: 19:15–11:59.",
+                    "data": {"action": "status", "current_status": "awake"},
+                }
+            st = str(row["current_status"])
+            msg = (
+                f"Monitoramento de sono em andamento desde {row['sleep_start_ts']} "
+                f"(despertares acumulados: {int(row['awake_minutes_accumulated'] or 0)} min)."
+                if st == "sleeping"
+                else f"Monitoramento de sono ativo (estado: awake, última atividade: {row['last_active_ts']})."
             )
-            report_payload = {
-                "title": "☀️ Bom dia! Relatório & Evolução do Sono",
-                "summary": notif_summary,
-                "duration_minutes": duration_minutes,
-                "sleep_score": sleep_score,
-                "trend_status": trend_info["trend_status"],
-                "report_markdown": report_md,
-                "wake_up_ts": now_iso,
-            }
-            _queue_sleep_report(report_payload)
             return {
-                "status": "awake",
-                "report_generated": True,
-                **report_payload,
+                "status": "ok",
+                "message": msg,
+                "data": {
+                    "action": "status",
+                    "current_status": st,
+                    "sleep_start_ts": row["sleep_start_ts"],
+                    "last_active_ts": row["last_active_ts"],
+                    "awake_minutes_accumulated": int(row["awake_minutes_accumulated"] or 0),
+                    "manual_sleep_override": bool(row["manual_sleep_override"]),
+                },
             }
         finally:
             conn.close()
@@ -463,14 +785,12 @@ def get_sleep_report(days: int = 7) -> Dict[str, Any]:
         conn = _get_memory_db()
         try:
             _ensure_sleep_tables(conn)
-            cur = conn.cursor()
-            cur.execute(
+            rows = conn.execute(
                 "SELECT id, sleep_start_ts, wake_up_ts, duration_minutes, sleep_score, "
-                "cycles_estimated, bedtime_deviation_minutes, trend_status, report_markdown "
+                "cycles_estimated, bedtime_deviation_minutes, trend_status, report_markdown, awake_minutes "
                 "FROM sleep_logs ORDER BY id DESC LIMIT ?",
                 (n_days,),
-            )
-            rows = cur.fetchall()
+            ).fetchall()
         finally:
             conn.close()
 
@@ -505,6 +825,7 @@ def get_sleep_report(days: int = 7) -> Dict[str, Any]:
             "sleep_start_ts": str(r["sleep_start_ts"]),
             "wake_up_ts": str(r["wake_up_ts"]),
             "duration_minutes": dur_m,
+            "awake_minutes": int(r["awake_minutes"] or 0),
             "sleep_score": sc,
             "cycles_estimated": float(r["cycles_estimated"]),
             "bedtime_deviation_minutes": int(r["bedtime_deviation_minutes"] or 0),

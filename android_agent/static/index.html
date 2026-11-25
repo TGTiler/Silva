@@ -1941,17 +1941,39 @@
               heroView.style.display = "none";
               chatMessages.style.display = "flex";
             }
+            const seenSleepIds = new Set(
+              (activeSess.messages || [])
+                .map(function (m) { return m && m.sleep_report_id; })
+                .filter(function (v) { return v !== undefined && v !== null; })
+            );
+            const ackIds = [];
             data.sleep_reports.forEach(function (rep) {
+              if (rep && rep.id !== undefined && rep.id !== null) {
+                ackIds.push(rep.id);
+                if (seenSleepIds.has(rep.id)) return;
+                seenSleepIds.add(rep.id);
+              }
               const repText = rep.report_markdown || rep.summary || "Relatório de sono disponível.";
               const rawSleepCall = "<call>get_sleep_report()</call>";
               activeSess.messages.push({
                 role: "silva",
                 text: repText,
-                raw_call: rawSleepCall
+                raw_call: rawSleepCall,
+                sleep_report_id: rep.id
               });
               appendSilvaMessageDOM(repText, rawSleepCall);
             });
             saveSessions();
+            if (ackIds.length > 0) {
+              fetch("/api/sleep/ack", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-Access-Pin": (pinInput && pinInput.value ? pinInput.value.trim() : "")
+                },
+                body: JSON.stringify({ ids: ackIds })
+              }).catch(function () {});
+            }
           }
           if (data.status === "ok" && data.llm && data.llm.online) {
             statusDot.className = "status-dot-mini online";

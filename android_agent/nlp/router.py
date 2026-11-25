@@ -1284,9 +1284,9 @@ def extract_memory(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Notas, lembranças de longo prazo, captura livre com TTL, listagem e esquecimento."""
     clean_raw = raw.strip().rstrip("?!.,;:")
 
-    # 1. list_memories ("o que você tem anotado?", "lista minhas memórias", "mostra minhas anotações de senha")
+    # 1. list_memories ("o que você tem anotado?", "o que você sabe sobre mim?", "lista minhas memórias", "mostra minhas anotações de senha")
     if (
-        any(t in norm for t in ("o que voce tem anotado", "o que vc tem anotado", "lista minhas memorias", "listar memorias", "minhas memorias", "todas as memorias"))
+        any(t in norm for t in ("o que voce tem anotado", "o que vc tem anotado", "o que voce sabe sobre mim", "o que vc sabe sobre mim", "lista minhas memorias", "listar memorias", "minhas memorias", "todas as memorias"))
         or re.search(r"\b(?:mostra|mostre|lista|liste|ver|veja)\s+(?:as\s+)?minhas\s+(?:anotac(?:ao|oes)|notas|memorias)\b", norm)
     ):
         cat = ""

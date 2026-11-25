@@ -266,14 +266,15 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertIn("Área de transferência vazia (ou bloqueada em segundo plano pelo Android — libere READ_CLIPBOARD via ADB para o Termux:API).", res_empty["message"])
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
-    def test_all_60_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 60 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 60, "O catálogo formal deve conter exatamente 60 ferramentas.")
+    def test_all_63_tools_smoke_execution(self):
+        """Testa a execução smoke de todas as 63 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 63, "O catálogo formal deve conter exatamente 63 ferramentas.")
 
         sample_args = {
             "add_list_item": {"item": "café", "list_name": "compras"},
             "calculate": {"expression": "2 + 2"},
             "cancel_alarm": {"time": "07:00"},
+            "check_voice_note": {"query": "aluguel"},
             "connect_wifi": {"ssid": "TesteNet", "password": "123"},
             "convert_units": {"amount": 10.0, "from_unit": "km", "to_unit": "mi"},
             "forget_note": {"query": "teste"},
@@ -308,6 +309,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "remove_list_item": {"item": "café", "list_name": "compras"},
             "request_ride": {"destination": "Shopping"},
             "save_contact": {"name": "Teste", "phone": "11999998888"},
+            "save_voice_note": {"title": "lembrete smoke", "duration": 5, "text_only": True},
             "scan_wifi": {},
             "schedule_event": {"title": "Reuniao", "date": "amanha", "time": "14:00"},
             "search_google": {"query": "Python", "open_browser": False},
@@ -899,6 +901,57 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertIn("schedule_event(", match_intent_fallback("Lembra de ligar pro banco amanhã às 10h"))
         self.assertIn("remember_note(", match_intent_fallback("Lembra que a senha do cadeado é 4512"))
         self.assertIn("remember_note(", match_intent_fallback("Anota aí que o protocolo é 98765"))
+
+    def test_voice_notes_multimodal_checklist_and_nlp(self):
+        """Testa save_voice_note (voz e texto), get_voice_notes (filtro), check_voice_note (check + remoção de .m4a) e NLP."""
+        from android_agent.intent_fallback import match_intent_fallback
+        from android_agent.tools import media as tools_media
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_dir = Path(tmpdir)
+            tmp_cap = tmp_dir / "captures"
+            tmp_cap.mkdir(parents=True, exist_ok=True)
+            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_dir), \
+                 patch.object(tools_media, "CAPTURES_DIR", tmp_cap):
+                # 1. Modo digitado (text_only=True)
+                r_txt = tools.save_voice_note(title="ligar pro médico", text_only=True)
+                self.assertEqual(r_txt["status"], "ok")
+                self.assertEqual(r_txt["data"]["note_type"], "text")
+
+                # 2. Modo voz (text_only=False)
+                r_aud = tools.save_voice_note(title="pagar o aluguel", duration=15, text_only=False)
+                self.assertEqual(r_aud["status"], "ok")
+                self.assertEqual(r_aud["data"]["note_type"], "audio")
+                self.assertIn("media_items", r_aud)
+                audio_file = tmp_cap / r_aud["data"]["filename"]
+                self.assertTrue(audio_file.is_file())
+
+                # 3. Listagem mista e filtro
+                g_all = tools.get_voice_notes()
+                self.assertEqual(g_all["data"]["total"], 2)
+                g_filt = tools.get_voice_notes("aluguel")
+                self.assertEqual(g_filt["data"]["total"], 1)
+                self.assertEqual(g_filt["data"]["voice_notes"][0]["title"], "pagar o aluguel")
+
+                # 4. Check remove da lista ativa e exclui .m4a do disco
+                chk_aud = tools.check_voice_note(query="aluguel")
+                self.assertTrue(chk_aud["data"]["checked"])
+                self.assertTrue(chk_aud["data"]["deleted_audio"])
+                self.assertFalse(audio_file.exists())
+
+                g_after = tools.get_voice_notes()
+                self.assertEqual(g_after["data"]["total"], 1)
+                self.assertEqual(g_after["data"]["voice_notes"][0]["title"], "ligar pro médico")
+
+        # 5. Roteamento NLP
+        self.assertIn("save_voice_note(", match_intent_fallback("grava uma nota de voz para lembrar de pagar o aluguel"))
+        self.assertIn("text_only=False", match_intent_fallback("gravar lembrete de voz de 20 segundos"))
+        self.assertIn("text_only=True", match_intent_fallback("adiciona na lista de lembretes: ligar pro médico"))
+        self.assertIn("text_only=True", match_intent_fallback("anota no checklist pagar internet"))
+        self.assertIn("get_voice_notes(", match_intent_fallback("quais notas de voz eu tenho?"))
+        self.assertIn("get_voice_notes(", match_intent_fallback("mostra meus lembretes"))
+        self.assertIn("check_voice_note(", match_intent_fallback("marca como check a nota do aluguel"))
+        self.assertEqual(match_intent_fallback("apaga a última nota de voz"), "<call>check_voice_note(query='última')</call>")
 
 
 if __name__ == "__main__":

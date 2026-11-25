@@ -556,6 +556,51 @@
         }
       }
     },
+    "save_voice_note": {
+      "description": "Salva um lembrete multimodal no checklist (gravado com a voz ou digitado em texto).",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "Título ou texto do lembrete."
+        },
+        "duration": {
+          "type": "integer",
+          "required": false,
+          "description": "Duração da gravação de voz em segundos (1 a 120, padrão 15)."
+        },
+        "text_only": {
+          "type": "boolean",
+          "required": false,
+          "description": "True para lembrete digitado sem áudio; False para gravar áudio."
+        }
+      }
+    },
+    "get_voice_notes": {
+      "description": "Lista ou busca lembretes e notas de voz pendentes no checklist interativo.",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": false,
+          "description": "Termo opcional para filtrar os lembretes pelo título."
+        }
+      }
+    },
+    "check_voice_note": {
+      "description": "Marca um lembrete ou nota de voz como concluído (check), removendo da lista e apagando o áudio.",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": false,
+          "description": "Título ou termo do lembrete a concluir (ou 'última')."
+        },
+        "note_id": {
+          "type": "integer",
+          "required": false,
+          "description": "ID numérico exato do item no checklist."
+        }
+      }
+    },
     "convert_units": {
       "description": "Converte unidades físicas (distância, massa, temperatura, volume) e moedas.",
       "parameters": {

@@ -14,10 +14,12 @@ from typing import Any, Dict, Optional
 from .core import (
     CAPTURES_DIR,
     SIMULATE_HARDWARE,
+    _FILE_LOCK,
     _run_termux_cmd,
     _exec_android_intent,
 )
 from .adb_bridge import ensure_adb_connected, pull_adb_file, run_adb_shell
+from .memory_schedule import _get_memory_db
 
 def take_photo(camera_id: int = 0) -> Dict[str, Any]:
     """Captura uma foto e salva no diretório de capturas."""
@@ -556,6 +558,253 @@ def play_media(query: str, app: str = "") -> Dict[str, Any]:
         "status": "ok",
         "message": f"Silva: Reproduzindo '{clean_query}' no {app_label}.",
         "data": {"query": clean_query, "app": norm_app or "default", "package": pkg},
+    }
+
+
+def save_voice_note(title: str = "", duration: int = 15, text_only: bool = False) -> Dict[str, Any]:
+    """
+    Salva um lembrete multimodal na tabela voice_notes (memory.db):
+    - text_only=True: registra lembrete digitado diretamente (sem gravação).
+    - text_only=False: grava áudio real via microfone e registra na lista ativa.
+    """
+    clean_title = str(title or "").strip()
+    is_text_only = (
+        text_only if isinstance(text_only, bool)
+        else str(text_only).strip().lower() in ("true", "1", "yes", "sim")
+    )
+
+    if is_text_only:
+        if not clean_title:
+            return {"status": "error", "message": "Informe o texto do lembrete para adicionar ao checklist."}
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                with conn:
+                    cur = conn.cursor()
+                    cur.execute(
+                        "INSERT INTO voice_notes (title, note_type, filename, is_checked) VALUES (?, 'text', NULL, 0)",
+                        (clean_title,),
+                    )
+                    note_id = cur.lastrowid
+            finally:
+                conn.close()
+        return {
+            "status": "ok",
+            "message": f"Silva: Lembrete '{clean_title}' adicionado à lista interativa.",
+            "data": {"id": note_id, "title": clean_title, "note_type": "text"},
+        }
+
+    # Modo voz (text_only=False)
+    try:
+        dur = int(duration)
+    except (TypeError, ValueError):
+        dur = 15
+    dur = max(1, min(120, dur))
+
+    note_title = clean_title or f"Nota de voz ({datetime.now().strftime('%d/%m às %H:%M')})"
+    CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"voice_note_{int(time.time() * 1000)}.m4a"
+    out_path = CAPTURES_DIR / filename
+    audio_url = f"/captures/{filename}"
+
+    if SIMULATE_HARDWARE:
+        out_path.write_bytes(b"\x00\x00\x00\x20ftypM4A \x00\x00\x00\x00M4A mp42isom\x00\x00\x00\x08free")
+    else:
+        try:
+            _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
+        except Exception:
+            pass
+        try:
+            res = _run_termux_cmd(
+                ["termux-microphone-record", "-f", str(out_path), "-l", str(dur), "-e", "aac"],
+                timeout=dur + 8,
+            )
+            time.sleep(0.4)
+            if res.returncode != 0 and not out_path.is_file():
+                return {
+                    "status": "error",
+                    "message": (
+                        f"Falha ao gravar nota de voz ({res.stderr.strip() or 'erro desconhecido'}). "
+                        "Conceda permissão de Microfone ao Termux:API nas Configurações do Android."
+                    ),
+                }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Erro ao gravar nota de voz: {str(e)}",
+            }
+        finally:
+            try:
+                _run_termux_cmd(["termux-microphone-record", "-q"], timeout=3)
+            except Exception:
+                pass
+
+        if not out_path.is_file() or out_path.stat().st_size <= 0:
+            return {
+                "status": "error",
+                "message": "A gravação da nota de voz não gerou um arquivo válido (0 bytes).",
+            }
+
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            with conn:
+                cur = conn.cursor()
+                cur.execute(
+                    "INSERT INTO voice_notes (title, note_type, filename, is_checked) VALUES (?, 'audio', ?, 0)",
+                    (note_title, filename),
+                )
+                note_id = cur.lastrowid
+        finally:
+            conn.close()
+
+    return {
+        "status": "ok",
+        "message": f"Silva: Nota de voz '{note_title}' gravada ({dur}s) e salva no checklist.",
+        "audio_url": audio_url,
+        "media_items": [{"type": "audio", "url": audio_url}],
+        "data": {
+            "id": note_id,
+            "title": note_title,
+            "note_type": "audio",
+            "filename": filename,
+            "url": audio_url,
+            "duration": dur,
+        },
+    }
+
+
+def get_voice_notes(query: str = "") -> Dict[str, Any]:
+    """Lista ou busca lembretes e notas de voz pendentes (is_checked = 0) para o checklist interativo."""
+    clean_q = str(query or "").strip()
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            cur = conn.cursor()
+            if clean_q:
+                cur.execute(
+                    "SELECT id, title, note_type, filename, created_at "
+                    "FROM voice_notes WHERE is_checked = 0 AND lower(title) LIKE ? "
+                    "ORDER BY id DESC",
+                    (f"%{clean_q.lower()}%",),
+                )
+            else:
+                cur.execute(
+                    "SELECT id, title, note_type, filename, created_at "
+                    "FROM voice_notes WHERE is_checked = 0 ORDER BY id DESC"
+                )
+            rows = cur.fetchall()
+        finally:
+            conn.close()
+
+    if not rows:
+        msg = (
+            f"Silva: Nenhum lembrete pendente encontrado para '{clean_q}'."
+            if clean_q
+            else "Silva: Sua lista de lembretes e notas de voz está limpa (nenhum item pendente)."
+        )
+        return {
+            "status": "ok",
+            "message": msg,
+            "data": {"voice_notes": [], "total": 0},
+        }
+
+    items = []
+    media_items = []
+    for r in rows:
+        fn = r["filename"]
+        url = f"/captures/{fn}" if fn else None
+        items.append({
+            "id": r["id"],
+            "title": r["title"],
+            "note_type": r["note_type"],
+            "url": url,
+            "created_at": r["created_at"],
+        })
+        if url:
+            media_items.append({"type": "audio", "url": url})
+
+    lines = [f"- {it['title']} ({'Áudio' if it['url'] else 'Texto'})" for it in items]
+    resp: Dict[str, Any] = {
+        "status": "ok",
+        "message": f"Silva: Você tem {len(items)} item(ns) no checklist:\n" + "\n".join(lines),
+        "data": {"voice_notes": items, "total": len(items)},
+    }
+    if media_items:
+        resp["media_items"] = media_items
+    return resp
+
+
+def check_voice_note(query: str = "", note_id: int = 0) -> Dict[str, Any]:
+    """Marca um lembrete/nota de voz como concluído (check), removendo da lista ativa e do disco."""
+    clean_q = str(query or "").strip()
+    try:
+        nid = int(note_id or 0)
+    except (TypeError, ValueError):
+        nid = 0
+
+    if nid <= 0 and not clean_q:
+        return {"status": "error", "message": "Informe o ID ou o título do lembrete para concluir."}
+
+    target_row = None
+    with _FILE_LOCK:
+        conn = _get_memory_db()
+        try:
+            cur = conn.cursor()
+            if nid > 0:
+                cur.execute(
+                    "SELECT id, title, filename FROM voice_notes WHERE id = ? AND is_checked = 0",
+                    (nid,),
+                )
+                target_row = cur.fetchone()
+            elif any(k in clean_q.lower() for k in ("última", "ultima", "último", "ultimo", "recente")):
+                cur.execute(
+                    "SELECT id, title, filename FROM voice_notes WHERE is_checked = 0 ORDER BY id DESC LIMIT 1"
+                )
+                target_row = cur.fetchone()
+            else:
+                cur.execute(
+                    "SELECT id, title, filename FROM voice_notes "
+                    "WHERE is_checked = 0 AND lower(title) LIKE ? ORDER BY id DESC LIMIT 1",
+                    (f"%{clean_q.lower()}%",),
+                )
+                target_row = cur.fetchone()
+
+            if not target_row:
+                return {
+                    "status": "ok",
+                    "message": "Silva: Nenhum lembrete pendente correspondente foi encontrado.",
+                    "data": {"checked": False},
+                }
+
+            with conn:
+                conn.execute(
+                    "UPDATE voice_notes SET is_checked = 1, checked_at = datetime('now', 'localtime') WHERE id = ?",
+                    (target_row["id"],),
+                )
+        finally:
+            conn.close()
+
+    deleted_audio = False
+    fn = target_row["filename"]
+    if fn:
+        audio_path = (CAPTURES_DIR / fn).resolve()
+        try:
+            if audio_path.is_relative_to(CAPTURES_DIR.resolve()) and audio_path.is_file():
+                audio_path.unlink(missing_ok=True)
+                deleted_audio = True
+        except Exception:
+            pass
+
+    return {
+        "status": "ok",
+        "message": f"Silva: '{target_row['title']}' concluído e removido do checklist.",
+        "data": {
+            "id": target_row["id"],
+            "title": target_row["title"],
+            "checked": True,
+            "deleted_audio": deleted_audio,
+        },
     }
 
 

@@ -4,12 +4,15 @@ Construído com a biblioteca padrão (http.server.ThreadingHTTPServer)
 garantindo zero dependências externas e alta estabilidade no Android.
 """
 
+import base64
 import errno
 import hmac
 import json
 import mimetypes
 import signal
 import threading
+import time
+from datetime import datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -20,6 +23,9 @@ from llm_client import SilvaLLMClient
 from parser import execute_call
 import scheduler
 from scheduler import start_events_scheduler
+from tools.core import _FILE_LOCK
+from tools.media import check_voice_note
+from tools.memory_schedule import _get_memory_db
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 llm_client = SilvaLLMClient()
@@ -218,6 +224,96 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                 result["tool_data"] = primary_tool_data
 
             return self._send_json(result)
+
+        if path == "/api/voice-notes/check":
+            if ACCESS_PIN:
+                client_pin = self.headers.get("X-Access-Pin", "").strip()
+                if not hmac.compare_digest(client_pin, ACCESS_PIN):
+                    return self._send_json(
+                        {"status": "error", "message": "PIN de acesso inválido ou ausente."},
+                        status=HTTPStatus.FORBIDDEN,
+                    )
+            try:
+                content_len = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                note_id = int(body.get("id", 0))
+            except Exception as e:
+                return self._send_json(
+                    {"status": "error", "message": f"Requisição inválida: {str(e)}"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+            if note_id <= 0:
+                return self._send_json(
+                    {"status": "error", "message": "ID da nota inválido."},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+            res = check_voice_note(note_id=note_id)
+            return self._send_json(res)
+
+        if path == "/api/voice-notes/upload":
+            if ACCESS_PIN:
+                client_pin = self.headers.get("X-Access-Pin", "").strip()
+                if not hmac.compare_digest(client_pin, ACCESS_PIN):
+                    return self._send_json(
+                        {"status": "error", "message": "PIN de acesso inválido ou ausente."},
+                        status=HTTPStatus.FORBIDDEN,
+                    )
+            try:
+                content_len = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+            except Exception as e:
+                return self._send_json(
+                    {"status": "error", "message": f"Corpo inválido: {str(e)}"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+
+            raw_b64 = str(body.get("audio_base64") or "").strip()
+            if "," in raw_b64 and raw_b64.startswith("data:"):
+                raw_b64 = raw_b64.split(",", 1)[1]
+            if not raw_b64:
+                return self._send_json(
+                    {"status": "error", "message": "Áudio vazio."},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+
+            ext = str(body.get("ext") or "webm").strip().lower().lstrip(".")
+            if ext not in ("webm", "ogg", "m4a", "mp3", "wav"):
+                ext = "webm"
+
+            try:
+                audio_bytes = base64.b64decode(raw_b64, validate=True)
+            except Exception:
+                return self._send_json(
+                    {"status": "error", "message": "Base64 de áudio inválido."},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+
+            CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+            filename = f"voice_note_{int(time.time() * 1000)}.{ext}"
+            (CAPTURES_DIR / filename).write_bytes(audio_bytes)
+            title = str(body.get("title") or "").strip() or f"Nota de voz ({datetime.now().strftime('%d/%m às %H:%M')})"
+
+            with _FILE_LOCK:
+                conn = _get_memory_db()
+                try:
+                    with conn:
+                        cur = conn.cursor()
+                        cur.execute(
+                            "INSERT INTO voice_notes (title, note_type, filename, is_checked) VALUES (?, 'audio', ?, 0)",
+                            (title, filename),
+                        )
+                        note_id = cur.lastrowid
+                finally:
+                    conn.close()
+
+            audio_url = f"/captures/{filename}"
+            return self._send_json({
+                "status": "ok",
+                "message": f"Silva: Nota de voz '{title}' salva no checklist.",
+                "audio_url": audio_url,
+                "media_items": [{"type": "audio", "url": audio_url}],
+                "data": {"id": note_id, "title": title, "note_type": "audio", "url": audio_url},
+            })
 
         self.send_error(HTTPStatus.NOT_FOUND, "Endpoint POST não encontrado.")
 

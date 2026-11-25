@@ -148,6 +148,57 @@ class TestWebServer(unittest.TestCase):
             urllib.request.urlopen(traversal_url)
         self.assertEqual(ctx.exception.code, 403)
 
+    def test_voice_notes_upload_and_check_endpoints(self):
+        """Testa POST /api/voice-notes/upload e POST /api/voice-notes/check com validação de PIN."""
+        import base64
+        from unittest.mock import patch
+        import tempfile
+        from android_agent.tools import media as tools_media
+
+        b64_audio = base64.b64encode(b"WEBM_TEST_AUDIO").decode("ascii")
+        upload_payload = json.dumps({"audio_base64": b64_audio, "ext": "webm", "title": "Teste Web UI"}).encode("utf-8")
+
+        # 1. Sem PIN -> 403
+        req_no_pin = urllib.request.Request(
+            f"{self.base_url}/api/voice-notes/upload",
+            data=upload_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req_no_pin)
+        self.assertEqual(ctx.exception.code, 403)
+
+        # 2. Upload + Check com PIN válido em diretório temporário
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_dir = Path(tmpdir)
+            tmp_cap = tmp_dir / "captures"
+            tmp_cap.mkdir(parents=True, exist_ok=True)
+            with patch("android_agent.tools.memory_schedule.DATA_DIR", tmp_dir), \
+                 patch("android_agent.web_server.CAPTURES_DIR", tmp_cap), \
+                 patch.object(tools_media, "CAPTURES_DIR", tmp_cap):
+                req_up = urllib.request.Request(
+                    f"{self.base_url}/api/voice-notes/upload",
+                    data=upload_payload,
+                    headers={"Content-Type": "application/json", "X-Access-Pin": ACCESS_PIN},
+                )
+                with urllib.request.urlopen(req_up) as resp:
+                    self.assertEqual(resp.status, 200)
+                    up_data = json.loads(resp.read().decode("utf-8"))
+                    self.assertEqual(up_data["status"], "ok")
+                    note_id = up_data["data"]["id"]
+
+                chk_payload = json.dumps({"id": note_id}).encode("utf-8")
+                req_chk = urllib.request.Request(
+                    f"{self.base_url}/api/voice-notes/check",
+                    data=chk_payload,
+                    headers={"Content-Type": "application/json", "X-Access-Pin": ACCESS_PIN},
+                )
+                with urllib.request.urlopen(req_chk) as resp:
+                    self.assertEqual(resp.status, 200)
+                    chk_data = json.loads(resp.read().decode("utf-8"))
+                    self.assertEqual(chk_data["status"], "ok")
+                    self.assertTrue(chk_data["data"]["checked"])
+
 
 if __name__ == "__main__":
     unittest.main()

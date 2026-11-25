@@ -261,3 +261,11 @@
 {"prompt": "Quando conectar no wifi Trabalho lembra de falar com o Marcos", "completion": "<call>remind_on_wifi(ssid=\"Trabalho\", reminder=\"falar com o Marcos\")</call>"}
 {"prompt": "Quando conectar neste wifi me lembra de ligar o notebook", "completion": "<call>remind_on_wifi(ssid=\"neste wifi\", reminder=\"ligar o notebook\")</call>"}
 {"prompt": "Qual o número da minha matrícula?", "completion": "<call>recall_note(query=\"matrícula\")</call>"}
+{"prompt": "Grava uma nota de voz para lembrar de pagar o aluguel", "completion": "<call>save_voice_note(title=\"pagar o aluguel\", duration=15, text_only=False)</call>"}
+{"prompt": "Gravar lembrete de voz de 20 segundos", "completion": "<call>save_voice_note(title=\"\", duration=20, text_only=False)</call>"}
+{"prompt": "Adiciona na lista de lembretes: ligar pro médico", "completion": "<call>save_voice_note(title=\"ligar pro médico\", duration=15, text_only=True)</call>"}
+{"prompt": "Anota no checklist pagar internet", "completion": "<call>save_voice_note(title=\"pagar internet\", duration=15, text_only=True)</call>"}
+{"prompt": "Quais notas de voz eu tenho?", "completion": "<call>get_voice_notes(query=\"\")</call>"}
+{"prompt": "Mostra meus lembretes", "completion": "<call>get_voice_notes(query=\"\")</call>"}
+{"prompt": "Marca como check a nota do aluguel", "completion": "<call>check_voice_note(query=\"aluguel\")</call>"}
+{"prompt": "Apaga a última nota de voz", "completion": "<call>check_voice_note(query=\"última\")</call>"}

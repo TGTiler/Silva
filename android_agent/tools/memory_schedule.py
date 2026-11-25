@@ -485,6 +485,18 @@ def _get_memory_db() -> sqlite3.Connection:
             );
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS voice_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                note_type TEXT NOT NULL DEFAULT 'audio',
+                filename TEXT DEFAULT NULL,
+                is_checked INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                checked_at TIMESTAMP DEFAULT NULL
+            );
+        """)
+
         # Migração transparente de events.json legado para scheduled_events
         events_legacy = DATA_DIR / "events.json"
         events_migrated = DATA_DIR / "events.json.migrated"

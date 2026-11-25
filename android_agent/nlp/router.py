@@ -1705,6 +1705,67 @@ def extract_connectivity_controls(raw: str, norm: str) -> Tuple[float, Optional[
     return 0.0, None
 
 
+def extract_voice_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Notas e lembretes multimodais com checklist interativo (voz e texto digitado)."""
+    clean_raw = raw.strip().rstrip("?!.,;:")
+
+    # 1. check_voice_note ("marca como check a nota do aluguel", "conclui o lembrete de...", "apaga a última nota de voz")
+    if (
+        any(k in norm for k in ("marca como check", "marcar como check", "dar check", "da check", "conclui o lembrete", "concluir o lembrete", "conclui a nota", "marcar como concluido", "marca como concluido"))
+        or re.search(r"\b(?:apaga|apagar|remove|remover|deleta|deletar|exclui|excluir)\s+(?:a\s+)?(?:ultima|ultimo|recente)?\s*nota\s+de\s+voz\b", norm)
+    ):
+        if any(w in norm for w in ("ultima", "ultimo", "recente")):
+            return 0.97, _format_call("check_voice_note", query="última")
+        m_chk = re.search(
+            r"(?:nota\s+de\s+voz|nota|lembrete)(?:\s+do|\s+da|\s+de|\s+sobre)?\s+(.+)$",
+            clean_raw,
+            re.IGNORECASE,
+        )
+        q_chk = m_chk.group(1).strip() if m_chk else clean_raw
+        return 0.97, _format_call("check_voice_note", query=q_chk)
+
+    # 2. save_voice_note Modo Digitado (text_only=True)
+    m_txt = re.search(
+        r"^(?:silva,?\s*)?(?:adiciona|adicione|coloca|coloque|anota|anote|cria|crie|salva|salve)\s+(?:na\s+lista\s+de\s+lembretes|no\s+checklist|um\s+lembrete\s+r[aá]pido|um\s+lembrete)(?:\s*:\s*|\s+(?:para|de|que)\s+|\s+)(.+)$",
+        clean_raw,
+        re.IGNORECASE,
+    )
+    if m_txt:
+        title_val = m_txt.group(1).strip().lstrip(":").strip()
+        if title_val:
+            return 0.97, _format_call("save_voice_note", title=title_val, duration=15, text_only=True)
+
+    # 3. get_voice_notes ("quais notas de voz eu tenho?", "mostra meus lembretes", "lembra o que eu gravei sobre o aluguel", "abrir checklist de notas")
+    if (
+        any(k in norm for k in ("quais notas de voz", "minhas notas de voz", "meus lembretes", "lista de lembretes", "checklist de notas", "abrir checklist", "abre o checklist", "ver checklist"))
+        or re.search(r"\b(?:mostra|mostre|lista|liste|ver|veja|abre|abra)\s+(?:os\s+|as\s+)?(?:meus\s+|minhas\s+)?(?:lembretes|notas\s+de\s+voz|checklist)\b", norm)
+        or re.search(r"\b(?:o\s+que\s+(?:eu\s+)?gravei)\b", norm)
+    ):
+        m_q = re.search(r"(?:sobre|do|da|de)\s+(?!voz\b|notas\b|lembretes\b)(.+)$", clean_raw, re.IGNORECASE)
+        q_val = m_q.group(1).strip() if m_q else ""
+        return 0.97, _format_call("get_voice_notes", query=q_val)
+
+    # 4. save_voice_note Modo Voz (text_only=False)
+    if (
+        any(k in norm for k in ("nota de voz", "lembrete de voz", "minha voz"))
+        and any(v in norm for v in ("grava", "gravar", "grave", "lembrar", "dizendo", "segundo"))
+    ):
+        dur = 15
+        m_sec = re.search(r"(\d+)\s*(?:s|seg|segundo|segundos)\b", norm)
+        if m_sec:
+            dur = max(1, min(120, int(m_sec.group(1))))
+        m_title = re.search(
+            r"(?:para\s+lembrar(?:\s+de)?|lembrar(?:\s+de)?|dizendo|sobre|titulo|t[ií]tulo)\s+(.+)$",
+            clean_raw,
+            re.IGNORECASE,
+        )
+        title_val = m_title.group(1).strip() if m_title else ""
+        if title_val or m_sec or "lembrete de voz" in norm or "minha voz" in norm:
+            return 0.97, _format_call("save_voice_note", title=title_val, duration=dur, text_only=False)
+
+    return 0.0, None
+
+
 def extract_record_audio(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Gravação de áudio / nota de voz."""
     if any(t in norm for t in ("gravar audio", "grava audio", "grava um audio", "gravar um audio", "nota de voz", "gravar som", "grava som", "gravar voz", "grava voz")):
@@ -1933,6 +1994,7 @@ class ScoredIntentRouter:
             extract_navigate_to,
             extract_play_media,
             extract_lists,
+            extract_voice_notes,
             extract_record_audio,
             extract_convert_units,
             extract_torch,

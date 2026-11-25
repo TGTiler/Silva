@@ -1089,6 +1089,26 @@ class TestToolsAndMemory(unittest.TestCase):
                 scheduler.check_and_notify_context_reminders()
                 mock_wifi.assert_not_called()
 
+    def test_set_location_state_never_touches_network_or_wifi(self):
+        """Garante que set_location_state(True) chama apenas cmd location e nunca svc wifi/data/airplane_mode."""
+        from android_agent.tools import weather_web
+
+        adb_calls = []
+
+        def fake_adb(args, timeout=5.0):
+            adb_calls.append(args)
+            return True, ""
+
+        with patch.object(weather_web, "SIMULATE_HARDWARE", False), \
+             patch.object(weather_web, "run_adb_shell", side_effect=fake_adb):
+            res = weather_web.set_location_state(True)
+            self.assertEqual(res["status"], "ok")
+            self.assertEqual(adb_calls, [["cmd", "location", "set-location-enabled", "true"]])
+            flat = " ".join(" ".join(c) for c in adb_calls).lower()
+            self.assertNotIn("wifi", flat)
+            self.assertNotIn("airplane", flat)
+            self.assertNotIn("svc data", flat)
+
 
 if __name__ == "__main__":
     unittest.main()

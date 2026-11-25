@@ -78,6 +78,10 @@ class TestRouterConflicts(unittest.TestCase):
             ("peça uma comida no ifood pra mim", "<call>order_food(query='comida', app='ifood')</call>"),
             ("silva, abre o youtube por gentileza", "<call>open_app(app_name='youtube')</call>"),
             ("toca coldplay no youtube agora mesmo", "<call>play_media(query='coldplay', app='youtube')</call>"),
+            ("ligue o gps para mim", "<call>set_location_state(state=True)</call>"),
+            ("ligue a localização para mim", "<call>set_location_state(state=True)</call>"),
+            ("desliga o gps", "<call>set_location_state(state=False)</call>"),
+            ("onde eu estou agora?", "<call>get_location()</call>"),
         ]
         for prompt, expected in cases:
             with self.subTest(prompt=prompt):

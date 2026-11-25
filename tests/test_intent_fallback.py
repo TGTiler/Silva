@@ -220,6 +220,22 @@ class TestFormattingResilience(unittest.TestCase):
             match_intent_fallback("quanto está o euro hoje"),
             "<call>convert_units(amount=1.0, from_unit='EUR', to_unit='BRL')</call>"
         )
+        self.assertEqual(
+            match_intent_fallback("ligue o gps para mim"),
+            "<call>set_location_state(state=True)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("ligue a localização para mim"),
+            "<call>set_location_state(state=True)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("desliga o gps"),
+            "<call>set_location_state(state=False)</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("onde eu estou agora?"),
+            "<call>get_location()</call>"
+        )
 
 
 if __name__ == "__main__":

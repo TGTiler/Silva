@@ -1108,7 +1108,7 @@ def extract_call(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         "lanterna", "torch", "flash", "wifi", "wi-fi", "bluetooth", "bt",
         "dados moveis", "dados", "internet movel", "4g", "5g", "3g", "__rede_4g__", "__rede_5g__", "__rede_3g__",
         "modo aviao", "hotspot", "roteador", "compartilhamento de internet",
-        "alarme", "timer", "volume", "som", "brilho", "gps", "camera", "tela",
+        "alarme", "timer", "volume", "som", "brilho", "gps", "localizacao", "localização", "camera", "tela",
         "uber", "carro", "corrida", "taxi", "99"
     }
 
@@ -1223,10 +1223,10 @@ def extract_location(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         return 0.94, _format_call("get_last_location")
 
     if any(w in norm for w in ["gps", "localizacao"]):
-        if any(neg in norm for neg in ["desativ", "deslig", "desliga", "tirar", "sair", "off", "cancel"]):
-            return 0.92, _format_call("set_location_state", state=False)
-        if any(pos in norm for pos in ["ativ", "ligar", "liga ", "habilita", "habilitar", "on"]):
-            return 0.92, _format_call("set_location_state", state=True)
+        if re.search(r"\b(?:desliga|desligue|desligar|desativa|desative|desativar|desabilita|desabilite|desabilitar|tira|tirar|sai|sair|off|cancela|cancelar)\b", norm):
+            return 0.96, _format_call("set_location_state", state=False)
+        if re.search(r"\b(?:liga|ligue|ligar|ativa|ative|ativar|habilita|habilite|habilitar|on)\b", norm):
+            return 0.96, _format_call("set_location_state", state=True)
 
     if any(w in norm for w in ["localizacao", "onde estou", "onde eu estou", "gps", "coordenadas", "minha posicao", "minha localizacao"]):
         return 0.90, _format_call("get_location")

@@ -328,7 +328,7 @@ def set_location_state(state: bool) -> Dict[str, Any]:
             "data": {"state": st_bool}
         }
 
-    # Tentativa 0: ADB Local privilegiado (cmd location set-location-enabled)
+    # Tentativa 0: ADB Local privilegiado (cmd location set-location-enabled, fallback location_mode)
     ok_adb, _ = run_adb_shell(
         ["cmd", "location", "set-location-enabled", "true" if st_bool else "false"],
         timeout=5.0,
@@ -338,6 +338,14 @@ def set_location_state(state: bool) -> Dict[str, Any]:
             "status": "ok",
             "message": f"Silva: Localização (GPS) {txt} com sucesso.",
             "data": {"state": st_bool, "method": "adb"}
+        }
+
+    ok_mode, _ = run_adb_shell(["settings", "put", "secure", "location_mode", val], timeout=5.0)
+    if ok_mode:
+        return {
+            "status": "ok",
+            "message": f"Silva: Localização (GPS) {txt} com sucesso.",
+            "data": {"state": st_bool, "method": "adb_location_mode"}
         }
 
     try:

@@ -977,7 +977,7 @@ def extract_food(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     if (has_food_kw and (has_food_verb or is_food_app or is_99 or is_delivery or "fome" in norm or "comer" in norm)) or is_food_app or is_delivery:
         app = "99food" if (is_99 and "ifood" not in norm) else "ifood"
         query = _clean_food_query(raw)
-        if not query:
+        if not query or query.lower() in ("algo", "alguma coisa", "qualquer coisa"):
             query = "comida"
         return 0.96, _format_call("order_food", query=query, app=app)
 

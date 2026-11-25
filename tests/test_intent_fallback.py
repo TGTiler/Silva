@@ -196,6 +196,18 @@ class TestFormattingResilience(unittest.TestCase):
             match_intent_fallback("Tô com fome, pede um hambúrguer artesanal"),
             "<call>order_food(query='hambúrguer artesanal', app='ifood')</call>"
         )
+        self.assertEqual(
+            match_intent_fallback("peça uma comida no ifood"),
+            "<call>order_food(query='comida', app='ifood')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("quero pedir algo no ifood"),
+            "<call>order_food(query='comida', app='ifood')</call>"
+        )
+        self.assertEqual(
+            match_intent_fallback("busca pizza no ifood"),
+            "<call>order_food(query='pizza', app='ifood')</call>"
+        )
 
 
 if __name__ == "__main__":

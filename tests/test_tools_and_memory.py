@@ -953,6 +953,34 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertIn("check_voice_note(", match_intent_fallback("marca como check a nota do aluguel"))
         self.assertEqual(match_intent_fallback("apaga a última nota de voz"), "<call>check_voice_note(query='última')</call>")
 
+    def test_order_food_ifood_ui_automator_active_search(self):
+        """Testa order_food com Deep Link + fallback ativo via ADB UI Automator (tap na lupa, type_text_unicode e Enter)."""
+        import subprocess
+
+        fake_home_nodes = [
+            {"text": "O que vai pedir hoje?", "content_desc": "", "class": "android.widget.TextView", "cx": 540, "cy": 280},
+        ]
+        fake_search_nodes = [
+            {"text": "Item ou loja", "content_desc": "", "class": "android.widget.EditText", "cx": 500, "cy": 210},
+        ]
+        dump_seq = [fake_home_nodes, fake_search_nodes]
+
+        with patch.object(tools_apps, "SIMULATE_HARDWARE", False), \
+             patch.object(tools_apps, "ensure_adb_connected", return_value="192.168.0.106:38893"), \
+             patch.object(tools_apps, "_exec_android_intent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="Starting: Intent", stderr="")), \
+             patch.object(tools_apps, "dump_ui_nodes", side_effect=dump_seq), \
+             patch.object(tools_apps, "tap_coords") as mock_tap, \
+             patch.object(tools_apps, "type_text_unicode", return_value=(True, "ok")) as mock_type, \
+             patch.object(tools_apps, "press_key") as mock_key, \
+             patch.object(tools_apps, "set_clipboard"), \
+             patch("time.sleep"):
+            res = tools_apps.order_food(query="açaí com granola", app="ifood")
+            self.assertEqual(res["status"], "ok")
+            self.assertEqual(res["data"]["method"], "ui_automator_search")
+            self.assertEqual(mock_tap.call_count, 2)
+            mock_type.assert_called_once_with("açaí com granola")
+            mock_key.assert_called_once_with(66)
+
 
 if __name__ == "__main__":
     unittest.main()

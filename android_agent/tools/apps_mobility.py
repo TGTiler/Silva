@@ -7,6 +7,7 @@ import json
 import random
 import re
 import shlex
+import time
 import unicodedata
 import urllib.parse
 import urllib.request
@@ -21,7 +22,7 @@ from .core import (
     load_last_location,
 )
 from .adb_bridge import ensure_adb_connected, run_adb_shell
-from .ui_automator import dump_ui_nodes, tap_element
+from .ui_automator import dump_ui_nodes, press_key, tap_coords, tap_element, type_text_unicode
 from .comms import set_clipboard
 from .memory_schedule import _load_memory, _normalize_text, recall_note
 
@@ -577,18 +578,71 @@ def _clean_food_query(raw_query: str) -> str:
     return text.strip()
 
 
+def _find_food_search_node(nodes: list, prefer_edit_text: bool = False) -> Optional[Dict[str, Any]]:
+    """Localiza o campo/barra de busca na tela do app de delivery via UI Automator."""
+    search_hints = ("o que vai pedir", "item ou loja", "buscar", "pesquisar", "procurar")
+    candidates = []
+    for n in nodes:
+        cls_name = str(n.get("class") or "").lower()
+        combined = _normalize_text(f"{n.get('text', '')} {n.get('content_desc', '')}")
+        is_edit = "edittext" in cls_name
+        has_hint = any(h in combined for h in search_hints)
+        if prefer_edit_text and is_edit:
+            candidates.append((2 if has_hint else 1, n))
+        elif has_hint:
+            candidates.append((1 if is_edit else 0, n))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def _automate_food_search_via_ui(clean_query: str) -> bool:
+    """
+    Camada 2 ativa (ADB + UI Automator): aguarda carregamento do app de delivery,
+    toca no campo de busca, insere o termo com acentos PT-BR e envia Enter (keycode 66).
+    """
+    if not ensure_adb_connected():
+        return False
+
+    time.sleep(2.0)
+    nodes = dump_ui_nodes()
+    search_node = _find_food_search_node(nodes, prefer_edit_text=False)
+    if not search_node:
+        return False
+
+    tap_coords(search_node["cx"], search_node["cy"])
+    time.sleep(0.8)
+
+    if "edittext" not in str(search_node.get("class") or "").lower():
+        nodes_after = dump_ui_nodes()
+        edit_node = _find_food_search_node(nodes_after, prefer_edit_text=True)
+        if edit_node:
+            tap_coords(edit_node["cx"], edit_node["cy"])
+            time.sleep(0.4)
+
+    ok_type, _ = type_text_unicode(clean_query)
+    if not ok_type:
+        return False
+    time.sleep(0.3)
+    press_key(66)
+    return True
+
+
 def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
-    """Abre o aplicativo de delivery (iFood ou 99Food) buscando o prato em 3 camadas."""
+    """Abre o aplicativo de delivery (iFood ou 99Food) buscando o prato via Intent + UI Automator."""
     clean_query = _clean_food_query(query)
-    if not clean_query:
-        return {"status": "error", "message": "Item ou prato para busca de comida não informado."}
+    if not clean_query or clean_query.lower() in ("algo", "alguma coisa", "qualquer coisa"):
+        clean_query = "comida"
 
     app_target = str(app).strip().lower() if app else "ifood"
     encoded_query = urllib.parse.quote_plus(clean_query)
+    encoded_path_query = urllib.parse.quote(clean_query)
 
     if app_target == "ifood":
         set_clipboard(clean_query)
         url_deep = f"ifood://search?q={encoded_query}"
+        url_app_view = f"https://www.ifood.com.br/busca?q={encoded_path_query}"
         url_web = f"https://www.ifood.com.br/busca?q={encoded_query}&tab=0"
 
         if SIMULATE_HARDWARE:
@@ -598,22 +652,54 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
                 "data": {"query": clean_query, "app": "ifood", "url": url_deep, "web_url": url_web}
             }
 
-        # Camada 1: Deep Link de busca interno do iFood
+        # Camada 1: Deep Link de busca interno / Intent direto no pacote do iFood
         res1 = _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url_deep}"')
         if _intent_succeeded(res1):
+            ui_ok = _automate_food_search_via_ui(clean_query)
             return {
                 "status": "ok",
                 "message": f"Buscando '{clean_query}' no iFood (termo também copiado para a área de transferência).",
-                "data": {"query": clean_query, "app": "ifood", "url": url_deep, "method": "deep_link"}
+                "data": {
+                    "query": clean_query,
+                    "app": "ifood",
+                    "url": url_deep,
+                    "method": "ui_automator_search" if ui_ok else "deep_link",
+                }
             }
 
-        # Camada 2: App Principal (br.com.brainweb.ifood)
-        res2 = _exec_android_intent("monkey -p br.com.brainweb.ifood -c android.intent.category.LAUNCHER 1")
-        if _intent_succeeded(res2):
+        res_pkg_view = _exec_android_intent(
+            f'am start -a android.intent.action.VIEW -d "{url_app_view}" -p br.com.brainweb.ifood'
+        )
+        if _intent_succeeded(res_pkg_view):
+            ui_ok = _automate_food_search_via_ui(clean_query)
             return {
                 "status": "ok",
-                "message": f"Abrindo iFood para buscar '{clean_query}' (termo copiado para a área de transferência).",
-                "data": {"query": clean_query, "app": "ifood", "package": "br.com.brainweb.ifood", "method": "package_fallback"}
+                "message": f"Buscando '{clean_query}' no iFood.",
+                "data": {
+                    "query": clean_query,
+                    "app": "ifood",
+                    "url": url_app_view,
+                    "method": "ui_automator_search" if ui_ok else "intent_package",
+                }
+            }
+
+        # Camada 2: Abrir App Principal (br.com.brainweb.ifood) + busca ativa via UI Automator
+        res2 = _exec_android_intent("monkey -p br.com.brainweb.ifood -c android.intent.category.LAUNCHER 1")
+        if _intent_succeeded(res2):
+            ui_ok = _automate_food_search_via_ui(clean_query)
+            return {
+                "status": "ok",
+                "message": (
+                    f"Buscando '{clean_query}' no iFood."
+                    if ui_ok
+                    else f"Abrindo iFood para buscar '{clean_query}' (termo copiado para a área de transferência)."
+                ),
+                "data": {
+                    "query": clean_query,
+                    "app": "ifood",
+                    "package": "br.com.brainweb.ifood",
+                    "method": "ui_automator_search" if ui_ok else "package_fallback",
+                }
             }
 
         # Camada 3: Fallback Web Search
@@ -640,24 +726,36 @@ def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
         cmd_deep = f'am start -a android.intent.action.VIEW -d "{url_deep}"'
         res1 = _exec_android_intent(cmd_deep)
         if res1.returncode == 0 and "Error:" not in res1.stderr and "ActivityNotFound" not in res1.stderr and "does not exist" not in res1.stderr:
+            ui_ok = _automate_food_search_via_ui(clean_query)
             return {
                 "status": "ok",
                 "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência).",
-                "data": {"query": clean_query, "app": app_norm, "url": url_deep, "method": "deep_link"}
+                "data": {
+                    "query": clean_query,
+                    "app": app_norm,
+                    "url": url_deep,
+                    "method": "ui_automator_search" if ui_ok else "deep_link",
+                }
             }
 
         # 2. Fallback: abrir pacote principal do super-app da 99 / 99Food
-        for pkg in ("com.taxis99", "com.xiaojukeji.didi.brazil.passenger", "com.didi.brazil.food"):
+        for pkg in ("com.taxis99", "com.taxis99.food", "com.xiaojukeji.didi.brazil.passenger", "com.didi.brazil.food"):
             if pkg in RESOLVED_APP_ACTIVITIES:
                 res_pkg = _exec_android_intent(f"am start -n {RESOLVED_APP_ACTIVITIES[pkg]}")
             else:
                 res_pkg = _exec_android_intent(f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1")
             combined_out = (res_pkg.stdout or "") + (res_pkg.stderr or "")
             if res_pkg.returncode == 0 and "Error:" not in combined_out and "No activities found" not in combined_out:
+                ui_ok = _automate_food_search_via_ui(clean_query)
                 return {
                     "status": "ok",
                     "message": f"Abrindo 99 (aba Delivery) para buscar '{clean_query}' (termo copiado para a área de transferência).",
-                    "data": {"query": clean_query, "app": app_norm, "package": pkg, "method": "package_fallback"}
+                    "data": {
+                        "query": clean_query,
+                        "app": app_norm,
+                        "package": pkg,
+                        "method": "ui_automator_search" if ui_ok else "package_fallback",
+                    }
                 }
 
         open_app("99")

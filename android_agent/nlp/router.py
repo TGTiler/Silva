@@ -1866,6 +1866,28 @@ def extract_voice_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def extract_sleep_report(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Relatório científico e evolução longitudinal do sono noturno."""
+    sleep_triggers = (
+        "meu sono", "relatorio do sono", "relatorio de sono", "como foi meu sono",
+        "como eu dormi", "evolucao do sono", "evolucao do meu sono", "qualidade do sono",
+        "sono melhorando", "sono piorando", "horas eu dormi", "dormi ontem",
+    )
+    if any(t in norm for t in sleep_triggers) or (
+        "sono" in norm and any(k in norm for k in ("relatorio", "evolucao", "melhorando", "piorando", "como foi", "analise", "semana", "noite", "historico"))
+    ):
+        days = 7
+        m_days = re.search(r"(\d+)\s*dias?\b", norm)
+        if m_days:
+            days = max(1, min(30, int(m_days.group(1))))
+        elif "mes" in norm or "30 dias" in norm:
+            days = 30
+        elif "hoje" in norm or "ontem" in norm or "ultima noite" in norm:
+            days = 7
+        return 0.96, _format_call("get_sleep_report", days=days)
+    return 0.0, None
+
+
 def extract_record_audio(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Gravação genérica de áudio/som (sem menção a nota/lembrete de voz)."""
     if any(k in norm for k in ("nota de voz", "lembrete de voz")):
@@ -2143,6 +2165,7 @@ class ScoredIntentRouter:
             extract_navigate_to,
             extract_play_media,
             extract_lists,
+            extract_sleep_report,
             extract_voice_notes,
             extract_record_audio,
             extract_convert_units,

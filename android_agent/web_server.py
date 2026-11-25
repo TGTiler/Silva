@@ -173,12 +173,14 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
         # 3. Health check -> /api/health
         if path == "/api/health":
             llm_health = llm_client.check_health()
+            from .tools.sleep_monitor import pop_pending_sleep_reports
             return self._send_json({
                 "status": "ok",
                 "agent": "Silva",
                 "llm": llm_health,
                 "web_auto_tts": WEB_AUTO_TTS,
                 "triggered_alerts": scheduler.pop_triggered_alerts(),
+                "sleep_reports": pop_pending_sleep_reports(),
             })
 
         self.send_error(HTTPStatus.NOT_FOUND, "Rota não encontrada.")
@@ -232,6 +234,8 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
         if path == "/api/chat":
             if not self._verify_access_pin(self.headers.get("X-Access-Pin", "").strip()):
                 return
+            from .tools.sleep_monitor import record_web_activity
+            record_web_activity()
 
             body_bytes = self._read_post_body_bytes()
             if body_bytes is None:

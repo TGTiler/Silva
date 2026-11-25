@@ -269,3 +269,7 @@
 {"prompt": "Mostra meus lembretes", "completion": "<call>get_voice_notes(query=\"\")</call>"}
 {"prompt": "Marca como check a nota do aluguel", "completion": "<call>check_voice_note(query=\"aluguel\")</call>"}
 {"prompt": "Apaga a última nota de voz", "completion": "<call>check_voice_note(query=\"última\")</call>"}
+{"prompt": "Como foi meu sono?", "completion": "<call>get_sleep_report(days=7)</call>"}
+{"prompt": "Meu sono está melhorando ou piorando?", "completion": "<call>get_sleep_report(days=7)</call>"}
+{"prompt": "Relatório do meu sono", "completion": "<call>get_sleep_report(days=7)</call>"}
+{"prompt": "Evolução do meu sono na semana", "completion": "<call>get_sleep_report(days=7)</call>"}

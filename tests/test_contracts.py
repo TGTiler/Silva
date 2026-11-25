@@ -31,9 +31,9 @@ class TestContracts(unittest.TestCase):
         self.schema_tools = self.schema_data.get("tools", {})
 
     def test_tool_count_and_keys(self):
-        """Verifica se existem exatamente 63 ferramentas e se coincidem com o schema."""
-        self.assertEqual(len(AVAILABLE_TOOLS), 63, "AVAILABLE_TOOLS deve conter exatamente 63 ferramentas")
-        self.assertEqual(len(self.schema_tools), 63, "schema.json deve conter exatamente 63 ferramentas")
+        """Verifica se existem exatamente 64 ferramentas e se coincidem com o schema."""
+        self.assertEqual(len(AVAILABLE_TOOLS), 64, "AVAILABLE_TOOLS deve conter exatamente 64 ferramentas")
+        self.assertEqual(len(self.schema_tools), 64, "schema.json deve conter exatamente 64 ferramentas")
         self.assertEqual(
             set(AVAILABLE_TOOLS.keys()),
             set(self.schema_tools.keys()),

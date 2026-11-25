@@ -267,8 +267,8 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
     def test_all_63_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 63 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 63, "O catálogo formal deve conter exatamente 63 ferramentas.")
+        """Testa a execução smoke de todas as 64 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 64, "O catálogo formal deve conter exatamente 64 ferramentas.")
 
         sample_args = {
             "add_list_item": {"item": "café", "list_name": "compras"},
@@ -287,6 +287,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "get_list": {"list_name": "compras"},
             "get_location": {},
             "get_notifications": {"app": "whatsapp"},
+            "get_sleep_report": {"days": 7},
             "get_system_info": {},
             "get_weather": {"day": "hoje", "location": "Recife"},
             "get_wifi_info": {},

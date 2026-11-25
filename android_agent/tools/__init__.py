@@ -121,6 +121,7 @@ from .memory_schedule import (
     remove_list_item,
     calculate,
 )
+from .sleep_monitor import get_sleep_report
 
 AVAILABLE_TOOLS = {
     "get_battery": get_battery,
@@ -185,6 +186,7 @@ AVAILABLE_TOOLS = {
     "add_list_item": add_list_item,
     "get_list": get_list,
     "remove_list_item": remove_list_item,
+    "get_sleep_report": get_sleep_report,
     "none": none,
 }
 
@@ -286,6 +288,7 @@ __all__ = [
     "add_list_item",
     "get_list",
     "remove_list_item",
+    "get_sleep_report",
     "calculate",
     "AVAILABLE_TOOLS",
 ]

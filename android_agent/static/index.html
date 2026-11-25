@@ -1935,6 +1935,24 @@
               speakTextPTBR(alertMsg);
             });
           }
+          if (Array.isArray(data.sleep_reports) && data.sleep_reports.length > 0) {
+            const activeSess = getActiveSession();
+            if (heroView && chatMessages) {
+              heroView.style.display = "none";
+              chatMessages.style.display = "flex";
+            }
+            data.sleep_reports.forEach(function (rep) {
+              const repText = rep.report_markdown || rep.summary || "Relatório de sono disponível.";
+              const rawSleepCall = "<call>get_sleep_report()</call>";
+              activeSess.messages.push({
+                role: "silva",
+                text: repText,
+                raw_call: rawSleepCall
+              });
+              appendSilvaMessageDOM(repText, rawSleepCall);
+            });
+            saveSessions();
+          }
           if (data.status === "ok" && data.llm && data.llm.online) {
             statusDot.className = "status-dot-mini online";
             healthDot.className = "status-dot-mini online";

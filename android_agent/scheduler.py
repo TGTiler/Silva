@@ -15,10 +15,12 @@ try:
     from .tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd, cleanup_orphaned_captures
     from .tools.hardware import get_wifi_info
     from .tools.memory_schedule import _get_memory_db, compute_next_trigger
+    from .tools.sleep_monitor import evaluate_sleep_cycle
 except ImportError:
     from tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd, cleanup_orphaned_captures
     from tools.hardware import get_wifi_info
     from tools.memory_schedule import _get_memory_db, compute_next_trigger
+    from tools.sleep_monitor import evaluate_sleep_cycle
 
 _SCHEDULER_STARTED = False
 _SCHEDULER_THREAD = None
@@ -285,6 +287,31 @@ def check_and_notify_context_reminders() -> None:
             })
 
 
+def check_and_notify_sleep_cycle() -> None:
+    """Executa evaluate_sleep_cycle() e dispara termux-notification quando um relatório matinal é gerado."""
+    try:
+        res = evaluate_sleep_cycle()
+    except Exception:
+        return
+    if not res.get("report_generated"):
+        return
+    if not SIMULATE_HARDWARE:
+        try:
+            _run_termux_cmd(
+                [
+                    "termux-notification",
+                    "--id", "9910",
+                    "--title", res.get("title") or "☀️ Bom dia! Relatório & Evolução do Sono",
+                    "--content", res.get("summary") or "Relatório de sono disponível.",
+                    "--priority", "max",
+                    "--sound",
+                ],
+                timeout=5,
+            )
+        except Exception:
+            pass
+
+
 def _events_scheduler_loop(interval_sec: int = 10) -> None:
     last_gc = 0.0
     gc_interval_sec = 6 * 3600
@@ -292,6 +319,7 @@ def _events_scheduler_loop(interval_sec: int = 10) -> None:
         try:
             check_and_notify_events()
             check_and_notify_context_reminders()
+            check_and_notify_sleep_cycle()
             now_mono = time.monotonic()
             if (now_mono - last_gc) >= gc_interval_sec:
                 cleanup_orphaned_captures()

@@ -410,8 +410,9 @@ def _get_memory_db() -> sqlite3.Connection:
     legacy_file = DATA_DIR / "memory.json"
     migrated_file = DATA_DIR / "memory.json.migrated"
 
-    conn = sqlite3.connect(str(db_path), timeout=10.0)
+    conn = sqlite3.connect(str(db_path), timeout=5.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout = 5000;")
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
 

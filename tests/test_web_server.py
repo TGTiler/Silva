@@ -199,6 +199,58 @@ class TestWebServer(unittest.TestCase):
                     self.assertEqual(chk_data["status"], "ok")
                     self.assertTrue(chk_data["data"]["checked"])
 
+                # 3. Extensão não permitida (.php / .sh) -> 400 Bad Request
+                bad_ext_payload = json.dumps({"audio_base64": b64_audio, "ext": "php", "title": "Evil"}).encode("utf-8")
+                req_bad_ext = urllib.request.Request(
+                    f"{self.base_url}/api/voice-notes/upload",
+                    data=bad_ext_payload,
+                    headers={"Content-Type": "application/json", "X-Access-Pin": ACCESS_PIN},
+                )
+                with self.assertRaises(urllib.error.HTTPError) as ctx_ext:
+                    urllib.request.urlopen(req_bad_ext)
+                self.assertEqual(ctx_ext.exception.code, 400)
+
+    def test_http_413_payload_limit_and_pin_rate_limit(self):
+        """Testa rejeição HTTP 413 (> 8 MB) e rate-limit progressivo por IP no PIN inválido."""
+        import http.client
+        from unittest.mock import patch
+        from android_agent import web_server
+
+        # 1. HTTP 413 via Content-Length > 8 MB sem enviar 8 MB reais
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        conn.putrequest("POST", "/api/chat")
+        conn.putheader("Content-Type", "application/json")
+        conn.putheader("X-Access-Pin", ACCESS_PIN)
+        conn.putheader("Content-Length", str(9 * 1024 * 1024))
+        conn.endheaders()
+        resp = conn.getresponse()
+        self.assertEqual(resp.status, 413)
+        conn.close()
+
+        # 2. Rate-limit progressivo após 5 falhas consecutivas de PIN
+        web_server._PIN_FAILURES.clear()
+        with patch("android_agent.web_server.time.sleep") as mock_sleep:
+            for _ in range(5):
+                req_bad = urllib.request.Request(
+                    f"{self.base_url}/api/chat",
+                    data=b"{}",
+                    headers={"Content-Type": "application/json", "X-Access-Pin": "0000"},
+                )
+                with self.assertRaises(urllib.error.HTTPError) as ctx_pin:
+                    urllib.request.urlopen(req_bad)
+                self.assertEqual(ctx_pin.exception.code, 403)
+            mock_sleep.assert_called_once_with(1.0)
+
+            # PIN válido zera o contador
+            req_ok = urllib.request.Request(
+                f"{self.base_url}/api/chat",
+                data=json.dumps({"message": "<call>get_battery()</call>"}).encode("utf-8"),
+                headers={"Content-Type": "application/json", "X-Access-Pin": ACCESS_PIN},
+            )
+            with urllib.request.urlopen(req_ok) as resp_ok:
+                self.assertEqual(resp_ok.status, 200)
+            self.assertEqual(web_server._PIN_FAILURES, {})
+
 
 if __name__ == "__main__":
     unittest.main()

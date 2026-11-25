@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -345,13 +346,16 @@ def _run_termux_cmd(cmd: list[str], timeout: int = 10) -> subprocess.CompletedPr
                 break
 
     try:
+        eff_timeout = float(timeout) if timeout else 5.0
         return subprocess.run(
             exec_cmd,
             capture_output=True,
             text=True,
-            timeout=timeout,
+            timeout=eff_timeout,
             check=False
         )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr="TimeoutExpired")
     except OSError:
         # Fallback para invocação via shell do Termux/Android caso ocorra Exec format error
         sh_bin = "/data/data/com.termux/files/usr/bin/sh" if os.path.exists("/data/data/com.termux/files/usr/bin/sh") else "/system/bin/sh"
@@ -360,16 +364,18 @@ def _run_termux_cmd(cmd: list[str], timeout: int = 10) -> subprocess.CompletedPr
                 [sh_bin] + exec_cmd,
                 capture_output=True,
                 text=True,
-                timeout=timeout,
+                timeout=eff_timeout,
                 check=False
             )
+        except subprocess.TimeoutExpired:
+            return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr="TimeoutExpired")
         except Exception as e2:
             return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr=str(e2))
     except Exception as e:
         return subprocess.CompletedProcess(args=exec_cmd, returncode=1, stdout="", stderr=str(e))
 
 
-def _exec_android_intent(cmd_str: str, timeout: int = 6) -> subprocess.CompletedProcess:
+def _exec_android_intent(cmd_str: str, timeout: int = 5) -> subprocess.CompletedProcess:
     """Executa comando de intent/app priorizando o am do Termux ou shell Android para máxima compatibilidade."""
     termux_bin = "/data/data/com.termux/files/usr/bin"
     sh_bin = f"{termux_bin}/sh" if os.path.exists(f"{termux_bin}/sh") else "/system/bin/sh"
@@ -387,10 +393,81 @@ def _exec_android_intent(cmd_str: str, timeout: int = 6) -> subprocess.Completed
             [sh_bin, "-c", full_cmd],
             capture_output=True,
             text=True,
-            timeout=timeout,
+            timeout=float(timeout) if timeout else 5.0,
             check=False
         )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr="TimeoutExpired")
     except Exception as e:
         return subprocess.CompletedProcess(args=[cmd_str], returncode=1, stdout="", stderr=str(e))
+
+
+def cleanup_orphaned_captures(max_age_days: int = 7) -> Dict[str, int]:
+    """
+    Coletor de lixo de mídias em CAPTURES_DIR:
+    1. Remove capturas temporárias mais antigas que max_age_days dias.
+    2. Remove arquivos voice_note_* já concluídos (is_checked=1) ou órfãos (>24h sem registro ativo).
+    """
+    if not CAPTURES_DIR.is_dir():
+        return {"removed_temp": 0, "removed_voice": 0}
+
+    now_ts = time.time()
+    temp_cutoff = now_ts - (max(1, int(max_age_days)) * 86400)
+    orphan_cutoff = now_ts - 86400
+
+    active_voice: set = set()
+    checked_voice: set = set()
+    try:
+        try:
+            from .memory_schedule import _get_memory_db
+        except ImportError:
+            from tools.memory_schedule import _get_memory_db
+
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT filename, is_checked FROM voice_notes WHERE filename IS NOT NULL")
+                for row in cur.fetchall():
+                    fn = str(row["filename"] or "").strip()
+                    if not fn:
+                        continue
+                    if int(row["is_checked"] or 0) == 0:
+                        active_voice.add(fn)
+                    else:
+                        checked_voice.add(fn)
+            finally:
+                conn.close()
+    except Exception:
+        pass
+
+    temp_prefixes = ("capture_", "screen_", "vid_", "loc_", "audio_")
+    removed_temp = 0
+    removed_voice = 0
+
+    for entry in CAPTURES_DIR.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        try:
+            mtime = entry.stat().st_mtime
+        except OSError:
+            continue
+
+        if name.startswith("voice_note_"):
+            if name in checked_voice or (name not in active_voice and mtime < orphan_cutoff):
+                try:
+                    entry.unlink(missing_ok=True)
+                    removed_voice += 1
+                except OSError:
+                    pass
+        elif name.startswith(temp_prefixes) and mtime < temp_cutoff:
+            try:
+                entry.unlink(missing_ok=True)
+                removed_temp += 1
+            except OSError:
+                pass
+
+    return {"removed_temp": removed_temp, "removed_voice": removed_voice}
 
 

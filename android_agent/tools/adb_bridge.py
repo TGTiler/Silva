@@ -138,8 +138,38 @@ def run_adb_shell(args: List[str], timeout: float = 6.0) -> Tuple[bool, str]:
         if res.returncode == 0:
             return True, stdout
         return False, stderr or stdout or f"Erro ADB (exit {res.returncode})"
+    except subprocess.TimeoutExpired:
+        return False, "Timeout ADB (comando excedeu o tempo limite)."
     except Exception as e:
         return False, str(e)
+
+
+def is_screen_unlocked(serial: Optional[str] = None) -> Tuple[bool, str]:
+    """
+    Verifica via ADB se a tela está acesa (Awake/ON) e desbloqueada (sem keyguard/lockscreen).
+    Retorna (True, '') se pronta para automação UI, ou (False, mensagem_orientativa).
+    """
+    if not (serial or ensure_adb_connected()):
+        return False, "ADB local não conectado."
+
+    blocked_msg = (
+        "A tela do celular está apagada ou bloqueada. "
+        "Desbloqueie o aparelho para que eu possa interagir com o aplicativo."
+    )
+
+    ok_pwr, out_pwr = run_adb_shell(["dumpsys", "power"], timeout=4.0)
+    if ok_pwr and out_pwr:
+        low_pwr = out_pwr.lower()
+        if any(s in low_pwr for s in ("mwakefulness=asleep", "mwakefulness=dozing", "display power: state=off")):
+            return False, blocked_msg
+
+    ok_win, out_win = run_adb_shell(["dumpsys", "window"], timeout=4.0)
+    if ok_win and out_win:
+        low_win = out_win.lower()
+        if "mdreaminglockscreen=true" in low_win or "isstatusbarkeyguard=true" in low_win:
+            return False, blocked_msg
+
+    return True, ""
 
 
 def pull_adb_file(remote_path: str, local_path: Path, timeout: float = 8.0) -> bool:

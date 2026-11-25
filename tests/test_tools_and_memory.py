@@ -981,6 +981,57 @@ class TestToolsAndMemory(unittest.TestCase):
             mock_type.assert_called_once_with("açaí com granola")
             mock_key.assert_called_once_with(66)
 
+    def test_sqlite_busy_timeout_and_cleanup_orphaned_captures(self):
+        """Testa PRAGMA busy_timeout=5000 e coleta seletiva de mídias órfãs em CAPTURES_DIR."""
+        import os
+        import time
+        from android_agent.tools import core as tools_core, media as tools_media, memory_schedule
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_dir = Path(tmpdir)
+            tmp_cap = tmp_dir / "captures"
+            tmp_cap.mkdir(parents=True, exist_ok=True)
+            with patch.object(memory_schedule, "DATA_DIR", tmp_dir), \
+                 patch.object(tools_core, "CAPTURES_DIR", tmp_cap), \
+                 patch.object(tools_media, "CAPTURES_DIR", tmp_cap):
+                # 1. PRAGMA busy_timeout
+                conn = memory_schedule._get_memory_db()
+                busy_val = conn.execute("PRAGMA busy_timeout;").fetchone()[0]
+                conn.close()
+                self.assertEqual(busy_val, 5000)
+
+                # 2. Cria arquivos: antigo (>7d), recente (<7d), nota ativa, nota checada e órfã >24h
+                old_temp = tmp_cap / "capture_old.jpg"
+                new_temp = tmp_cap / "capture_new.jpg"
+                orphan_vn = tmp_cap / "voice_note_orphan.m4a"
+                old_temp.write_bytes(b"old")
+                new_temp.write_bytes(b"new")
+                orphan_vn.write_bytes(b"orphan")
+
+                old_ts = time.time() - (8 * 86400)
+                os.utime(old_temp, (old_ts, old_ts))
+                os.utime(orphan_vn, (time.time() - (2 * 86400), time.time() - (2 * 86400)))
+
+                active_res = tools.save_voice_note(title="ativa", duration=5, text_only=False)
+                active_file = tmp_cap / active_res["data"]["filename"]
+
+                checked_res = tools.save_voice_note(title="concluida", duration=5, text_only=False)
+                checked_file = tmp_cap / checked_res["data"]["filename"]
+                # Marca is_checked=1 no DB sem apagar ainda do disco para testar o GC
+                conn = memory_schedule._get_memory_db()
+                with conn:
+                    conn.execute("UPDATE voice_notes SET is_checked = 1 WHERE id = ?", (checked_res["data"]["id"],))
+                conn.close()
+
+                gc_stats = tools_core.cleanup_orphaned_captures(max_age_days=7)
+                self.assertEqual(gc_stats["removed_temp"], 1)
+                self.assertEqual(gc_stats["removed_voice"], 2)
+                self.assertFalse(old_temp.exists())
+                self.assertTrue(new_temp.exists())
+                self.assertTrue(active_file.exists())
+                self.assertFalse(checked_file.exists())
+                self.assertFalse(orphan_vn.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

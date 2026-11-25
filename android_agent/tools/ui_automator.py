@@ -6,12 +6,15 @@ busca semântica de elementos e digitação com preservação de acentuação PT
 
 import re
 import subprocess
+import threading
 import time
 import unicodedata
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional, Tuple
 
-from .adb_bridge import ensure_adb_connected, run_adb_shell
+from .adb_bridge import ensure_adb_connected, is_screen_unlocked, run_adb_shell
+
+_UI_LOCK = threading.RLock()
 
 _BOUNDS_RE = re.compile(r"\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]")
 
@@ -51,22 +54,23 @@ def _extract_xml_payload(raw_output: str) -> str:
 
 def dump_ui_nodes() -> List[Dict[str, Any]]:
     """
-    Captura a árvore de UI atual via 'uiautomator dump' e retorna
+    Captura a árvore de UI atual via 'uiautomator dump' sob _UI_LOCK e retorna
     a lista ordenada de nós visíveis com área positiva.
     """
-    xml_raw = ""
-    ok_dump, out_dump = run_adb_shell(["uiautomator", "dump", "/sdcard/silva_ui.xml"], timeout=8.0)
-    if ok_dump:
-        ok_cat, out_cat = run_adb_shell(["cat", "/sdcard/silva_ui.xml"], timeout=6.0)
-        if ok_cat and ("<hierarchy" in out_cat or "<?xml" in out_cat):
-            xml_raw = out_cat
+    with _UI_LOCK:
+        xml_raw = ""
+        ok_dump, out_dump = run_adb_shell(["uiautomator", "dump", "/sdcard/silva_ui.xml"], timeout=5.0)
+        if ok_dump:
+            ok_cat, out_cat = run_adb_shell(["cat", "/sdcard/silva_ui.xml"], timeout=5.0)
+            if ok_cat and ("<hierarchy" in out_cat or "<?xml" in out_cat):
+                xml_raw = out_cat
 
-    if not xml_raw:
-        ok_tty, out_tty = run_adb_shell(["uiautomator", "dump", "/dev/tty"], timeout=8.0)
-        if ok_tty and ("<hierarchy" in out_tty or "<?xml" in out_tty):
-            xml_raw = out_tty
-        elif out_dump and ("<hierarchy" in out_dump or "<?xml" in out_dump):
-            xml_raw = out_dump
+        if not xml_raw:
+            ok_tty, out_tty = run_adb_shell(["uiautomator", "dump", "/dev/tty"], timeout=5.0)
+            if ok_tty and ("<hierarchy" in out_tty or "<?xml" in out_tty):
+                xml_raw = out_tty
+            elif out_dump and ("<hierarchy" in out_dump or "<?xml" in out_dump):
+                xml_raw = out_dump
 
     xml_clean = _extract_xml_payload(xml_raw)
     if not xml_clean:
@@ -188,38 +192,41 @@ def find_ui_node(
 
 
 def tap_coords(x: int, y: int) -> Tuple[bool, str]:
-    """Executa toque real nas coordenadas (x, y) via ADB input tap."""
-    return run_adb_shell(["input", "tap", str(int(x)), str(int(y))], timeout=4.0)
+    """Executa toque real nas coordenadas (x, y) via ADB input tap sob _UI_LOCK."""
+    with _UI_LOCK:
+        return run_adb_shell(["input", "tap", str(int(x)), str(int(y))], timeout=4.0)
 
 
 def press_key(keycode: Any) -> Tuple[bool, str]:
-    """Envia um evento de tecla Android (ex: 66=ENTER, 279=PASTE) via ADB."""
-    return run_adb_shell(["input", "keyevent", str(keycode)], timeout=4.0)
+    """Envia um evento de tecla Android (ex: 66=ENTER, 279=PASTE) via ADB sob _UI_LOCK."""
+    with _UI_LOCK:
+        return run_adb_shell(["input", "keyevent", str(keycode)], timeout=4.0)
 
 
 def tap_element(label: str, timeout: float = 4.0) -> Tuple[bool, str]:
     """
     Faz polling da árvore de UI a cada 0.5s até 'timeout' procurando 'label'
-    e toca no centro do elemento (ou de seu container clicável).
+    e toca no centro do elemento (ou de seu container clicável) sob _UI_LOCK.
     """
     if not ensure_adb_connected():
         return False, "ADB local não conectado para tocar na tela."
 
-    deadline = time.monotonic() + max(0.5, float(timeout))
-    while True:
-        nodes = dump_ui_nodes()
-        node = find_ui_node(label, nodes=nodes, clickable_only=True)
-        if node:
-            ok, out = tap_coords(node["cx"], node["cy"])
-            if ok:
-                return True, f"Tocado em '{label}' nas coordenadas ({node['cx']}, {node['cy']})."
-            return False, f"Falha ao tocar em '{label}': {out}"
+    with _UI_LOCK:
+        deadline = time.monotonic() + max(0.5, float(timeout))
+        while True:
+            nodes = dump_ui_nodes()
+            node = find_ui_node(label, nodes=nodes, clickable_only=True)
+            if node:
+                ok, out = tap_coords(node["cx"], node["cy"])
+                if ok:
+                    return True, f"Tocado em '{label}' nas coordenadas ({node['cx']}, {node['cy']})."
+                return False, f"Falha ao tocar em '{label}': {out}"
 
-        if time.monotonic() >= deadline:
-            break
-        time.sleep(0.5)
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(0.5)
 
-    return False, f"Elemento '{label}' não encontrado na tela."
+        return False, f"Elemento '{label}' não encontrado na tela."
 
 
 def _set_device_clipboard(text: str) -> bool:

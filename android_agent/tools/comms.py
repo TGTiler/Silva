@@ -272,6 +272,14 @@ def _automate_whatsapp_send(recipient: str, message: str) -> Dict[str, Any]:
         }
 
     if adb_serial:
+        from .adb_bridge import is_screen_unlocked
+        unlocked, lock_msg = is_screen_unlocked(serial=adb_serial)
+        if not unlocked:
+            return {
+                "status": "ok",
+                "message": f"Silva: {lock_msg}",
+                "data": {"recipient": display_target, "phone": wa_num, "message": clean_message, "sent": False, "locked": True},
+            }
         time.sleep(1.5)
         nodes = dump_ui_nodes()
         send_node = (
@@ -412,6 +420,14 @@ def send_whatsapp(contact_name: str, message: str) -> Dict[str, Any]:
         }
 
     if adb_serial:
+        from .adb_bridge import is_screen_unlocked
+        unlocked, lock_msg = is_screen_unlocked(serial=adb_serial)
+        if not unlocked:
+            return {
+                "status": "ok",
+                "message": f"Silva: {lock_msg}",
+                "data": {"recipient": display_target, "phone": wa_num, "message": clean_message, "sent": False, "locked": True},
+            }
         time.sleep(1.5)
         nodes = dump_ui_nodes()
         send_node = (

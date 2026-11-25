@@ -12,10 +12,12 @@ import mimetypes
 import signal
 import threading
 import time
+import uuid
 from datetime import datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Dict
 from urllib.parse import parse_qs, unquote, urlparse
 
 from config import ACCESS_PIN, CAPTURES_DIR, WEB_AUTO_TTS, WEB_HOST, WEB_PORT
@@ -26,6 +28,11 @@ from scheduler import start_events_scheduler
 from tools.core import _FILE_LOCK
 from tools.media import check_voice_note
 from tools.memory_schedule import _get_memory_db
+
+MAX_POST_BODY_BYTES = 8 * 1024 * 1024  # 8 MB
+ALLOWED_AUDIO_EXTENSIONS = {"webm", "ogg", "m4a", "wav"}
+_PIN_FAIL_LOCK = threading.Lock()
+_PIN_FAILURES: Dict[str, int] = {}
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 llm_client = SilvaLLMClient()
@@ -137,24 +144,60 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
 
         self.send_error(HTTPStatus.NOT_FOUND, "Rota não encontrada.")
 
+    def _verify_access_pin(self, client_pin: str) -> bool:
+        """Valida X-Access-Pin com rate-limit progressivo por IP após 5 falhas consecutivas."""
+        if not ACCESS_PIN:
+            return True
+        client_ip = (self.client_address[0] if self.client_address else "") or "unknown"
+        if client_pin and hmac.compare_digest(client_pin, ACCESS_PIN):
+            with _PIN_FAIL_LOCK:
+                _PIN_FAILURES.pop(client_ip, None)
+            return True
+
+        with _PIN_FAIL_LOCK:
+            fails = _PIN_FAILURES.get(client_ip, 0) + 1
+            _PIN_FAILURES[client_ip] = fails
+        if fails >= 5:
+            time.sleep(min(3.0, float(fails - 4)))
+        self._send_json(
+            {"status": "error", "message": "PIN de acesso inválido ou ausente."},
+            status=HTTPStatus.FORBIDDEN,
+        )
+        return False
+
+    def _read_post_body_bytes(self):
+        """Valida Content-Length (<= 8 MB) antes de ler do socket, retornando bytes ou None."""
+        raw_len = self.headers.get("Content-Length")
+        try:
+            content_len = int(raw_len) if raw_len is not None else 0
+        except (TypeError, ValueError):
+            self._send_json(
+                {"status": "error", "message": "Content-Length inválido."},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return None
+
+        if content_len < 0 or content_len > MAX_POST_BODY_BYTES:
+            self._send_json(
+                {"status": "error", "message": "Payload excede o limite máximo permitido de 8 MB."},
+                status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+            )
+            return None
+
+        return self.rfile.read(content_len)
+
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path
 
         if path == "/api/chat":
-            # Validação de segurança via X-Access-Pin (se configurado)
-            if ACCESS_PIN:
-                client_pin = self.headers.get("X-Access-Pin", "").strip()
-                if not hmac.compare_digest(client_pin, ACCESS_PIN):
-                    return self._send_json(
-                        {"status": "error", "message": "PIN de acesso inválido ou ausente."},
-                        status=HTTPStatus.FORBIDDEN
-                    )
+            if not self._verify_access_pin(self.headers.get("X-Access-Pin", "").strip()):
+                return
 
-            # Leitura do corpo JSON
+            body_bytes = self._read_post_body_bytes()
+            if body_bytes is None:
+                return
             try:
-                content_len = int(self.headers.get("Content-Length", 0))
-                body_bytes = self.rfile.read(content_len)
                 body = json.loads(body_bytes.decode("utf-8"))
             except Exception as e:
                 return self._send_json(
@@ -226,16 +269,13 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
             return self._send_json(result)
 
         if path == "/api/voice-notes/check":
-            if ACCESS_PIN:
-                client_pin = self.headers.get("X-Access-Pin", "").strip()
-                if not hmac.compare_digest(client_pin, ACCESS_PIN):
-                    return self._send_json(
-                        {"status": "error", "message": "PIN de acesso inválido ou ausente."},
-                        status=HTTPStatus.FORBIDDEN,
-                    )
+            if not self._verify_access_pin(self.headers.get("X-Access-Pin", "").strip()):
+                return
+            body_bytes = self._read_post_body_bytes()
+            if body_bytes is None:
+                return
             try:
-                content_len = int(self.headers.get("Content-Length", 0))
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                body = json.loads(body_bytes.decode("utf-8"))
                 note_id = int(body.get("id", 0))
             except Exception as e:
                 return self._send_json(
@@ -251,16 +291,13 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
             return self._send_json(res)
 
         if path == "/api/voice-notes/upload":
-            if ACCESS_PIN:
-                client_pin = self.headers.get("X-Access-Pin", "").strip()
-                if not hmac.compare_digest(client_pin, ACCESS_PIN):
-                    return self._send_json(
-                        {"status": "error", "message": "PIN de acesso inválido ou ausente."},
-                        status=HTTPStatus.FORBIDDEN,
-                    )
+            if not self._verify_access_pin(self.headers.get("X-Access-Pin", "").strip()):
+                return
+            body_bytes = self._read_post_body_bytes()
+            if body_bytes is None:
+                return
             try:
-                content_len = int(self.headers.get("Content-Length", 0))
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                body = json.loads(body_bytes.decode("utf-8"))
             except Exception as e:
                 return self._send_json(
                     {"status": "error", "message": f"Corpo inválido: {str(e)}"},
@@ -277,8 +314,11 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                 )
 
             ext = str(body.get("ext") or "webm").strip().lower().lstrip(".")
-            if ext not in ("webm", "ogg", "m4a", "mp3", "wav"):
-                ext = "webm"
+            if ext not in ALLOWED_AUDIO_EXTENSIONS:
+                return self._send_json(
+                    {"status": "error", "message": f"Extensão de áudio não permitida: '{ext}'."},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
 
             try:
                 audio_bytes = base64.b64decode(raw_b64, validate=True)
@@ -289,8 +329,14 @@ class SilvaHTTPRequestHandler(SimpleHTTPRequestHandler):
                 )
 
             CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
-            filename = f"voice_note_{int(time.time() * 1000)}.{ext}"
-            (CAPTURES_DIR / filename).write_bytes(audio_bytes)
+            filename = f"voice_note_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}.{ext}"
+            target_path = (CAPTURES_DIR / filename).resolve()
+            if not target_path.is_relative_to(CAPTURES_DIR.resolve()):
+                return self._send_json(
+                    {"status": "error", "message": "Caminho de destino inválido."},
+                    status=HTTPStatus.FORBIDDEN,
+                )
+            target_path.write_bytes(audio_bytes)
             title = str(body.get("title") or "").strip() or f"Nota de voz ({datetime.now().strftime('%d/%m às %H:%M')})"
 
             with _FILE_LOCK:

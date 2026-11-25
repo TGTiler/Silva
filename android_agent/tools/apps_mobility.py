@@ -21,8 +21,8 @@ from .core import (
     _exec_android_intent,
     load_last_location,
 )
-from .adb_bridge import ensure_adb_connected, run_adb_shell
-from .ui_automator import dump_ui_nodes, get_screen_dimensions, press_key, tap_coords, tap_element, type_text_unicode
+from .adb_bridge import ensure_adb_connected, is_screen_unlocked, run_adb_shell
+from .ui_automator import _UI_LOCK, dump_ui_nodes, get_screen_dimensions, press_key, tap_coords, tap_element, type_text_unicode
 from .comms import set_clipboard
 from .memory_schedule import _load_memory, _normalize_text, recall_note
 
@@ -102,6 +102,11 @@ def interact_screen(action: str, label: str = "") -> Dict[str, Any]:
     if act == "tap":
         if not clean_label:
             return {"status": "error", "message": "Informe o texto do botão ou elemento para tocar."}
+        adb_ser = ensure_adb_connected()
+        if adb_ser:
+            unlocked, lock_msg = is_screen_unlocked(serial=adb_ser)
+            if not unlocked:
+                return {"status": "error", "message": lock_msg, "data": {"action": "tap", "label": clean_label, "locked": True}}
         ok, msg = tap_element(clean_label, timeout=4.0)
         return {
             "status": "ok" if ok else "error",
@@ -653,42 +658,48 @@ def _automate_food_search_via_ui(clean_query: str) -> bool:
     2. Localiza a barra superior (y < 22%, ignorando rodapé y > 85%) ou usa coordenada segura (52%, 7.5%).
     3. Toca na barra, aguarda foco no EditText (0.8s), digita com acentos PT-BR e envia Enter (66).
     """
-    if not ensure_adb_connected():
+    adb_ser = ensure_adb_connected()
+    if not adb_ser:
         return False
 
-    time.sleep(3.0)
-    nodes = dump_ui_nodes()
-    if nodes:
-        dismissed_nodes = _dismiss_promo_modal(nodes)
-        if dismissed_nodes is not None:
-            nodes = dismissed_nodes
-
-    screen_w, screen_h = get_screen_dimensions(nodes)
-    search_node = _find_food_search_node(nodes, screen_w=screen_w, screen_h=screen_h, prefer_edit_text=False)
-
-    if search_node:
-        tap_coords(int(search_node["cx"]), int(search_node["cy"]))
-        tapped_cls = str(search_node.get("class_name") or search_node.get("class") or "").lower()
-    else:
-        # Prioridade 2: Fallback por coordenada segura da barra superior (52% x, 7.5% y)
-        tap_coords(int(screen_w * 0.52), int(screen_h * 0.075))
-        tapped_cls = ""
-
-    time.sleep(0.8)
-
-    if "edittext" not in tapped_cls:
-        nodes_after = dump_ui_nodes()
-        edit_node = _find_food_search_node(nodes_after, screen_w=screen_w, screen_h=screen_h, prefer_edit_text=True)
-        if edit_node:
-            tap_coords(int(edit_node["cx"]), int(edit_node["cy"]))
-            time.sleep(0.3)
-
-    ok_type, _ = type_text_unicode(clean_query)
-    if not ok_type:
+    unlocked, _ = is_screen_unlocked(serial=adb_ser)
+    if not unlocked:
         return False
-    time.sleep(0.3)
-    press_key(66)
-    return True
+
+    with _UI_LOCK:
+        time.sleep(3.0)
+        nodes = dump_ui_nodes()
+        if nodes:
+            dismissed_nodes = _dismiss_promo_modal(nodes)
+            if dismissed_nodes is not None:
+                nodes = dismissed_nodes
+
+        screen_w, screen_h = get_screen_dimensions(nodes)
+        search_node = _find_food_search_node(nodes, screen_w=screen_w, screen_h=screen_h, prefer_edit_text=False)
+
+        if search_node:
+            tap_coords(int(search_node["cx"]), int(search_node["cy"]))
+            tapped_cls = str(search_node.get("class_name") or search_node.get("class") or "").lower()
+        else:
+            # Prioridade 2: Fallback por coordenada segura da barra superior (52% x, 7.5% y)
+            tap_coords(int(screen_w * 0.52), int(screen_h * 0.075))
+            tapped_cls = ""
+
+        time.sleep(0.8)
+
+        if "edittext" not in tapped_cls:
+            nodes_after = dump_ui_nodes()
+            edit_node = _find_food_search_node(nodes_after, screen_w=screen_w, screen_h=screen_h, prefer_edit_text=True)
+            if edit_node:
+                tap_coords(int(edit_node["cx"]), int(edit_node["cy"]))
+                time.sleep(0.3)
+
+        ok_type, _ = type_text_unicode(clean_query)
+        if not ok_type:
+            return False
+        time.sleep(0.3)
+        press_key(66)
+        return True
 
 
 def order_food(query: str, app: str = "ifood") -> Dict[str, Any]:
@@ -1012,12 +1023,17 @@ def get_datetime() -> Dict[str, Any]:
 
 def read_screen() -> Dict[str, Any]:
     """Extrai e resume o conteúdo legível da tela atual via uiautomator + ADB."""
-    if not ensure_adb_connected():
+    adb_ser = ensure_adb_connected()
+    if not adb_ser:
         return {
             "status": "error",
             "message": "Não foi possível ler a tela porque o ADB local está offline. Conecte a depuração por Wi-Fi para habilitar a leitura de tela.",
             "data": {"texts": [], "count": 0},
         }
+
+    unlocked, lock_msg = is_screen_unlocked(serial=adb_ser)
+    if not unlocked:
+        return {"status": "error", "message": lock_msg, "data": {"texts": [], "count": 0, "locked": True}}
 
     nodes = dump_ui_nodes()
     filtered = []

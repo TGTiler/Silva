@@ -12,11 +12,11 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 try:
-    from .tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd
+    from .tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd, cleanup_orphaned_captures
     from .tools.hardware import get_wifi_info
     from .tools.memory_schedule import _get_memory_db, compute_next_trigger
 except ImportError:
-    from tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd
+    from tools.core import SIMULATE_HARDWARE, _FILE_LOCK, _run_termux_cmd, cleanup_orphaned_captures
     from tools.hardware import get_wifi_info
     from tools.memory_schedule import _get_memory_db, compute_next_trigger
 
@@ -282,10 +282,16 @@ def check_and_notify_context_reminders() -> None:
 
 
 def _events_scheduler_loop(interval_sec: int = 10) -> None:
+    last_gc = 0.0
+    gc_interval_sec = 6 * 3600
     while True:
         try:
             check_and_notify_events()
             check_and_notify_context_reminders()
+            now_mono = time.monotonic()
+            if (now_mono - last_gc) >= gc_interval_sec:
+                cleanup_orphaned_captures()
+                last_gc = now_mono
         except Exception:
             pass
         time.sleep(interval_sec)

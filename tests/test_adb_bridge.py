@@ -149,6 +149,29 @@ class TestAdbBridge(unittest.TestCase):
             self.assertEqual(r_call["data"]["method"], "telephony_call")
             self.assertIn(["termux-telephony-call", "11988887777"], termux_calls)
 
+    def test_screen_lock_guard_and_subprocess_timeout(self):
+        """Valida is_screen_unlocked() bloqueando automação com tela apagada/bloqueada e TimeoutExpired."""
+        from android_agent.tools import apps_mobility
+
+        with patch.object(adb_bridge, "ensure_adb_connected", return_value="192.168.0.106:32913"), \
+             patch.object(adb_bridge, "run_adb_shell", return_value=(True, "mWakefulness=Asleep\nDisplay Power: state=OFF")):
+            unlocked, msg = adb_bridge.is_screen_unlocked()
+            self.assertFalse(unlocked)
+            self.assertIn("apagada ou bloqueada", msg)
+
+        with patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:32913"), \
+             patch.object(apps_mobility, "is_screen_unlocked", return_value=(False, "A tela do celular está apagada ou bloqueada. Desbloqueie o aparelho.")):
+            res = apps_mobility.read_screen()
+            self.assertEqual(res["status"], "error")
+            self.assertTrue(res["data"]["locked"])
+
+        with patch.object(adb_bridge, "ensure_adb_connected", return_value="192.168.0.106:32913"), \
+             patch("shutil.which", return_value="/usr/bin/adb"), \
+             patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="adb", timeout=5.0)):
+            ok, out = adb_bridge.run_adb_shell(["dumpsys", "power"], timeout=5.0)
+            self.assertFalse(ok)
+            self.assertIn("Timeout", out)
+
 
 if __name__ == "__main__":
     unittest.main()

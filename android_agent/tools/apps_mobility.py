@@ -501,9 +501,10 @@ def _launch_99_package(target_tab: str) -> Optional[str]:
     for pkg in candidates:
         if pkg in RESOLVED_APP_ACTIVITIES:
             cmd = f"am start -n {RESOLVED_APP_ACTIVITIES[pkg]}"
-        else:
-            cmd = f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"
-        if _intent_succeeded(_exec_android_intent(cmd)):
+            if _intent_succeeded(_exec_android_intent(cmd)):
+                return pkg
+        cmd_monkey = f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"
+        if _intent_succeeded(_exec_android_intent(cmd_monkey)):
             return pkg
     return None
 
@@ -673,9 +674,12 @@ def _prepare_99_app(target_tab: str) -> Dict[str, Any]:
         # Alternância de abas só existe no super-app (com.taxis99).
         if pkg == "com.taxis99" and not manual_location_mode:
             ride_visible = _has_99_ride_field(nodes)
+            has_food_search = _find_99_food_search_node(nodes, screen_w, screen_h) is not None
+            has_food_tab = _find_99_bottom_tab(nodes, _99_FOOD_TAB_LABELS, screen_h) is not None
+            on_location_blocker = any("habilitar servicos de localizacao" in _node_label(n) for n in nodes or [])
             tab_node = None
             fallback_xy = None
-            if target_tab == "food" and ride_visible:
+            if target_tab == "food" and (ride_visible or on_location_blocker or (has_food_tab and not has_food_search)):
                 tab_node = _find_99_bottom_tab(nodes, _99_FOOD_TAB_LABELS, screen_h)
                 fallback_xy = (int(screen_w * 0.40), int(screen_h * 0.92))
             elif target_tab == "ride" and not ride_visible:
@@ -1432,11 +1436,31 @@ def _playstore_find_clickable_by_labels(nodes: list, labels: set) -> Optional[Di
     return None
 
 
+def _is_playstore_home_screen(nodes: list, app_name: str = "") -> bool:
+    """
+    Detecta se a Play Store está na tela inicial (barra inferior Jogos/Apps/Livros)
+    e NÃO no bottom-sheet/página de detalhes do aplicativo alvo.
+    """
+    labels = {_normalize_text(str(n.get("text") or n.get("content_desc") or "")) for n in (nodes or [])}
+    has_bottom_nav = "jogos" in labels and "apps" in labels and ("livros" in labels or "pesquisa" in labels)
+    if not has_bottom_nav:
+        return False
+    norm_app = _normalize_text(app_name)
+    for n in nodes or []:
+        lbl = _node_label(n)
+        if norm_app and norm_app in lbl and int(n.get("cy") or 0) < 1600:
+            return False
+        if "avaliacoes" in lbl or "classificacao" in lbl:
+            return False
+    return True
+
+
 def _playstore_click_install(app_name: str, initial_nodes: Optional[list] = None) -> Dict[str, Any]:
     """
     Inspeciona o XML da página do app na Google Play Store (até 2 tentativas):
     1. Dispensa pop-ups ('Agora não', 'Not now', 'Pular', 'Dispensar').
-    2. Clica em 'Instalar'/'Install' e confirma transição (ou detecta já instalado / em andamento).
+    2. Garante que não está na tela inicial da Play Store (para não clicar em banners promocionais).
+    3. Clica em 'Instalar'/'Install' e confirma transição (ou detecta já instalado / em andamento).
     """
     nodes = initial_nodes if initial_nodes is not None else dump_ui_nodes()
     for attempt in range(2):
@@ -1452,6 +1476,11 @@ def _playstore_click_install(app_name: str, initial_nodes: Optional[list] = None
             tap_coords(int(popup_btn["cx"]), int(popup_btn["cy"]))
             time.sleep(1.0)
             nodes = dump_ui_nodes()
+
+        # Nunca clicar em 'Instalar' de um banner promocional na tela inicial da Play Store
+        if _is_playstore_home_screen(nodes, app_name):
+            time.sleep(1.0)
+            continue
 
         # 2. Caso 1: Botão Instalar / Install
         install_btn = _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_INSTALL_LABELS)
@@ -1611,8 +1640,13 @@ def install_app(app_name: str) -> Dict[str, Any]:
             }
 
         with _UI_LOCK:
-            time.sleep(2.5)
+            time.sleep(3.5)
             click_res = _playstore_click_install(clean_name)
+            if click_res["action"] == "opened_only":
+                https_url = f"https://play.google.com/store/apps/details?id={pkg}"
+                _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{https_url}" -p com.android.vending')
+                time.sleep(2.5)
+                click_res = _playstore_click_install(clean_name)
         return {
             "status": "ok",
             "message": click_res["message"],

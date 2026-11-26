@@ -245,8 +245,11 @@ def _set_device_clipboard(text: str) -> bool:
     except Exception:
         pass
 
-    ok, _ = run_adb_shell(["cmd", "clipboard", "set-text", text], timeout=4.0)
-    return ok
+    ok, out = run_adb_shell(["cmd", "clipboard", "set-text", text], timeout=4.0)
+    low = (out or "").lower()
+    if ok and "no shell command" not in low and "error" not in low and "exception" not in low:
+        return True
+    return False
 
 
 def get_screen_dimensions(nodes: Optional[List[Dict[str, Any]]] = None) -> Tuple[int, int]:

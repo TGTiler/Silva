@@ -267,8 +267,8 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
     def test_all_63_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 65 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 65, "O catálogo formal deve conter exatamente 65 ferramentas.")
+        """Testa a execução smoke de todas as 67 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 67, "O catálogo formal deve conter exatamente 67 ferramentas.")
 
         sample_args = {
             "add_list_item": {"item": "café", "list_name": "compras"},
@@ -286,6 +286,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "get_last_sms": {"limit": 3},
             "get_list": {"list_name": "compras"},
             "get_location": {},
+            "get_news": {"topic": "geral", "limit": 3},
             "get_notifications": {"app": "whatsapp"},
             "get_sleep_report": {"days": 7},
             "get_system_info": {},
@@ -311,6 +312,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "remove_list_item": {"item": "café", "list_name": "compras"},
             "request_ride": {"destination": "Shopping"},
             "save_contact": {"name": "Teste", "phone": "11999998888"},
+            "save_contact_alias": {"alias": "mãe", "target_name": "Teste"},
             "save_voice_note": {"title": "lembrete smoke", "duration": 5, "text_only": True},
             "scan_wifi": {},
             "schedule_event": {"title": "Reuniao", "date": "amanha", "time": "14:00"},
@@ -1367,6 +1369,81 @@ class TestToolsAndMemory(unittest.TestCase):
                 ev_res = ms.schedule_event("Dentista", date="amanha", time="10:00")
             self.assertEqual(ev_res["status"], "ok")
             self.assertTrue(any("content://com.android.calendar/events" in " ".join(c) for c in cal_adb_calls))
+
+    def test_get_news_rss_xml_and_offline_cache_and_contact_aliases(self):
+        """
+        Valida:
+        1. get_news() parseando RSS XML real (ElementTree), gravando news_cache e servindo cache offline;
+        2. save_contact_alias() + resolve_contact_detailed() resolvendo 'minha mãe' em make_call e send_whatsapp;
+        3. Roteamento NLP para get_news e save_contact_alias.
+        """
+        import io
+        import sqlite3
+        from android_agent.intent_fallback import match_intent_fallback
+        from android_agent.tools import comms, contacts, memory_schedule as ms, weather_web as ww
+
+        class _FakeResp(io.BytesIO):
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+
+        rss_xml = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<rss version="2.0"><channel><title>G1</title>'
+            b'<item><title><![CDATA[Tecnologia avanca no Brasil]]></title><link>https://g1.globo.com/1</link><pubDate>Wed, 25 Nov 2026 08:00:00 GMT</pubDate></item>'
+            b'<item><title>Economia registra alta</title><link>https://g1.globo.com/2</link><pubDate>Wed, 25 Nov 2026 07:30:00 GMT</pubDate></item>'
+            b'</channel></rss>'
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "memory.db"
+
+            def _db():
+                conn = sqlite3.connect(str(db_path), timeout=5.0)
+                conn.row_factory = sqlite3.Row
+                conn.execute("CREATE TABLE IF NOT EXISTS memories (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT UNIQUE, value TEXT, category TEXT, updated_at TEXT)")
+                conn.execute("CREATE TABLE IF NOT EXISTS news_cache (topic TEXT PRIMARY KEY, items_json TEXT NOT NULL, updated_at TEXT NOT NULL)")
+                conn.execute("CREATE TABLE IF NOT EXISTS contact_aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, target_name TEXT NOT NULL, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+                return conn
+
+            with patch.object(ms, "_get_memory_db", side_effect=_db), \
+                 patch.object(ww, "SIMULATE_HARDWARE", False):
+                with patch("android_agent.tools.weather_web.urllib.request.urlopen", return_value=_FakeResp(rss_xml)):
+                    n_on = ww.get_news(topic="tecnologia", limit=2)
+                self.assertEqual(n_on["status"], "ok")
+                self.assertEqual(n_on["data"]["source"], "rss")
+                self.assertEqual(n_on["data"]["count"], 2)
+                self.assertIn("Tecnologia avanca no Brasil", n_on["message"])
+
+                # Offline -> serve news_cache
+                with patch("android_agent.tools.weather_web.urllib.request.urlopen", side_effect=OSError("offline")):
+                    n_off = ww.get_news(topic="tecnologia", limit=2)
+                self.assertEqual(n_off["status"], "ok")
+                self.assertEqual(n_off["data"]["source"], "cache")
+                self.assertIn("Notícias em cache", n_off["message"])
+                self.assertIn("Tecnologia avanca no Brasil", n_off["message"])
+
+                # 2. save_contact_alias + resolve_contact_detailed em make_call / send_whatsapp
+                with patch.object(contacts, "_load_android_contacts", return_value=[{"name": "Maria Silva", "number": "11988887777"}]):
+                    al_res = contacts.save_contact_alias("minha mãe", "Maria Silva")
+                    self.assertEqual(al_res["status"], "ok")
+                    self.assertEqual(al_res["data"]["alias"], "mãe")
+                    self.assertEqual(al_res["data"]["target_name"], "Maria Silva")
+
+                    with patch.object(comms, "SIMULATE_HARDWARE", True):
+                        call_res = comms.make_call(target="minha mãe")
+                        self.assertEqual(call_res["status"], "ok")
+                        self.assertEqual(call_res["data"]["number"], "11988887777")
+                        wpp_res = comms.send_whatsapp("minha mãe", "Oi mãe")
+                        self.assertEqual(wpp_res["status"], "ok")
+                        self.assertIn("Maria Silva", wpp_res["message"])
+
+        # 3. Roteamento NLP
+        self.assertEqual(match_intent_fallback("quais são as notícias de hoje?"), "<call>get_news(topic='geral', limit=5)</call>")
+        self.assertEqual(match_intent_fallback("notícias de tecnologia"), "<call>get_news(topic='tecnologia', limit=5)</call>")
+        self.assertEqual(match_intent_fallback("minha mãe é a Maria Silva"), "<call>save_contact_alias(alias='mãe', target_name='Maria Silva')</call>")
+        self.assertEqual(match_intent_fallback("apelido amor para Ana"), "<call>save_contact_alias(alias='amor', target_name='Ana')</call>")
 
 
 if __name__ == "__main__":

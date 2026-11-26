@@ -14,6 +14,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
 
@@ -1417,6 +1418,214 @@ def search_google(query: str, open_browser: bool = False) -> Dict[str, Any]:
             "results": results,
             "opened_browser": should_open_browser
         }
+    }
+
+
+_NEWS_RSS_FEEDS = {
+    "geral": [
+        "https://g1.globo.com/rss/g1/",
+        "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml",
+    ],
+    "tecnologia": [
+        "https://olhardigital.com.br/feed/",
+        "https://g1.globo.com/rss/g1/tecnologia/",
+    ],
+    "economia": [
+        "https://www.infomoney.com.br/feed/",
+        "https://g1.globo.com/rss/g1/economia/",
+    ],
+    "esportes": [
+        "https://ge.globo.com/rss/ge/",
+        "https://agenciabrasil.ebc.com.br/rss/esportes/feed.xml",
+    ],
+}
+
+_NEWS_TOPIC_ALIASES = {
+    "tecnologia": "tecnologia", "tech": "tecnologia", "ti": "tecnologia", "inovacao": "tecnologia",
+    "economia": "economia", "financas": "economia", "mercado": "economia", "negocios": "economia",
+    "esportes": "esportes", "esporte": "esportes", "futebol": "esportes",
+    "geral": "geral", "brasil": "geral", "mundo": "geral", "hoje": "geral", "": "geral",
+}
+
+
+def _normalize_news_topic(topic: str) -> str:
+    norm = re.sub(r"[^a-z0-9\s]", " ", _strip_leading_articles(str(topic or ""))).strip().lower()
+    for key, val in _NEWS_TOPIC_ALIASES.items():
+        if key and key in norm:
+            return val
+    return "geral"
+
+
+def _clean_rss_text(raw: str) -> str:
+    txt = str(raw or "")
+    txt = re.sub(r"<!\[CDATA\[(.*?)\]\]>", r"\1", txt, flags=re.DOTALL)
+    txt = re.sub(r"<[^>]+>", "", txt)
+    return re.sub(r"\s+", " ", txt).strip()
+
+
+def _parse_rss_xml(xml_bytes: bytes, limit: int) -> list[Dict[str, str]]:
+    """Parseia RSS/Atom XML usando exclusivamente xml.etree.ElementTree."""
+    root = ET.fromstring(xml_bytes)
+    items: list[Dict[str, str]] = []
+
+    for node in root.findall(".//item"):
+        title = _clean_rss_text(node.findtext("title") or "")
+        link = _clean_rss_text(node.findtext("link") or "")
+        pub_date = _clean_rss_text(node.findtext("pubDate") or node.findtext("date") or "")
+        if title:
+            items.append({"title": title, "link": link, "pubDate": pub_date})
+        if len(items) >= limit:
+            return items
+
+    # Fallback Atom (<entry>)
+    for entry in root.findall(".//{http://www.w3.org/2005/Atom}entry"):
+        title = _clean_rss_text(entry.findtext("{http://www.w3.org/2005/Atom}title") or "")
+        link_el = entry.find("{http://www.w3.org/2005/Atom}link")
+        link = _clean_rss_text(link_el.attrib.get("href", "") if link_el is not None else "")
+        pub_date = _clean_rss_text(
+            entry.findtext("{http://www.w3.org/2005/Atom}updated")
+            or entry.findtext("{http://www.w3.org/2005/Atom}published")
+            or ""
+        )
+        if title:
+            items.append({"title": title, "link": link, "pubDate": pub_date})
+        if len(items) >= limit:
+            break
+    return items
+
+
+def _ensure_news_cache_table(conn) -> None:
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS news_cache ("
+        "topic TEXT PRIMARY KEY, "
+        "items_json TEXT NOT NULL, "
+        "updated_at TEXT NOT NULL)"
+    )
+
+
+def _save_news_cache(topic: str, items: list[Dict[str, str]]) -> None:
+    try:
+        from .core import _FILE_LOCK
+        from .memory_schedule import _get_memory_db
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        payload = json.dumps(items, ensure_ascii=False)
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                _ensure_news_cache_table(conn)
+                with conn:
+                    conn.execute(
+                        "INSERT INTO news_cache (topic, items_json, updated_at) VALUES (?, ?, ?) "
+                        "ON CONFLICT(topic) DO UPDATE SET items_json = excluded.items_json, updated_at = excluded.updated_at",
+                        (topic, payload, now_iso),
+                    )
+            finally:
+                conn.close()
+    except Exception:
+        pass
+
+
+def _load_news_cache(topic: str, max_age_sec: Optional[int] = None) -> Optional[tuple[list[Dict[str, str]], str]]:
+    try:
+        from .core import _FILE_LOCK
+        from .memory_schedule import _get_memory_db
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                _ensure_news_cache_table(conn)
+                row = conn.execute(
+                    "SELECT items_json, updated_at FROM news_cache WHERE topic = ?",
+                    (topic,),
+                ).fetchone()
+            finally:
+                conn.close()
+        if not row:
+            return None
+        raw_ts = str(row["updated_at"] or "")
+        if max_age_sec is not None and raw_ts:
+            try:
+                age = (datetime.now() - datetime.fromisoformat(raw_ts)).total_seconds()
+                if age > max_age_sec:
+                    return None
+            except ValueError:
+                pass
+        items = json.loads(str(row["items_json"]))
+        try:
+            fmt_dt = datetime.fromisoformat(raw_ts).strftime("%d/%m às %H:%M")
+        except ValueError:
+            fmt_dt = raw_ts or "data recente"
+        return (items if isinstance(items, list) else []), fmt_dt
+    except Exception:
+        return None
+
+
+def get_news(topic: str = "geral", limit: int = 5) -> Dict[str, Any]:
+    """Lê manchetes reais via feeds RSS em PT-BR (stdlib ElementTree) com cache de 1h no memory.db."""
+    norm_topic = _normalize_news_topic(topic)
+    try:
+        lim = max(1, min(10, int(limit)))
+    except (TypeError, ValueError):
+        lim = 5
+
+    if SIMULATE_HARDWARE:
+        sim_items = [
+            {"title": f"Destaque {i} em {norm_topic.capitalize()}", "link": "https://g1.globo.com", "pubDate": "25/11/2026"}
+            for i in range(1, lim + 1)
+        ]
+        lines = [f"Silva: Principais notícias ({norm_topic}):"]
+        for idx, it in enumerate(sim_items, 1):
+            lines.append(f"{idx}. [{it['title']}]({it['link']}) ({it['pubDate']})")
+        return {
+            "status": "ok",
+            "message": "\n".join(lines) + " [Simulado]",
+            "data": {"topic": norm_topic, "count": len(sim_items), "items": sim_items, "source": "simulated"},
+        }
+
+    # 1. Tenta feeds RSS online (primário -> secundário)
+    feeds = _NEWS_RSS_FEEDS.get(norm_topic, _NEWS_RSS_FEEDS["geral"])
+    parsed_items: list[Dict[str, str]] = []
+    for feed_url in feeds:
+        try:
+            req = urllib.request.Request(feed_url, headers={"User-Agent": "SilvaAgent/1.0 (Android Termux)"})
+            with urllib.request.urlopen(req, timeout=4.0) as resp:
+                xml_bytes = resp.read()
+            parsed_items = _parse_rss_xml(xml_bytes, lim)
+            if parsed_items:
+                break
+        except Exception:
+            continue
+
+    if parsed_items:
+        _save_news_cache(norm_topic, parsed_items)
+        lines = [f"Silva: Principais notícias de {norm_topic} ({len(parsed_items)}):"]
+        for idx, it in enumerate(parsed_items, 1):
+            date_part = f" ({it['pubDate']})" if it.get("pubDate") else ""
+            link_part = f"[{it['title']}]({it['link']})" if it.get("link") else it["title"]
+            lines.append(f"{idx}. {link_part}{date_part}")
+        return {
+            "status": "ok",
+            "message": "\n".join(lines),
+            "data": {"topic": norm_topic, "count": len(parsed_items), "items": parsed_items, "source": "rss"},
+        }
+
+    # 2. Fallback Cache Offline (news_cache)
+    cached = _load_news_cache(norm_topic, max_age_sec=None)
+    if cached and cached[0]:
+        cached_items, cached_dt = cached[0][:lim], cached[1]
+        lines = [f"Silva: Notícias em cache de {cached_dt} ({norm_topic}):"]
+        for idx, it in enumerate(cached_items, 1):
+            link_part = f"[{it['title']}]({it['link']})" if it.get("link") else it["title"]
+            lines.append(f"{idx}. {link_part}")
+        return {
+            "status": "ok",
+            "message": "\n".join(lines),
+            "data": {"topic": norm_topic, "count": len(cached_items), "items": cached_items, "source": "cache", "cached_at": cached_dt},
+        }
+
+    return {
+        "status": "error",
+        "message": f"Silva: Não foi possível carregar notícias de '{norm_topic}' no momento (dispositivo offline e sem cache salvo).",
+        "data": {"topic": norm_topic, "count": 0, "items": []},
     }
 
 

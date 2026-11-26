@@ -21,6 +21,7 @@ from .core import (
     _exec_android_intent,
 )
 
+from .contacts import save_contact_alias
 from .hardware import (
     get_battery,
     set_torch,
@@ -79,6 +80,7 @@ from .weather_web import (
     _resolve_weather_location,
     _interpret_wmo_condition,
     get_weather,
+    get_news,
     DuckDuckGoHTMLParser,
     _fetch_wikipedia_summary,
     search_google,
@@ -190,6 +192,8 @@ AVAILABLE_TOOLS = {
     "remove_list_item": remove_list_item,
     "get_sleep_report": get_sleep_report,
     "manage_sleep": manage_sleep,
+    "get_news": get_news,
+    "save_contact_alias": save_contact_alias,
     "none": none,
 }
 
@@ -257,6 +261,8 @@ __all__ = [
     "_resolve_weather_location",
     "_interpret_wmo_condition",
     "get_weather",
+    "get_news",
+    "save_contact_alias",
     "DuckDuckGoHTMLParser",
     "_fetch_wikipedia_summary",
     "search_google",

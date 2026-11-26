@@ -3,6 +3,7 @@ Motor de Monitoramento Autônomo de Sono Noturno, Arquitetura Estimada do Sono
 e Análise Longitudinal Persistente em SQLite (memory.db).
 """
 
+import json
 import statistics
 import threading
 from datetime import datetime, timedelta
@@ -338,6 +339,30 @@ def _analyze_sleep_trend(
     }
 
 
+def _get_cached_news_briefing(limit: int = 3) -> List[str]:
+    """Lê até 3 manchetes recentes de news_cache ('geral' ou mais recente) para o briefing matinal."""
+    try:
+        conn = _get_memory_db()
+        try:
+            row = conn.execute(
+                "SELECT items_json FROM news_cache WHERE topic = 'geral' LIMIT 1"
+            ).fetchone()
+            if not row:
+                row = conn.execute(
+                    "SELECT items_json FROM news_cache ORDER BY updated_at DESC LIMIT 1"
+                ).fetchone()
+            if not row:
+                return []
+            items = json.loads(str(row["items_json"]))
+            if not isinstance(items, list):
+                return []
+            return [str(it.get("title") or "").strip() for it in items[:limit] if isinstance(it, dict) and it.get("title")]
+        finally:
+            conn.close()
+    except Exception:
+        return []
+
+
 def build_scientific_sleep_report(
     sleep_start_dt: datetime,
     wake_up_dt: datetime,
@@ -396,7 +421,7 @@ def build_scientific_sleep_report(
 
     awake_note = f" (descontados {awake_minutes} min acordado na madrugada)" if awake_minutes > 0 else ""
 
-    return "\n".join([
+    lines = [
         "### 1. Resumo & Evolução ao Passar das Noites",
         f"- **Duração dormida:** {_format_duration_hm(duration_minutes)}{awake_note} "
         f"({sleep_start_dt.strftime('%H:%M')} → {wake_up_dt.strftime('%H:%M')})",
@@ -421,7 +446,12 @@ def build_scientific_sleep_report(
         "### 4. Plano Prático para Hoje à Noite",
         f"- **Rotina de desligamento:** {plan_line_1}",
         f"- **Higiene circadiana:** {plan_line_2}",
-    ])
+    ]
+    news_titles = _get_cached_news_briefing(limit=3)
+    if news_titles:
+        lines.extend(["", "### 📰 Resumo Rápido do Dia"])
+        lines.extend(f"- {t}" for t in news_titles)
+    return "\n".join(lines)
 
 
 def _finalize_sleep_session(

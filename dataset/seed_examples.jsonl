@@ -278,3 +278,11 @@
 {"prompt": "Desconsidera o sono de hoje", "completion": "<call>manage_sleep(action=\"discard_last\")</call>"}
 {"prompt": "Apaga o último relatório de sono", "completion": "<call>manage_sleep(action=\"discard_last\")</call>"}
 {"prompt": "Status do monitoramento de sono", "completion": "<call>manage_sleep(action=\"status\")</call>"}
+{"prompt": "Quais são as notícias de hoje?", "completion": "<call>get_news(topic=\"geral\", limit=5)</call>"}
+{"prompt": "Me atualiza das notícias", "completion": "<call>get_news(topic=\"geral\", limit=5)</call>"}
+{"prompt": "Notícias de tecnologia", "completion": "<call>get_news(topic=\"tecnologia\", limit=5)</call>"}
+{"prompt": "Resumo das notícias de economia", "completion": "<call>get_news(topic=\"economia\", limit=5)</call>"}
+{"prompt": "Minha mãe é a Maria Silva", "completion": "<call>save_contact_alias(alias=\"mãe\", target_name=\"Maria Silva\")</call>"}
+{"prompt": "Salva que meu pai é o João", "completion": "<call>save_contact_alias(alias=\"pai\", target_name=\"João\")</call>"}
+{"prompt": "O dentista é o Dr. Carlos", "completion": "<call>save_contact_alias(alias=\"dentista\", target_name=\"Dr. Carlos\")</call>"}
+{"prompt": "Apelido amor para Ana", "completion": "<call>save_contact_alias(alias=\"amor\", target_name=\"Ana\")</call>"}

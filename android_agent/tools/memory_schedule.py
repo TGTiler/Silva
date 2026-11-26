@@ -523,6 +523,20 @@ def _get_memory_db() -> sqlite3.Connection:
                 updated_at TEXT NOT NULL
             );
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS news_cache (
+                topic TEXT PRIMARY KEY,
+                items_json TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS contact_aliases (
+                alias TEXT PRIMARY KEY COLLATE NOCASE,
+                target_name TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
         # Migração transparente de events.json legado para scheduled_events
         events_legacy = DATA_DIR / "events.json"

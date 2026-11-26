@@ -1866,6 +1866,54 @@ def extract_voice_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def extract_news(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Leitura de notícias reais via RSS (geral, tecnologia, economia, esportes)."""
+    if any(k in norm for k in ("noticias", "noticia", "manchetes", "manchete", "resumo do dia")) and any(
+        t in norm for t in ("quais", "hoje", "atualiza", "resumo", "mostra", "ler", "le ", "me da", "tecnologia", "economia", "esportes", "geral", "ultimas")
+    ):
+        topic = "geral"
+        if any(w in norm for w in ("tecnologia", "tech", "inovacao")):
+            topic = "tecnologia"
+        elif any(w in norm for w in ("economia", "financas", "mercado", "bolsa")):
+            topic = "economia"
+        elif any(w in norm for w in ("esportes", "esporte", "futebol")):
+            topic = "esportes"
+        limit = 5
+        m_lim = re.search(r"\b(\d+)\s*(?:noticias|manchetes)\b", norm)
+        if m_lim:
+            limit = max(1, min(10, int(m_lim.group(1))))
+        return 0.96, _format_call("get_news", topic=topic, limit=limit)
+    return 0.0, None
+
+
+def extract_contact_alias(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Vinculação de apelido/relação pessoal a contato real (save_contact_alias)."""
+    # Ex.: "apelido amor para Ana" / "salva apelido amor para Ana"
+    m_ap = re.search(
+        r"(?:salva(?:r)?\s+)?apelido\s+(?:de\s+)?([^\n\r,;]+?)\s+(?:para|pro|pra|como)\s+([^\n\r,;\.!?]+)",
+        raw,
+        re.IGNORECASE,
+    )
+    if m_ap:
+        alias_v = m_ap.group(1).strip()
+        target_v = m_ap.group(2).strip()
+        if alias_v and target_v:
+            return 0.97, _format_call("save_contact_alias", alias=alias_v, target_name=target_v)
+
+    # Ex.: "minha mãe é a Maria Silva" / "salva que meu pai é o João" / "o dentista é o Dr. Carlos"
+    m_rel = re.search(
+        r"^(?:silva,?\s*)?(?:salva\s+que\s+|anota\s+que\s+|lembra\s+que\s+)?(?:(?:meu|minha|o|a)\s+)?(m[ãa]e|pai|amor|esposa|marido|namorad[oa]|chefe|dentista|m[eé]dic[oa]|av[oó]|irm[ãa]o?)\s+[ée]\s+(?:o|a|os|as)?\s*([^\n\r,;\.!?]+)$",
+        raw.strip(),
+        re.IGNORECASE,
+    )
+    if m_rel:
+        alias_v = m_rel.group(1).strip()
+        target_v = m_rel.group(2).strip()
+        if alias_v and target_v and not re.search(r"\d{4,}", target_v):
+            return 0.97, _format_call("save_contact_alias", alias=alias_v, target_name=target_v)
+    return 0.0, None
+
+
 def extract_manage_sleep(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Comandos manuais do monitor de sono: start_now, discard_last, status."""
     if re.search(r"\b(?:vou\s+(?:dormir|deitar)|indo\s+(?:dormir|deitar)|ja\s+vou\s+(?:dormir|deitar))\b", norm):
@@ -2179,6 +2227,8 @@ class ScoredIntentRouter:
             extract_navigate_to,
             extract_play_media,
             extract_lists,
+            extract_news,
+            extract_contact_alias,
             extract_manage_sleep,
             extract_sleep_report,
             extract_voice_notes,

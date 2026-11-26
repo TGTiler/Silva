@@ -114,6 +114,113 @@ def _resolve_from_memory(query: str) -> Tuple[Optional[str], Optional[str]]:
     return None, None
 
 
+def _ensure_contact_aliases_table(conn) -> None:
+    """Garante a tabela contact_aliases no memory.db."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS contact_aliases (
+            alias TEXT PRIMARY KEY COLLATE NOCASE,
+            target_name TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+
+def _clean_alias_label(raw_alias: str) -> str:
+    """Remove artigos/possessivos iniciais repetidos ('minha mãe' -> 'mãe', 'o dentista' -> 'dentista')."""
+    text = str(raw_alias or "").strip()
+    for _ in range(3):
+        prev = text
+        text = _ALIAS_NOISE_RE.sub("", text).strip()
+        if text == prev:
+            break
+    return text.strip(" '\"`.,;!?")
+
+
+def _lookup_contact_alias(query: str) -> Optional[str]:
+    """Consulta contact_aliases (case-insensitive e sem acentos) retornando target_name se houver."""
+    cleaned = _clean_alias_label(query)
+    norm_cleaned = _norm_text(cleaned)
+    if not cleaned:
+        return None
+    try:
+        from .memory_schedule import _get_memory_db
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                _ensure_contact_aliases_table(conn)
+                row = conn.execute(
+                    "SELECT target_name FROM contact_aliases WHERE alias = ? COLLATE NOCASE",
+                    (cleaned,),
+                ).fetchone()
+                if row and row["target_name"]:
+                    return str(row["target_name"]).strip()
+                rows = conn.execute("SELECT alias, target_name FROM contact_aliases").fetchall()
+                for r in rows:
+                    if _norm_text(str(r["alias"])) == norm_cleaned:
+                        return str(r["target_name"]).strip()
+            finally:
+                conn.close()
+    except Exception:
+        pass
+    return None
+
+
+def save_contact_alias(alias: str, target_name: str) -> Dict[str, Any]:
+    """Associa um apelido/relação pessoal ('mãe', 'pai', 'dentista') a um contato real da agenda."""
+    clean_alias = _clean_alias_label(alias)
+    clean_target = str(target_name or "").strip()
+    if not clean_alias or not clean_target:
+        return {"status": "error", "message": "Informe o apelido e o nome do contato para vincular."}
+
+    resolved_name = clean_target
+    has_phone = False
+    try:
+        info = resolve_contact_detailed(clean_target)
+        if not info.get("ambiguous") and info.get("number"):
+            resolved_name = str(info.get("name") or clean_target).strip()
+            has_phone = True
+    except Exception:
+        pass
+
+    try:
+        from datetime import datetime
+        from .memory_schedule import _get_memory_db
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                _ensure_contact_aliases_table(conn)
+                with conn:
+                    conn.execute(
+                        "INSERT INTO contact_aliases (alias, target_name, updated_at) VALUES (?, ?, ?) "
+                        "ON CONFLICT(alias) DO UPDATE SET target_name = excluded.target_name, updated_at = excluded.updated_at",
+                        (clean_alias, resolved_name, now_str),
+                    )
+            finally:
+                conn.close()
+    except Exception as e:
+        return {"status": "error", "message": f"Erro ao salvar apelido de contato: {str(e)}"}
+
+    if has_phone:
+        msg = f"Silva: Apelido '{clean_alias}' vinculado ao contato '{resolved_name}' com sucesso."
+    else:
+        msg = (
+            f"Silva: Apelido '{clean_alias}' vinculado a '{resolved_name}'. "
+            f"Se precisar cadastrar o telefone, diga: 'salva o contato {resolved_name} <número>'."
+        )
+    return {
+        "status": "ok",
+        "message": msg,
+        "data": {
+            "alias": clean_alias,
+            "target_name": resolved_name,
+            "contact_found": has_phone,
+        },
+    }
+
+
 def resolve_contact_detailed(query: str) -> Dict[str, Any]:
     """
     Resolve contato em 3 camadas:
@@ -132,6 +239,11 @@ def resolve_contact_detailed(query: str) -> Dict[str, Any]:
         clean = _normalize_clean_phone(raw)
         if clean:
             return {"number": clean, "name": clean, "source": "direct", "ambiguous": False, "candidates": []}
+
+    # Camada 1.5: Apelidos persistentes em contact_aliases ('mãe' -> 'Maria Silva')
+    aliased_target = _lookup_contact_alias(raw)
+    if aliased_target and _norm_text(aliased_target) != _norm_text(raw):
+        raw = aliased_target
 
     # Camada 2: Memória persistente (memory.db)
     mem_num, mem_name = _resolve_from_memory(raw)

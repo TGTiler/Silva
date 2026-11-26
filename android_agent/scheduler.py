@@ -287,6 +287,17 @@ def check_and_notify_context_reminders() -> None:
             })
 
 
+def get_dynamic_greeting(dt: datetime = None) -> str:
+    """Saudação dinâmica pela faixa horária real (05:00–11:59 Bom dia, 12:00–17:59 Boa tarde, 18:00–04:59 Boa noite)."""
+    now_dt = dt or datetime.now()
+    h = now_dt.hour
+    if 5 <= h <= 11:
+        return "Bom dia"
+    if 12 <= h <= 17:
+        return "Boa tarde"
+    return "Boa noite"
+
+
 def check_and_notify_sleep_cycle() -> None:
     """Executa evaluate_sleep_cycle() e dispara termux-notification quando um relatório matinal é gerado."""
     try:
@@ -297,11 +308,12 @@ def check_and_notify_sleep_cycle() -> None:
         return
     if not SIMULATE_HARDWARE:
         try:
+            greeting = get_dynamic_greeting()
             _run_termux_cmd(
                 [
                     "termux-notification",
                     "--id", "9910",
-                    "--title", res.get("title") or "☀️ Bom dia! Relatório & Evolução do Sono",
+                    "--title", f"☀️ {greeting}! Relatório & Evolução do Sono",
                     "--content", res.get("summary") or "Relatório de sono disponível.",
                     "--priority", "max",
                     "--sound",

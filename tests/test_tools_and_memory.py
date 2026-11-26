@@ -267,8 +267,8 @@ class TestToolsAndMemory(unittest.TestCase):
                 self.assertEqual(res_empty["data"]["clipboard"], "")
 
     def test_all_63_tools_smoke_execution(self):
-        """Testa a execução smoke de todas as 67 ferramentas do catálogo em modo simulado."""
-        self.assertEqual(len(tools.AVAILABLE_TOOLS), 67, "O catálogo formal deve conter exatamente 67 ferramentas.")
+        """Testa a execução smoke de todas as 68 ferramentas do catálogo em modo simulado."""
+        self.assertEqual(len(tools.AVAILABLE_TOOLS), 68, "O catálogo formal deve conter exatamente 68 ferramentas.")
 
         sample_args = {
             "add_list_item": {"item": "café", "list_name": "compras"},
@@ -287,6 +287,7 @@ class TestToolsAndMemory(unittest.TestCase):
             "get_list": {"list_name": "compras"},
             "get_location": {},
             "get_news": {"topic": "geral", "limit": 3},
+            "get_next_holiday": {"year": 0},
             "get_notifications": {"app": "whatsapp"},
             "get_sleep_report": {"days": 7},
             "get_system_info": {},
@@ -1444,6 +1445,97 @@ class TestToolsAndMemory(unittest.TestCase):
         self.assertEqual(match_intent_fallback("notícias de tecnologia"), "<call>get_news(topic='tecnologia', limit=5)</call>")
         self.assertEqual(match_intent_fallback("minha mãe é a Maria Silva"), "<call>save_contact_alias(alias='mãe', target_name='Maria Silva')</call>")
         self.assertEqual(match_intent_fallback("apelido amor para Ana"), "<call>save_contact_alias(alias='amor', target_name='Ana')</call>")
+
+    def test_brazil_holidays_adaptive_morning_greeting_and_kernel_telemetry(self):
+        """
+        Valida:
+        1. Cálculo algorítmico de Páscoa, Carnaval, Corpus Christi e feriados fixos em get_next_holiday;
+        2. Horário adaptativo ('de manhã') pela mediana de sleep_logs e saudação dinâmica em scheduler.py;
+        3. Telemetria real via dumpsys battery, df -k /data, /proc/meminfo e /proc/uptime.
+        """
+        import sqlite3
+        from datetime import datetime
+        from android_agent import scheduler
+        from android_agent.intent_fallback import match_intent_fallback
+        from android_agent.tools import hardware, memory_schedule as ms
+
+        # 1. Feriados móveis e fixos (Páscoa 2026 = 05/04/2026, Carnaval = 17/02/2026; Páscoa 2027 = 28/03/2027)
+        h2026 = ms.get_next_holiday(2026)
+        self.assertEqual(h2026["status"], "ok")
+        dates_2026 = {h["name"]: h["date"] for h in h2026["data"]["holidays"]}
+        self.assertEqual(dates_2026["Páscoa"], "2026-04-05")
+        self.assertEqual(dates_2026["Carnaval"], "2026-02-17")
+        self.assertEqual(dates_2026["Corpus Christi"], "2026-06-04")
+        self.assertEqual(dates_2026["Dia da Consciência Negra"], "2026-11-20")
+
+        h2027 = ms.get_next_holiday(2027)
+        dates_2027 = {h["name"]: h["date"] for h in h2027["data"]["holidays"]}
+        self.assertEqual(dates_2027["Páscoa"], "2027-03-28")
+        self.assertEqual(dates_2027["Carnaval"], "2027-02-09")
+
+        h_next = ms.get_next_holiday(0)
+        self.assertEqual(h_next["status"], "ok")
+        self.assertIn("next_holiday", h_next["data"])
+
+        # NLP
+        self.assertEqual(match_intent_fallback("quando é o próximo feriado?"), "<call>get_next_holiday(year=0)</call>")
+        self.assertEqual(match_intent_fallback("feriados de 2027"), "<call>get_next_holiday(year=2027)</call>")
+
+        # 2. Horário adaptativo ('de manhã') pela mediana de wake_up_ts + 30 min e saudação dinâmica
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "memory.db"
+
+            def _db():
+                conn = sqlite3.connect(str(db_path), timeout=5.0)
+                conn.row_factory = sqlite3.Row
+                conn.execute("CREATE TABLE IF NOT EXISTS sleep_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, wake_up_ts TEXT NOT NULL)")
+                return conn
+
+            conn = _db()
+            with conn:
+                conn.execute("INSERT INTO sleep_logs (wake_up_ts) VALUES ('2026-11-23T07:30:00')")
+                conn.execute("INSERT INTO sleep_logs (wake_up_ts) VALUES ('2026-11-24T07:30:00')")
+            conn.close()
+
+            with patch.object(ms, "_get_memory_db", side_effect=_db):
+                self.assertEqual(ms.parse_time_str("de manhã"), (8, 0))
+
+        self.assertEqual(scheduler.get_dynamic_greeting(datetime(2026, 11, 25, 8, 0)), "Bom dia")
+        self.assertEqual(scheduler.get_dynamic_greeting(datetime(2026, 11, 25, 14, 30)), "Boa tarde")
+        self.assertEqual(scheduler.get_dynamic_greeting(datetime(2026, 11, 25, 21, 0)), "Boa noite")
+
+        # 3. Telemetria real via ADB (dumpsys battery, df -k /data, /proc/meminfo, /proc/uptime)
+        def fake_adb(args, timeout=5.0):
+            if args == ["dumpsys", "battery"]:
+                return True, "Current Battery Service state:\n  status: 2\n  health: 2\n  level: 78\n  voltage: 4180\n  temperature: 325\n"
+            if args == ["df", "-k", "/data"]:
+                return True, "Filesystem 1K-blocks Used Available Use% Mounted on\n/dev/block/dm-5 104857600 52428800 52428800 50% /data\n"
+            if args == ["cat", "/proc/meminfo"]:
+                return True, "MemTotal:       8192000 kB\nMemFree:         512000 kB\nMemAvailable:   4096000 kB\n"
+            if args == ["cat", "/proc/uptime"]:
+                return True, "90061.42 12345.00\n"
+            return False, ""
+
+        with patch.object(hardware, "SIMULATE_HARDWARE", False), \
+             patch.object(hardware, "ensure_adb_connected", return_value="192.168.0.106:43073"), \
+             patch.object(hardware, "run_adb_shell", side_effect=fake_adb), \
+             patch.object(hardware, "get_wifi_info", return_value={"status": "ok", "data": {"ssid": "Casa_5G", "ip": "192.168.0.106"}}):
+            bat = hardware.get_battery_info()
+            self.assertEqual(bat["data"]["percentage"], 78)
+            self.assertEqual(bat["data"]["status"], "carregando")
+            self.assertAlmostEqual(bat["data"]["temperature"], 32.5)
+            self.assertAlmostEqual(bat["data"]["voltage_v"], 4.18)
+
+            sto = hardware.get_storage_info()
+            self.assertEqual(sto["data"]["total_gb"], 100.0)
+            self.assertEqual(sto["data"]["free_gb"], 50.0)
+            self.assertEqual(sto["data"]["used_percent"], 50.0)
+
+            dev = hardware.get_device_status()
+            self.assertEqual(dev["data"]["ram_total_mb"], 8000.0)
+            self.assertEqual(dev["data"]["ram_used_percent"], 50.0)
+            self.assertEqual(dev["data"]["uptime"], "1d 1h 1min")
+            self.assertEqual(dev["data"]["wifi_ssid"], "Casa_5G")
 
 
 if __name__ == "__main__":

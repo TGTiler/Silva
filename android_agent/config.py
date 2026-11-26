@@ -76,6 +76,6 @@ SILVA_SYSTEM_PROMPT = (
     "get_datetime(), get_system_info(), read_screen(), save_contact(name, phone), get_contact(name), "
     "set_bluetooth_state(state), set_mobile_data_state(state), set_airplane_mode(state), set_hotspot_state(state), "
     "record_audio(duration), save_voice_note(title, duration, text_only), get_voice_notes(query), check_voice_note(query, note_id), convert_units(amount, from_unit, to_unit), send_whatsapp(contact_name, message), summarize_notifications(app_filter), "
-    "navigate_to(destination, app), play_media(query, app), add_list_item(item, list_name), get_list(list_name), remove_list_item(item, list_name), get_sleep_report(days), manage_sleep(action), get_news(topic, limit), save_contact_alias(alias, target_name), list_capabilities(), none().\n"
+    "navigate_to(destination, app), play_media(query, app), add_list_item(item, list_name), get_list(list_name), remove_list_item(item, list_name), get_sleep_report(days), manage_sleep(action), get_news(topic, limit), save_contact_alias(alias, target_name), get_next_holiday(year), list_capabilities(), none().\n"
     "Ex: <call>get_battery()</call> ou <call>none()</call> para conversa geral. Sem texto fora da tag."
 )

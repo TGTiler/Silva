@@ -24,6 +24,9 @@ from .core import (
 from .contacts import save_contact_alias
 from .hardware import (
     get_battery,
+    get_battery_info,
+    get_storage_info,
+    get_device_status,
     set_torch,
     set_dnd,
     vibrate,
@@ -123,6 +126,7 @@ from .memory_schedule import (
     add_list_item,
     get_list,
     remove_list_item,
+    get_next_holiday,
     calculate,
 )
 from .sleep_monitor import get_sleep_report, manage_sleep
@@ -194,6 +198,7 @@ AVAILABLE_TOOLS = {
     "manage_sleep": manage_sleep,
     "get_news": get_news,
     "save_contact_alias": save_contact_alias,
+    "get_next_holiday": get_next_holiday,
     "none": none,
 }
 
@@ -214,6 +219,9 @@ __all__ = [
     "_run_termux_cmd",
     "_exec_android_intent",
     "get_battery",
+    "get_battery_info",
+    "get_storage_info",
+    "get_device_status",
     "set_torch",
     "set_dnd",
     "vibrate",
@@ -299,6 +307,7 @@ __all__ = [
     "add_list_item",
     "get_list",
     "remove_list_item",
+    "get_next_holiday",
     "get_sleep_report",
     "manage_sleep",
     "calculate",

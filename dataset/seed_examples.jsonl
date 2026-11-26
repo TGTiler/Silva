@@ -286,3 +286,7 @@
 {"prompt": "Salva que meu pai é o João", "completion": "<call>save_contact_alias(alias=\"pai\", target_name=\"João\")</call>"}
 {"prompt": "O dentista é o Dr. Carlos", "completion": "<call>save_contact_alias(alias=\"dentista\", target_name=\"Dr. Carlos\")</call>"}
 {"prompt": "Apelido amor para Ana", "completion": "<call>save_contact_alias(alias=\"amor\", target_name=\"Ana\")</call>"}
+{"prompt": "Quando é o próximo feriado?", "completion": "<call>get_next_holiday(year=0)</call>"}
+{"prompt": "Qual o próximo feriado nacional?", "completion": "<call>get_next_holiday(year=0)</call>"}
+{"prompt": "Feriados de 2027", "completion": "<call>get_next_holiday(year=2027)</call>"}
+{"prompt": "Quantos dias faltam pro feriado?", "completion": "<call>get_next_holiday(year=0)</call>"}

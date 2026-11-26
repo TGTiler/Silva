@@ -118,8 +118,40 @@ def parse_ptbr_date(date_str: str) -> date:
     return today
 
 
+def _get_adaptive_morning_time() -> tuple[int, int]:
+    """
+    Calcula o horário adaptativo para 'de manhã' baseado na mediana do horário de despertar
+    em sleep_logs (+30 min). Fallback para (8, 0) se não houver histórico.
+    """
+    try:
+        import statistics
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                rows = conn.execute(
+                    "SELECT wake_up_ts FROM sleep_logs ORDER BY id DESC LIMIT 7"
+                ).fetchall()
+            finally:
+                conn.close()
+        if rows:
+            mins_list = []
+            for r in rows:
+                try:
+                    dt = datetime.fromisoformat(str(r["wake_up_ts"]))
+                    mins_list.append(dt.hour * 60 + dt.minute)
+                except ValueError:
+                    continue
+            if mins_list:
+                med_min = int(round(statistics.median(mins_list))) + 30
+                med_min = max(5 * 60, min(11 * 60 + 45, med_min))
+                return (med_min // 60, med_min % 60)
+    except Exception:
+        pass
+    return (8, 0)
+
+
 def parse_time_str(time_str: str) -> tuple[int, int]:
-    """Extrai (hora, minuto) de strings como '07:30', '7:30', '7h', '7h30' ou '14:00'."""
+    """Extrai (hora, minuto) de strings como '07:30', '7h30', '14:00' ou 'de manhã' (adaptativo)."""
     raw = (time_str or "").strip().lower()
     if not raw:
         return (9, 0)
@@ -145,6 +177,10 @@ def parse_time_str(time_str: str) -> tuple[int, int]:
         h = int(raw)
         if 0 <= h <= 23:
             return (h, 0)
+
+    norm_raw = _normalize_text(raw)
+    if "manha" in norm_raw:
+        return _get_adaptive_morning_time()
 
     return (9, 0)
 
@@ -1945,3 +1981,127 @@ def active_recall_search(question: str) -> Dict[str, Any]:
 
 # Alias de compatibilidade
 _init_memory_db = _get_memory_db
+
+
+_WEEKDAYS_PTBR_FULL = [
+    "segunda-feira", "terça-feira", "quarta-feira",
+    "quinta-feira", "sexta-feira", "sábado", "domingo",
+]
+
+
+def _compute_easter_date(year: int) -> date:
+    """Algoritmo Gregoriano (Meeus/Jones/Butcher) para calcular o Domingo de Páscoa."""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
+
+
+def _generate_brazil_holidays(year: int) -> list[Dict[str, Any]]:
+    """Gera a lista ordenada de feriados nacionais brasileiros (fixos + móveis) para `year`."""
+    easter = _compute_easter_date(year)
+    raw_items = [
+        (date(year, 1, 1), "Confraternização Universal"),
+        (easter - timedelta(days=47), "Carnaval"),
+        (easter - timedelta(days=2), "Sexta-feira Santa"),
+        (easter, "Páscoa"),
+        (date(year, 4, 21), "Tiradentes"),
+        (date(year, 5, 1), "Dia do Trabalho"),
+        (easter + timedelta(days=60), "Corpus Christi"),
+        (date(year, 9, 7), "Independência do Brasil"),
+        (date(year, 10, 12), "Nossa Senhora Aparecida"),
+        (date(year, 11, 2), "Finados"),
+        (date(year, 11, 15), "Proclamação da República"),
+        (date(year, 11, 20), "Dia da Consciência Negra"),
+        (date(year, 12, 25), "Natal"),
+    ]
+    raw_items.sort(key=lambda item: item[0])
+    holidays = []
+    for dt_h, name in raw_items:
+        wd = dt_h.weekday()
+        bridge_note = ""
+        if wd in (0, 4):
+            bridge_note = "emenda direta de fim de semana prolongado!"
+        elif wd in (1, 3):
+            bridge_note = "possível emenda com o fim de semana!"
+        holidays.append({
+            "date": dt_h.isoformat(),
+            "date_br": dt_h.strftime("%d/%m/%Y"),
+            "name": name,
+            "weekday": _WEEKDAYS_PTBR_FULL[wd],
+            "bridge_note": bridge_note,
+        })
+    return holidays
+
+
+def get_next_holiday(year: int = 0) -> Dict[str, Any]:
+    """
+    Calcula dinamicamente os feriados nacionais brasileiros (fixos e móveis via Páscoa Gregoriana):
+    - year == 0: informa o próximo feriado nacional, dias restantes, dia da semana e próximos do ano.
+    - year > 0: lista todos os feriados nacionais daquele ano.
+    """
+    try:
+        target_year = int(year or 0)
+    except (TypeError, ValueError):
+        target_year = 0
+
+    if target_year > 0:
+        if target_year < 1583 or target_year > 9999:
+            return {"status": "error", "message": f"Ano inválido para cálculo de feriados: {target_year}."}
+        hols = _generate_brazil_holidays(target_year)
+        lines = [f"Silva: Feriados nacionais do Brasil em {target_year}:"]
+        for h in hols:
+            extra = f" ({h['bridge_note']})" if h["bridge_note"] else ""
+            lines.append(f"• {h['date_br']} ({h['weekday']}) — {h['name']}{extra}")
+        return {
+            "status": "ok",
+            "message": "\n".join(lines),
+            "data": {"year": target_year, "holidays": hols},
+        }
+
+    today = date.today()
+    hols_this = _generate_brazil_holidays(today.year)
+    hols_next = _generate_brazil_holidays(today.year + 1)
+    upcoming = [h for h in (hols_this + hols_next) if date.fromisoformat(h["date"]) >= today]
+
+    nxt = upcoming[0]
+    nxt_date = date.fromisoformat(nxt["date"])
+    days_left = (nxt_date - today).days
+
+    if days_left == 0:
+        when_txt = "é **hoje**"
+    elif days_left == 1:
+        when_txt = "é **amanhã**"
+    else:
+        when_txt = f"faltam **{days_left} dias**"
+
+    bridge_txt = f" ({nxt['bridge_note']})" if nxt["bridge_note"] else ""
+    rest_year = [h for h in hols_this if date.fromisoformat(h["date"]) > nxt_date][:5]
+    lines = [
+        f"Silva: O próximo feriado nacional é **{nxt['name']}** em **{nxt['date_br']}** "
+        f"({nxt['weekday']}) — {when_txt}{bridge_txt}."
+    ]
+    if rest_year:
+        lines.append("\nPróximos feriados deste ano:")
+        for h in rest_year:
+            lines.append(f"• {h['date_br']} ({h['weekday']}) — {h['name']}")
+
+    return {
+        "status": "ok",
+        "message": "\n".join(lines),
+        "data": {
+            "next_holiday": {**nxt, "days_left": days_left},
+            "upcoming": upcoming[:6],
+        },
+    }

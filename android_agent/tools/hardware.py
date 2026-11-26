@@ -21,35 +21,114 @@ from .core import (
 )
 from .adb_bridge import ensure_adb_connected, run_adb_shell
 
-def get_battery() -> Dict[str, Any]:
-    """Obtém status da bateria: porcentagem, status e temperatura."""
-    if SIMULATE_HARDWARE:
+_BATTERY_STATUS_MAP = {
+    "2": "carregando",
+    "3": "descarregando",
+    "4": "não carregando",
+    "5": "cheia",
+}
+_BATTERY_HEALTH_MAP = {
+    "2": "Boa",
+    "3": "Superaquecida",
+    "4": "Morta",
+    "5": "Sobretensão",
+}
+
+
+def get_battery_info() -> Dict[str, Any]:
+    """
+    Obtém telemetria real da bateria:
+    - Camada 1: ADB `dumpsys battery` (level, status, temperature/10, voltage mV->V, health)
+    - Camada 2: `termux-battery-status` ou `/sys/class/power_supply/battery/`
+    """
+    if SIMULATE_HARDWARE and not ensure_adb_connected():
         return {
             "status": "ok",
-            "message": "Silva: Bateria em 82% (descarregando, temperatura 31.4°C). [Simulado]",
+            "message": "Silva: Bateria em 82% (descarregando, temperatura 31.4°C, 4.12V, saúde Boa). [Simulado]",
             "data": {
                 "percentage": 82,
                 "status": "DISCHARGING",
                 "temperature": 31.4,
-                "health": "GOOD"
-            }
+                "voltage_v": 4.12,
+                "health": "Boa",
+                "source": "simulated",
+            },
         }
 
+    # Camada 1: ADB dumpsys battery
+    if ensure_adb_connected():
+        ok_b, out_b = run_adb_shell(["dumpsys", "battery"], timeout=5.0)
+        if ok_b and out_b and "level:" in out_b:
+            m_lvl = re.search(r"level:\s*(\d+)", out_b)
+            m_st = re.search(r"status:\s*(\d+)", out_b)
+            m_temp = re.search(r"temperature:\s*(-?\d+)", out_b)
+            m_volt = re.search(r"voltage:\s*(\d+)", out_b)
+            m_hlth = re.search(r"health:\s*(\d+)", out_b)
+            pct = int(m_lvl.group(1)) if m_lvl else 0
+            st_code = m_st.group(1) if m_st else "3"
+            status_pt = _BATTERY_STATUS_MAP.get(st_code, "descarregando")
+            temp_c = round(int(m_temp.group(1)) / 10.0, 1) if m_temp else 0.0
+            volt_mv = int(m_volt.group(1)) if m_volt else 0
+            volt_v = round(volt_mv / 1000.0, 2) if volt_mv > 100 else round(float(volt_mv), 2)
+            health_pt = _BATTERY_HEALTH_MAP.get(m_hlth.group(1) if m_hlth else "2", "Boa")
+            msg = f"Silva: Bateria em {pct}% ({status_pt}, temperatura {temp_c:.1f}°C, {volt_v:.2f}V, saúde {health_pt})."
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {
+                    "percentage": pct,
+                    "status": status_pt,
+                    "temperature": temp_c,
+                    "voltage_v": volt_v,
+                    "health": health_pt,
+                    "source": "adb_dumpsys",
+                },
+            }
+
+    # Camada 2a: termux-battery-status
     try:
         res = _run_termux_cmd(["termux-battery-status"], timeout=5)
-        if res.returncode != 0:
-            return {"status": "error", "message": f"Falha ao ler bateria: {res.stderr.strip()}"}
-        
-        data = json.loads(res.stdout)
-        pct = data.get("percentage", 0)
-        temp = data.get("temperature", 0)
-        plugged = data.get("plugged", "UNPLUGGED")
+        if res.returncode == 0 and res.stdout.strip():
+            data = json.loads(res.stdout)
+            pct = int(data.get("percentage", 0))
+            temp = float(data.get("temperature", 0.0))
+            plugged = data.get("plugged", "UNPLUGGED")
+            status_pt = "carregando" if plugged != "UNPLUGGED" else "descarregando"
+            msg = f"Silva: Bateria em {pct}% ({status_pt}, temperatura {temp:.1f}°C)."
+            data["source"] = "termux_api"
+            return {"status": "ok", "message": msg, "data": data}
+    except Exception:
+        pass
 
-        status_pt = "carregando" if plugged != "UNPLUGGED" else "descarregando"
-        msg = f"Silva: Bateria em {pct}% ({status_pt}, temperatura {temp:.1f}°C)."
-        return {"status": "ok", "message": msg, "data": data}
+    # Camada 2b: /sys/class/power_supply/battery/
+    try:
+        base = "/sys/class/power_supply/battery"
+        if os.path.isdir(base):
+            def _read_sys(name: str, default: str = "") -> str:
+                p = os.path.join(base, name)
+                if os.path.isfile(p):
+                    with open(p, "r", encoding="utf-8") as fp:
+                        return fp.read().strip()
+                return default
+
+            pct = int(_read_sys("capacity", "0") or 0)
+            st_raw = _read_sys("status", "Discharging")
+            status_pt = "carregando" if st_raw.lower() in ("charging", "full") else "descarregando"
+            raw_t = float(_read_sys("temp", "0") or 0)
+            temp_c = round(raw_t / 10.0, 1) if raw_t > 100 else round(raw_t, 1)
+            msg = f"Silva: Bateria em {pct}% ({status_pt}, temperatura {temp_c:.1f}°C)."
+            return {
+                "status": "ok",
+                "message": msg,
+                "data": {"percentage": pct, "status": status_pt, "temperature": temp_c, "source": "sysfs"},
+            }
     except Exception as e:
         return {"status": "error", "message": f"Erro ao acessar status da bateria: {str(e)}"}
+
+    return {"status": "error", "message": "Não foi possível ler o status da bateria."}
+
+
+get_battery = get_battery_info
 
 
 
@@ -824,11 +903,68 @@ def set_wifi_state(state: bool) -> Dict[str, Any]:
     }
 
 
+def get_storage_info() -> Dict[str, Any]:
+    """Lê o espaço real da partição /data via ADB (`df -k /data`) ou `shutil.disk_usage`."""
+    if SIMULATE_HARDWARE and not ensure_adb_connected():
+        return {
+            "status": "ok",
+            "message": "Silva: Armazenamento (/data): 64.00 GB livres de 128.00 GB (50.0% usado). [Simulado]",
+            "data": {"total_gb": 128.0, "used_gb": 64.0, "free_gb": 64.0, "used_percent": 50.0, "source": "simulated"},
+        }
+
+    if ensure_adb_connected():
+        ok_df, out_df = run_adb_shell(["df", "-k", "/data"], timeout=5.0)
+        if ok_df and out_df:
+            for line in out_df.splitlines()[1:]:
+                parts = line.split()
+                if len(parts) >= 4 and parts[1].isdigit() and parts[2].isdigit() and parts[3].isdigit():
+                    total_kb = int(parts[1])
+                    used_kb = int(parts[2])
+                    free_kb = int(parts[3])
+                    total_gb = round(total_kb / (1024 * 1024), 2)
+                    used_gb = round(used_kb / (1024 * 1024), 2)
+                    free_gb = round(free_kb / (1024 * 1024), 2)
+                    pct = round((used_kb / total_kb) * 100.0, 1) if total_kb > 0 else 0.0
+                    return {
+                        "status": "ok",
+                        "message": f"Silva: Armazenamento (/data): {free_gb:.2f} GB livres de {total_gb:.2f} GB ({used_gb:.2f} GB usados, {pct:.1f}%).",
+                        "data": {
+                            "total_gb": total_gb, "used_gb": used_gb, "free_gb": free_gb,
+                            "used_percent": pct, "source": "adb_df",
+                        },
+                    }
+
+    target_mount = "/data" if os.path.isdir("/data") else "/"
+    usage = shutil.disk_usage(target_mount)
+    total_gb = round(usage.total / (1024 ** 3), 2)
+    used_gb = round(usage.used / (1024 ** 3), 2)
+    free_gb = round(usage.free / (1024 ** 3), 2)
+    pct = round((usage.used / usage.total) * 100.0, 1) if usage.total > 0 else 0.0
+    return {
+        "status": "ok",
+        "message": f"Silva: Armazenamento ({target_mount}): {free_gb:.2f} GB livres de {total_gb:.2f} GB ({used_gb:.2f} GB usados, {pct:.1f}%).",
+        "data": {
+            "total_gb": total_gb, "used_gb": used_gb, "free_gb": free_gb,
+            "used_percent": pct, "source": "disk_usage",
+        },
+    }
+
+
 def _read_ram_stats_mb() -> Dict[str, float]:
-    """Lê RAM total e disponível (MB) de /proc/meminfo com fallback para 'free -m'."""
-    try:
-        with open("/proc/meminfo", "r", encoding="utf-8") as f:
-            content = f.read()
+    """Lê RAM total e disponível (MB) de /proc/meminfo (local ou via ADB) com fallback para 'free -m'."""
+    content = ""
+    if ensure_adb_connected():
+        ok_mem, out_mem = run_adb_shell(["cat", "/proc/meminfo"], timeout=4.0)
+        if ok_mem and out_mem and "MemTotal:" in out_mem:
+            content = out_mem
+    if not content:
+        try:
+            with open("/proc/meminfo", "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception:
+            content = ""
+
+    if content:
         m_total = re.search(r"MemTotal:\s+(\d+)\s+kB", content)
         m_avail = re.search(r"MemAvailable:\s+(\d+)\s+kB", content)
         if m_total and m_avail:
@@ -842,8 +978,6 @@ def _read_ram_stats_mb() -> Dict[str, float]:
                 "total_mb": round(int(m_total.group(1)) / 1024.0, 1),
                 "available_mb": round(int(m_free.group(1)) / 1024.0, 1),
             }
-    except Exception:
-        pass
 
     try:
         res = subprocess.run(["free", "-m"], capture_output=True, text=True, timeout=3, check=False)
@@ -860,21 +994,90 @@ def _read_ram_stats_mb() -> Dict[str, float]:
     return {"total_mb": 0.0, "available_mb": 0.0}
 
 
+def _read_uptime_str() -> str:
+    """Lê /proc/uptime (via ADB ou local) e formata em dias/horas/minutos."""
+    raw = ""
+    if ensure_adb_connected():
+        ok_u, out_u = run_adb_shell(["cat", "/proc/uptime"], timeout=3.0)
+        if ok_u and out_u:
+            raw = out_u.strip()
+    if not raw:
+        try:
+            with open("/proc/uptime", "r", encoding="utf-8") as f:
+                raw = f.read().strip()
+        except Exception:
+            raw = ""
+    if raw:
+        try:
+            secs = int(float(raw.split()[0]))
+            days, rem = divmod(secs, 86400)
+            hours, rem = divmod(rem, 3600)
+            mins = rem // 60
+            if days > 0:
+                return f"{days}d {hours}h {mins}min"
+            return f"{hours}h {mins}min"
+        except Exception:
+            pass
+    return "indisponível"
+
+
 def _format_mem_size(mb_val: float) -> str:
     if mb_val >= 1024.0:
         return f"{mb_val / 1024.0:.2f} GB"
     return f"{int(round(mb_val))} MB"
 
 
+def get_device_status() -> Dict[str, Any]:
+    """Painel consolidado de telemetria real: Bateria, RAM, Armazenamento, Uptime e Wi-Fi/IP."""
+    bat = get_battery_info()
+    sto = get_storage_info()
+    ram = _read_ram_stats_mb()
+    ram_total_mb = ram["total_mb"]
+    ram_avail_mb = ram["available_mb"]
+    ram_used_mb = max(0.0, ram_total_mb - ram_avail_mb)
+    ram_pct = round((ram_used_mb / ram_total_mb) * 100.0, 1) if ram_total_mb > 0 else 0.0
+    uptime_str = _read_uptime_str()
+    wifi = get_wifi_info()
+    wifi_ssid = (wifi.get("data") or {}).get("ssid") or "Desconectado"
+    wifi_ip = (wifi.get("data") or {}).get("ip") or "0.0.0.0"
+
+    bat_d = bat.get("data") or {}
+    sto_d = sto.get("data") or {}
+
+    msg = (
+        f"Silva: Status do Dispositivo:\n"
+        f"• Bateria: {bat_d.get('percentage', 0)}% ({bat_d.get('status', 'N/A')}, {bat_d.get('temperature', 0.0)}°C)\n"
+        f"• Memória RAM: {_format_mem_size(ram_used_mb)} / {_format_mem_size(ram_total_mb)} ({ram_pct:.1f}%)\n"
+        f"• Armazenamento: {sto_d.get('free_gb', 0.0):.2f} GB livres de {sto_d.get('total_gb', 0.0):.2f} GB ({sto_d.get('used_percent', 0.0):.1f}% usado)\n"
+        f"• Uptime: {uptime_str} | Wi-Fi: {wifi_ssid} ({wifi_ip})"
+    )
+    return {
+        "status": "ok",
+        "message": msg,
+        "data": {
+            "battery": bat_d,
+            "storage": sto_d,
+            "ram_used_mb": round(ram_used_mb, 1),
+            "ram_total_mb": ram_total_mb,
+            "ram_available_mb": ram_avail_mb,
+            "ram_used_percent": ram_pct,
+            "uptime": uptime_str,
+            "wifi_ssid": wifi_ssid,
+            "ip": wifi_ip,
+        },
+    }
+
+
 def get_system_info() -> Dict[str, Any]:
-    """Retorna telemetria consolidada do sistema: armazenamento, memória RAM e rede móvel/operadora."""
-    usage = shutil.disk_usage("/")
-    free_gb = round(usage.free / (1024 ** 3), 2)
-    total_gb = round(usage.total / (1024 ** 3), 2)
+    """Retorna telemetria consolidada do sistema: armazenamento, memória RAM, bateria, uptime e rede."""
+    sto_d = get_storage_info().get("data") or {}
+    free_gb = float(sto_d.get("free_gb", 0.0))
+    total_gb = float(sto_d.get("total_gb", 0.0))
 
     ram = _read_ram_stats_mb()
     ram_avail_str = _format_mem_size(ram["available_mb"])
     ram_total_str = _format_mem_size(ram["total_mb"])
+    uptime_str = _read_uptime_str()
 
     carrier = "Desconhecida"
     net_type = "N/A"

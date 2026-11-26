@@ -1866,6 +1866,17 @@ def extract_voice_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     return 0.0, None
 
 
+def extract_next_holiday(raw: str, norm: str) -> Tuple[float, Optional[str]]:
+    """Consulta dinâmica de feriados nacionais do Brasil (próximo feriado ou ano específico)."""
+    if any(k in norm for k in ("feriado", "feriados")):
+        year_val = 0
+        m_y = re.search(r"\b(20\d{2})\b", norm)
+        if m_y:
+            year_val = int(m_y.group(1))
+        return 0.96, _format_call("get_next_holiday", year=year_val)
+    return 0.0, None
+
+
 def extract_news(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Leitura de notícias reais via RSS (geral, tecnologia, economia, esportes)."""
     if any(k in norm for k in ("noticias", "noticia", "manchetes", "manchete", "resumo do dia")) and any(
@@ -2227,6 +2238,7 @@ class ScoredIntentRouter:
             extract_navigate_to,
             extract_play_media,
             extract_lists,
+            extract_next_holiday,
             extract_news,
             extract_contact_alias,
             extract_manage_sleep,

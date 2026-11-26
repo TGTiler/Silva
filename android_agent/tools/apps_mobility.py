@@ -1398,8 +1398,161 @@ def _clean_install_app_name(raw_name: str) -> str:
     return text.strip()
 
 
+_PLAYSTORE_DISMISS_LABELS = {"agora nao", "not now", "pular", "dispensar", "no thanks", "fechar"}
+_PLAYSTORE_INSTALL_LABELS = {"instalar", "install"}
+_PLAYSTORE_INSTALLED_LABELS = {"abrir", "open", "desinstalar", "uninstall"}
+_PLAYSTORE_UPDATE_LABELS = {"atualizar", "update"}
+_PLAYSTORE_PROGRESS_LABELS = {"cancelar", "cancel", "pendente", "pending"}
+
+
+def _playstore_find_clickable_by_labels(nodes: list, labels: set) -> Optional[Dict[str, Any]]:
+    """Localiza botão clicável (ou container clicável envolvente) com text/content-desc exato em `labels`."""
+    matches = []
+    for n in nodes or []:
+        t_norm = _normalize_text(str(n.get("text") or ""))
+        d_norm = _normalize_text(str(n.get("content_desc") or ""))
+        if t_norm in labels or d_norm in labels:
+            matches.append(n)
+
+    for m in matches:
+        if m.get("clickable"):
+            return m
+
+    for m in matches:
+        cx, cy = int(m.get("cx") or 0), int(m.get("cy") or 0)
+        containers = [
+            n for n in (nodes or [])
+            if n.get("clickable") and int(n.get("x1") or 0) <= cx <= int(n.get("x2") or 0)
+            and int(n.get("y1") or 0) <= cy <= int(n.get("y2") or 0)
+        ]
+        if containers:
+            containers.sort(key=lambda c: (int(c["x2"]) - int(c["x1"])) * (int(c["y2"]) - int(c["y1"])))
+            return containers[0]
+        return m
+    return None
+
+
+def _playstore_click_install(app_name: str, initial_nodes: Optional[list] = None) -> Dict[str, Any]:
+    """
+    Inspeciona o XML da página do app na Google Play Store (até 2 tentativas):
+    1. Dispensa pop-ups ('Agora não', 'Not now', 'Pular', 'Dispensar').
+    2. Clica em 'Instalar'/'Install' e confirma transição (ou detecta já instalado / em andamento).
+    """
+    nodes = initial_nodes if initial_nodes is not None else dump_ui_nodes()
+    for attempt in range(2):
+        if attempt > 0 or not nodes:
+            nodes = dump_ui_nodes()
+        if not nodes:
+            time.sleep(1.0)
+            continue
+
+        # 1. Pop-ups da Play Store
+        popup_btn = _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_DISMISS_LABELS)
+        if popup_btn:
+            tap_coords(int(popup_btn["cx"]), int(popup_btn["cy"]))
+            time.sleep(1.0)
+            nodes = dump_ui_nodes()
+
+        # 2. Caso 1: Botão Instalar / Install
+        install_btn = _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_INSTALL_LABELS)
+        if install_btn:
+            tap_coords(int(install_btn["cx"]), int(install_btn["cy"]))
+            time.sleep(1.0)
+            after_nodes = dump_ui_nodes()
+            started = bool(_playstore_find_clickable_by_labels(after_nodes, _PLAYSTORE_PROGRESS_LABELS))
+            return {
+                "action": "install_started",
+                "confirmed": started,
+                "message": f"Instalação de '{app_name}' iniciada na Google Play Store.",
+            }
+
+        # 3. Caso 2: Já instalado ou atualização disponível
+        if _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_INSTALLED_LABELS):
+            return {
+                "action": "already_installed",
+                "confirmed": True,
+                "message": f"O aplicativo '{app_name}' já está instalado no seu aparelho.",
+            }
+        if _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_UPDATE_LABELS):
+            return {
+                "action": "update_available",
+                "confirmed": True,
+                "message": f"O aplicativo '{app_name}' já está instalado e possui uma atualização disponível na Play Store.",
+            }
+
+        # 4. Caso 3: Download já em andamento
+        if _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_PROGRESS_LABELS):
+            return {
+                "action": "in_progress",
+                "confirmed": True,
+                "message": f"O download de '{app_name}' já está em andamento na Play Store.",
+            }
+
+        time.sleep(1.0)
+
+    incompat = any("compativel" in _node_label(n) or "compatible" in _node_label(n) for n in (nodes or []))
+    if incompat:
+        return {
+            "action": "incompatible",
+            "confirmed": False,
+            "message": f"O aplicativo '{app_name}' parece incompatível com este dispositivo na Google Play Store.",
+        }
+    return {
+        "action": "opened_only",
+        "confirmed": False,
+        "message": f"Página de '{app_name}' aberta na Google Play Store (botão 'Instalar' não encontrado automaticamente).",
+    }
+
+
+def _playstore_find_search_result_card(nodes: list, app_name: str, screen_h: int) -> Optional[Dict[str, Any]]:
+    """Localiza o primeiro card de resultado correspondente a `app_name` na busca da Play Store."""
+    norm_app = _normalize_text(app_name)
+    tokens = [t for t in norm_app.split() if len(t) > 1]
+    if not tokens:
+        return None
+    top_limit = int(screen_h * 0.14)
+    bottom_limit = int(screen_h * 0.88)
+
+    candidates = []
+    for n in nodes or []:
+        cy = int(n.get("cy") or 0)
+        if cy < top_limit or cy > bottom_limit:
+            continue
+        if "edittext" in str(n.get("class_name") or "").lower():
+            continue
+        label = _node_label(n)
+        if not label or label in _PLAYSTORE_INSTALL_LABELS or label in _PLAYSTORE_INSTALLED_LABELS:
+            continue
+        if all(t in label for t in tokens):
+            score = 100 if norm_app == label else (80 if label.startswith(norm_app) else 60)
+            candidates.append((score, -cy, n))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    target = candidates[0][2]
+    if target.get("clickable"):
+        return target
+    cx, cy = int(target.get("cx") or 0), int(target.get("cy") or 0)
+    containers = [
+        n for n in (nodes or [])
+        if n.get("clickable") and int(n.get("x1") or 0) <= cx <= int(n.get("x2") or 0)
+        and int(n.get("y1") or 0) <= cy <= int(n.get("y2") or 0)
+    ]
+    if containers:
+        containers.sort(key=lambda c: (int(c["x2"]) - int(c["x1"])) * (int(c["y2"]) - int(c["y1"])))
+        return containers[0]
+    return target
+
+
 def install_app(app_name: str) -> Dict[str, Any]:
-    """Abre a Google Play Store diretamente na página de instalação ou na pesquisa do aplicativo."""
+    """
+    Instala um aplicativo autonomamente na Google Play Store via ADB + UI Automator:
+    - Pré-checagem de tela desbloqueada (is_screen_unlocked) e exclusão mútua (_UI_LOCK);
+    - Rota A (pacote conhecido): verifica se já instalado -> market://details -> clica em 'Instalar';
+    - Rota B (pacote desconhecido): market://search?q=...&c=apps (com fallback na barra de busca)
+      -> abre o card correspondente -> clica em 'Instalar'.
+    """
     clean_name = _clean_install_app_name(app_name)
     if not clean_name:
         return {"status": "error", "message": "Nome do aplicativo não informado para instalação."}
@@ -1407,31 +1560,134 @@ def install_app(app_name: str) -> Dict[str, Any]:
     lookup_key = clean_name.lower().strip()
     pkg = APP_PACKAGES.get(lookup_key)
 
-    if pkg:
-        url = f"market://details?id={pkg}"
-        cmd = f'am start -a android.intent.action.VIEW -d "{url}" -p com.android.vending'
-        if not SIMULATE_HARDWARE:
-            res = _exec_android_intent(cmd)
-            if res.returncode != 0 or "ActivityNotFound" in res.stderr:
-                _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+    if SIMULATE_HARDWARE:
+        if pkg:
+            url = f"market://details?id={pkg}"
+            return {
+                "status": "ok",
+                "message": f"Abrindo a página de instalação de '{clean_name}' na Play Store. [Simulado]",
+                "data": {"app_name": clean_name, "package": pkg, "url": url},
+            }
+        encoded_name = urllib.parse.quote_plus(clean_name)
+        url = f"market://search?q={encoded_name}&c=apps"
         return {
             "status": "ok",
-            "message": f"Abrindo a página de instalação de '{clean_name}' na Play Store.",
-            "data": {"app_name": clean_name, "package": pkg, "url": url}
+            "message": f"Pesquisando '{clean_name}' na Play Store. [Simulado]",
+            "data": {"app_name": clean_name, "query": clean_name, "url": url},
         }
-    else:
-        encoded_name = urllib.parse.quote_plus(clean_name)
-        url = f"market://search?q={encoded_name}"
+
+    adb_ser = ensure_adb_connected()
+    if adb_ser:
+        unlocked, lock_msg = is_screen_unlocked(serial=adb_ser)
+        if not unlocked:
+            return {
+                "status": "error",
+                "message": f"Não foi possível instalar '{clean_name}': {lock_msg}. Desbloqueie a tela do aparelho e tente novamente.",
+                "data": {"app_name": clean_name, "screen_locked": True},
+            }
+
+    # Rota A: Pacote conhecido
+    if pkg:
+        if adb_ser:
+            ok_pm, out_pm = run_adb_shell(["pm", "list", "packages", pkg], timeout=4.0)
+            if ok_pm and any(line.strip() == f"package:{pkg}" for line in (out_pm or "").splitlines()):
+                return {
+                    "status": "ok",
+                    "message": f"O aplicativo '{clean_name}' já está instalado no seu aparelho.",
+                    "data": {"app_name": clean_name, "package": pkg, "already_installed": True},
+                }
+
+        url = f"market://details?id={pkg}"
         cmd = f'am start -a android.intent.action.VIEW -d "{url}" -p com.android.vending'
-        if not SIMULATE_HARDWARE:
-            res = _exec_android_intent(cmd)
-            if res.returncode != 0 or "ActivityNotFound" in res.stderr:
-                _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+        res = _exec_android_intent(cmd)
+        if not _intent_succeeded(res):
+            _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+
+        if not adb_ser:
+            return {
+                "status": "ok",
+                "message": f"Abrindo a página de instalação de '{clean_name}' na Play Store.",
+                "data": {"app_name": clean_name, "package": pkg, "url": url, "method": "intent_only"},
+            }
+
+        with _UI_LOCK:
+            time.sleep(2.5)
+            click_res = _playstore_click_install(clean_name)
+        return {
+            "status": "ok",
+            "message": click_res["message"],
+            "data": {
+                "app_name": clean_name,
+                "package": pkg,
+                "url": url,
+                "action": click_res["action"],
+                "method": "ui_automator_direct",
+            },
+        }
+
+    # Rota B: Pacote desconhecido -> Busca autônoma na Play Store
+    encoded_name = urllib.parse.quote(clean_name)
+    url = f"market://search?q={encoded_name}&c=apps"
+    cmd = f'am start -a android.intent.action.VIEW -d "{url}" -p com.android.vending'
+    res = _exec_android_intent(cmd)
+    if not _intent_succeeded(res):
+        _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{url}"')
+
+    if not adb_ser:
         return {
             "status": "ok",
             "message": f"Pesquisando '{clean_name}' na Play Store.",
-            "data": {"app_name": clean_name, "query": clean_name, "url": url}
+            "data": {"app_name": clean_name, "query": clean_name, "url": url, "method": "intent_only"},
         }
+
+    with _UI_LOCK:
+        time.sleep(2.5)
+        nodes = dump_ui_nodes()
+        screen_w, screen_h = get_screen_dimensions(nodes)
+        card = _playstore_find_search_result_card(nodes, clean_name, screen_h)
+
+        # Fallback: caso a busca via URI não tenha aberto resultados, usa barra/aba de pesquisa
+        if not card:
+            search_trigger = None
+            for n in nodes or []:
+                cy = int(n.get("cy") or 0)
+                if cy <= int(screen_h * 0.18) or cy >= int(screen_h * 0.88):
+                    lbl = _node_label(n)
+                    if any(k in lbl for k in ("pesquisar", "search", "buscar")):
+                        search_trigger = n
+                        break
+            if search_trigger:
+                tap_coords(int(search_trigger["cx"]), int(search_trigger["cy"]))
+                time.sleep(0.8)
+                type_text_unicode(clean_name)
+                time.sleep(0.3)
+                press_key(66)
+                time.sleep(2.0)
+                nodes = dump_ui_nodes()
+                card = _playstore_find_search_result_card(nodes, clean_name, screen_h)
+
+        # Atalho direto se 'Instalar' já aparece junto ao card principal
+        direct_install = _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_INSTALL_LABELS)
+        if card and direct_install:
+            click_res = _playstore_click_install(clean_name, initial_nodes=nodes)
+        elif card:
+            tap_coords(int(card["cx"]), int(card["cy"]))
+            time.sleep(2.0)
+            click_res = _playstore_click_install(clean_name)
+        else:
+            click_res = _playstore_click_install(clean_name, initial_nodes=nodes)
+
+    return {
+        "status": "ok",
+        "message": click_res["message"],
+        "data": {
+            "app_name": clean_name,
+            "query": clean_name,
+            "url": url,
+            "action": click_res["action"],
+            "method": "ui_automator_search",
+        },
+    }
 
 
 

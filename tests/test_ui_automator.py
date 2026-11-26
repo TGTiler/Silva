@@ -491,6 +491,104 @@ class TestUiAutomator(unittest.TestCase):
         mock_type.assert_called_once_with("pizza")
         mock_key.assert_called_once_with(66)
 
+    def test_playstore_install_app_direct_search_already_installed_and_locked(self):
+        """
+        Valida install_app autônomo na Google Play Store:
+        1. Rota direta (uber -> market://details?id=com.ubercab) clicando em 'Instalar';
+        2. Rota busca autônoma (Duolingo -> market://search?q=Duolingo&c=apps) -> card -> 'Instalar';
+        3. App já instalado ('Abrir'/'Desinstalar') e tela bloqueada abortando via is_screen_unlocked().
+        """
+        import subprocess
+        from contextlib import ExitStack
+
+        # 1. Rota direta ('uber')
+        details_install = [
+            self._n("Uber", "", "com.android.vending:id/title", "android.widget.TextView", False, (260, 220, 700, 300)),
+            self._n("Instalar", "Instalar", "com.android.vending:id/install_btn", "android.widget.Button", True, (120, 620, 960, 740)),
+        ]
+        details_progress = [
+            self._n("Cancelar", "Cancelar", "com.android.vending:id/cancel_btn", "android.widget.Button", True, (120, 620, 500, 740)),
+        ]
+        intent_cmds = []
+
+        def fake_intent(cmd, timeout=6):
+            intent_cmds.append(cmd)
+            return subprocess.CompletedProcess(args=[cmd], returncode=0, stdout="Starting: Intent", stderr="")
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(apps_mobility, "APP_PACKAGES", {"uber": "com.ubercab"}))
+            stack.enter_context(patch.object(apps_mobility, "SIMULATE_HARDWARE", False))
+            stack.enter_context(patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:43073"))
+            stack.enter_context(patch.object(apps_mobility, "is_screen_unlocked", return_value=(True, "ok")))
+            stack.enter_context(patch.object(apps_mobility, "run_adb_shell", return_value=(True, "")))
+            stack.enter_context(patch.object(apps_mobility, "_exec_android_intent", side_effect=fake_intent))
+            stack.enter_context(patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)))
+            stack.enter_context(patch.object(apps_mobility, "dump_ui_nodes", side_effect=[details_install, details_progress]))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            stack.enter_context(patch("time.sleep"))
+            res_direct = apps_mobility.install_app("uber")
+
+        self.assertEqual(res_direct["status"], "ok")
+        self.assertEqual(res_direct["data"]["action"], "install_started")
+        self.assertTrue(any("market://details?id=com.ubercab" in c for c in intent_cmds))
+        mock_tap.assert_called_once_with(540, 680)
+
+        # 2. Rota busca autônoma (Duolingo -> card -> 'Instalar')
+        search_results = [
+            self._n("Duolingo: idiomas", "", "com.android.vending:id/app_card", "android.widget.LinearLayout", True, (60, 520, 1020, 780)),
+        ]
+        duolingo_details = [
+            self._n("Instalar", "Instalar", "com.android.vending:id/install_btn", "android.widget.Button", True, (120, 620, 960, 740)),
+        ]
+        intent_cmds.clear()
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(apps_mobility, "APP_PACKAGES", {"uber": "com.ubercab"}))
+            stack.enter_context(patch.object(apps_mobility, "SIMULATE_HARDWARE", False))
+            stack.enter_context(patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:43073"))
+            stack.enter_context(patch.object(apps_mobility, "is_screen_unlocked", return_value=(True, "ok")))
+            stack.enter_context(patch.object(apps_mobility, "run_adb_shell", return_value=(True, "")))
+            stack.enter_context(patch.object(apps_mobility, "_exec_android_intent", side_effect=fake_intent))
+            stack.enter_context(patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)))
+            stack.enter_context(patch.object(apps_mobility, "dump_ui_nodes", side_effect=[search_results, duolingo_details, details_progress]))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            stack.enter_context(patch("time.sleep"))
+            res_search = apps_mobility.install_app("Duolingo")
+
+        self.assertEqual(res_search["status"], "ok")
+        self.assertEqual(res_search["data"]["action"], "install_started")
+        self.assertTrue(any("market://search?q=Duolingo&c=apps" in c for c in intent_cmds))
+        self.assertEqual([c.args for c in mock_tap.call_args_list], [(540, 650), (540, 680)])
+
+        # 3. App já instalado ('Abrir'/'Desinstalar')
+        already_nodes = [
+            self._n("Desinstalar", "Desinstalar", "", "android.widget.Button", True, (120, 620, 500, 740)),
+            self._n("Abrir", "Abrir", "", "android.widget.Button", True, (540, 620, 960, 740)),
+        ]
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(apps_mobility, "APP_PACKAGES", {"uber": "com.ubercab"}))
+            stack.enter_context(patch.object(apps_mobility, "SIMULATE_HARDWARE", False))
+            stack.enter_context(patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:43073"))
+            stack.enter_context(patch.object(apps_mobility, "is_screen_unlocked", return_value=(True, "ok")))
+            stack.enter_context(patch.object(apps_mobility, "run_adb_shell", return_value=(True, "")))
+            stack.enter_context(patch.object(apps_mobility, "_exec_android_intent", side_effect=fake_intent))
+            stack.enter_context(patch.object(apps_mobility, "dump_ui_nodes", return_value=already_nodes))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            stack.enter_context(patch("time.sleep"))
+            res_installed = apps_mobility.install_app("uber")
+        self.assertEqual(res_installed["status"], "ok")
+        self.assertEqual(res_installed["data"]["action"], "already_installed")
+        mock_tap.assert_not_called()
+
+        # 4. Tela bloqueada aborta via is_screen_unlocked()
+        with patch.object(apps_mobility, "SIMULATE_HARDWARE", False), \
+             patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:43073"), \
+             patch.object(apps_mobility, "is_screen_unlocked", return_value=(False, "Tela bloqueada")), \
+             patch.object(apps_mobility, "tap_coords") as mock_tap_locked:
+            res_locked = apps_mobility.install_app("uber")
+        self.assertEqual(res_locked["status"], "error")
+        self.assertTrue(res_locked["data"]["screen_locked"])
+        mock_tap_locked.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

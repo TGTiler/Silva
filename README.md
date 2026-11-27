@@ -52,8 +52,8 @@ O grande diferencial do Silva é a sua **Arquitetura Híbrida em Dois Estágios*
    Para diálogos abertos, perguntas gerais e intenções complexas, entra em ação o micro-modelo local `silva-135m.gguf` (treinado sobre `SmolLM2-135M-Instruct` e quantizado em `Q5_K_M` com apenas ~105 MB). Ele roda sobre o `llama-server` nativo compilado para ARM64.
 3. **63 Ferramentas Nativas com Whitelist e AST Estrito:**
    O agente possui acesso controlado a 63 ferramentas que cobrem o ecossistema do smartphone: sensores, câmera frontal/traseira, gravador de áudio, notas e lembretes multimodais com checklist interativo (`save_voice_note`, `get_voice_notes`, `check_voice_note`), reprodução de mídia por busca (`play_media`), lanterna, Wi-Fi, Bluetooth, Dados Móveis, Modo Avião, Hotspot, volume granular, discagem, SMS, envio direto no WhatsApp (`send_whatsapp`), resumo inteligente de notificações (`summarize_notifications`), cadastro/consulta de contatos, navegação GPS curva a curva (`navigate_to`), deep links para Uber/iFood, data/hora, telemetria (disco, RAM, operadora), conversor de unidades/moedas, leitura de tela via `uiautomator`, listas dinâmicas persistentes (`add_list_item`, `get_list`, `remove_list_item`) e Memória Inteligente 2.0 (`remember_note` com captura livre e TTL, `recall_note` com tempo relativo e auto-clipboard, `forget_note`, `list_memories`, `remind_on_wifi` com lembretes contextuais por Wi-Fi e Recordação Ativa Pré-LLM) em SQLite FTS5. Todas as chamadas de função passam por um analisador de sintaxe abstrata (`ast`) contra qualquer injeção de código.
-4. **Web UI Mobile Moderna com "Segure para falar":**
-   Interface escura com visual futurista em roxo/neon (`#5A189A` / `#7B1FA2`), 100% responsiva, sem qualquer framework pesado ou CDN externo (totalmente offline-ready). Inclui botão de alternância para o modo **"Segure para falar"** com visualizador de ondas sonoras em tempo real via Web Audio API e gesto de deslizar para cancelar.
+4. **Web UI Mobile Moderna com "Segure para falar" & Dashboard de Sono:**
+   Interface escura com visual futurista em roxo/neon (`#5A189A` / `#7B1FA2`), 100% responsiva (mobile-first com cabeçalho compacto sem colisões, balões full-width, títulos Markdown e player `<audio>` escuro), sem qualquer framework pesado ou CDN externo (totalmente offline-ready). Inclui Dashboard Card visual de sono (KPIs, barra segmentada N1/N2/N3/REM e acordeão expansível) e botão para o modo **"Segure para falar"** com visualizador de ondas sonoras em tempo real via Web Audio API e gesto de deslizar para cancelar.
 
 ---
 
@@ -276,7 +276,7 @@ O Silva implementa **39 ferramentas nativas** divididas em 5 domínios funcionai
 | Nome da Ferramenta | Descrição Técnica | Exemplo de Frase em Português (Testada) |
 | :--- | :--- | :--- |
 | `open_app(app_name)` | Abre aplicativos instalados pelo nome popular ou pacote oficial. | *"Abre o WhatsApp"* / *"Inicia o YouTube"* |
-| `install_app(app_name)` | Abre a Google Play Store na página de instalação do app solicitado. | *"Instala o aplicativo do Duolingo"* |
+| `install_app(app_name)` | Abre a Google Play Store e aciona autonomamente a instalação via ADB/UI Automator (filtrando anúncios patrocinados e dispensando modais promocionais). | *"Instala o aplicativo do Duolingo"* |
 | `make_call(number)` | Inicia chamada telefônica para número informado ou contato. | *"Liga para 11999998888"* / *"Chama o João"* |
 | `send_sms(number, message)` | Envia mensagem SMS para número com DDD ou contato da agenda. | *"Manda um SMS para 11988887777 dizendo Cheguei"* |
 | `get_last_sms(limit)` | Lê as últimas mensagens SMS recebidas na caixa de entrada do aparelho. | *"Lê as últimas 3 mensagens de SMS"* |

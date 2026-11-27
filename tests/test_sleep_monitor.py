@@ -219,6 +219,44 @@ class TestSleepMonitor(unittest.TestCase):
                 self.assertTrue(r_del["data"]["deleted"])
                 self.assertEqual(sleep_monitor.get_sleep_report()["data"]["count"], 2)
 
+    def test_anomalous_duration_anti_outlier_and_compact_card_format(self):
+        """
+        Valida trava anti-outlier (> 14h = 840 min) ancorando horário ideal em 07:00 (23:30 / 23:15)
+        e formato compacto orientado a Dashboard Card + bloco expansível '### Detalhes Científicos (NREM/REM)'.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "memory.db"
+            factory = self._make_db_factory(db_path)
+
+            with patch.object(sleep_monitor, "_get_memory_db", side_effect=factory), \
+                 patch.object(memory_schedule, "_get_memory_db", side_effect=factory):
+                # Simula celular parado das 23:00 até 15:00 do dia seguinte (16h = 960 min > 840 min)
+                sleep_monitor.evaluate_sleep_cycle(now=datetime(2026, 11, 20, 23, 0), is_user_active=True)
+                sleep_monitor.evaluate_sleep_cycle(now=datetime(2026, 11, 21, 1, 10), is_user_active=False)
+                res = sleep_monitor.evaluate_sleep_cycle(now=datetime(2026, 11, 21, 15, 0), is_user_active=True)
+
+                self.assertTrue(res["report_generated"])
+                self.assertTrue(res["anomalous_duration"])
+                md = res["report_markdown"]
+
+                # Bloco compacto principal
+                for token in (
+                    "Nota:",
+                    "Duração:",
+                    "Ciclos:",
+                    "Tendência:",
+                    "Arquitetura:",
+                    "Meta Ideal:",
+                    "23:30",
+                    "23:15",
+                    "07:00",
+                    "limite fisiológico",
+                    "### Detalhes Científicos (NREM/REM)",
+                ):
+                    self.assertIn(token, md)
+                # Não deve recomendar horário ideal no meio da manhã (ex: 07:30 para dormir)
+                self.assertNotIn("Dormir até 07:30", md)
+
 
 if __name__ == "__main__":
     unittest.main()

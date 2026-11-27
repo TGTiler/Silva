@@ -1407,6 +1407,19 @@ _PLAYSTORE_INSTALL_LABELS = {"instalar", "install"}
 _PLAYSTORE_INSTALLED_LABELS = {"abrir", "open", "desinstalar", "uninstall"}
 _PLAYSTORE_UPDATE_LABELS = {"atualizar", "update"}
 _PLAYSTORE_PROGRESS_LABELS = {"cancelar", "cancel", "pendente", "pending"}
+_PLAYSTORE_PROMO_INDICATORS = (
+    "aproveite mais do google play",
+    "receba ofertas especiais",
+    "quero receber",
+    "google play pass",
+)
+_PLAYSTORE_SPONSORED_LABELS = (
+    "patrocinados",
+    "patrocinado",
+    "sponsored",
+    "anuncio",
+    "conteudo relacionado a sua pesquisa",
+)
 
 
 def _playstore_find_clickable_by_labels(nodes: list, labels: set) -> Optional[Dict[str, Any]]:
@@ -1450,17 +1463,41 @@ def _is_playstore_home_screen(nodes: list, app_name: str = "") -> bool:
         lbl = _node_label(n)
         if norm_app and norm_app in lbl and int(n.get("cy") or 0) < 1600:
             return False
-        if "avaliacoes" in lbl or "classificacao" in lbl:
-            return False
     return True
+
+
+def _dismiss_playstore_promos_if_present(nodes: Optional[list] = None) -> tuple[bool, list]:
+    """
+    Inspeciona o XML da Play Store e só clica em 'Agora não'/'Not now'/'Dispensar'/'Pular'
+    quando houver indicadores explícitos do modal promocional ('Aproveite mais do Google Play', etc.).
+    """
+    current_nodes = nodes if nodes is not None else dump_ui_nodes()
+    if not current_nodes:
+        return False, []
+
+    has_promo = any(
+        any(ind in _node_label(n) for ind in _PLAYSTORE_PROMO_INDICATORS)
+        for n in current_nodes
+    )
+    if not has_promo:
+        return False, current_nodes
+
+    popup_btn = _playstore_find_clickable_by_labels(current_nodes, _PLAYSTORE_DISMISS_LABELS)
+    if not popup_btn:
+        return False, current_nodes
+
+    tap_coords(int(popup_btn["cx"]), int(popup_btn["cy"]))
+    time.sleep(0.8)
+    refreshed = dump_ui_nodes()
+    return True, refreshed
 
 
 def _playstore_click_install(app_name: str, initial_nodes: Optional[list] = None) -> Dict[str, Any]:
     """
     Inspeciona o XML da página do app na Google Play Store (até 2 tentativas):
-    1. Dispensa pop-ups ('Agora não', 'Not now', 'Pular', 'Dispensar').
+    1. Dispensa pop-ups promocionais condicionalmente via XML ('Agora não', etc.).
     2. Garante que não está na tela inicial da Play Store (para não clicar em banners promocionais).
-    3. Clica em 'Instalar'/'Install' e confirma transição (ou detecta já instalado / em andamento).
+    3. Clica em 'Instalar'/'Install', aguarda 1.2s, dispensa eventual modal pós-clique e confirma transição.
     """
     nodes = initial_nodes if initial_nodes is not None else dump_ui_nodes()
     for attempt in range(2):
@@ -1470,12 +1507,8 @@ def _playstore_click_install(app_name: str, initial_nodes: Optional[list] = None
             time.sleep(1.0)
             continue
 
-        # 1. Pop-ups da Play Store
-        popup_btn = _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_DISMISS_LABELS)
-        if popup_btn:
-            tap_coords(int(popup_btn["cx"]), int(popup_btn["cy"]))
-            time.sleep(1.0)
-            nodes = dump_ui_nodes()
+        # 1. Pop-ups promocionais condicionais da Play Store (antes de clicar em Instalar)
+        _, nodes = _dismiss_playstore_promos_if_present(nodes)
 
         # Nunca clicar em 'Instalar' de um banner promocional na tela inicial da Play Store
         if _is_playstore_home_screen(nodes, app_name):
@@ -1486,8 +1519,9 @@ def _playstore_click_install(app_name: str, initial_nodes: Optional[list] = None
         install_btn = _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_INSTALL_LABELS)
         if install_btn:
             tap_coords(int(install_btn["cx"]), int(install_btn["cy"]))
-            time.sleep(1.0)
+            time.sleep(1.2)
             after_nodes = dump_ui_nodes()
+            _, after_nodes = _dismiss_playstore_promos_if_present(after_nodes)
             started = bool(_playstore_find_clickable_by_labels(after_nodes, _PLAYSTORE_PROGRESS_LABELS))
             return {
                 "action": "install_started",
@@ -1533,14 +1567,89 @@ def _playstore_click_install(app_name: str, initial_nodes: Optional[list] = None
     }
 
 
+def _playstore_sponsored_ranges(nodes: list, screen_h: int) -> list[tuple[int, int]]:
+    """Identifica faixas verticais [y1, y2] de blocos/cards patrocinados nos resultados da Play Store."""
+    ranges: list[tuple[int, int]] = []
+    action_labels = _PLAYSTORE_INSTALL_LABELS | _PLAYSTORE_INSTALLED_LABELS | _PLAYSTORE_UPDATE_LABELS
+    for n in nodes or []:
+        lbl = _node_label(n)
+        if not lbl or not any(sp in lbl for sp in _PLAYSTORE_SPONSORED_LABELS):
+            continue
+        ly1 = int(n.get("y1") or 0)
+        ly2 = int(n.get("y2") or 0)
+        lcy = int(n.get("cy") or 0)
+        lcx = int(n.get("cx") or 0)
+
+        # Se houver um container de card envolvendo o selo de patrocinado, usa seus limites
+        card_containers = [
+            c for c in (nodes or [])
+            if c is not n
+            and int(c.get("x1") or 0) <= lcx <= int(c.get("x2") or 0)
+            and int(c.get("y1") or 0) <= lcy <= int(c.get("y2") or 0)
+            and 80 <= (int(c.get("y2") or 0) - int(c.get("y1") or 0)) <= int(screen_h * 0.45)
+        ]
+        if card_containers:
+            card_containers.sort(key=lambda c: (int(c["x2"]) - int(c["x1"])) * (int(c["y2"]) - int(c["y1"])))
+            c = card_containers[0]
+            ranges.append((int(c["y1"]), int(c["y2"])))
+            continue
+
+        # Caso o selo 'Patrocinados' fique imediatamente acima do card anunciado,
+        # delimita até o primeiro botão de ação logo abaixo dele (sem invadir o card orgânico seguinte).
+        max_scan_y = ly2 + int(screen_h * 0.28)
+        first_action_y2 = None
+        for other in nodes or []:
+            o_lbl = _node_label(other)
+            o_cy = int(other.get("cy") or 0)
+            if o_lbl in action_labels and ly2 <= o_cy <= max_scan_y:
+                o_y2 = int(other.get("y2") or o_cy)
+                if first_action_y2 is None or o_y2 < first_action_y2:
+                    first_action_y2 = o_y2
+        end_y = (first_action_y2 + 60) if first_action_y2 is not None else (ly2 + int(screen_h * 0.22))
+        ranges.append((ly1, min(screen_h, end_y)))
+    return ranges
+
+
+def _is_in_sponsored_region(node: Dict[str, Any], sponsored_ranges: list[tuple[int, int]], nodes: list, screen_h: int) -> bool:
+    """Retorna True se o nó estiver dentro de qualquer faixa ou container patrocinado."""
+    cy = int(node.get("cy") or 0)
+    y1 = int(node.get("y1") or cy)
+    y2 = int(node.get("y2") or cy)
+    for sy1, sy2 in sponsored_ranges:
+        if sy1 <= cy <= sy2 or (y1 < sy2 and y2 > sy1 and (min(y2, sy2) - max(y1, sy1)) >= max(1, (y2 - y1) // 2)):
+            return True
+    return False
+
+
+def _playstore_title_match_score(label: str, norm_app: str, tokens: list[str]) -> int:
+    """Pontua correspondência estrita de título orgânico (palavra inteira ou prefixo do título)."""
+    if not label or label in _PLAYSTORE_INSTALL_LABELS or label in _PLAYSTORE_INSTALLED_LABELS or label in _PLAYSTORE_UPDATE_LABELS:
+        return 0
+    if any(sp in label for sp in _PLAYSTORE_SPONSORED_LABELS):
+        return 0
+    if label.startswith("pesquisar ") or label.startswith("buscar "):
+        return 0
+    if label == norm_app:
+        return 100
+    if re.match(rf"^{re.escape(norm_app)}(?:[:\s\-–—]|$)", label):
+        return 90
+    if all(re.search(rf"\b{re.escape(t)}\b", label) for t in tokens):
+        return 70
+    return 0
+
+
 def _playstore_find_search_result_card(nodes: list, app_name: str, screen_h: int) -> Optional[Dict[str, Any]]:
-    """Localiza o primeiro card de resultado correspondente a `app_name` na busca da Play Store."""
+    """
+    Localiza o primeiro resultado orgânico correspondente a `app_name` na busca da Play Store,
+    ignorando completamente cards e blocos patrocinados.
+    """
     norm_app = _normalize_text(app_name)
     tokens = [t for t in norm_app.split() if len(t) > 1]
     if not tokens:
         return None
     top_limit = int(screen_h * 0.14)
     bottom_limit = int(screen_h * 0.88)
+    sponsored_ranges = _playstore_sponsored_ranges(nodes, screen_h)
 
     candidates = []
     for n in nodes or []:
@@ -1549,20 +1658,73 @@ def _playstore_find_search_result_card(nodes: list, app_name: str, screen_h: int
             continue
         if "edittext" in str(n.get("class_name") or "").lower():
             continue
-        label = _node_label(n)
-        if not label or label in _PLAYSTORE_INSTALL_LABELS or label in _PLAYSTORE_INSTALLED_LABELS:
+        if _is_in_sponsored_region(n, sponsored_ranges, nodes, screen_h):
             continue
-        if all(t in label for t in tokens):
-            score = 100 if norm_app == label else (80 if label.startswith(norm_app) else 60)
+        label = _node_label(n)
+        score = _playstore_title_match_score(label, norm_app, tokens)
+        if score > 0:
             candidates.append((score, -cy, n))
 
     if not candidates:
         return None
     candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    target = candidates[0][2]
-    if target.get("clickable"):
-        return target
-    cx, cy = int(target.get("cx") or 0), int(target.get("cy") or 0)
+    return candidates[0][2]
+
+
+def _playstore_find_paired_install_button(
+    nodes: list,
+    title_node: Dict[str, Any],
+    screen_h: int,
+) -> Optional[Dict[str, Any]]:
+    """
+    Localiza o botão clicável 'Instalar'/'Install' pareado verticalmente com `title_node`
+    e fora de qualquer região patrocinada.
+    """
+    sponsored_ranges = _playstore_sponsored_ranges(nodes, screen_h)
+    t_cy = int(title_node.get("cy") or 0)
+    t_y1 = int(title_node.get("y1") or t_cy)
+    t_y2 = int(title_node.get("y2") or t_cy)
+    max_dy = int(screen_h * 0.14)
+
+    paired = []
+    for n in nodes or []:
+        t_norm = _normalize_text(str(n.get("text") or ""))
+        d_norm = _normalize_text(str(n.get("content_desc") or ""))
+        if t_norm not in _PLAYSTORE_INSTALL_LABELS and d_norm not in _PLAYSTORE_INSTALL_LABELS:
+            continue
+        if _is_in_sponsored_region(n, sponsored_ranges, nodes, screen_h):
+            continue
+
+        btn = n
+        if not btn.get("clickable"):
+            cx, cy = int(n.get("cx") or 0), int(n.get("cy") or 0)
+            containers = [
+                c for c in (nodes or [])
+                if c.get("clickable") and int(c.get("x1") or 0) <= cx <= int(c.get("x2") or 0)
+                and int(c.get("y1") or 0) <= cy <= int(c.get("y2") or 0)
+            ]
+            if containers:
+                containers.sort(key=lambda c: (int(c["x2"]) - int(c["x1"])) * (int(c["y2"]) - int(c["y1"])))
+                btn = containers[0]
+
+        b_cy = int(btn.get("cy") or 0)
+        b_y1 = int(btn.get("y1") or b_cy)
+        b_y2 = int(btn.get("y2") or b_cy)
+        y_overlaps = (b_y1 <= t_y2 + 40) and (b_y2 >= t_y1 - 40)
+        if y_overlaps or abs(b_cy - t_cy) <= max_dy:
+            paired.append((abs(b_cy - t_cy), btn))
+
+    if not paired:
+        return None
+    paired.sort(key=lambda item: item[0])
+    return paired[0][1]
+
+
+def _playstore_clickable_card_for_title(nodes: list, title_node: Dict[str, Any]) -> Dict[str, Any]:
+    """Retorna o próprio nó clicável ou o menor container clicável que envolve `title_node`."""
+    if title_node.get("clickable"):
+        return title_node
+    cx, cy = int(title_node.get("cx") or 0), int(title_node.get("cy") or 0)
     containers = [
         n for n in (nodes or [])
         if n.get("clickable") and int(n.get("x1") or 0) <= cx <= int(n.get("x2") or 0)
@@ -1571,7 +1733,82 @@ def _playstore_find_search_result_card(nodes: list, app_name: str, screen_h: int
     if containers:
         containers.sort(key=lambda c: (int(c["x2"]) - int(c["x1"])) * (int(c["y2"]) - int(c["y1"])))
         return containers[0]
-    return target
+    return title_node
+
+
+def _playstore_search_and_click_install(clean_name: str, nodes: Optional[list] = None) -> Dict[str, Any]:
+    """Busca o aplicativo na interface da Play Store, ignora patrocinados e aciona a instalação no card orgânico."""
+    if nodes is None:
+        nodes = dump_ui_nodes()
+    screen_w, screen_h = get_screen_dimensions(nodes)
+    title_node = _playstore_find_search_result_card(nodes, clean_name, screen_h)
+
+    if not title_node:
+        search_trigger = None
+        for n in nodes or []:
+            cy = int(n.get("cy") or 0)
+            if cy <= int(screen_h * 0.18) or cy >= int(screen_h * 0.88):
+                lbl = _node_label(n)
+                if any(k in lbl for k in ("pesquisa", "search", "buscar")):
+                    search_trigger = n
+                    break
+        if search_trigger:
+            tap_coords(int(search_trigger["cx"]), int(search_trigger["cy"]))
+            time.sleep(0.8)
+            post_tap_nodes = dump_ui_nodes()
+            edit_node = next(
+                (n for n in (post_tap_nodes or []) if "EditText" in str(n.get("class_name") or "")),
+                None,
+            )
+            if edit_node:
+                tap_coords(int(edit_node["cx"]), int(edit_node["cy"]))
+                time.sleep(0.5)
+            else:
+                top_bar = next(
+                    (
+                        n for n in (post_tap_nodes or [])
+                        if int(n.get("cy") or 0) <= int(screen_h * 0.20)
+                        and any(k in _node_label(n) for k in ("pesquisa", "search", "buscar"))
+                    ),
+                    None,
+                )
+                if top_bar:
+                    tap_coords(int(top_bar["cx"]), int(top_bar["cy"]))
+                    time.sleep(0.5)
+            type_text_unicode(clean_name)
+            time.sleep(0.3)
+            press_key(66)
+            time.sleep(2.5)
+            nodes = dump_ui_nodes()
+            title_node = _playstore_find_search_result_card(nodes, clean_name, screen_h)
+
+    # Trava de segurança: nunca clicar em anúncios se nenhum resultado orgânico corresponder ao app
+    if not title_node:
+        return {
+            "action": "not_found",
+            "confirmed": False,
+            "message": f"O aplicativo exato '{clean_name}' não foi localizado nos resultados principais da Google Play Store.",
+        }
+
+    # Pareamento estrito: se houver 'Instalar' na mesma faixa do card orgânico, toca direto nele
+    paired_install = _playstore_find_paired_install_button(nodes, title_node, screen_h)
+    if paired_install:
+        tap_coords(int(paired_install["cx"]), int(paired_install["cy"]))
+        time.sleep(1.2)
+        after_nodes = dump_ui_nodes()
+        _, after_nodes = _dismiss_playstore_promos_if_present(after_nodes)
+        started = bool(_playstore_find_clickable_by_labels(after_nodes, _PLAYSTORE_PROGRESS_LABELS))
+        return {
+            "action": "install_started",
+            "confirmed": started,
+            "message": f"Instalação de '{clean_name}' iniciada na Google Play Store.",
+        }
+
+    # Caso 'Instalar' não esteja visível na linha (ou mostre Abrir/Instalado), abre a página de detalhes do card orgânico
+    card_target = _playstore_clickable_card_for_title(nodes, title_node)
+    tap_coords(int(card_target["cx"]), int(card_target["cy"]))
+    time.sleep(2.0)
+    return _playstore_click_install(clean_name)
 
 
 def install_app(app_name: str) -> Dict[str, Any]:
@@ -1644,9 +1881,11 @@ def install_app(app_name: str) -> Dict[str, Any]:
             click_res = _playstore_click_install(clean_name)
             if click_res["action"] == "opened_only":
                 https_url = f"https://play.google.com/store/apps/details?id={pkg}"
-                _exec_android_intent(f'am start -a android.intent.action.VIEW -d "{https_url}" -p com.android.vending')
-                time.sleep(2.5)
+                _exec_android_intent(f'am start --activity-clear-top -a android.intent.action.VIEW -d "{https_url}" -p com.android.vending')
+                time.sleep(3.0)
                 click_res = _playstore_click_install(clean_name)
+            if click_res["action"] == "opened_only":
+                click_res = _playstore_search_and_click_install(clean_name)
         return {
             "status": "ok",
             "message": click_res["message"],
@@ -1676,40 +1915,7 @@ def install_app(app_name: str) -> Dict[str, Any]:
 
     with _UI_LOCK:
         time.sleep(2.5)
-        nodes = dump_ui_nodes()
-        screen_w, screen_h = get_screen_dimensions(nodes)
-        card = _playstore_find_search_result_card(nodes, clean_name, screen_h)
-
-        # Fallback: caso a busca via URI não tenha aberto resultados, usa barra/aba de pesquisa
-        if not card:
-            search_trigger = None
-            for n in nodes or []:
-                cy = int(n.get("cy") or 0)
-                if cy <= int(screen_h * 0.18) or cy >= int(screen_h * 0.88):
-                    lbl = _node_label(n)
-                    if any(k in lbl for k in ("pesquisar", "search", "buscar")):
-                        search_trigger = n
-                        break
-            if search_trigger:
-                tap_coords(int(search_trigger["cx"]), int(search_trigger["cy"]))
-                time.sleep(0.8)
-                type_text_unicode(clean_name)
-                time.sleep(0.3)
-                press_key(66)
-                time.sleep(2.0)
-                nodes = dump_ui_nodes()
-                card = _playstore_find_search_result_card(nodes, clean_name, screen_h)
-
-        # Atalho direto se 'Instalar' já aparece junto ao card principal
-        direct_install = _playstore_find_clickable_by_labels(nodes, _PLAYSTORE_INSTALL_LABELS)
-        if card and direct_install:
-            click_res = _playstore_click_install(clean_name, initial_nodes=nodes)
-        elif card:
-            tap_coords(int(card["cx"]), int(card["cy"]))
-            time.sleep(2.0)
-            click_res = _playstore_click_install(clean_name)
-        else:
-            click_res = _playstore_click_install(clean_name, initial_nodes=nodes)
+        click_res = _playstore_search_and_click_install(clean_name)
 
     return {
         "status": "ok",

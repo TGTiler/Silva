@@ -86,6 +86,11 @@ class TestRouterConflicts(unittest.TestCase):
             ("ligue a localização para mim", "<call>set_location_state(state=True)</call>"),
             ("desliga o gps", "<call>set_location_state(state=False)</call>"),
             ("onde eu estou agora?", "<call>get_location()</call>"),
+            ("Ative minhaa loc", "<call>set_location_state(state=True)</call>"),
+            ("desliga a loc", "<call>set_location_state(state=False)</call>"),
+            ("Desative meu alarme das 6:12 só amanhã", "<call>cancel_alarm(time='06:12', day='', label='')</call>"),
+            ("O que tem na minha checklist", "<call>get_voice_notes(query='')</call>"),
+            ("Manda um zap para Gustavo dizendo pra ele se lascar", "<call>send_whatsapp(contact_name='Gustavo', message='se lascar')</call>"),
         ]
         for prompt, expected in cases:
             with self.subTest(prompt=prompt):

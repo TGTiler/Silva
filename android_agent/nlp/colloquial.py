@@ -44,6 +44,14 @@ def normalize_colloquial_ptbr(text: str) -> str:
 
     s = text
 
+    # 0. Normalização de alongamentos de vogais em digitação rápida ("minhaa" -> "minha", "ligaa" -> "liga")
+    s = re.sub(r"([a-zA-ZÀ-ÿ])\1{2,}", r"\1", s)
+    s = re.sub(r"\b([a-zA-ZÀ-ÿ]{3,}?)([aeiouáéíóúâêôãõ])\2+\b", r"\1\2", s, flags=re.IGNORECASE)
+
+    # Abreviação "loc" em contexto de ativação/desativação -> "localizacao"
+    if re.search(r"\b(?:ativ[aeo]r?|lig(?:a|ue|ar)|desativ[aeo]r?|deslig(?:a|ue|ar)|habilit[aeo]r?|desabilit[aeo]r?)\b", s, re.IGNORECASE):
+        s = re.sub(r"\bloc\b", "localizacao", s, flags=re.IGNORECASE)
+
     # 1. Expressões de nível (Volume / Brilho / Áudio / Tela)
     level_ctx = bool(re.search(r"\b(?:volume|som|brilho|tela|audio|áudio|luz|musica|música)\b", s, re.IGNORECASE))
     

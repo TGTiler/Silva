@@ -14,7 +14,6 @@ import unicodedata
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
 
@@ -147,7 +146,7 @@ def _reverse_geocode_label(lat: float, lon: float) -> str:
             url,
             headers={"User-Agent": "SilvaAgent/1.0 (Android Open Source Assistant)"}
         )
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
+        with urllib.request.urlopen(req, timeout=2.5) as resp:
             if resp.status == 200:
                 d = json.loads(resp.read().decode("utf-8"))
                 addr = d.get("address", {})
@@ -190,7 +189,7 @@ def _reverse_geocode_label(lat: float, lon: float) -> str:
             url,
             headers={"User-Agent": "SilvaAgent/1.0"}
         )
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
+        with urllib.request.urlopen(req, timeout=2.5) as resp:
             if resp.status == 200:
                 d = json.loads(resp.read().decode("utf-8"))
                 locality = d.get("locality", "")
@@ -218,12 +217,131 @@ def _reverse_geocode_label(lat: float, lon: float) -> str:
 _MOCK_LOCATION_ACTIVE: Optional[Any] = None
 
 
+def _is_valid_lat_lon(lat: float, lon: float) -> bool:
+    """Valida se (lat, lon) está dentro de faixas geográficas reais e não é (0.0, 0.0)."""
+    return (
+        -90.0 <= lat <= 90.0
+        and -180.0 <= lon <= 180.0
+        and not (abs(lat) < 1e-9 and abs(lon) < 1e-9)
+    )
+
+
+def _parse_dumpsys_location(output: str) -> Optional[tuple]:
+    """
+    Extrai coordenadas mais recentes de `dumpsys location` (ex.: `Location[fused -8.05428,-34.8813 ...]`).
+    Prioriza provedores na ordem: fused > network > gps > outros.
+    """
+    if not output:
+        return None
+    pattern = re.compile(
+        r"Location\[([a-zA-Z0-9_]+)\s+(-?\d+[.,]\d+)\s*,\s*(-?\d+[.,]\d+)",
+        re.IGNORECASE,
+    )
+    priority = {"fused": 3, "network": 2, "gps": 1}
+    best = None
+    best_rank = -1
+    for match in pattern.finditer(output):
+        prov = match.group(1).lower()
+        try:
+            lat = float(match.group(2).replace(",", "."))
+            lon = float(match.group(3).replace(",", "."))
+        except ValueError:
+            continue
+        if not _is_valid_lat_lon(lat, lon):
+            continue
+        rank = priority.get(prov, 0)
+        if rank > best_rank:
+            best_rank = rank
+            best = (lat, lon, f"adb_{prov}")
+    return best
+
+
+def _persist_location_to_memory_db(lat: float, lon: float, provider: str, updated_at: str) -> None:
+    """Persiste a última coordenada válida na tabela memories do memory.db."""
+    try:
+        from .core import _FILE_LOCK
+        from .memory_schedule import _get_memory_db
+
+        payload = json.dumps(
+            {
+                "latitude": float(lat),
+                "longitude": float(lon),
+                "provider": str(provider or ""),
+                "updated_at": str(updated_at or ""),
+            },
+            ensure_ascii=False,
+        )
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                with conn:
+                    conn.execute(
+                        "INSERT INTO memories (key, value, updated_at) VALUES (?, ?, ?) "
+                        "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+                        ("last_location", payload, now_iso),
+                    )
+            finally:
+                conn.close()
+    except Exception:
+        pass
+
+
+def _load_location_from_memory_db() -> Optional[Dict[str, Any]]:
+    """Recupera a última coordenada persistida na tabela memories do memory.db."""
+    try:
+        from .core import _FILE_LOCK
+        from .memory_schedule import _get_memory_db
+
+        with _FILE_LOCK:
+            conn = _get_memory_db()
+            try:
+                row = conn.execute(
+                    "SELECT value, updated_at FROM memories WHERE key = 'last_location'"
+                ).fetchone()
+            finally:
+                conn.close()
+        if not row:
+            return None
+        data = json.loads(str(row["value"]))
+        lat = float(data["latitude"])
+        lon = float(data["longitude"])
+        if not _is_valid_lat_lon(lat, lon):
+            return None
+        data.setdefault("updated_at", str(row["updated_at"] or ""))
+        data.setdefault("maps_url", f"https://maps.google.com/?q={lat},{lon}")
+        return data
+    except Exception:
+        return None
+
+
+def _try_termux_location(provider: str, request_mode: str, timeout: float) -> Optional[tuple]:
+    """Executa uma chamada isolada a `termux-location` e valida coordenadas retornadas."""
+    try:
+        res = _run_termux_cmd(
+            ["termux-location", "-p", provider, "-r", request_mode],
+            timeout=timeout,
+        )
+        if res.returncode == 0 and (res.stdout or "").strip():
+            data = json.loads(res.stdout)
+            lat = data.get("latitude")
+            lon = data.get("longitude")
+            if lat is not None and lon is not None:
+                lat_f, lon_f = float(lat), float(lon)
+                if _is_valid_lat_lon(lat_f, lon_f):
+                    return lat_f, lon_f, str(data.get("provider") or provider)
+    except Exception:
+        pass
+    return None
+
+
 def _get_current_device_location() -> Optional[tuple]:
     """
-    Tenta obter coordenadas atuais do dispositivo em tempo real via termux-location.
-    Tenta primeiro 'network' rápido (timeout 5s) e depois 'gps' (timeout 8s).
-    Em modo SIMULATE_HARDWARE ou mock, respeita o estado configurado.
-    Retorna (latitude, longitude, provider) ou None se desativado/indisponível.
+    Obtém coordenadas atuais em tempo real via cadeia resiliente:
+    1. termux-location -p network (-r last, depois -r once, timeout 4.0s)
+    2. termux-location -p gps -r once (timeout 5.0s)
+    3. ADB dumpsys location (timeout 5.0s)
+    Retorna (latitude, longitude, provider) ou None se indisponível.
     """
     global _MOCK_LOCATION_ACTIVE
     if _MOCK_LOCATION_ACTIVE is False:
@@ -237,30 +355,26 @@ def _get_current_device_location() -> Optional[tuple]:
     if SIMULATE_HARDWARE:
         return -7.9408, -34.8731, "simulated"
 
-    try:
-        # Tenta primeiro via network (rápido, timeout 5s)
-        res = _run_termux_cmd(["termux-location", "-p", "network", "-r", "last"], timeout=5)
-        if res.returncode == 0 and res.stdout.strip():
-            try:
-                data = json.loads(res.stdout)
-                lat = data.get("latitude")
-                lon = data.get("longitude")
-                if lat is not None and lon is not None:
-                    return float(lat), float(lon), data.get("provider", "network")
-            except Exception:
-                pass
+    # Camada 1: network (-r last, depois -r once) com timeout 4.0s
+    loc = _try_termux_location("network", "last", timeout=4.0)
+    if loc:
+        return loc
+    loc = _try_termux_location("network", "once", timeout=4.0)
+    if loc:
+        return loc
 
-        # Fallback para GPS (timeout 8s)
-        res = _run_termux_cmd(["termux-location", "-p", "gps", "-r", "once"], timeout=8)
-        if res.returncode == 0 and res.stdout.strip():
-            try:
-                data = json.loads(res.stdout)
-                lat = data.get("latitude")
-                lon = data.get("longitude")
-                if lat is not None and lon is not None:
-                    return float(lat), float(lon), data.get("provider", "gps")
-            except Exception:
-                pass
+    # Camada 2: gps dedicado (-r once) com timeout 5.0s
+    loc = _try_termux_location("gps", "once", timeout=5.0)
+    if loc:
+        return loc
+
+    # Camada 3: Extração direta via ADB (dumpsys location, timeout 5.0s)
+    try:
+        ok_adb, out_adb = run_adb_shell(["dumpsys", "location"], timeout=5.0)
+        if ok_adb and out_adb:
+            loc = _parse_dumpsys_location(out_adb)
+            if loc:
+                return loc
     except Exception:
         pass
 
@@ -268,7 +382,7 @@ def _get_current_device_location() -> Optional[tuple]:
 
 
 def get_location() -> Dict[str, Any]:
-    """Obtém coordenadas de localização geográfica com link do Google Maps e pré-visualização de mapa."""
+    """Obtém localização via cadeia resiliente de 4 camadas com reverse-geocoding e persistência."""
     if SIMULATE_HARDWARE:
         lat, lon = -7.9408, -34.8731
         maps_url = f"https://maps.google.com/?q={lat},{lon}"
@@ -290,27 +404,54 @@ def get_location() -> Dict[str, Any]:
 
     try:
         dev_loc = _get_current_device_location()
-        if not dev_loc:
-            return {"status": "error", "message": "Não foi possível obter sinal de localização."}
+        if dev_loc:
+            lat_f, lon_f, provider = dev_loc
+            maps_url = f"https://maps.google.com/?q={lat_f},{lon_f}"
+            map_img = _generate_map_preview(lat_f, lon_f)
+            label = _reverse_geocode_label(lat_f, lon_f)
+            loc_data = save_last_location(
+                lat_f, lon_f,
+                label=label,
+                maps_url=maps_url,
+                image_url=map_img,
+                provider=provider
+            )
+            _persist_location_to_memory_db(
+                lat_f, lon_f, provider, str(loc_data.get("updated_at") or "")
+            )
 
-        lat_f, lon_f, provider = dev_loc
-        maps_url = f"https://maps.google.com/?q={lat_f},{lon_f}"
-        map_img = _generate_map_preview(lat_f, lon_f)
-        label = _reverse_geocode_label(lat_f, lon_f)
-        loc_data = save_last_location(
-            lat_f, lon_f,
-            label=label,
-            maps_url=maps_url,
-            image_url=map_img,
-            provider=provider
-        )
+            label_display = f"{label} " if label and label != f"{lat_f:.4f}, {lon_f:.4f}" else ""
+            return {
+                "status": "ok",
+                "message": f"Silva: Localização: {label_display}(Lat {lat_f:.5f}, Lon {lon_f:.5f}). {maps_url}",
+                "image_url": map_img,
+                "data": loc_data
+            }
 
-        label_display = f"{label} " if label and label != f"{lat_f:.4f}, {lon_f:.4f}" else ""
+        # Camada 4: Fallback para última localização persistida (last_location.json / memory.db)
+        cached = load_last_location() or _load_location_from_memory_db()
+        if cached and "latitude" in cached and "longitude" in cached:
+            lat_f = float(cached["latitude"])
+            lon_f = float(cached["longitude"])
+            if _is_valid_lat_lon(lat_f, lon_f):
+                maps_url = cached.get("maps_url") or f"https://maps.google.com/?q={lat_f},{lon_f}"
+                label = cached.get("label", "")
+                updated_at = str(cached.get("updated_at") or cached.get("timestamp") or "").strip()
+                time_hint = f" às {updated_at}" if updated_at else ""
+                label_str = f"{label} - " if label and label != f"{lat_f:.4f}, {lon_f:.4f}" else ""
+                return {
+                    "status": "ok",
+                    "message": (
+                        f"Silva: Localização aproximada (último sinal{time_hint}): "
+                        f"{label_str}Lat {lat_f:.5f}, Lon {lon_f:.5f}. {maps_url}"
+                    ),
+                    "image_url": cached.get("image_url"),
+                    "data": {**cached, "fallback": "last_location"},
+                }
+
         return {
-            "status": "ok",
-            "message": f"Silva: Localização: {label_display}(Lat {lat_f:.5f}, Lon {lon_f:.5f}). {maps_url}",
-            "image_url": map_img,
-            "data": loc_data
+            "status": "error",
+            "message": "Não foi possível obter sinal de localização em tempo real nem histórico salvo.",
         }
     except Exception as e:
         return {"status": "error", "message": f"Erro ao consultar GPS: {str(e)}"}

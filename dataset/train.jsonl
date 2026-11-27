@@ -6723,3 +6723,1190 @@
 {"instruction": "Meu amigo trabalha como motorista de uber", "output": "<call>none()</call>"}
 {"instruction": "O ifood cobrou taxa de entrega errada ontem", "output": "<call>none()</call>"}
 {"instruction": "Aquele 99 que passou buzinando me assustou", "output": "<call>none()</call>"}
+{"input": "adiciona leite na lista de compras", "output": "<call>add_list_item(list_name='compras', item='leite')</call>"}
+{"input": "bota pão na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='pão')</call>"}
+{"input": "o que tem na minha lista de mercado?", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me mostra a lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "tira ovos da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='ovos')</call>"}
+{"input": "remove arroz da lista de mercado pfv", "output": "<call>remove_list_item(list_name='mercado', item='arroz')</call>"}
+{"input": "salva nota de voz ideia de projeto", "output": "<call>save_voice_note(title='ideia de projeto', duration=15, text_only=False)</call>"}
+{"input": "grava um áudio lembrete de reunião amanhã", "output": "<call>save_voice_note(title='lembrete de reunião amanhã', duration=15, text_only=False)</call>"}
+{"input": "quais notas de voz pendentes?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista todas as notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "confere a nota de voz compras", "output": "<call>check_voice_note(title='compras')</call>"}
+{"input": "marca a nota de voz ideias como checada", "output": "<call>check_voice_note(title='ideias')</call>"}
+{"input": "como foi meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "relatório de sono da semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "começa a monitorar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "qual o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "esquece a nota da senha do wifi", "output": "<call>forget_note(key='senha do wifi')</call>"}
+{"input": "apaga a memória da reunião de ontem", "output": "<call>forget_note(key='reunião de ontem')</call>"}
+{"input": "lista minhas memórias de saúde", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "mostra todas as memórias", "output": "<call>list_memories(category='')</call>"}
+{"input": "quando eu conectar no wifi de casa me lembra de tirar o lixo", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='tirar o lixo')</call>"}
+{"input": "me avisa quando entrar no wifi do trabalho pra mandar o relatório", "output": "<call>remind_on_wifi(ssid='wifi do trabalho', reminder='mandar o relatório')</call>"}
+{"input": "qual o telefone da mãe?", "output": "<call>get_contact(query='mãe')</call>"}
+{"input": "busca contato do João", "output": "<call>get_contact(query='João')</call>"}
+{"input": "salva contato da Maria 11 99999-8888", "output": "<call>save_contact(name='Maria', phone='11 99999-8888')</call>"}
+{"input": "adiciona o Pedro com telefone 21 98888-7777", "output": "<call>save_contact(name='Pedro', phone='21 98888-7777')</call>"}
+{"input": "cria apelido chefe pro contato Carlos", "output": "<call>save_contact_alias(alias='chefe', target_name='Carlos')</call>"}
+{"input": "apelida a Ana como irmã", "output": "<call>save_contact_alias(alias='irmã', target_name='Ana')</call>"}
+{"input": "manda zap pra mãe dizendo que chego atrasado", "output": "<call>send_whatsapp(recipient='mãe', message='chego atrasado')</call>"}
+{"input": "envia no whatsapp pro João: reunião confirmada", "output": "<call>send_whatsapp(recipient='João', message='reunião confirmada')</call>"}
+{"input": "ativa modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "desliga o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "liga o bt", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desliga o bluetooth pfv", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "liga o hotspot", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desativa o roteador", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "liga o 4g", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desliga os dados móveis", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "liga o wifi", "output": "<call>set_wifi_state(state=True)</call>"}
+{"input": "desliga o wifi", "output": "<call>set_wifi_state(state=False)</call>"}
+{"input": "quais as informações do sistema?", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra os dados do celular", "output": "<call>get_system_info()</call>"}
+{"input": "que horas são?", "output": "<call>get_datetime()</call>"}
+{"input": "qual a data de hoje?", "output": "<call>get_datetime()</call>"}
+{"input": "qual o próximo feriado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "próximo feriado de 2027", "output": "<call>get_next_holiday(year=2027)</call>"}
+{"input": "notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá 3 notícias de esportes", "output": "<call>get_news(topic='esportes', limit=3)</call>"}
+{"input": "converte 100 dólares pra real", "output": "<call>convert_units(amount=100.0, from_unit='USD', to_unit='BRL')</call>"}
+{"input": "quanto é 50 euros em reais?", "output": "<call>convert_units(amount=50.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"input": "traça rota pra praia de copacabana", "output": "<call>navigate_to(destination='praia de copacabana')</call>"}
+{"input": "navega até o aeroporto", "output": "<call>navigate_to(destination='aeroporto')</call>"}
+{"input": "toca lo-fi no youtube", "output": "<call>play_media(query='lo-fi', app='youtube')</call>"}
+{"input": "coloca playlist de rock no spotify", "output": "<call>play_media(query='playlist de rock', app='spotify')</call>"}
+{"input": "lê a tela pra mim", "output": "<call>read_screen()</call>"}
+{"input": "o que tá escrito na tela?", "output": "<call>read_screen()</call>"}
+{"input": "resume as notificações do whatsapp", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "resumo das notificações do nubank", "output": "<call>summarize_notifications(app_filter='nubank')</call>"}
+{"input": "pega a lista de mercado e manda no zap pra mãe", "output": "<call>get_list(list_name='mercado')</call><call>send_whatsapp(recipient='mãe', message='lista de mercado')</call>"}
+{"input": "ativa o gps e traça rota pro centro", "output": "<call>set_mobile_data_state(state=True)</call><call>navigate_to(destination='centro')</call>"}
+{"input": "como eu dormi hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono essa semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi nos últimos 7 dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "adiciona leite na lista de compras", "output": "<call>add_list_item(list_name='compras', item='leite')</call>"}
+{"input": "bota pão na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='pão')</call>"}
+{"input": "o que tem na minha lista de mercado?", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me mostra a lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "tira ovos da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='ovos')</call>"}
+{"input": "remove arroz da lista de mercado pfv", "output": "<call>remove_list_item(list_name='mercado', item='arroz')</call>"}
+{"input": "salva nota de voz ideia de projeto", "output": "<call>save_voice_note(title='ideia de projeto', duration=15, text_only=False)</call>"}
+{"input": "grava um áudio lembrete de reunião amanhã", "output": "<call>save_voice_note(title='lembrete de reunião amanhã', duration=15, text_only=False)</call>"}
+{"input": "quais notas de voz pendentes?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista todas as notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "confere a nota de voz compras", "output": "<call>check_voice_note(title='compras')</call>"}
+{"input": "marca a nota de voz ideias como checada", "output": "<call>check_voice_note(title='ideias')</call>"}
+{"input": "começa a monitorar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "qual o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "esquece a nota da senha do wifi", "output": "<call>forget_note(key='senha do wifi')</call>"}
+{"input": "apaga a memória da reunião de ontem", "output": "<call>forget_note(key='reunião de ontem')</call>"}
+{"input": "lista minhas memórias de saúde", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "mostra todas as memórias", "output": "<call>list_memories(category='')</call>"}
+{"input": "quando eu conectar no wifi de casa me lembra de tirar o lixo", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='tirar o lixo')</call>"}
+{"input": "me avisa quando entrar no wifi do trabalho pra mandar o relatório", "output": "<call>remind_on_wifi(ssid='wifi do trabalho', reminder='mandar o relatório')</call>"}
+{"input": "qual o telefone da mãe?", "output": "<call>get_contact(query='mãe')</call>"}
+{"input": "busca contato do João", "output": "<call>get_contact(query='João')</call>"}
+{"input": "salva contato da Maria 11 99999-8888", "output": "<call>save_contact(name='Maria', phone='11 99999-8888')</call>"}
+{"input": "adiciona o Pedro com telefone 21 98888-7777", "output": "<call>save_contact(name='Pedro', phone='21 98888-7777')</call>"}
+{"input": "cria apelido chefe pro contato Carlos", "output": "<call>save_contact_alias(alias='chefe', target_name='Carlos')</call>"}
+{"input": "apelida a Ana como irmã", "output": "<call>save_contact_alias(alias='irmã', target_name='Ana')</call>"}
+{"input": "manda zap pra mãe dizendo que chego atrasado", "output": "<call>send_whatsapp(recipient='mãe', message='chego atrasado')</call>"}
+{"input": "envia no whatsapp pro João: reunião confirmada", "output": "<call>send_whatsapp(recipient='João', message='reunião confirmada')</call>"}
+{"input": "ativa modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "desliga o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "liga o bt", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desliga o bluetooth pfv", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "liga o hotspot", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desativa o roteador", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "liga o 4g", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desliga os dados móveis", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "liga o wifi", "output": "<call>set_wifi_state(state=True)</call>"}
+{"input": "desliga o wifi", "output": "<call>set_wifi_state(state=False)</call>"}
+{"input": "quais as informações do sistema?", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra os dados do celular", "output": "<call>get_system_info()</call>"}
+{"input": "que horas são?", "output": "<call>get_datetime()</call>"}
+{"input": "qual a data de hoje?", "output": "<call>get_datetime()</call>"}
+{"input": "qual o próximo feriado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "próximo feriado de 2027", "output": "<call>get_next_holiday(year=2027)</call>"}
+{"input": "notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá 3 notícias de esportes", "output": "<call>get_news(topic='esportes', limit=3)</call>"}
+{"input": "converte 100 dólares pra real", "output": "<call>convert_units(amount=100.0, from_unit='USD', to_unit='BRL')</call>"}
+{"input": "quanto é 50 euros em reais?", "output": "<call>convert_units(amount=50.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"input": "traça rota pra praia de copacabana", "output": "<call>navigate_to(destination='praia de copacabana')</call>"}
+{"input": "navega até o aeroporto", "output": "<call>navigate_to(destination='aeroporto')</call>"}
+{"input": "toca lo-fi no youtube", "output": "<call>play_media(query='lo-fi', app='youtube')</call>"}
+{"input": "coloca playlist de rock no spotify", "output": "<call>play_media(query='playlist de rock', app='spotify')</call>"}
+{"input": "lê a tela pra mim", "output": "<call>read_screen()</call>"}
+{"input": "o que tá escrito na tela?", "output": "<call>read_screen()</call>"}
+{"input": "resume as notificações do whatsapp", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "resumo das notificações do nubank", "output": "<call>summarize_notifications(app_filter='nubank')</call>"}
+{"input": "pega a lista de mercado e manda no zap pra mãe", "output": "<call>get_list(list_name='mercado')</call><call>send_whatsapp(recipient='mãe', message='lista de mercado')</call>"}
+{"input": "ativa o gps e traça rota pro centro", "output": "<call>set_mobile_data_state(state=True)</call><call>navigate_to(destination='centro')</call>"}
+{"input": "coloca açúcar na lista do mercado", "output": "<call>add_list_item(list_name='mercado', item='açúcar')</call>"}
+{"input": "anota pilha na lista de compras", "output": "<call>add_list_item(list_name='compras', item='pilha')</call>"}
+{"input": "abre a lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "quero ver minha lista de afazeres", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "apaga café da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='café')</call>"}
+{"input": "tira detergente da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='detergente')</call>"}
+{"input": "grava nota de voz sobre a consulta", "output": "<call>save_voice_note(title='consulta', duration=15, text_only=False)</call>"}
+{"input": "cria áudio lembrando de pagar o aluguel", "output": "<call>save_voice_note(title='pagar o aluguel', duration=15, text_only=False)</call>"}
+{"input": "tem alguma nota de voz pra ouvir?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra todas as notas gravadas", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "verifica a nota de voz da consulta", "output": "<call>check_voice_note(title='consulta')</call>"}
+{"input": "dá como vista a nota de voz do aluguel", "output": "<call>check_voice_note(title='aluguel')</call>"}
+{"input": "como eu dormi essa noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono na última semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "inicia o monitoramento de sono", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "descarta a última sessão de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "esquece a nota da senha do banco", "output": "<call>forget_note(key='senha do banco')</call>"}
+{"input": "apaga a memória sobre o aniversário da Ana", "output": "<call>forget_note(key='aniversário da Ana')</call>"}
+{"input": "mostra memórias de trabalho", "output": "<call>list_memories(category='trabalho')</call>"}
+{"input": "lista memórias pessoais", "output": "<call>list_memories(category='pessoal')</call>"}
+{"input": "quando pegar o wifi da faculdade me lembra de estudar cálculo", "output": "<call>remind_on_wifi(ssid='wifi da faculdade', reminder='estudar cálculo')</call>"}
+{"input": "me lembra de comprar pão quando conectar no wifi do mercado", "output": "<call>remind_on_wifi(ssid='wifi do mercado', reminder='comprar pão')</call>"}
+{"input": "me passa o número da Ana", "output": "<call>get_contact(query='Ana')</call>"}
+{"input": "acha o contato do dentista", "output": "<call>get_contact(query='dentista')</call>"}
+{"input": "cadastra contato do Lucas 31 97777-6666", "output": "<call>save_contact(name='Lucas', phone='31 97777-6666')</call>"}
+{"input": "salva a Julia com telefone 41 96666-5555", "output": "<call>save_contact(name='Julia', phone='41 96666-5555')</call>"}
+{"input": "apelida o Roberto como pai", "output": "<call>save_contact_alias(alias='pai', target_name='Roberto')</call>"}
+{"input": "cria apelido trabalho pro contato Fernanda", "output": "<call>save_contact_alias(alias='trabalho', target_name='Fernanda')</call>"}
+{"input": "manda no zap pro pai: já estou chegando", "output": "<call>send_whatsapp(recipient='pai', message='já estou chegando')</call>"}
+{"input": "envia whatsapp pra Ana perguntando se tá tudo bem", "output": "<call>send_whatsapp(recipient='Ana', message='tá tudo bem?')</call>"}
+{"input": "desativa o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "liga modo avião agora", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "desliga o bt", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "ativa bluetooth", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desliga o hotspot", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "ativa o roteador wifi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desativa o 4g", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "liga os dados móveis", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desativa o wifi", "output": "<call>set_wifi_state(state=False)</call>"}
+{"input": "ativa wifi", "output": "<call>set_wifi_state(state=True)</call>"}
+{"input": "me dá um resumo do sistema", "output": "<call>get_system_info()</call>"}
+{"input": "quanta memória tem no celular?", "output": "<call>get_system_info()</call>"}
+{"input": "me diz a hora", "output": "<call>get_datetime()</call>"}
+{"input": "hoje é que dia?", "output": "<call>get_datetime()</call>"}
+{"input": "qual feriado vem agora?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2028", "output": "<call>get_next_holiday(year=2028)</call>"}
+{"input": "quais as notícias de economia?", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "me dá 2 notícias gerais", "output": "<call>get_news(topic='geral', limit=2)</call>"}
+{"input": "quanto é 250 reais em dólar?", "output": "<call>convert_units(amount=250.0, from_unit='BRL', to_unit='USD')</call>"}
+{"input": "converte 30 libras pra real", "output": "<call>convert_units(amount=30.0, from_unit='GBP', to_unit='BRL')</call>"}
+{"input": "me leva até a farmácia mais próxima", "output": "<call>navigate_to(destination='farmácia mais próxima')</call>"}
+{"input": "rota pra casa da minha mãe", "output": "<call>navigate_to(destination='casa da minha mãe')</call>"}
+{"input": "toca música relaxante no spotify", "output": "<call>play_media(query='música relaxante', app='spotify')</call>"}
+{"input": "põe um vídeo de receita no youtube", "output": "<call>play_media(query='vídeo de receita', app='youtube')</call>"}
+{"input": "o que tem na tela agora?", "output": "<call>read_screen()</call>"}
+{"input": "lê o que tá aparecendo", "output": "<call>read_screen()</call>"}
+{"input": "resume minhas notificações", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "o que chegou de notificação no whatsapp?", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "vê a lista de tarefas e manda no zap pro João", "output": "<call>get_list(list_name='tarefas')</call><call>send_whatsapp(recipient='João', message='lista de tarefas')</call>"}
+{"input": "liga o 4g e traça rota pra rodoviária", "output": "<call>set_mobile_data_state(state=True)</call><call>navigate_to(destination='rodoviária')</call>"}
+{"input": "põe feijão na lista de compras", "output": "<call>add_list_item(list_name='compras', item='feijão')</call>"}
+{"input": "adiciona macarrão na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='macarrão')</call>"}
+{"input": "me mostra o que tem na lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "abre a lista do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "tira manteiga da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='manteiga')</call>"}
+{"input": "remove sabão da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='sabão')</call>"}
+{"input": "grava nota de voz da lista de remédios", "output": "<call>save_voice_note(title='lista de remédios', duration=15, text_only=False)</call>"}
+{"input": "salva áudio lembrando de regar as plantas", "output": "<call>save_voice_note(title='regar as plantas', duration=15, text_only=False)</call>"}
+{"input": "tem nota de voz pendente?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "quero ouvir todas as notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "marca a nota de voz dos remédios como lida", "output": "<call>check_voice_note(title='lista de remédios')</call>"}
+{"input": "confere a nota de voz de regar as plantas", "output": "<call>check_voice_note(title='regar as plantas')</call>"}
+{"input": "como eu dormi ontem?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono nos últimos dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "começa a contar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "como está o monitoramento de sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "esquece a nota do código do portão", "output": "<call>forget_note(key='código do portão')</call>"}
+{"input": "apaga a memória da senha do cartão", "output": "<call>forget_note(key='senha do cartão')</call>"}
+{"input": "lista minhas memórias de saúde", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "mostra as memórias de trabalho", "output": "<call>list_memories(category='trabalho')</call>"}
+{"input": "quando conectar no wifi de casa me lembra de tomar o remédio", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='tomar o remédio')</call>"}
+{"input": "me avisa no wifi do escritório pra responder os e-mails", "output": "<call>remind_on_wifi(ssid='wifi do escritório', reminder='responder os e-mails')</call>"}
+{"input": "me passa o contato do oftalmologista", "output": "<call>get_contact(query='oftalmologista')</call>"}
+{"input": "qual o número da minha irmã?", "output": "<call>get_contact(query='irmã')</call>"}
+{"input": "cadastra contato da Carla 51 95555-4444", "output": "<call>save_contact(name='Carla', phone='51 95555-4444')</call>"}
+{"input": "salva o Rafael com telefone 61 94444-3333", "output": "<call>save_contact(name='Rafael', phone='61 94444-3333')</call>"}
+{"input": "cria apelido mãe pro contato Sônia", "output": "<call>save_contact_alias(alias='mãe', target_name='Sônia')</call>"}
+{"input": "apelida o Bruno como vizinho", "output": "<call>save_contact_alias(alias='vizinho', target_name='Bruno')</call>"}
+{"input": "manda zap pra irmã: já comprei o remédio", "output": "<call>send_whatsapp(recipient='irmã', message='já comprei o remédio')</call>"}
+{"input": "envia no whatsapp pro Rafael: consulta marcada", "output": "<call>send_whatsapp(recipient='Rafael', message='consulta marcada')</call>"}
+{"input": "liga o modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "tira o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "ativa o bluetooth", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desativa o bluetooth", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "liga o roteador", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desliga o hotspot", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "ativa os dados móveis", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desativa o 4g", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "liga o wi-fi", "output": "<call>set_wifi_state(state=True)</call>"}
+{"input": "desliga o wi-fi", "output": "<call>set_wifi_state(state=False)</call>"}
+{"input": "quanto de armazenamento tem livre?", "output": "<call>get_system_info()</call>"}
+{"input": "me fala as configurações do aparelho", "output": "<call>get_system_info()</call>"}
+{"input": "me diz a data e a hora", "output": "<call>get_datetime()</call>"}
+{"input": "que dia é hoje?", "output": "<call>get_datetime()</call>"}
+{"input": "quando é o próximo feriado nacional?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2029", "output": "<call>get_next_holiday(year=2029)</call>"}
+{"input": "quais as notícias de esportes?", "output": "<call>get_news(topic='esportes', limit=5)</call>"}
+{"input": "me dá 4 notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=4)</call>"}
+{"input": "converte 75 dólares pra real", "output": "<call>convert_units(amount=75.0, from_unit='USD', to_unit='BRL')</call>"}
+{"input": "quanto é 200 reais em euros?", "output": "<call>convert_units(amount=200.0, from_unit='BRL', to_unit='EUR')</call>"}
+{"input": "traça rota pra farmácia", "output": "<call>navigate_to(destination='farmácia')</call>"}
+{"input": "me leva até o hospital mais próximo", "output": "<call>navigate_to(destination='hospital mais próximo')</call>"}
+{"input": "toca uma playlist de jazz no spotify", "output": "<call>play_media(query='playlist de jazz', app='spotify')</call>"}
+{"input": "põe um vídeo de meditação no youtube", "output": "<call>play_media(query='vídeo de meditação', app='youtube')</call>"}
+{"input": "lê a tela atual", "output": "<call>read_screen()</call>"}
+{"input": "o que está escrito na tela?", "output": "<call>read_screen()</call>"}
+{"input": "resume as notificações do banco", "output": "<call>summarize_notifications(app_filter='nubank')</call>"}
+{"input": "faz um resumo das notificações", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "pega a lista de compras e envia no zap pra irmã", "output": "<call>get_list(list_name='compras')</call><call>send_whatsapp(recipient='irmã', message='lista de compras')</call>"}
+{"input": "ativa o 4g e traça rota pra farmácia", "output": "<call>set_mobile_data_state(state=True)</call><call>navigate_to(destination='farmácia')</call>"}
+{"input": "põe tomate na lista de compras", "output": "<call>add_list_item(list_name='compras', item='tomate')</call>"}
+{"input": "anota iogurte na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='iogurte')</call>"}
+{"input": "abre minha lista de mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "quero ver a lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "apaga queijo da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='queijo')</call>"}
+{"input": "tira papel higiênico da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='papel higiênico')</call>"}
+{"input": "grava nota de voz sobre a reunião", "output": "<call>save_voice_note(title='reunião', duration=15, text_only=False)</call>"}
+{"input": "salva áudio lembrando de buscar as crianças", "output": "<call>save_voice_note(title='buscar as crianças', duration=15, text_only=False)</call>"}
+{"input": "quais notas de voz ainda não ouvi?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista as notas de voz já checadas", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "confere a nota de voz da reunião", "output": "<call>check_voice_note(title='reunião')</call>"}
+{"input": "marca a nota de voz das crianças como vista", "output": "<call>check_voice_note(title='buscar as crianças')</call>"}
+{"input": "como eu dormi essa semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi meu sono ontem?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "inicia o monitoramento de sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "descarta a última medição de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "esquece a nota da senha do carro", "output": "<call>forget_note(key='senha do carro')</call>"}
+{"input": "apaga a memória do horário da consulta", "output": "<call>forget_note(key='horário da consulta')</call>"}
+{"input": "mostra minhas memórias pessoais", "output": "<call>list_memories(category='pessoal')</call>"}
+{"input": "lista memórias de saúde", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "quando entrar no wifi de casa me lembra de tirar o lixo", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='tirar o lixo')</call>"}
+{"input": "me lembra de mandar o relatório no wifi do trabalho", "output": "<call>remind_on_wifi(ssid='wifi do trabalho', reminder='mandar o relatório')</call>"}
+{"input": "qual o telefone do João?", "output": "<call>get_contact(query='João')</call>"}
+{"input": "busca o contato da Maria", "output": "<call>get_contact(query='Maria')</call>"}
+{"input": "salva contato do Pedro 11 98888-7777", "output": "<call>save_contact(name='Pedro', phone='11 98888-7777')</call>"}
+{"input": "cadastra a Ana com telefone 21 97777-6666", "output": "<call>save_contact(name='Ana', phone='21 97777-6666')</call>"}
+{"input": "cria apelido chefe pro contato Carlos", "output": "<call>save_contact_alias(alias='chefe', target_name='Carlos')</call>"}
+{"input": "apelida a Fernanda como trabalho", "output": "<call>save_contact_alias(alias='trabalho', target_name='Fernanda')</call>"}
+{"input": "manda zap pro João: reunião confirmada", "output": "<call>send_whatsapp(recipient='João', message='reunião confirmada')</call>"}
+{"input": "envia no whatsapp pra mãe: chego atrasado", "output": "<call>send_whatsapp(recipient='mãe', message='chego atrasado')</call>"}
+{"input": "ativa o modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "desativa o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "liga o bt", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desliga o bt", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "ativa o hotspot", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desativa o hotspot", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "liga o 4g", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desliga o 4g", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "liga o wifi", "output": "<call>set_wifi_state(state=True)</call>"}
+{"input": "desliga o wifi", "output": "<call>set_wifi_state(state=False)</call>"}
+{"input": "quais as informações do celular?", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra os dados do sistema", "output": "<call>get_system_info()</call>"}
+{"input": "que horas são agora?", "output": "<call>get_datetime()</call>"}
+{"input": "qual a data de hoje?", "output": "<call>get_datetime()</call>"}
+{"input": "qual o próximo feriado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2027", "output": "<call>get_next_holiday(year=2027)</call>"}
+{"input": "notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá 3 notícias de esportes", "output": "<call>get_news(topic='esportes', limit=3)</call>"}
+{"input": "converte 100 dólares pra real", "output": "<call>convert_units(amount=100.0, from_unit='USD', to_unit='BRL')</call>"}
+{"input": "quanto é 50 euros em reais?", "output": "<call>convert_units(amount=50.0, from_unit='EUR', to_unit='BRL')</call>"}
+{"input": "traça rota pra praia de copacabana", "output": "<call>navigate_to(destination='praia de copacabana')</call>"}
+{"input": "navega até o aeroporto", "output": "<call>navigate_to(destination='aeroporto')</call>"}
+{"input": "toca lo-fi no youtube", "output": "<call>play_media(query='lo-fi', app='youtube')</call>"}
+{"input": "coloca playlist de rock no spotify", "output": "<call>play_media(query='playlist de rock', app='spotify')</call>"}
+{"input": "lê a tela pra mim", "output": "<call>read_screen()</call>"}
+{"input": "o que tá escrito na tela?", "output": "<call>read_screen()</call>"}
+{"input": "resume as notificações do whatsapp", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "resumo das notificações do nubank", "output": "<call>summarize_notifications(app_filter='nubank')</call>"}
+{"input": "pega a lista de mercado e manda no zap pra mãe", "output": "<call>get_list(list_name='mercado')</call><call>send_whatsapp(recipient='mãe', message='lista de mercado')</call>"}
+{"input": "ativa o gps e traça rota pro centro", "output": "<call>set_mobile_data_state(state=True)</call><call>navigate_to(destination='centro')</call>"}
+{"input": "como eu dormi hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono essa semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi nos últimos 7 dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "começa a monitorar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "inicia o monitoramento de sono", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "qual o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "como está o monitoramento de sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "descarta a última sessão de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "descarta a última medição de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "como eu dormi ontem?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono nos últimos dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi essa noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono na última semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "começa a contar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "inicia o monitoramento de sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "como está o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "me diz o status do monitoramento de sono", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "descarta a última sessão de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "descarta a última medição de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "como eu dormi hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono essa semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi nos últimos 7 dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "começa a monitorar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "inicia o monitoramento de sono", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "qual o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "como está o monitoramento de sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "descarta a última sessão de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "descarta a última medição de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "como eu dormi ontem?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono nos últimos dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi essa noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono na última semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "começa a contar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "inicia o monitoramento de sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "como está o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "me diz o status do monitoramento de sono", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "descarta a última sessão de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "descarta a última medição de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "como eu dormi hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono essa semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi nos últimos 7 dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "começa a monitorar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "inicia o monitoramento de sono", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "qual o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "como está o monitoramento de sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "descarta a última sessão de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "descarta a última medição de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "como eu dormi ontem?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono nos últimos dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi essa noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono na última semana?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "começa a contar meu sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "inicia o monitoramento de sono agora", "output": "<call>manage_sleep(action='start_now')</call>"}
+{"input": "como está o status do sono?", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "me diz o status do monitoramento de sono", "output": "<call>manage_sleep(action='status')</call>"}
+{"input": "descarta a última sessão de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "descarta a última medição de sono", "output": "<call>manage_sleep(action='discard_last')</call>"}
+{"input": "confere a nota de voz das compras", "output": "<call>check_voice_note(title='compras')</call>"}
+{"input": "marca a nota de voz reunião como vista", "output": "<call>check_voice_note(title='reunião')</call>"}
+{"input": "dá como checada a nota de voz do remédio", "output": "<call>check_voice_note(title='remédio')</call>"}
+{"input": "verifica a nota de voz ideias", "output": "<call>check_voice_note(title='ideias')</call>"}
+{"input": "checa a nota de voz consulta médica", "output": "<call>check_voice_note(title='consulta médica')</call>"}
+{"input": "confere pra mim a nota de voz do aluguel", "output": "<call>check_voice_note(title='aluguel')</call>"}
+{"input": "marca como lida a nota de voz senha do wifi", "output": "<call>check_voice_note(title='senha do wifi')</call>"}
+{"input": "já ouvi a nota de voz projeto, marca ela", "output": "<call>check_voice_note(title='projeto')</call>"}
+{"input": "dá check na nota de voz lista de mercado", "output": "<call>check_voice_note(title='lista de mercado')</call>"}
+{"input": "confirma a nota de voz buscar as crianças", "output": "<call>check_voice_note(title='buscar as crianças')</call>"}
+{"input": "marca a nota de voz pagar conta como feita", "output": "<call>check_voice_note(title='pagar conta')</call>"}
+{"input": "checa a nota de voz dentista pfv", "output": "<call>check_voice_note(title='dentista')</call>"}
+{"input": "confere a nota de voz da academia", "output": "<call>check_voice_note(title='academia')</call>"}
+{"input": "dá como concluída a nota de voz lavar roupa", "output": "<call>check_voice_note(title='lavar roupa')</call>"}
+{"input": "marca a nota de voz entrevista como vista", "output": "<call>check_voice_note(title='entrevista')</call>"}
+{"input": "verifica a nota de voz viagem", "output": "<call>check_voice_note(title='viagem')</call>"}
+{"input": "confere a nota de voz do aniversário da Ana", "output": "<call>check_voice_note(title='aniversário da Ana')</call>"}
+{"input": "checa a nota de voz mecanico", "output": "<call>check_voice_note(title='mecanico')</call>"}
+{"input": "marca a nota de voz feira como checada", "output": "<call>check_voice_note(title='feira')</call>"}
+{"input": "dá check na nota de voz contas do mês", "output": "<call>check_voice_note(title='contas do mês')</call>"}
+{"input": "confere a nota de voz da reunião de segunda", "output": "<call>check_voice_note(title='reunião de segunda')</call>"}
+{"input": "marca a nota de voz remédio da pressão como lida", "output": "<call>check_voice_note(title='remédio da pressão')</call>"}
+{"input": "checa a nota de voz buscar encomenda", "output": "<call>check_voice_note(title='buscar encomenda')</call>"}
+{"input": "confere a nota de voz do pedido de pizza", "output": "<call>check_voice_note(title='pedido de pizza')</call>"}
+{"input": "dá como vista a nota de voz pagar escola", "output": "<call>check_voice_note(title='pagar escola')</call>"}
+{"input": "marca a nota de voz trocar óleo como feita", "output": "<call>check_voice_note(title='trocar óleo')</call>"}
+{"input": "verifica a nota de voz da consulta de amanhã", "output": "<call>check_voice_note(title='consulta de amanhã')</call>"}
+{"input": "checa a nota de voz comprar presente", "output": "<call>check_voice_note(title='comprar presente')</call>"}
+{"input": "confere a nota de voz do trabalho de faculdade", "output": "<call>check_voice_note(title='trabalho de faculdade')</call>"}
+{"input": "marca a nota de voz ligar pro banco como checada", "output": "<call>check_voice_note(title='ligar pro banco')</call>"}
+{"input": "quais notas de voz pendentes?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra todas as notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem nota de voz pra ouvir?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista minhas notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais áudios ainda não ouvi?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "me mostra todas as notas gravadas", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem alguma nota de voz pendente?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "quero ver o histórico de notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "o que tem de nota de voz nova?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista todos os áudios salvos", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz faltam ouvir?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "abre minhas notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "mostra as notas de voz pendentes pfv", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "quais áudios eu gravei?", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem nota de voz não checada?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "me dá a lista completa de notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz preciso ouvir?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra todas as notas de voz já checadas", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "o que tem pendente nas notas de voz?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista as notas de voz que gravei", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais áudios estão pendentes?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "quero ver todos os áudios", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem nota de voz pra checar?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra o arquivo de notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz ainda estão abertas?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista todas as notas de voz sem filtro", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "o que falta ouvir nas notas de voz?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "me mostra todas as gravações de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz não foram vistas?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "abre a lista de notas de voz completa", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "confere a nota de voz da feira", "output": "<call>check_voice_note(title='feira')</call>"}
+{"input": "marca como vista a nota de voz pagar luz", "output": "<call>check_voice_note(title='pagar luz')</call>"}
+{"input": "dá check na nota de voz buscar o boleto", "output": "<call>check_voice_note(title='buscar o boleto')</call>"}
+{"input": "checa a nota de voz da fisioterapia", "output": "<call>check_voice_note(title='fisioterapia')</call>"}
+{"input": "verifica a nota de voz do churrasco", "output": "<call>check_voice_note(title='churrasco')</call>"}
+{"input": "marca a nota de voz comprar ração como checada", "output": "<call>check_voice_note(title='comprar ração')</call>"}
+{"input": "confere a nota de voz do exame de sangue", "output": "<call>check_voice_note(title='exame de sangue')</call>"}
+{"input": "dá como lida a nota de voz renovar CNH", "output": "<call>check_voice_note(title='renovar CNH')</call>"}
+{"input": "checa a nota de voz da reunião com o cliente", "output": "<call>check_voice_note(title='reunião com o cliente')</call>"}
+{"input": "marca a nota de voz pagar internet como feita", "output": "<call>check_voice_note(title='pagar internet')</call>"}
+{"input": "confere a nota de voz buscar o filho na escola", "output": "<call>check_voice_note(title='buscar o filho na escola')</call>"}
+{"input": "verifica a nota de voz do aniversário do Pedro", "output": "<call>check_voice_note(title='aniversário do Pedro')</call>"}
+{"input": "dá check na nota de voz comprar pão", "output": "<call>check_voice_note(title='comprar pão')</call>"}
+{"input": "checa a nota de voz da entrevista de emprego", "output": "<call>check_voice_note(title='entrevista de emprego')</call>"}
+{"input": "marca a nota de voz pagar o condomínio como vista", "output": "<call>check_voice_note(title='pagar o condomínio')</call>"}
+{"input": "confere a nota de voz do veterinário", "output": "<call>check_voice_note(title='veterinário')</call>"}
+{"input": "dá como checada a nota de voz buscar o carro na revisão", "output": "<call>check_voice_note(title='buscar o carro na revisão')</call>"}
+{"input": "verifica a nota de voz da prova de matemática", "output": "<call>check_voice_note(title='prova de matemática')</call>"}
+{"input": "marca a nota de voz ligar pro encanador como lida", "output": "<call>check_voice_note(title='ligar pro encanador')</call>"}
+{"input": "checa a nota de voz comprar remédio pra tosse", "output": "<call>check_voice_note(title='comprar remédio pra tosse')</call>"}
+{"input": "confere a nota de voz do pagamento do IPTU", "output": "<call>check_voice_note(title='pagamento do IPTU')</call>"}
+{"input": "dá check na nota de voz buscar a encomenda nos correios", "output": "<call>check_voice_note(title='buscar a encomenda nos correios')</call>"}
+{"input": "marca a nota de voz da consulta com o cardiologista como checada", "output": "<call>check_voice_note(title='consulta com o cardiologista')</call>"}
+{"input": "verifica a nota de voz comprar presente pra mãe", "output": "<call>check_voice_note(title='comprar presente pra mãe')</call>"}
+{"input": "checa a nota de voz do almoço de domingo", "output": "<call>check_voice_note(title='almoço de domingo')</call>"}
+{"input": "dá como vista a nota de voz pagar a fatura do cartão", "output": "<call>check_voice_note(title='pagar a fatura do cartão')</call>"}
+{"input": "marca a nota de voz lavar o carro como feita", "output": "<call>check_voice_note(title='lavar o carro')</call>"}
+{"input": "confere a nota de voz da reunião de pais", "output": "<call>check_voice_note(title='reunião de pais')</call>"}
+{"input": "verifica a nota de voz buscar o gás", "output": "<call>check_voice_note(title='buscar o gás')</call>"}
+{"input": "checa a nota de voz do pedido de farmácia", "output": "<call>check_voice_note(title='pedido de farmácia')</call>"}
+{"input": "quais notas de voz estão abertas?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra o histórico completo de áudios", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem áudio pendente pra mim?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista todas as gravações", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "o que ainda preciso ouvir de nota de voz?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "me mostra todos os áudios que gravei", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz não foram checadas?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "abre o acervo de notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem nota de voz nova?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "quero a lista de todos os áudios", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais áudios estão pendentes de checagem?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra todas as notas de voz do app", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "o que tem de áudio não visto?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista as notas de voz completas", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz preciso checar?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "me dá todas as notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem alguma nota de voz aberta?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra o catálogo de áudios", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais áudios não foram ouvidos ainda?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista tudo de nota de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "o que falta checar nas notas de voz?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "abre a lista de áudios salvos", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz estão pendentes?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "me mostra o arquivo completo de notas de voz", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "tem áudio não checado?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "quero ver todas as notas de voz gravadas", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "quais notas de voz ainda não vi?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "lista todas as notas de voz do histórico", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "o que tem de nota de voz pendente?", "output": "<call>get_voice_notes(only_pending=True)</call>"}
+{"input": "mostra todos os áudios sem filtro", "output": "<call>get_voice_notes(only_pending=False)</call>"}
+{"input": "esquece a nota da senha do wifi", "output": "<call>forget_note(key='senha do wifi')</call>"}
+{"input": "apaga a memória da reunião de ontem", "output": "<call>forget_note(key='reunião de ontem')</call>"}
+{"input": "esquece o código do portão", "output": "<call>forget_note(key='código do portão')</call>"}
+{"input": "apaga a nota da senha do cartão", "output": "<call>forget_note(key='senha do cartão')</call>"}
+{"input": "esquece o horário da consulta", "output": "<call>forget_note(key='horário da consulta')</call>"}
+{"input": "remove a memória do aniversário da Ana", "output": "<call>forget_note(key='aniversário da Ana')</call>"}
+{"input": "qual o telefone da mãe?", "output": "<call>get_contact(query='mãe')</call>"}
+{"input": "busca contato do João", "output": "<call>get_contact(query='João')</call>"}
+{"input": "me passa o número da Ana", "output": "<call>get_contact(query='Ana')</call>"}
+{"input": "acha o contato do dentista", "output": "<call>get_contact(query='dentista')</call>"}
+{"input": "qual o telefone do oftalmologista?", "output": "<call>get_contact(query='oftalmologista')</call>"}
+{"input": "busca o contato da Maria", "output": "<call>get_contact(query='Maria')</call>"}
+{"input": "que horas são?", "output": "<call>get_datetime()</call>"}
+{"input": "qual a data de hoje?", "output": "<call>get_datetime()</call>"}
+{"input": "me diz a hora", "output": "<call>get_datetime()</call>"}
+{"input": "hoje é que dia?", "output": "<call>get_datetime()</call>"}
+{"input": "que horas são agora?", "output": "<call>get_datetime()</call>"}
+{"input": "me diz a data e a hora", "output": "<call>get_datetime()</call>"}
+{"input": "lista minhas memórias de saúde", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "mostra todas as memórias", "output": "<call>list_memories(category='')</call>"}
+{"input": "mostra memórias de trabalho", "output": "<call>list_memories(category='trabalho')</call>"}
+{"input": "lista memórias pessoais", "output": "<call>list_memories(category='pessoal')</call>"}
+{"input": "mostra as memórias de trabalho", "output": "<call>list_memories(category='trabalho')</call>"}
+{"input": "lista memórias de saúde", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "quando eu conectar no wifi de casa me lembra de tirar o lixo", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='tirar o lixo')</call>"}
+{"input": "me avisa quando entrar no wifi do trabalho pra mandar o relatório", "output": "<call>remind_on_wifi(ssid='wifi do trabalho', reminder='mandar o relatório')</call>"}
+{"input": "quando pegar o wifi da faculdade me lembra de estudar cálculo", "output": "<call>remind_on_wifi(ssid='wifi da faculdade', reminder='estudar cálculo')</call>"}
+{"input": "me lembra de comprar pão quando conectar no wifi do mercado", "output": "<call>remind_on_wifi(ssid='wifi do mercado', reminder='comprar pão')</call>"}
+{"input": "quando conectar no wifi de casa me lembra de tomar o remédio", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='tomar o remédio')</call>"}
+{"input": "me avisa no wifi do escritório pra responder os e-mails", "output": "<call>remind_on_wifi(ssid='wifi do escritório', reminder='responder os e-mails')</call>"}
+{"input": "salva contato da Maria 11 99999-8888", "output": "<call>save_contact(name='Maria', phone='11 99999-8888')</call>"}
+{"input": "adiciona o Pedro com telefone 21 98888-7777", "output": "<call>save_contact(name='Pedro', phone='21 98888-7777')</call>"}
+{"input": "cadastra contato do Lucas 31 97777-6666", "output": "<call>save_contact(name='Lucas', phone='31 97777-6666')</call>"}
+{"input": "salva a Julia com telefone 41 96666-5555", "output": "<call>save_contact(name='Julia', phone='41 96666-5555')</call>"}
+{"input": "cadastra contato da Carla 51 95555-4444", "output": "<call>save_contact(name='Carla', phone='51 95555-4444')</call>"}
+{"input": "salva o Rafael com telefone 61 94444-3333", "output": "<call>save_contact(name='Rafael', phone='61 94444-3333')</call>"}
+{"input": "ativa modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "desliga o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "desativa o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "liga modo avião agora", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "tira o modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "ativa o modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "liga o bt", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desliga o bluetooth pfv", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "desliga o bt", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "ativa bluetooth", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "ativa o bluetooth", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desativa o bluetooth", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "liga o hotspot", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desativa o roteador", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "desliga o hotspot", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "ativa o roteador wifi", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "liga o roteador", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desativa o hotspot", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "liga o 4g", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desliga os dados móveis", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "desativa o 4g", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "liga os dados móveis", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "ativa os dados móveis", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desativa os dados móveis", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "pode apagar da memória o código do alarme", "output": "<call>forget_note(key='código do alarme')</call>"}
+{"input": "não precisa lembrar mais da senha do cofre", "output": "<call>forget_note(key='senha do cofre')</call>"}
+{"input": "esquece aquela nota sobre o horário do dentista", "output": "<call>forget_note(key='horário do dentista')</call>"}
+{"input": "tira da memória o número da conta de luz", "output": "<call>forget_note(key='número da conta de luz')</call>"}
+{"input": "apaga o lembrete da senha do banco", "output": "<call>forget_note(key='senha do banco')</call>"}
+{"input": "pode esquecer a anotação do endereço da escola", "output": "<call>forget_note(key='endereço da escola')</call>"}
+{"input": "preciso do telefone do mecânico", "output": "<call>get_contact(query='mecânico')</call>"}
+{"input": "me encontra o contato do Paulo", "output": "<call>get_contact(query='Paulo')</call>"}
+{"input": "qual é o número do pediatra?", "output": "<call>get_contact(query='pediatra')</call>"}
+{"input": "procura aí o contato da Juliana", "output": "<call>get_contact(query='Juliana')</call>"}
+{"input": "me passa o celular do meu irmão", "output": "<call>get_contact(query='irmão')</call>"}
+{"input": "acha o telefone da escola do meu filho", "output": "<call>get_contact(query='escola do meu filho')</call>"}
+{"input": "me fala que horas são nesse momento", "output": "<call>get_datetime()</call>"}
+{"input": "preciso saber a data de hoje", "output": "<call>get_datetime()</call>"}
+{"input": "qual é o dia de hoje?", "output": "<call>get_datetime()</call>"}
+{"input": "me informa a hora atual", "output": "<call>get_datetime()</call>"}
+{"input": "em que dia da semana estamos?", "output": "<call>get_datetime()</call>"}
+{"input": "me diz que horas e que dia é hoje", "output": "<call>get_datetime()</call>"}
+{"input": "quais memórias você tem sobre saúde?", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "me mostra tudo que lembra sobre trabalho", "output": "<call>list_memories(category='trabalho')</call>"}
+{"input": "quero ver as memórias da categoria pessoal", "output": "<call>list_memories(category='pessoal')</call>"}
+{"input": "lista todas as memórias sem filtro", "output": "<call>list_memories(category='')</call>"}
+{"input": "o que você guardou sobre minha saúde?", "output": "<call>list_memories(category='saude')</call>"}
+{"input": "me mostra as memórias pessoais que você tem", "output": "<call>list_memories(category='pessoal')</call>"}
+{"input": "assim que conectar no wifi de casa, me lembra de colocar o lixo pra fora", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='colocar o lixo pra fora')</call>"}
+{"input": "quando o celular pegar o wifi do trabalho, me avisa pra enviar o relatório", "output": "<call>remind_on_wifi(ssid='wifi do trabalho', reminder='enviar o relatório')</call>"}
+{"input": "se conectar no wifi da academia, me lembra de beber água", "output": "<call>remind_on_wifi(ssid='wifi da academia', reminder='beber água')</call>"}
+{"input": "ao entrar no wifi do shopping, me lembra de passar na farmácia", "output": "<call>remind_on_wifi(ssid='wifi do shopping', reminder='passar na farmácia')</call>"}
+{"input": "quando pegar o wifi de casa, me lembra de estudar inglês", "output": "<call>remind_on_wifi(ssid='wifi de casa', reminder='estudar inglês')</call>"}
+{"input": "no wifi do escritório, me avisa pra responder o cliente", "output": "<call>remind_on_wifi(ssid='wifi do escritório', reminder='responder o cliente')</call>"}
+{"input": "guarda o contato da Beatriz, telefone 11 91234-5678", "output": "<call>save_contact(name='Beatriz', phone='11 91234-5678')</call>"}
+{"input": "adiciona na agenda o Thiago com número 21 92345-6789", "output": "<call>save_contact(name='Thiago', phone='21 92345-6789')</call>"}
+{"input": "cadastra o Rodrigo, celular 31 93456-7890", "output": "<call>save_contact(name='Rodrigo', phone='31 93456-7890')</call>"}
+{"input": "salva a Camila com o telefone 41 94567-8901", "output": "<call>save_contact(name='Camila', phone='41 94567-8901')</call>"}
+{"input": "põe o Fernando na agenda, número 51 95678-9012", "output": "<call>save_contact(name='Fernando', phone='51 95678-9012')</call>"}
+{"input": "registra a Patrícia, telefone 61 96789-0123", "output": "<call>save_contact(name='Patrícia', phone='61 96789-0123')</call>"}
+{"input": "pode ativar o modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "desativa o modo avião aí", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "coloca o celular em modo avião", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "tira o celular do modo avião", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "liga o modo avião que vou viajar", "output": "<call>set_airplane_mode(state=True)</call>"}
+{"input": "pode desligar o modo avião agora", "output": "<call>set_airplane_mode(state=False)</call>"}
+{"input": "pode ligar o bluetooth", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desliga o bluetooth que tá gastando bateria", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "conecta o bt aí", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "pode desativar o bt", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "liga o bluetooth pra conectar o fone", "output": "<call>set_bluetooth_state(state=True)</call>"}
+{"input": "desativa o bluetooth por enquanto", "output": "<call>set_bluetooth_state(state=False)</call>"}
+{"input": "pode ligar o ponto de acesso", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desativa o compartilhamento de internet", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "liga o hotspot que preciso usar no notebook", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "desliga o ponto de acesso", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "ativa o roteador do celular", "output": "<call>set_hotspot_state(state=True)</call>"}
+{"input": "pode desligar o hotspot agora", "output": "<call>set_hotspot_state(state=False)</call>"}
+{"input": "pode ligar os dados móveis", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desativa o 4g que quero economizar", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "ativa o 4g aí", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "pode desligar os dados móveis", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "liga a internet móvel", "output": "<call>set_mobile_data_state(state=True)</call>"}
+{"input": "desliga a internet móvel por enquanto", "output": "<call>set_mobile_data_state(state=False)</call>"}
+{"input": "adiciona leite na lista de compras", "output": "<call>add_list_item(list_name='compras', item='leite')</call>"}
+{"input": "bota pão na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='pão')</call>"}
+{"input": "põe feijão na lista de compras", "output": "<call>add_list_item(list_name='compras', item='feijão')</call>"}
+{"input": "anota pilha na lista de compras", "output": "<call>add_list_item(list_name='compras', item='pilha')</call>"}
+{"input": "coloca açúcar na lista do mercado", "output": "<call>add_list_item(list_name='mercado', item='açúcar')</call>"}
+{"input": "o que tem na minha lista de mercado?", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me mostra a lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "abre a lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "quero ver minha lista de afazeres", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "abre a lista do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá 3 notícias de esportes", "output": "<call>get_news(topic='esportes', limit=3)</call>"}
+{"input": "quais as notícias de economia?", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "me dá 2 notícias gerais", "output": "<call>get_news(topic='geral', limit=2)</call>"}
+{"input": "quais as notícias de esportes?", "output": "<call>get_news(topic='esportes', limit=5)</call>"}
+{"input": "qual o próximo feriado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "próximo feriado de 2027", "output": "<call>get_next_holiday(year=2027)</call>"}
+{"input": "me fala o feriado de 2028", "output": "<call>get_next_holiday(year=2028)</call>"}
+{"input": "qual feriado vem agora?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "quando é o próximo feriado nacional?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "como foi meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "relatório de sono da semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi ontem?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono nos últimos dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi essa noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "quais as informações do sistema?", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra os dados do celular", "output": "<call>get_system_info()</call>"}
+{"input": "me dá um resumo do sistema", "output": "<call>get_system_info()</call>"}
+{"input": "quanta memória tem no celular?", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de armazenamento tem livre?", "output": "<call>get_system_info()</call>"}
+{"input": "traça rota pra praia de copacabana", "output": "<call>navigate_to(destination='praia de copacabana')</call>"}
+{"input": "navega até o aeroporto", "output": "<call>navigate_to(destination='aeroporto')</call>"}
+{"input": "me leva até a farmácia mais próxima", "output": "<call>navigate_to(destination='farmácia mais próxima')</call>"}
+{"input": "rota pra casa da minha mãe", "output": "<call>navigate_to(destination='casa da minha mãe')</call>"}
+{"input": "traça rota pra farmácia", "output": "<call>navigate_to(destination='farmácia')</call>"}
+{"input": "toca lo-fi no youtube", "output": "<call>play_media(query='lo-fi', app='youtube')</call>"}
+{"input": "coloca playlist de rock no spotify", "output": "<call>play_media(query='playlist de rock', app='spotify')</call>"}
+{"input": "toca música relaxante no spotify", "output": "<call>play_media(query='música relaxante', app='spotify')</call>"}
+{"input": "põe um vídeo de receita no youtube", "output": "<call>play_media(query='vídeo de receita', app='youtube')</call>"}
+{"input": "toca uma playlist de jazz no spotify", "output": "<call>play_media(query='playlist de jazz', app='spotify')</call>"}
+{"input": "lê a tela pra mim", "output": "<call>read_screen()</call>"}
+{"input": "o que tá escrito na tela?", "output": "<call>read_screen()</call>"}
+{"input": "o que tem na tela agora?", "output": "<call>read_screen()</call>"}
+{"input": "lê o que tá aparecendo", "output": "<call>read_screen()</call>"}
+{"input": "tira ovos da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='ovos')</call>"}
+{"input": "remove arroz da lista de mercado pfv", "output": "<call>remove_list_item(list_name='mercado', item='arroz')</call>"}
+{"input": "apaga café da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='café')</call>"}
+{"input": "tira detergente da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='detergente')</call>"}
+{"input": "cria apelido chefe pro contato Carlos", "output": "<call>save_contact_alias(alias='chefe', target_name='Carlos')</call>"}
+{"input": "apelida a Ana como irmã", "output": "<call>save_contact_alias(alias='irmã', target_name='Ana')</call>"}
+{"input": "apelida o Roberto como pai", "output": "<call>save_contact_alias(alias='pai', target_name='Roberto')</call>"}
+{"input": "cria apelido trabalho pro contato Fernanda", "output": "<call>save_contact_alias(alias='trabalho', target_name='Fernanda')</call>"}
+{"input": "salva nota de voz ideia de projeto", "output": "<call>save_voice_note(title='ideia de projeto', duration=15, text_only=False)</call>"}
+{"input": "grava um áudio lembrete de reunião amanhã", "output": "<call>save_voice_note(title='lembrete de reunião amanhã', duration=15, text_only=False)</call>"}
+{"input": "grava nota de voz sobre a consulta", "output": "<call>save_voice_note(title='consulta', duration=15, text_only=False)</call>"}
+{"input": "cria áudio lembrando de pagar o aluguel", "output": "<call>save_voice_note(title='pagar o aluguel', duration=15, text_only=False)</call>"}
+{"input": "manda zap pra mãe dizendo que chego atrasado", "output": "<call>send_whatsapp(recipient='mãe', message='chego atrasado')</call>"}
+{"input": "envia no whatsapp pro João: reunião confirmada", "output": "<call>send_whatsapp(recipient='João', message='reunião confirmada')</call>"}
+{"input": "manda no zap pro pai: já estou chegando", "output": "<call>send_whatsapp(recipient='pai', message='já estou chegando')</call>"}
+{"input": "envia whatsapp pra Ana perguntando se tá tudo bem", "output": "<call>send_whatsapp(recipient='Ana', message='tá tudo bem?')</call>"}
+{"input": "resume as notificações do whatsapp", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "resumo das notificações do nubank", "output": "<call>summarize_notifications(app_filter='nubank')</call>"}
+{"input": "resume minhas notificações", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "o que chegou de notificação no whatsapp?", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "faz um resumo do que chegou de notificação", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "o que apareceu de novo nas notificações?", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "resume as notificações do instagram", "output": "<call>summarize_notifications(app_filter='instagram')</call>"}
+{"input": "me dá um resumo das notificações do gmail", "output": "<call>summarize_notifications(app_filter='gmail')</call>"}
+{"input": "o que tem de notificação do whatsapp?", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "resume o que chegou no telegram", "output": "<call>summarize_notifications(app_filter='telegram')</call>"}
+{"input": "quais notificações do nubank chegaram?", "output": "<call>summarize_notifications(app_filter='nubank')</call>"}
+{"input": "faz um resumo das notificações do banco inter", "output": "<call>summarize_notifications(app_filter='banco inter')</call>"}
+{"input": "o que chegou de notificação no uber?", "output": "<call>summarize_notifications(app_filter='uber')</call>"}
+{"input": "resume as notificações do ifood", "output": "<call>summarize_notifications(app_filter='ifood')</call>"}
+{"input": "me mostra o resumo de todas as notificações", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "o que tem de novo no whatsapp?", "output": "<call>summarize_notifications(app_filter='whatsapp')</call>"}
+{"input": "resume as notificações do facebook", "output": "<call>summarize_notifications(app_filter='facebook')</call>"}
+{"input": "quais notificações do mercadolivre chegaram?", "output": "<call>summarize_notifications(app_filter='mercadolivre')</call>"}
+{"input": "faz um resumo das notificações do netflix", "output": "<call>summarize_notifications(app_filter='netflix')</call>"}
+{"input": "o que apareceu de notificação no spotify?", "output": "<call>summarize_notifications(app_filter='spotify')</call>"}
+{"input": "resume as notificações do correio", "output": "<call>summarize_notifications(app_filter='correio')</call>"}
+{"input": "manda mensagem no zap pra Maria: bom dia", "output": "<call>send_whatsapp(recipient='Maria', message='bom dia')</call>"}
+{"input": "envia whatsapp pro Carlos: reunião às 3", "output": "<call>send_whatsapp(recipient='Carlos', message='reunião às 3')</call>"}
+{"input": "manda no zap pra irmã: já cheguei em casa", "output": "<call>send_whatsapp(recipient='irmã', message='já cheguei em casa')</call>"}
+{"input": "envia no whatsapp pro Pedro: parabéns pelo aniversário", "output": "<call>send_whatsapp(recipient='Pedro', message='parabéns pelo aniversário')</call>"}
+{"input": "manda um zap pro chefe avisando que tô doente", "output": "<call>send_whatsapp(recipient='chefe', message='tô doente hoje')</call>"}
+{"input": "envia whatsapp pra mãe: almoço no domingo?", "output": "<call>send_whatsapp(recipient='mãe', message='almoço no domingo?')</call>"}
+{"input": "manda no zap pro João: obrigado pela ajuda", "output": "<call>send_whatsapp(recipient='João', message='obrigado pela ajuda')</call>"}
+{"input": "envia mensagem no whatsapp pra Ana: tá tudo bem?", "output": "<call>send_whatsapp(recipient='Ana', message='tá tudo bem?')</call>"}
+{"input": "manda zap pro vizinho: chegou encomenda pra você", "output": "<call>send_whatsapp(recipient='vizinho', message='chegou encomenda pra você')</call>"}
+{"input": "envia no zap pra esposa: chego às 7", "output": "<call>send_whatsapp(recipient='esposa', message='chego às 7')</call>"}
+{"input": "manda mensagem pro Lucas no whatsapp: bora jogar?", "output": "<call>send_whatsapp(recipient='Lucas', message='bora jogar?')</call>"}
+{"input": "envia whatsapp pra Fernanda: reunião cancelada", "output": "<call>send_whatsapp(recipient='Fernanda', message='reunião cancelada')</call>"}
+{"input": "manda no zap pro pai: feliz dia dos pais", "output": "<call>send_whatsapp(recipient='pai', message='feliz dia dos pais')</call>"}
+{"input": "envia no whatsapp pro Rafael: consulta marcada pra sexta", "output": "<call>send_whatsapp(recipient='Rafael', message='consulta marcada pra sexta')</call>"}
+{"input": "manda zap pra Carla: já paguei o boleto", "output": "<call>send_whatsapp(recipient='Carla', message='já paguei o boleto')</call>"}
+{"input": "envia mensagem no zap pro Bruno: tô chegando", "output": "<call>send_whatsapp(recipient='Bruno', message='tô chegando')</call>"}
+{"input": "grava uma nota de voz sobre a lista de compras", "output": "<call>save_voice_note(title='lista de compras', duration=15, text_only=False)</call>"}
+{"input": "salva áudio lembrando de ligar pro dentista", "output": "<call>save_voice_note(title='ligar pro dentista', duration=15, text_only=False)</call>"}
+{"input": "cria nota de voz sobre a ideia do app", "output": "<call>save_voice_note(title='ideia do app', duration=15, text_only=False)</call>"}
+{"input": "grava lembrete de voz pra pagar a conta de luz", "output": "<call>save_voice_note(title='pagar a conta de luz', duration=15, text_only=False)</call>"}
+{"input": "salva uma nota de voz sobre a reunião de amanhã", "output": "<call>save_voice_note(title='reunião de amanhã', duration=15, text_only=False)</call>"}
+{"input": "grava áudio lembrando de buscar as crianças", "output": "<call>save_voice_note(title='buscar as crianças', duration=15, text_only=False)</call>"}
+{"input": "cria nota de voz sobre o projeto novo", "output": "<call>save_voice_note(title='projeto novo', duration=15, text_only=False)</call>"}
+{"input": "grava lembrete de voz pra tomar o remédio", "output": "<call>save_voice_note(title='tomar o remédio', duration=15, text_only=False)</call>"}
+{"input": "salva áudio sobre a consulta médica", "output": "<call>save_voice_note(title='consulta médica', duration=15, text_only=False)</call>"}
+{"input": "grava nota de voz lembrando de renovar o seguro", "output": "<call>save_voice_note(title='renovar o seguro', duration=15, text_only=False)</call>"}
+{"input": "cria áudio lembrando de comprar presente pra mãe", "output": "<call>save_voice_note(title='comprar presente pra mãe', duration=15, text_only=False)</call>"}
+{"input": "grava uma nota de voz sobre a viagem", "output": "<call>save_voice_note(title='viagem', duration=15, text_only=False)</call>"}
+{"input": "salva lembrete de voz pra pagar o aluguel", "output": "<call>save_voice_note(title='pagar o aluguel', duration=15, text_only=False)</call>"}
+{"input": "grava áudio sobre a ideia de negócio", "output": "<call>save_voice_note(title='ideia de negócio', duration=15, text_only=False)</call>"}
+{"input": "cria nota de voz lembrando de estudar pra prova", "output": "<call>save_voice_note(title='estudar pra prova', duration=15, text_only=False)</call>"}
+{"input": "grava lembrete de voz pra ligar pro banco", "output": "<call>save_voice_note(title='ligar pro banco', duration=15, text_only=False)</call>"}
+{"input": "apelida o Carlos como chefe", "output": "<call>save_contact_alias(alias='chefe', target_name='Carlos')</call>"}
+{"input": "cria o apelido mãe pro contato Sônia", "output": "<call>save_contact_alias(alias='mãe', target_name='Sônia')</call>"}
+{"input": "apelida a Ana como irmã", "output": "<call>save_contact_alias(alias='irmã', target_name='Ana')</call>"}
+{"input": "cria apelido pai pro contato Roberto", "output": "<call>save_contact_alias(alias='pai', target_name='Roberto')</call>"}
+{"input": "apelida o Bruno como vizinho", "output": "<call>save_contact_alias(alias='vizinho', target_name='Bruno')</call>"}
+{"input": "cria apelido trabalho pra Fernanda", "output": "<call>save_contact_alias(alias='trabalho', target_name='Fernanda')</call>"}
+{"input": "apelida o Pedro como primo", "output": "<call>save_contact_alias(alias='primo', target_name='Pedro')</call>"}
+{"input": "cria o apelido esposa pro contato Juliana", "output": "<call>save_contact_alias(alias='esposa', target_name='Juliana')</call>"}
+{"input": "apelida o Lucas como melhor amigo", "output": "<call>save_contact_alias(alias='melhor amigo', target_name='Lucas')</call>"}
+{"input": "cria apelido dentista pro contato Marcos", "output": "<call>save_contact_alias(alias='dentista', target_name='Marcos')</call>"}
+{"input": "apelida a Carla como comadre", "output": "<call>save_contact_alias(alias='comadre', target_name='Carla')</call>"}
+{"input": "cria apelido mecânico pro contato Paulo", "output": "<call>save_contact_alias(alias='mecânico', target_name='Paulo')</call>"}
+{"input": "apelida o Rafael como cunhado", "output": "<call>save_contact_alias(alias='cunhado', target_name='Rafael')</call>"}
+{"input": "cria apelido médico pro contato Dr. Silva", "output": "<call>save_contact_alias(alias='médico', target_name='Dr. Silva')</call>"}
+{"input": "apelida a Beatriz como afilhada", "output": "<call>save_contact_alias(alias='afilhada', target_name='Beatriz')</call>"}
+{"input": "cria apelido academia pro contato Thiago", "output": "<call>save_contact_alias(alias='academia', target_name='Thiago')</call>"}
+{"input": "me dá um resumo do que chegou no celular", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "tem notificação nova de algum app?", "output": "<call>summarize_notifications(app_filter='')</call>"}
+{"input": "resume as notificações do twitter", "output": "<call>summarize_notifications(app_filter='twitter')</call>"}
+{"input": "o que chegou no outlook?", "output": "<call>summarize_notifications(app_filter='outlook')</call>"}
+{"input": "faz um resumo das notificações do picpay", "output": "<call>summarize_notifications(app_filter='picpay')</call>"}
+{"input": "quais notificações do caixa tem chegaram?", "output": "<call>summarize_notifications(app_filter='caixa tem')</call>"}
+{"input": "resume o que apareceu no tiktok", "output": "<call>summarize_notifications(app_filter='tiktok')</call>"}
+{"input": "o que tem de notificação no linkedin?", "output": "<call>summarize_notifications(app_filter='linkedin')</call>"}
+{"input": "faz um resumo das notificações do 99", "output": "<call>summarize_notifications(app_filter='99')</call>"}
+{"input": "quais notificações do rappi chegaram?", "output": "<call>summarize_notifications(app_filter='rappi')</call>"}
+{"input": "resume as notificações do banco do brasil", "output": "<call>summarize_notifications(app_filter='banco do brasil')</call>"}
+{"input": "o que chegou de notificação no itaú?", "output": "<call>summarize_notifications(app_filter='itaú')</call>"}
+{"input": "faz um resumo das notificações do santander", "output": "<call>summarize_notifications(app_filter='santander')</call>"}
+{"input": "quais notificações da amazon chegaram?", "output": "<call>summarize_notifications(app_filter='amazon')</call>"}
+{"input": "resume o que tem no shopee", "output": "<call>summarize_notifications(app_filter='shopee')</call>"}
+{"input": "o que apareceu de notificação no shein?", "output": "<call>summarize_notifications(app_filter='shein')</call>"}
+{"input": "me dá o resumo das notificações do duolingo", "output": "<call>summarize_notifications(app_filter='duolingo')</call>"}
+{"input": "manda no zap pra esposa: tô saindo do trabalho", "output": "<call>send_whatsapp(recipient='esposa', message='tô saindo do trabalho')</call>"}
+{"input": "envia whatsapp pro primo: vamos no churrasco?", "output": "<call>send_whatsapp(recipient='primo', message='vamos no churrasco?')</call>"}
+{"input": "manda mensagem no zap pro chefe: pedido enviado", "output": "<call>send_whatsapp(recipient='chefe', message='pedido enviado')</call>"}
+{"input": "envia no whatsapp pra comadre: obrigada pelo presente", "output": "<call>send_whatsapp(recipient='comadre', message='obrigada pelo presente')</call>"}
+{"input": "manda zap pro mecânico: o carro tá pronto?", "output": "<call>send_whatsapp(recipient='mecânico', message='o carro tá pronto?')</call>"}
+{"input": "envia whatsapp pra Juliana: lembrando da consulta amanhã", "output": "<call>send_whatsapp(recipient='Juliana', message='lembrando da consulta amanhã')</call>"}
+{"input": "manda no zap pro cunhado: jogo hoje às 8", "output": "<call>send_whatsapp(recipient='cunhado', message='jogo hoje às 8')</call>"}
+{"input": "envia mensagem no whatsapp pro Dr. Silva: exame pronto", "output": "<call>send_whatsapp(recipient='Dr. Silva', message='exame pronto')</call>"}
+{"input": "manda zap pra afilhada: parabéns pela formatura", "output": "<call>send_whatsapp(recipient='afilhada', message='parabéns pela formatura')</call>"}
+{"input": "envia no zap pro Thiago: treino cancelado hoje", "output": "<call>send_whatsapp(recipient='Thiago', message='treino cancelado hoje')</call>"}
+{"input": "manda mensagem pro Marcos no whatsapp: tá doendo ainda", "output": "<call>send_whatsapp(recipient='Marcos', message='tá doendo ainda')</call>"}
+{"input": "envia whatsapp pra Sônia: chego pro almoço", "output": "<call>send_whatsapp(recipient='Sônia', message='chego pro almoço')</call>"}
+{"input": "manda no zap pro Roberto: obrigado pelo apoio", "output": "<call>send_whatsapp(recipient='Roberto', message='obrigado pelo apoio')</call>"}
+{"input": "envia no whatsapp pra Beatriz: já mandei o documento", "output": "<call>send_whatsapp(recipient='Beatriz', message='já mandei o documento')</call>"}
+{"input": "manda zap pro Lucas: te espero no shopping", "output": "<call>send_whatsapp(recipient='Lucas', message='te espero no shopping')</call>"}
+{"input": "envia mensagem no zap pro Bruno: chave debaixo do tapete", "output": "<call>send_whatsapp(recipient='Bruno', message='chave debaixo do tapete')</call>"}
+{"input": "grava nota de voz sobre o que preciso comprar na farmácia", "output": "<call>save_voice_note(title='comprar na farmácia', duration=15, text_only=False)</call>"}
+{"input": "salva áudio lembrando de mandar o currículo", "output": "<call>save_voice_note(title='mandar o currículo', duration=15, text_only=False)</call>"}
+{"input": "cria nota de voz sobre a reunião com o cliente", "output": "<call>save_voice_note(title='reunião com o cliente', duration=15, text_only=False)</call>"}
+{"input": "grava lembrete de voz pra buscar o gás", "output": "<call>save_voice_note(title='buscar o gás', duration=15, text_only=False)</call>"}
+{"input": "salva uma nota de voz sobre o remédio do cachorro", "output": "<call>save_voice_note(title='remédio do cachorro', duration=15, text_only=False)</call>"}
+{"input": "grava áudio lembrando de pagar a escola", "output": "<call>save_voice_note(title='pagar a escola', duration=15, text_only=False)</call>"}
+{"input": "cria nota de voz sobre a ideia do projeto novo", "output": "<call>save_voice_note(title='ideia do projeto novo', duration=15, text_only=False)</call>"}
+{"input": "grava lembrete de voz pra marcar a fisioterapia", "output": "<call>save_voice_note(title='marcar a fisioterapia', duration=15, text_only=False)</call>"}
+{"input": "salva áudio sobre o aniversário do Pedro", "output": "<call>save_voice_note(title='aniversário do Pedro', duration=15, text_only=False)</call>"}
+{"input": "grava nota de voz lembrando de trocar o óleo", "output": "<call>save_voice_note(title='trocar o óleo', duration=15, text_only=False)</call>"}
+{"input": "cria áudio lembrando de buscar a encomenda", "output": "<call>save_voice_note(title='buscar a encomenda', duration=15, text_only=False)</call>"}
+{"input": "grava uma nota de voz sobre a prova de matemática", "output": "<call>save_voice_note(title='prova de matemática', duration=15, text_only=False)</call>"}
+{"input": "salva lembrete de voz pra pagar o condomínio", "output": "<call>save_voice_note(title='pagar o condomínio', duration=15, text_only=False)</call>"}
+{"input": "grava áudio sobre a ideia de viagem", "output": "<call>save_voice_note(title='ideia de viagem', duration=15, text_only=False)</call>"}
+{"input": "cria nota de voz lembrando de estudar inglês", "output": "<call>save_voice_note(title='estudar inglês', duration=15, text_only=False)</call>"}
+{"input": "grava lembrete de voz pra ligar pro encanador", "output": "<call>save_voice_note(title='ligar pro encanador', duration=15, text_only=False)</call>"}
+{"input": "apelida o Marcos como dentista", "output": "<call>save_contact_alias(alias='dentista', target_name='Marcos')</call>"}
+{"input": "cria o apelido irmão pro contato Paulo", "output": "<call>save_contact_alias(alias='irmão', target_name='Paulo')</call>"}
+{"input": "apelida a Sônia como mãe", "output": "<call>save_contact_alias(alias='mãe', target_name='Sônia')</call>"}
+{"input": "cria apelido namorada pro contato Juliana", "output": "<call>save_contact_alias(alias='namorada', target_name='Juliana')</call>"}
+{"input": "apelida o Thiago como personal", "output": "<call>save_contact_alias(alias='personal', target_name='Thiago')</call>"}
+{"input": "cria apelido escola pro contato Dona Marta", "output": "<call>save_contact_alias(alias='escola', target_name='Dona Marta')</call>"}
+{"input": "apelida a Beatriz como afilhada", "output": "<call>save_contact_alias(alias='afilhada', target_name='Beatriz')</call>"}
+{"input": "cria o apelido vizinho pro contato Bruno", "output": "<call>save_contact_alias(alias='vizinho', target_name='Bruno')</call>"}
+{"input": "apelida o Rafael como cunhado", "output": "<call>save_contact_alias(alias='cunhado', target_name='Rafael')</call>"}
+{"input": "cria apelido chefe pro contato Ricardo", "output": "<call>save_contact_alias(alias='chefe', target_name='Ricardo')</call>"}
+{"input": "apelida a Carla como comadre", "output": "<call>save_contact_alias(alias='comadre', target_name='Carla')</call>"}
+{"input": "cria apelido médico pro contato Dra. Helena", "output": "<call>save_contact_alias(alias='médico', target_name='Dra. Helena')</call>"}
+{"input": "apelida o Fernando como padrinho", "output": "<call>save_contact_alias(alias='padrinho', target_name='Fernando')</call>"}
+{"input": "cria apelido trabalho pro contato Patrícia", "output": "<call>save_contact_alias(alias='trabalho', target_name='Patrícia')</call>"}
+{"input": "apelida o Rodrigo como professor", "output": "<call>save_contact_alias(alias='professor', target_name='Rodrigo')</call>"}
+{"input": "cria apelido mecânico pro contato Jorge", "output": "<call>save_contact_alias(alias='mecânico', target_name='Jorge')</call>"}
+{"input": "tira leite da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='leite')</call>"}
+{"input": "remove pão da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='pão')</call>"}
+{"input": "apaga feijão da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='feijão')</call>"}
+{"input": "tira macarrão da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='macarrão')</call>"}
+{"input": "remove manteiga da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='manteiga')</call>"}
+{"input": "apaga sabão da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='sabão')</call>"}
+{"input": "tira tomate da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='tomate')</call>"}
+{"input": "remove iogurte da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='iogurte')</call>"}
+{"input": "apaga queijo da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='queijo')</call>"}
+{"input": "tira papel higiênico da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='papel higiênico')</call>"}
+{"input": "remove açúcar da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='açúcar')</call>"}
+{"input": "apaga pilha da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='pilha')</call>"}
+{"input": "tira café da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='café')</call>"}
+{"input": "remove detergente da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='detergente')</call>"}
+{"input": "apaga ovos da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='ovos')</call>"}
+{"input": "tira arroz da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='arroz')</call>"}
+{"input": "remove farinha da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='farinha')</call>"}
+{"input": "lê pra mim o que tá na tela", "output": "<call>read_screen()</call>"}
+{"input": "o que aparece escrito agora?", "output": "<call>read_screen()</call>"}
+{"input": "me diz o que tá na tela do celular", "output": "<call>read_screen()</call>"}
+{"input": "lê o conteúdo da tela atual", "output": "<call>read_screen()</call>"}
+{"input": "o que tem escrito nessa tela?", "output": "<call>read_screen()</call>"}
+{"input": "faz a leitura da tela pra mim", "output": "<call>read_screen()</call>"}
+{"input": "me fala o que tá aparecendo na tela", "output": "<call>read_screen()</call>"}
+{"input": "lê a tela do app aberto", "output": "<call>read_screen()</call>"}
+{"input": "o que tá sendo mostrado na tela?", "output": "<call>read_screen()</call>"}
+{"input": "dá uma lida na tela atual", "output": "<call>read_screen()</call>"}
+{"input": "me mostra o texto da tela", "output": "<call>read_screen()</call>"}
+{"input": "lê o que tá escrito aí", "output": "<call>read_screen()</call>"}
+{"input": "o que aparece na tela do celular agora?", "output": "<call>read_screen()</call>"}
+{"input": "faz a leitura do que tá na tela", "output": "<call>read_screen()</call>"}
+{"input": "lê a tela pra eu saber o que tem", "output": "<call>read_screen()</call>"}
+{"input": "me descreve o que tá na tela", "output": "<call>read_screen()</call>"}
+{"input": "toca uma música no youtube", "output": "<call>play_media(query='música', app='youtube')</call>"}
+{"input": "coloca uma playlist de pop no spotify", "output": "<call>play_media(query='playlist de pop', app='spotify')</call>"}
+{"input": "toca samba no youtube", "output": "<call>play_media(query='samba', app='youtube')</call>"}
+{"input": "põe funk no spotify", "output": "<call>play_media(query='funk', app='spotify')</call>"}
+{"input": "toca uma música calma no youtube", "output": "<call>play_media(query='música calma', app='youtube')</call>"}
+{"input": "coloca playlist de pagode no spotify", "output": "<call>play_media(query='playlist de pagode', app='spotify')</call>"}
+{"input": "toca um podcast no youtube", "output": "<call>play_media(query='podcast', app='youtube')</call>"}
+{"input": "põe música clássica no spotify", "output": "<call>play_media(query='música clássica', app='spotify')</call>"}
+{"input": "toca um vídeo de receita no youtube", "output": "<call>play_media(query='vídeo de receita', app='youtube')</call>"}
+{"input": "coloca playlist de sertanejo no spotify", "output": "<call>play_media(query='playlist de sertanejo', app='spotify')</call>"}
+{"input": "toca um vídeo de meditação no youtube", "output": "<call>play_media(query='vídeo de meditação', app='youtube')</call>"}
+{"input": "põe música eletrônica no spotify", "output": "<call>play_media(query='música eletrônica', app='spotify')</call>"}
+{"input": "toca uma música romântica no youtube", "output": "<call>play_media(query='música romântica', app='youtube')</call>"}
+{"input": "coloca playlist de forró no spotify", "output": "<call>play_media(query='playlist de forró', app='spotify')</call>"}
+{"input": "toca um vídeo de treino no youtube", "output": "<call>play_media(query='vídeo de treino', app='youtube')</call>"}
+{"input": "põe música infantil no spotify", "output": "<call>play_media(query='música infantil', app='spotify')</call>"}
+{"input": "me leva até o supermercado", "output": "<call>navigate_to(destination='supermercado')</call>"}
+{"input": "traça rota pra casa do meu amigo", "output": "<call>navigate_to(destination='casa do meu amigo')</call>"}
+{"input": "navega até a academia", "output": "<call>navigate_to(destination='academia')</call>"}
+{"input": "rota pra escola do meu filho", "output": "<call>navigate_to(destination='escola do meu filho')</call>"}
+{"input": "me leva até o shopping", "output": "<call>navigate_to(destination='shopping')</call>"}
+{"input": "traça rota pro consultório do dentista", "output": "<call>navigate_to(destination='consultório do dentista')</call>"}
+{"input": "navega até o banco", "output": "<call>navigate_to(destination='banco')</call>"}
+{"input": "rota pra casa da minha irmã", "output": "<call>navigate_to(destination='casa da minha irmã')</call>"}
+{"input": "me leva até o posto de gasolina", "output": "<call>navigate_to(destination='posto de gasolina')</call>"}
+{"input": "traça rota pro trabalho", "output": "<call>navigate_to(destination='trabalho')</call>"}
+{"input": "navega até a padaria", "output": "<call>navigate_to(destination='padaria')</call>"}
+{"input": "rota pro hotel", "output": "<call>navigate_to(destination='hotel')</call>"}
+{"input": "me leva até a praia", "output": "<call>navigate_to(destination='praia')</call>"}
+{"input": "traça rota pro centro da cidade", "output": "<call>navigate_to(destination='centro da cidade')</call>"}
+{"input": "navega até o restaurante", "output": "<call>navigate_to(destination='restaurante')</call>"}
+{"input": "rota pra casa do meu pai", "output": "<call>navigate_to(destination='casa do meu pai')</call>"}
+{"input": "tira ovo da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='ovo')</call>"}
+{"input": "remove pão de forma da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='pão de forma')</call>"}
+{"input": "apaga leite condensado da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='leite condensado')</call>"}
+{"input": "tira carne da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='carne')</call>"}
+{"input": "remove frango da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='frango')</call>"}
+{"input": "apaga peixe da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='peixe')</call>"}
+{"input": "tira banana da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='banana')</call>"}
+{"input": "remove maçã da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='maçã')</call>"}
+{"input": "apaga laranja da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='laranja')</call>"}
+{"input": "tira batata da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='batata')</call>"}
+{"input": "remove cebola da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='cebola')</call>"}
+{"input": "apaga alho da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='alho')</call>"}
+{"input": "tira óleo da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='óleo')</call>"}
+{"input": "remove vinagre da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='vinagre')</call>"}
+{"input": "apaga sal da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='sal')</call>"}
+{"input": "tira açúcar mascavo da lista de mercado", "output": "<call>remove_list_item(list_name='mercado', item='açúcar mascavo')</call>"}
+{"input": "remove biscoito da lista de compras", "output": "<call>remove_list_item(list_name='compras', item='biscoito')</call>"}
+{"input": "consegue ler o que tá na tela?", "output": "<call>read_screen()</call>"}
+{"input": "dá uma olhada e me diz o que tá escrito", "output": "<call>read_screen()</call>"}
+{"input": "lê a tela que eu não consigo ver", "output": "<call>read_screen()</call>"}
+{"input": "me fala o texto que tá aparecendo", "output": "<call>read_screen()</call>"}
+{"input": "faz uma leitura rápida da tela", "output": "<call>read_screen()</call>"}
+{"input": "o que tá escrito no app aberto?", "output": "<call>read_screen()</call>"}
+{"input": "lê a tela inteira pra mim", "output": "<call>read_screen()</call>"}
+{"input": "me diz o que tá visível na tela", "output": "<call>read_screen()</call>"}
+{"input": "lê o que tá na tela do celular agora", "output": "<call>read_screen()</call>"}
+{"input": "o que aparece escrito no momento?", "output": "<call>read_screen()</call>"}
+{"input": "faz a leitura do conteúdo da tela", "output": "<call>read_screen()</call>"}
+{"input": "me mostra o que tá na tela atual", "output": "<call>read_screen()</call>"}
+{"input": "lê a tela e me conta", "output": "<call>read_screen()</call>"}
+{"input": "o que tem na tela pra ler?", "output": "<call>read_screen()</call>"}
+{"input": "dá uma lida no que aparece na tela", "output": "<call>read_screen()</call>"}
+{"input": "me lê o que tá aparecendo agora", "output": "<call>read_screen()</call>"}
+{"input": "toca gospel no youtube", "output": "<call>play_media(query='gospel', app='youtube')</call>"}
+{"input": "coloca playlist de blues no spotify", "output": "<call>play_media(query='playlist de blues', app='spotify')</call>"}
+{"input": "toca rap no youtube", "output": "<call>play_media(query='rap', app='youtube')</call>"}
+{"input": "põe hip hop no spotify", "output": "<call>play_media(query='hip hop', app='spotify')</call>"}
+{"input": "toca uma música animada no youtube", "output": "<call>play_media(query='música animada', app='youtube')</call>"}
+{"input": "coloca playlist de MPB no spotify", "output": "<call>play_media(query='playlist de MPB', app='spotify')</call>"}
+{"input": "toca um vídeo de aula no youtube", "output": "<call>play_media(query='vídeo de aula', app='youtube')</call>"}
+{"input": "põe música dos anos 80 no spotify", "output": "<call>play_media(query='música dos anos 80', app='spotify')</call>"}
+{"input": "toca um documentário no youtube", "output": "<call>play_media(query='documentário', app='youtube')</call>"}
+{"input": "coloca playlist de axé no spotify", "output": "<call>play_media(query='playlist de axé', app='spotify')</call>"}
+{"input": "toca um vídeo de receita de bolo no youtube", "output": "<call>play_media(query='receita de bolo', app='youtube')</call>"}
+{"input": "põe música country no spotify", "output": "<call>play_media(query='música country', app='spotify')</call>"}
+{"input": "toca uma música triste no youtube", "output": "<call>play_media(query='música triste', app='youtube')</call>"}
+{"input": "coloca playlist de reggae no spotify", "output": "<call>play_media(query='playlist de reggae', app='spotify')</call>"}
+{"input": "toca um vídeo de viagem no youtube", "output": "<call>play_media(query='vídeo de viagem', app='youtube')</call>"}
+{"input": "põe música dos anos 90 no spotify", "output": "<call>play_media(query='música dos anos 90', app='spotify')</call>"}
+{"input": "me leva até o cartório", "output": "<call>navigate_to(destination='cartório')</call>"}
+{"input": "traça rota pro hospital", "output": "<call>navigate_to(destination='hospital')</call>"}
+{"input": "navega até a clínica", "output": "<call>navigate_to(destination='clínica')</call>"}
+{"input": "rota pra casa da minha avó", "output": "<call>navigate_to(destination='casa da minha avó')</call>"}
+{"input": "me leva até o cinema", "output": "<call>navigate_to(destination='cinema')</call>"}
+{"input": "traça rota pro aeroporto de guarulhos", "output": "<call>navigate_to(destination='aeroporto de guarulhos')</call>"}
+{"input": "navega até a rodoviária", "output": "<call>navigate_to(destination='rodoviária')</call>"}
+{"input": "rota pro mercado municipal", "output": "<call>navigate_to(destination='mercado municipal')</call>"}
+{"input": "me leva até a feira", "output": "<call>navigate_to(destination='feira')</call>"}
+{"input": "traça rota pro parque", "output": "<call>navigate_to(destination='parque')</call>"}
+{"input": "navega até a biblioteca", "output": "<call>navigate_to(destination='biblioteca')</call>"}
+{"input": "rota pro estádio", "output": "<call>navigate_to(destination='estádio')</call>"}
+{"input": "me leva até o zoológico", "output": "<call>navigate_to(destination='zoológico')</call>"}
+{"input": "traça rota pro museu", "output": "<call>navigate_to(destination='museu')</call>"}
+{"input": "navega até o teatro", "output": "<call>navigate_to(destination='teatro')</call>"}
+{"input": "rota pra casa do meu primo", "output": "<call>navigate_to(destination='casa do meu primo')</call>"}
+{"input": "como foi meu sono essa noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como eu dormi nos últimos 7 dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "me dá o relatório de sono de hoje", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "relatório de sono da última semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi a qualidade do meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me mostra como eu dormi essa semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "quanto tempo eu dormi hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me fala do meu sono dos últimos 7 dias", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como está meu sono hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "faz um resumo do meu sono da semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi na última noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me dá o histórico de sono da semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi meu sono ontem à noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "quero ver o relatório de sono dos últimos 7 dias", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "me conta como foi meu sono hoje", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como eu dormi essa semana toda?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "me mostra o relatório de sono de ontem", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me fala as configurações do aparelho", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de bateria tem o celular?", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra a versão do android", "output": "<call>get_system_info()</call>"}
+{"input": "quanta memória RAM tem livre?", "output": "<call>get_system_info()</call>"}
+{"input": "me dá as informações do celular", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de armazenamento já usei?", "output": "<call>get_system_info()</call>"}
+{"input": "me fala o modelo do aparelho", "output": "<call>get_system_info()</call>"}
+{"input": "quais as especificações do celular?", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra o status do sistema", "output": "<call>get_system_info()</call>"}
+{"input": "quanto espaço livre tem no celular?", "output": "<call>get_system_info()</call>"}
+{"input": "me fala a versão do sistema operacional", "output": "<call>get_system_info()</call>"}
+{"input": "me dá um diagnóstico do aparelho", "output": "<call>get_system_info()</call>"}
+{"input": "quais os dados técnicos do celular?", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra a capacidade do celular", "output": "<call>get_system_info()</call>"}
+{"input": "me fala as informações do dispositivo", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de memória interna tem?", "output": "<call>get_system_info()</call>"}
+{"input": "quando é o próximo feriado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2030", "output": "<call>get_next_holiday(year=2030)</call>"}
+{"input": "qual o próximo feriado de 2027?", "output": "<call>get_next_holiday(year=2027)</call>"}
+{"input": "me diz quando é o próximo feriado nacional", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "qual o feriado de 2026?", "output": "<call>get_next_holiday(year=2026)</call>"}
+{"input": "quando cai o próximo feriado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o próximo feriado depois de hoje", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "qual o feriado de 2031?", "output": "<call>get_next_holiday(year=2031)</call>"}
+{"input": "quando é o feriado de 2028?", "output": "<call>get_next_holiday(year=2028)</call>"}
+{"input": "me diz o próximo feriado do calendário", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "qual o próximo feriado prolongado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2032", "output": "<call>get_next_holiday(year=2032)</call>"}
+{"input": "quando é o próximo feriado municipal?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "qual o feriado de 2033?", "output": "<call>get_next_holiday(year=2033)</call>"}
+{"input": "me diz quando é o próximo feriado", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "quando é o feriado de 2029?", "output": "<call>get_next_holiday(year=2029)</call>"}
+{"input": "me dá as notícias de hoje", "output": "<call>get_news(topic='geral', limit=5)</call>"}
+{"input": "quais as notícias de economia?", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "me mostra 3 notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=3)</call>"}
+{"input": "quais as notícias de esportes?", "output": "<call>get_news(topic='esportes', limit=5)</call>"}
+{"input": "me dá 2 notícias gerais", "output": "<call>get_news(topic='geral', limit=2)</call>"}
+{"input": "quais as notícias de economia hoje?", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "me mostra 4 notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=4)</call>"}
+{"input": "quais as notícias de esportes agora?", "output": "<call>get_news(topic='esportes', limit=5)</call>"}
+{"input": "me dá as notícias gerais do dia", "output": "<call>get_news(topic='geral', limit=5)</call>"}
+{"input": "quais as notícias de economia da semana?", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "me mostra 3 notícias gerais", "output": "<call>get_news(topic='geral', limit=3)</call>"}
+{"input": "quais as notícias de tecnologia de hoje?", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá 2 notícias de esportes", "output": "<call>get_news(topic='esportes', limit=2)</call>"}
+{"input": "quais as notícias de economia agora?", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "me mostra as notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá as notícias de esportes do dia", "output": "<call>get_news(topic='esportes', limit=5)</call>"}
+{"input": "como foi meu sono na noite passada?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me dá o relatório de sono dos últimos 7 dias", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi hoje de madrugada?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me mostra como foi meu sono na semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "qual foi a qualidade do meu sono ontem?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me fala do meu sono dos últimos dias", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "quantas horas eu dormi hoje?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me dá o resumo do sono da semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como foi meu sono na última noite?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me mostra o histórico de sono dos últimos 7 dias", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "como eu dormi essa madrugada?", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me fala como foi meu sono essa semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "me dá o relatório de sono de ontem", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "como foi meu sono nos últimos 7 dias?", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "me conta como eu dormi na noite passada", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "quero ver como foi meu sono da semana", "output": "<call>get_sleep_report(days=7)</call>"}
+{"input": "me mostra o relatório de sono de hoje", "output": "<call>get_sleep_report(days=1)</call>"}
+{"input": "me fala quanto de bateria resta", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra as informações técnicas do celular", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de espaço ainda tem no aparelho?", "output": "<call>get_system_info()</call>"}
+{"input": "me diz o modelo e a versão do android", "output": "<call>get_system_info()</call>"}
+{"input": "me dá o status completo do celular", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de RAM está livre agora?", "output": "<call>get_system_info()</call>"}
+{"input": "me fala as especificações técnicas do aparelho", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra a memória disponível no celular", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de armazenamento interno tem livre?", "output": "<call>get_system_info()</call>"}
+{"input": "me dá um resumo do sistema do celular", "output": "<call>get_system_info()</call>"}
+{"input": "me fala a versão do android instalada", "output": "<call>get_system_info()</call>"}
+{"input": "me mostra os dados do dispositivo", "output": "<call>get_system_info()</call>"}
+{"input": "quanto de bateria tem agora?", "output": "<call>get_system_info()</call>"}
+{"input": "me informa a capacidade de armazenamento", "output": "<call>get_system_info()</call>"}
+{"input": "me fala as informações do sistema operacional", "output": "<call>get_system_info()</call>"}
+{"input": "me dá o diagnóstico do aparelho", "output": "<call>get_system_info()</call>"}
+{"input": "quando é o próximo feriado depois de hoje?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2034", "output": "<call>get_next_holiday(year=2034)</call>"}
+{"input": "qual o próximo feriado do ano que vem?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me diz o feriado de 2026", "output": "<call>get_next_holiday(year=2026)</call>"}
+{"input": "quando é o feriado de 2030?", "output": "<call>get_next_holiday(year=2030)</call>"}
+{"input": "me fala qual é o próximo feriado nacional", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "qual o feriado de 2035?", "output": "<call>get_next_holiday(year=2035)</call>"}
+{"input": "quando cai o próximo feriado prolongado?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me diz o feriado de 2027", "output": "<call>get_next_holiday(year=2027)</call>"}
+{"input": "qual o próximo feriado do calendário?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2036", "output": "<call>get_next_holiday(year=2036)</call>"}
+{"input": "quando é o próximo feriado religioso?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me diz o feriado de 2028", "output": "<call>get_next_holiday(year=2028)</call>"}
+{"input": "qual o próximo feriado civil?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me fala o feriado de 2037", "output": "<call>get_next_holiday(year=2037)</call>"}
+{"input": "quando é o próximo feriado estadual?", "output": "<call>get_next_holiday(year=0)</call>"}
+{"input": "me dá 3 notícias de economia", "output": "<call>get_news(topic='economia', limit=3)</call>"}
+{"input": "quais as notícias gerais agora?", "output": "<call>get_news(topic='geral', limit=5)</call>"}
+{"input": "me mostra 2 notícias de tecnologia", "output": "<call>get_news(topic='tecnologia', limit=2)</call>"}
+{"input": "quais as notícias de esportes do dia?", "output": "<call>get_news(topic='esportes', limit=5)</call>"}
+{"input": "me dá as notícias de economia do dia", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "quais as notícias gerais de hoje?", "output": "<call>get_news(topic='geral', limit=5)</call>"}
+{"input": "me mostra 4 notícias de esportes", "output": "<call>get_news(topic='esportes', limit=4)</call>"}
+{"input": "quais as notícias de tecnologia da semana?", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá 2 notícias de economia", "output": "<call>get_news(topic='economia', limit=2)</call>"}
+{"input": "quais as notícias gerais da semana?", "output": "<call>get_news(topic='geral', limit=5)</call>"}
+{"input": "me mostra as notícias de esportes de hoje", "output": "<call>get_news(topic='esportes', limit=5)</call>"}
+{"input": "quais as notícias de tecnologia agora?", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "me dá 3 notícias gerais", "output": "<call>get_news(topic='geral', limit=3)</call>"}
+{"input": "quais as notícias de economia de hoje?", "output": "<call>get_news(topic='economia', limit=5)</call>"}
+{"input": "me mostra 2 notícias de esportes", "output": "<call>get_news(topic='esportes', limit=2)</call>"}
+{"input": "quais as notícias de tecnologia do dia?", "output": "<call>get_news(topic='tecnologia', limit=5)</call>"}
+{"input": "adiciona arroz na lista de compras", "output": "<call>add_list_item(list_name='compras', item='arroz')</call>"}
+{"input": "bota café na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='café')</call>"}
+{"input": "põe açúcar na lista de compras", "output": "<call>add_list_item(list_name='compras', item='açúcar')</call>"}
+{"input": "anota óleo na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='óleo')</call>"}
+{"input": "coloca sal na lista de compras", "output": "<call>add_list_item(list_name='compras', item='sal')</call>"}
+{"input": "adiciona farinha na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='farinha')</call>"}
+{"input": "bota ovos na lista de compras", "output": "<call>add_list_item(list_name='compras', item='ovos')</call>"}
+{"input": "põe manteiga na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='manteiga')</call>"}
+{"input": "anota queijo na lista de compras", "output": "<call>add_list_item(list_name='compras', item='queijo')</call>"}
+{"input": "coloca presunto na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='presunto')</call>"}
+{"input": "adiciona frango na lista de compras", "output": "<call>add_list_item(list_name='compras', item='frango')</call>"}
+{"input": "bota carne na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='carne')</call>"}
+{"input": "põe peixe na lista de compras", "output": "<call>add_list_item(list_name='compras', item='peixe')</call>"}
+{"input": "anota banana na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='banana')</call>"}
+{"input": "coloca maçã na lista de compras", "output": "<call>add_list_item(list_name='compras', item='maçã')</call>"}
+{"input": "adiciona laranja na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='laranja')</call>"}
+{"input": "bota batata na lista de compras", "output": "<call>add_list_item(list_name='compras', item='batata')</call>"}
+{"input": "põe cebola na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='cebola')</call>"}
+{"input": "anota alho na lista de compras", "output": "<call>add_list_item(list_name='compras', item='alho')</call>"}
+{"input": "coloca tomate na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='tomate')</call>"}
+{"input": "adiciona papel higiênico na lista de compras", "output": "<call>add_list_item(list_name='compras', item='papel higiênico')</call>"}
+{"input": "bota sabão na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='sabão')</call>"}
+{"input": "põe detergente na lista de compras", "output": "<call>add_list_item(list_name='compras', item='detergente')</call>"}
+{"input": "anota amaciante na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='amaciante')</call>"}
+{"input": "coloca pasta de dente na lista de compras", "output": "<call>add_list_item(list_name='compras', item='pasta de dente')</call>"}
+{"input": "adiciona shampoo na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='shampoo')</call>"}
+{"input": "bota condicionador na lista de compras", "output": "<call>add_list_item(list_name='compras', item='condicionador')</call>"}
+{"input": "põe desodorante na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='desodorante')</call>"}
+{"input": "anota pilha na lista de compras", "output": "<call>add_list_item(list_name='compras', item='pilha')</call>"}
+{"input": "coloca lâmpada na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='lâmpada')</call>"}
+{"input": "adiciona ração na lista de compras", "output": "<call>add_list_item(list_name='compras', item='ração')</call>"}
+{"input": "bota iogurte na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='iogurte')</call>"}
+{"input": "o que tem na lista de compras?", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "me mostra a lista de mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "abre a lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "quero ver a lista de afazeres", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "abre a lista do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "me mostra o que tem na lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "lê a lista de mercado pra mim", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "quais itens tem na lista de tarefas?", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "me dá a lista de afazeres", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "mostra o que tem na lista do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "o que eu preciso comprar?", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "me fala os itens da lista de mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "abre a lista de tarefas do dia", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "quero ver os afazeres pendentes", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "me mostra a lista do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "o que tem anotado na lista de compras?", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "lê a lista de mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me dá a lista de tarefas completa", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "quais são os afazeres de hoje?", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "mostra os itens do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "me mostra o que falta comprar", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "abre a lista de mercado atual", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me fala o que tem na lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "quero ver a lista de afazeres de hoje", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "me mostra os itens da lista do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "o que tem na lista de compras agora?", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "me dá os itens da lista de mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "abre a lista de tarefas pra mim", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "me fala os afazeres pendentes", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "mostra o que tem no supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "lê a lista de compras pra mim", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "quais itens estão na lista de mercado?", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me mostra a lista de tarefas atualizada", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "quero ver todos os afazeres", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "acrescenta extrato de tomate na lista de compras", "output": "<call>add_list_item(list_name='compras', item='extrato de tomate')</call>"}
+{"input": "inclui milho na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='milho')</call>"}
+{"input": "adiciona ervilha na lista de compras", "output": "<call>add_list_item(list_name='compras', item='ervilha')</call>"}
+{"input": "bota lentilha na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='lentilha')</call>"}
+{"input": "coloca aveia na lista de compras", "output": "<call>add_list_item(list_name='compras', item='aveia')</call>"}
+{"input": "põe granola na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='granola')</call>"}
+{"input": "anota mel na lista de compras", "output": "<call>add_list_item(list_name='compras', item='mel')</call>"}
+{"input": "adiciona achocolatado na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='achocolatado')</call>"}
+{"input": "bota leite em pó na lista de compras", "output": "<call>add_list_item(list_name='compras', item='leite em pó')</call>"}
+{"input": "inclui creme de leite na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='creme de leite')</call>"}
+{"input": "coloca requeijão na lista de compras", "output": "<call>add_list_item(list_name='compras', item='requeijão')</call>"}
+{"input": "põe margarina na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='margarina')</call>"}
+{"input": "anota pão de queijo na lista de compras", "output": "<call>add_list_item(list_name='compras', item='pão de queijo')</call>"}
+{"input": "adiciona bolo na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='bolo')</call>"}
+{"input": "bota biscoito na lista de compras", "output": "<call>add_list_item(list_name='compras', item='biscoito')</call>"}
+{"input": "inclui salgadinho na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='salgadinho')</call>"}
+{"input": "coloca refrigerante na lista de compras", "output": "<call>add_list_item(list_name='compras', item='refrigerante')</call>"}
+{"input": "põe suco na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='suco')</call>"}
+{"input": "anota água na lista de compras", "output": "<call>add_list_item(list_name='compras', item='água')</call>"}
+{"input": "adiciona cerveja na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='cerveja')</call>"}
+{"input": "bota papel toalha na lista de compras", "output": "<call>add_list_item(list_name='compras', item='papel toalha')</call>"}
+{"input": "inclui guardanapo na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='guardanapo')</call>"}
+{"input": "coloca copo descartável na lista de compras", "output": "<call>add_list_item(list_name='compras', item='copo descartável')</call>"}
+{"input": "põe prato descartável na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='prato descartável')</call>"}
+{"input": "anota saco de lixo na lista de compras", "output": "<call>add_list_item(list_name='compras', item='saco de lixo')</call>"}
+{"input": "adiciona esponja na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='esponja')</call>"}
+{"input": "bota desinfetante na lista de compras", "output": "<call>add_list_item(list_name='compras', item='desinfetante')</call>"}
+{"input": "inclui água sanitária na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='água sanitária')</call>"}
+{"input": "coloca sabonete na lista de compras", "output": "<call>add_list_item(list_name='compras', item='sabonete')</call>"}
+{"input": "põe fio dental na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='fio dental')</call>"}
+{"input": "anota absorvente na lista de compras", "output": "<call>add_list_item(list_name='compras', item='absorvente')</call>"}
+{"input": "adiciona fralda na lista de mercado", "output": "<call>add_list_item(list_name='mercado', item='fralda')</call>"}
+{"input": "me diz o que tem na lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "mostra pra mim a lista de mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "quero ver o que tem na lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "abre os afazeres pra mim", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "lê o que tem na lista do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "me fala o que já anotei pra comprar", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "me mostra os itens que tem no mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "quais tarefas estão na lista?", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "me dá os afazeres do dia", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "mostra o que falta no supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "me fala os itens da lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "abre a lista de mercado pra eu ver", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "quero ver a lista de tarefas do dia", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "me mostra os afazeres pendentes", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "lê os itens do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "o que já tem anotado na lista de compras?", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "me mostra a lista de mercado atual", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me fala as tarefas da lista", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "abre a lista de afazeres", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "quais itens tem no supermercado?", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "me dá a lista de compras atualizada", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "mostra os itens da lista de mercado", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "o que tem na lista de tarefas agora?", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "me fala o que tem nos afazeres", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "lê a lista do supermercado pra mim", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "me mostra o que tem na lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "quais itens estão anotados no mercado?", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me dá a lista de tarefas do dia", "output": "<call>get_list(list_name='tarefas')</call>"}
+{"input": "abre os afazeres de hoje", "output": "<call>get_list(list_name='afazeres')</call>"}
+{"input": "me fala os itens do supermercado", "output": "<call>get_list(list_name='supermercado')</call>"}
+{"input": "quero ver o que tem na lista de compras", "output": "<call>get_list(list_name='compras')</call>"}
+{"input": "mostra a lista de mercado completa", "output": "<call>get_list(list_name='mercado')</call>"}
+{"input": "me fala o que tem na lista de tarefas", "output": "<call>get_list(list_name='tarefas')</call>"}

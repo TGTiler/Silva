@@ -279,6 +279,12 @@ def type_text_unicode(text: str) -> Tuple[bool, str]:
     if not clean_text:
         return False, "Texto vazio para digitação."
 
+    if clean_text.isascii():
+        escaped = clean_text.replace(" ", "%s")
+        ok_type, out_type = run_adb_shell(["input", "text", escaped], timeout=6.0)
+        if ok_type:
+            return True, "Texto inserido via input text."
+
     if _set_device_clipboard(clean_text):
         ok_paste, _ = press_key(279)  # KEYCODE_PASTE
         if ok_paste:

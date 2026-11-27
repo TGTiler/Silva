@@ -1537,6 +1537,65 @@ class TestToolsAndMemory(unittest.TestCase):
             self.assertEqual(dev["data"]["uptime"], "1d 1h 1min")
             self.assertEqual(dev["data"]["wifi_ssid"], "Casa_5G")
 
+    def test_get_location_resilient_4_layers_dumpsys_and_last_location_fallback(self):
+        """
+        Valida cadeia resiliente de 4 camadas em get_location():
+        1. Parser de dumpsys location (Location[fused -8.054280,-34.881300 ...]);
+        2. Fallback automático para dumpsys location quando termux-location expira (TimeoutExpired) ou retorna vazio;
+        3. Fallback final para última localização salva quando hardware/ADB estão indisponíveis.
+        """
+        import subprocess
+        from android_agent.tools import weather_web
+
+        dumpsys_sample = (
+            "  Last Known Locations:\n"
+            "    gps: Location[gps 0.000000,0.000000 hAcc=0.0]\n"
+            "    network: Location[network -8.060000,-34.890000 hAcc=25.0]\n"
+            "    fused: Location[fused -8.054280,-34.881300 hAcc=12.4 et=+1d2h3m]\n"
+        )
+        parsed = weather_web._parse_dumpsys_location(dumpsys_sample)
+        self.assertIsNotNone(parsed)
+        self.assertAlmostEqual(parsed[0], -8.054280, places=5)
+        self.assertAlmostEqual(parsed[1], -34.881300, places=5)
+        self.assertEqual(parsed[2], "adb_fused")
+
+        # termux-location expira na Camada 1/2 -> cai para Camada 3 (dumpsys location via ADB)
+        with patch.object(weather_web, "SIMULATE_HARDWARE", False), \
+             patch.object(weather_web, "_MOCK_LOCATION_ACTIVE", None), \
+             patch.object(weather_web, "_run_termux_cmd", side_effect=subprocess.TimeoutExpired(cmd="termux-location", timeout=4.0)), \
+             patch.object(weather_web, "run_adb_shell", return_value=(True, dumpsys_sample)), \
+             patch.object(weather_web, "_generate_map_preview", return_value=None), \
+             patch.object(weather_web, "_reverse_geocode_label", return_value="Boa Vista, Recife - PE"), \
+             patch.object(weather_web, "save_last_location", return_value={"latitude": -8.05428, "longitude": -34.8813, "provider": "adb_fused", "updated_at": "2026-11-26 23:00"}) as mock_save, \
+             patch.object(weather_web, "_persist_location_to_memory_db") as mock_db_save:
+            res_adb = weather_web.get_location()
+
+        self.assertEqual(res_adb["status"], "ok")
+        self.assertIn("-8.05428", res_adb["message"])
+        self.assertIn("-34.88130", res_adb["message"])
+        self.assertIn("https://maps.google.com/?q=-8.05428,-34.8813", res_adb["message"])
+        mock_save.assert_called_once()
+        mock_db_save.assert_called_once()
+
+        # Todas as camadas de tempo real falham -> cai para Camada 4 (última localização salva)
+        cached_loc = {
+            "latitude": -8.05428,
+            "longitude": -34.88130,
+            "label": "Boa Vista, Recife - PE",
+            "updated_at": "22:55",
+            "maps_url": "https://maps.google.com/?q=-8.05428,-34.8813",
+        }
+        with patch.object(weather_web, "SIMULATE_HARDWARE", False), \
+             patch.object(weather_web, "_MOCK_LOCATION_ACTIVE", None), \
+             patch.object(weather_web, "_run_termux_cmd", return_value=subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="err")), \
+             patch.object(weather_web, "run_adb_shell", return_value=(False, "")), \
+             patch.object(weather_web, "load_last_location", return_value=cached_loc):
+            res_cached = weather_web.get_location()
+
+        self.assertEqual(res_cached["status"], "ok")
+        self.assertIn("último sinal às 22:55", res_cached["message"])
+        self.assertEqual(res_cached["data"]["fallback"], "last_location")
+
 
 if __name__ == "__main__":
     unittest.main()

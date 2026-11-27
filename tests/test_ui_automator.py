@@ -589,6 +589,114 @@ class TestUiAutomator(unittest.TestCase):
         self.assertTrue(res_locked["data"]["screen_locked"])
         mock_tap_locked.assert_not_called()
 
+    def test_playstore_search_ignores_sponsored_99_and_pairs_uber_install(self):
+        """
+        Simula XML da busca por 'uber' com bloco 'Patrocinados' -> '99: Corridas, Food, Pay' no topo
+        e 'Uber: Táxi, Uber Moto e ...' + 'Instalar' logo abaixo, além da trava de segurança sem orgânico.
+        """
+        import subprocess
+        from contextlib import ExitStack
+
+        def fake_intent(cmd, timeout=6):
+            return subprocess.CompletedProcess(args=[cmd], returncode=0, stdout="Starting: Intent", stderr="")
+
+        search_with_sponsored = [
+            self._n("Patrocinados", "", "", "android.widget.TextView", False, (60, 260, 320, 310)),
+            self._n("99: Corridas, Food, Pay", "", "", "android.widget.TextView", False, (240, 440, 760, 500)),
+            self._n("Instalar", "Instalar", "", "android.widget.Button", True, (790, 430, 1020, 540)),
+            self._n("Abrir", "Abrir", "", "android.widget.Button", True, (790, 550, 1020, 620)),
+            self._n("Uber: Táxi, Uber Moto e ...", "", "", "android.widget.TextView", False, (240, 1010, 760, 1070)),
+            self._n("Instalar", "Instalar", "", "android.widget.Button", True, (790, 1000, 1020, 1110)),
+        ]
+        progress_nodes = [
+            self._n("Cancelar", "Cancelar", "", "android.widget.Button", True, (790, 1000, 1020, 1110)),
+        ]
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(apps_mobility, "APP_PACKAGES", {}))
+            stack.enter_context(patch.object(apps_mobility, "SIMULATE_HARDWARE", False))
+            stack.enter_context(patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:35783"))
+            stack.enter_context(patch.object(apps_mobility, "is_screen_unlocked", return_value=(True, "ok")))
+            stack.enter_context(patch.object(apps_mobility, "_exec_android_intent", side_effect=fake_intent))
+            stack.enter_context(patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)))
+            stack.enter_context(patch.object(apps_mobility, "dump_ui_nodes", side_effect=[search_with_sponsored, progress_nodes]))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            stack.enter_context(patch("time.sleep"))
+            res = apps_mobility.install_app("uber")
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["data"]["action"], "install_started")
+        # Deve clicar exclusivamente no 'Instalar' do Uber (905, 1055) e jamais no patrocinado do 99 (905, 485)
+        mock_tap.assert_called_once_with(905, 1055)
+
+        # Trava de segurança: apenas anúncio patrocinado de outro app, nenhum orgânico correspondente
+        only_sponsored = [
+            self._n("Patrocinados", "", "", "android.widget.TextView", False, (60, 260, 320, 310)),
+            self._n("99: Corridas, Food, Pay", "", "", "android.widget.TextView", False, (240, 440, 760, 500)),
+            self._n("Instalar", "Instalar", "", "android.widget.Button", True, (790, 430, 1020, 540)),
+        ]
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(apps_mobility, "APP_PACKAGES", {}))
+            stack.enter_context(patch.object(apps_mobility, "SIMULATE_HARDWARE", False))
+            stack.enter_context(patch.object(apps_mobility, "ensure_adb_connected", return_value="192.168.0.106:35783"))
+            stack.enter_context(patch.object(apps_mobility, "is_screen_unlocked", return_value=(True, "ok")))
+            stack.enter_context(patch.object(apps_mobility, "_exec_android_intent", side_effect=fake_intent))
+            stack.enter_context(patch.object(apps_mobility, "get_screen_dimensions", return_value=(1080, 2400)))
+            stack.enter_context(patch.object(apps_mobility, "dump_ui_nodes", return_value=only_sponsored))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            stack.enter_context(patch("time.sleep"))
+            res_nf = apps_mobility.install_app("uber")
+
+        self.assertEqual(res_nf["data"]["action"], "not_found")
+        mock_tap.assert_not_called()
+
+    def test_playstore_dismiss_promo_modal_conditional(self):
+        """
+        Valida que 'Agora não' no modal 'Aproveite mais do Google Play' só é clicado quando o modal está no XML,
+        tanto via _dismiss_playstore_promos_if_present quanto no pós-clique de 'Instalar'.
+        """
+        from contextlib import ExitStack
+
+        # 1. Sem modal no XML: zero cliques e zero chamadas extras a dump_ui_nodes
+        clean_nodes = [
+            self._n("Uber", "", "", "android.widget.TextView", False, (200, 300, 700, 380)),
+            self._n("Agora não", "Agora não", "", "android.widget.Button", True, (100, 1900, 480, 2000)),
+        ]
+        with patch.object(apps_mobility, "tap_coords") as mock_tap, \
+             patch.object(apps_mobility, "dump_ui_nodes") as mock_dump, \
+             patch("time.sleep"):
+            dismissed, out_nodes = apps_mobility._dismiss_playstore_promos_if_present(clean_nodes)
+        self.assertFalse(dismissed)
+        self.assertEqual(out_nodes, clean_nodes)
+        mock_tap.assert_not_called()
+        mock_dump.assert_not_called()
+
+        # 2. Modal 'Aproveite mais do Google Play' exibido logo após clicar em 'Instalar'
+        install_page = [
+            self._n("Uber: Táxi, Uber Moto e mais", "", "", "android.widget.TextView", False, (260, 220, 700, 300)),
+            self._n("Instalar", "Instalar", "", "android.widget.Button", True, (120, 620, 960, 740)),
+        ]
+        post_click_modal = [
+            self._n("Aproveite mais do Google Play", "", "", "android.widget.TextView", False, (100, 1600, 980, 1680)),
+            self._n("Receba ofertas especiais...", "", "", "android.widget.TextView", False, (100, 1700, 980, 1780)),
+            self._n("Agora não", "Agora não", "", "android.widget.Button", True, (60, 1960, 500, 2080)),
+            self._n("Quero receber", "Quero receber", "", "android.widget.Button", True, (540, 1960, 1020, 2080)),
+        ]
+        clean_progress = [
+            self._n("Cancelar", "Cancelar", "", "android.widget.Button", True, (700, 220, 1000, 320)),
+        ]
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(apps_mobility, "dump_ui_nodes", side_effect=[post_click_modal, clean_progress]))
+            mock_tap = stack.enter_context(patch.object(apps_mobility, "tap_coords"))
+            stack.enter_context(patch("time.sleep"))
+            res = apps_mobility._playstore_click_install("uber", initial_nodes=install_page)
+
+        self.assertEqual(res["action"], "install_started")
+        self.assertTrue(res["confirmed"])
+        # Primeiro clica em Instalar (540, 680), depois dispensa o modal pós-clique em Agora não (280, 2020)
+        self.assertEqual([c.args for c in mock_tap.call_args_list], [(540, 680), (280, 2020)])
+
 
 if __name__ == "__main__":
     unittest.main()

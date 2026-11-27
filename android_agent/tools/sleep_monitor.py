@@ -21,6 +21,7 @@ _MIN_SLEEP_LOG_MINUTES = 150      # 2h30min
 _FALSE_SLEEP_AWAKE_MINUTES = 15   # >= 15 min ativo antes da 01:00 descarta falso sono
 _MERGE_WINDOW_MAX_AWAKE = 20      # < 20 min acordado antes das 04:30 funde blocos
 _IDEAL_SLEEP_MINUTES = 450        # 7h30 (5 ciclos de 90 min)
+_MAX_PHYSIOLOGICAL_SLEEP_MINUTES = 840  # 14h: trava anti-outlier (inatividade prolongada)
 _IDEAL_BEDTIME_HOUR = 23
 _IDEAL_BEDTIME_MINUTE = 30
 
@@ -372,18 +373,29 @@ def build_scientific_sleep_report(
     trend_info: Dict[str, Any],
     awake_minutes: int = 0,
 ) -> str:
-    """Gera o relatório científico completo em Markdown com 4 blocos obrigatórios."""
+    """Gera relatório de sono compacto (Dashboard Card) com bloco secundário expansível (NREM/REM)."""
     nrem_total = int(round(duration_minutes * 0.775))
     rem_total = max(0, duration_minutes - nrem_total)
     n1_min = int(round(duration_minutes * 0.05))
     n2_min = int(round(duration_minutes * 0.475))
     n3_min = max(0, nrem_total - n1_min - n2_min)
 
-    ideal_sleep_dt = wake_up_dt - timedelta(minutes=_IDEAL_SLEEP_MINUTES)
+    is_anomalous = duration_minutes > _MAX_PHYSIOLOGICAL_SLEEP_MINUTES
+    anchor_wake_dt = (
+        wake_up_dt.replace(hour=7, minute=0, second=0, microsecond=0)
+        if is_anomalous
+        else wake_up_dt
+    )
+    ideal_sleep_dt = anchor_wake_dt - timedelta(minutes=_IDEAL_SLEEP_MINUTES)
     ideal_disconnect_dt = ideal_sleep_dt - timedelta(minutes=15)
 
     sacrifice_notes: List[str] = []
-    if sleep_start_dt.hour in (0, 1, 2, 3, 4, 5) or (sleep_start_dt.hour == 23 and sleep_start_dt.minute > 45):
+    if is_anomalous:
+        sacrifice_notes.append(
+            "O período registrado excedeu o limite fisiológico normal (> 14h, provável inatividade do aparelho); "
+            "utilizamos 07:00 como âncora matinal de referência."
+        )
+    elif sleep_start_dt.hour in (0, 1, 2, 3, 4, 5) or (sleep_start_dt.hour == 23 and sleep_start_dt.minute > 45):
         sacrifice_notes.append(
             "Ao dormir após o ideal, a janela de **N3 (sono profundo)** da primeira metade da noite é comprimida."
         )
@@ -399,6 +411,14 @@ def build_scientific_sleep_report(
         )
 
     trend_status = trend_info.get("trend_status", "baseline")
+    trend_badges = {
+        "improving": "📈 Melhorando",
+        "worsening": "📉 Piorando",
+        "stable": "⚖️ Estável",
+        "baseline": "🆕 Referência",
+    }
+    badge_tendencia = trend_badges.get(trend_status, "🆕 Referência")
+
     if trend_status == "worsening":
         plan_line_1 = (
             f"Desconecte telas até **{ideal_disconnect_dt.strftime('%H:%M')}** para recuperar "
@@ -411,42 +431,38 @@ def build_scientific_sleep_report(
         )
     else:
         plan_line_1 = (
-            f"Inicie a desaceleração sem telas às **{ideal_disconnect_dt.strftime('%H:%M')}** "
+            f"Desligue telas às **{ideal_disconnect_dt.strftime('%H:%M')}** "
             f"para adormecer próximo de **{ideal_sleep_dt.strftime('%H:%M')}**."
         )
     plan_line_2 = (
-        "Evite cafeína após as **14:00** e busque **10–15 min de luz solar matinal** ao acordar "
-        "para ancorar o ritmo circadiano."
+        "Evite cafeína após as **14:00** e busque **10–15 min de luz solar matinal** ao acordar."
     )
 
-    awake_note = f" (descontados {awake_minutes} min acordado na madrugada)" if awake_minutes > 0 else ""
+    awake_note = f" (-{awake_minutes}m acordado)" if awake_minutes > 0 else ""
 
     lines = [
-        "### 1. Resumo & Evolução ao Passar das Noites",
-        f"- **Duração dormida:** {_format_duration_hm(duration_minutes)}{awake_note} "
-        f"({sleep_start_dt.strftime('%H:%M')} → {wake_up_dt.strftime('%H:%M')})",
-        f"- **Nota do Sono:** {sleep_score}/100 | **Ciclos estimados (90 min):** {cycles_estimated:.1f}",
-        f"- **Evolução:** {trend_info.get('verdict', 'Noite de referência registrada')}",
-        "",
-        "### 2. Suposição Científica da Arquitetura do Sono (Polissonografia Estimada)",
-        f"- **Sono não REM (NREM) — ~75% a 80% do sono total (~{_format_duration_hm(nrem_total)}):**",
-        f"  - **N1 (sono leve inicial — ~5%, ~{_format_duration_hm(n1_min)}):** transição entre estar acordado e dormindo, com relaxamento muscular rápido.",
-        f"  - **N2 (sono leve intermediário — ~45% a 50%, ~{_format_duration_hm(n2_min)}):** queda da temperatura corporal e dos batimentos cardíacos; ocupa a maior parte da noite.",
-        f"  - **N3 (sono profundo ou de ondas lentas — ~20% a 25%, ~{_format_duration_hm(n3_min)}):** foco na restauração física, liberação de hormônios e fortalecimento da imunidade.",
-        f"- **Sono REM — ~20% a 25% do sono total (~{_format_duration_hm(rem_total)}):**",
-        "  - **Movimentos rápidos dos olhos (Rapid Eye Movement):** alta atividade cerebral, semelhante à vigília, com relaxamento muscular profundo.",
-        "  - **Memória e emoções:** fase mais associada a sonhos vívidos, consolidação de memórias e processamento emocional.",
-        "",
-        "### 3. Como Deveria Ter Sido o Sono Ideal (Comparativo Prescritivo)",
-        f"- **Meta fisiológica (5 ciclos = 7h30 a 8h00):** para acordar às **{wake_up_dt.strftime('%H:%M')}** "
-        f"sem cortar o último ciclo REM, você deveria ter desconectado às **{ideal_disconnect_dt.strftime('%H:%M')}** "
-        f"e adormecido até **{ideal_sleep_dt.strftime('%H:%M')}**.",
-        f"- **Impacto observado:** {' '.join(sacrifice_notes)}",
-        "",
-        "### 4. Plano Prático para Hoje à Noite",
-        f"- **Rotina de desligamento:** {plan_line_1}",
-        f"- **Higiene circadiana:** {plan_line_2}",
+        f"Nota: {sleep_score}/100 | Duração: {_format_duration_hm(duration_minutes)}{awake_note} "
+        f"({sleep_start_dt.strftime('%H:%M')} → {wake_up_dt.strftime('%H:%M')}) | Ciclos: {cycles_estimated:.1f} | Tendência: {badge_tendencia}",
+        f"Arquitetura: N1 ~{n1_min}m (5%) • N2 ~{n2_min}m (48%) • N3 ~{n3_min}m (22%) • REM ~{rem_total}m (25%)",
+        f"Meta Ideal: Dormir até {ideal_sleep_dt.strftime('%H:%M')} (desconectar {ideal_disconnect_dt.strftime('%H:%M')}) para completar 5 ciclos (7h30–8h00)",
     ]
+    if is_anomalous:
+        lines.append(
+            "⚠️ **Duração anômala (> 14h):** excedeu o limite fisiológico normal (provável inatividade do aparelho); âncora matinal ajustada para **07:00**."
+        )
+    lines.extend([
+        f"- **Desligamento hoje:** {plan_line_1}",
+        f"- **Higiene circadiana:** {plan_line_2}",
+        "",
+        "### Detalhes Científicos (NREM/REM)",
+        f"- **Sono não REM (NREM) — ~75% a 80% (~{_format_duration_hm(nrem_total)}):**",
+        f"  - **N1 (~5%, ~{n1_min}m):** transição vigília→sono com relaxamento muscular rápido.",
+        f"  - **N2 (~48%, ~{n2_min}m):** queda da temperatura corporal e frequência cardíaca; ocupa a maior parte da noite.",
+        f"  - **N3 (~22%, ~{n3_min}m):** sono profundo restaurador, hormônios e imunidade.",
+        f"- **Sono REM — ~25% (~{_format_duration_hm(rem_total)}):**",
+        "  - **Memória e emoções:** alta atividade cerebral, sonhos vívidos e consolidação emocional.",
+        f"- **Impacto observado:** {' '.join(sacrifice_notes)}",
+    ])
     news_titles = _get_cached_news_briefing(limit=3)
     if news_titles:
         lines.extend(["", "### 📰 Resumo Rápido do Dia"])
@@ -540,6 +556,7 @@ def _finalize_sleep_session(
         "duration_minutes": duration_minutes,
         "awake_minutes": int(awake_minutes),
         "sleep_score": sleep_score,
+        "anomalous_duration": duration_minutes > _MAX_PHYSIOLOGICAL_SLEEP_MINUTES,
         "trend_status": trend_info["trend_status"],
         "report_markdown": report_md,
         "wake_up_ts": now_iso,

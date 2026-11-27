@@ -283,6 +283,32 @@ class TestFormattingResilience(unittest.TestCase):
             "<call>record_audio(duration=10)</call>"
         )
 
+    def test_location_routing_current_vs_last_location(self):
+        """Valida roteamento consistente de localização atual vs histórico."""
+        for phrase in ("onde eu estou", "onde estou agora", "qual minha localização atual"):
+            self.assertEqual(match_intent_fallback(phrase), "<call>get_location()</call>")
+        for phrase in ("qual foi minha última localização", "onde eu estava"):
+            self.assertEqual(match_intent_fallback(phrase), "<call>get_last_location()</call>")
+
+    def test_nlp_four_production_regressions(self):
+        """Valida as 4 correções de roteamento: cancel_alarm, loc/typos, checklist e send_whatsapp."""
+        self.assertEqual(
+            match_intent_fallback("Desative meu alarme das 6:12 só amanhã"),
+            "<call>cancel_alarm(time='06:12', day='', label='')</call>",
+        )
+        self.assertEqual(
+            match_intent_fallback("Ative minhaa loc"),
+            "<call>set_location_state(state=True)</call>",
+        )
+        self.assertEqual(
+            match_intent_fallback("O que tem na minha checklist"),
+            "<call>get_voice_notes(query='')</call>",
+        )
+        self.assertEqual(
+            match_intent_fallback("Manda um zap para Gustavo dizendo pra ele se lascar"),
+            "<call>send_whatsapp(contact_name='Gustavo', message='se lascar')</call>",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

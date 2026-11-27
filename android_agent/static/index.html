@@ -1221,27 +1221,236 @@
       }
     }
 
+    /* Sleep Dashboard Card */
+    .bubble-md-h3,
+    .md-h2 {
+      margin: 12px 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #E1BEE7;
+    }
+    .bubble-md-h4,
+    .md-h3 {
+      margin: 12px 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #E1BEE7;
+    }
+    .sleep-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    .sleep-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sleep-card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #f3e8ff;
+    }
+    .sleep-trend-badge {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(167, 139, 250, 0.16);
+      border: 1px solid rgba(167, 139, 250, 0.32);
+      color: #e9d5ff;
+    }
+    .sleep-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .sleep-kpi {
+      background: #1E132E;
+      border: 1px solid rgba(167, 139, 250, 0.28);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .sleep-kpi-label {
+      font-size: 11px;
+      color: #c4b5fd;
+      opacity: 0.85;
+    }
+    .sleep-kpi-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sleep-kpi-sub {
+      font-size: 10.5px;
+      color: #a78bfa;
+    }
+    .sleep-stage-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .sleep-stage-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .sleep-stage-seg.n1 { background: #ddd6fe; }
+    .sleep-stage-seg.n2 { background: #a78bfa; }
+    .sleep-stage-seg.n3 { background: #4f46e5; }
+    .sleep-stage-seg.rem { background: #22d3ee; }
+    .sleep-stage-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      font-size: 11px;
+      color: #d8b4fe;
+    }
+    .sleep-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sleep-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .sleep-action-box {
+      background: rgba(124, 58, 237, 0.14);
+      border: 1px solid rgba(167, 139, 250, 0.30);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #f3e8ff;
+    }
+    .sleep-outlier-alert {
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      color: #fde68a;
+    }
+    .sleep-details {
+      border: 1px solid rgba(167, 139, 250, 0.22);
+      border-radius: 10px;
+      background: rgba(15, 10, 26, 0.55);
+      padding: 6px 10px;
+    }
+    .sleep-details summary {
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: #c4b5fd;
+      list-style: none;
+      user-select: none;
+      padding: 2px 0;
+    }
+    .sleep-details summary::-webkit-details-marker {
+      display: none;
+    }
+    .sleep-details-body {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(167, 139, 250, 0.16);
+      font-size: 12.5px;
+    }
+
     @media (max-width: 768px), (pointer: coarse) {
       .composer-shortcuts-hint,
-      .composer-hints {
+      .composer-hints,
+      .shortcut-hints,
+      .keyboard-hints {
         display: none !important;
       }
       .chat-messages {
         overflow-x: hidden;
       }
+      .composer-area {
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+      }
+      .composer-card {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      #composerTextRow {
+        flex: 1 1 0;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+      }
+      #voice-hold-bar {
+        flex: 1 1 100%;
+      }
+      .composer-textarea {
+        font-size: 16px;
+        min-height: 42px;
+        max-height: 110px;
+      }
+      .composer-bottom {
+        flex-shrink: 0;
+      }
+      .mode-toggle-btn,
+      .send-action-btn {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        border-radius: 12px;
+        flex-shrink: 0;
+      }
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
       .topbar {
         padding: 0 10px;
         gap: 6px;
       }
       .topbar-left,
       .header-left {
+        display: flex;
+        align-items: center;
         gap: 8px;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        margin-right: 8px;
+      }
+      #toggleSidebarBtn {
+        flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+      }
+      .topbar-session-name {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 14px;
       }
       .topbar-right,
       .header-actions {
+        display: flex;
+        align-items: center;
         gap: 6px;
         flex-shrink: 0;
       }
@@ -1249,6 +1458,7 @@
         width: 34px !important;
         height: 34px !important;
         padding: 0 !important;
+        border-radius: 10px !important;
         justify-content: center !important;
         flex-shrink: 0 !important;
         margin-right: 0 !important;
@@ -1257,6 +1467,7 @@
         width: 34px !important;
         height: 34px !important;
         padding: 0 !important;
+        border-radius: 10px !important;
         justify-content: center !important;
         flex-shrink: 0 !important;
         margin-right: 0 !important;
@@ -1269,34 +1480,45 @@
         width: auto !important;
       }
       .status-dot-mini {
-        width: 8px;
-        height: 8px;
+        width: 9px;
+        height: 9px;
         border-radius: 50%;
       }
       #voiceNoteQuickLabel,
       #healthText {
         display: none !important;
       }
-      .msg-content-wrap {
-        max-width: calc(100% - 40px);
-      }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 600px) {
       .chat-messages {
         padding: 12px 10px;
-        gap: 8px;
+        gap: 10px;
       }
-      .msg-row {
-        gap: 8px;
+      .msg-row.silva {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
       }
-      .msg-avatar {
-        width: 28px;
-        height: 28px;
-        font-size: 14px;
+      .msg-row.silva .msg-avatar {
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        border-radius: 6px;
+        margin-top: 0;
+        align-self: flex-start;
       }
-      .msg-content-wrap {
-        max-width: calc(100% - 36px);
+      .msg-row .msg-content-wrap {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      .bubble,
+      .message-bubble {
+        padding: 12px 14px;
+        border-radius: 14px;
+        font-size: 14.5px;
+        line-height: 1.5;
+        max-width: 100%;
       }
     }
   </style>
@@ -1706,6 +1928,15 @@
       const modalImg = document.getElementById("modalImg");
       const modalCloseBtn = document.getElementById("modalCloseBtn");
 
+      function updateMobilePlaceholder() {
+        if (!promptTextarea) return;
+        promptTextarea.placeholder = window.innerWidth <= 768
+          ? "Envie uma instrução para o Silva..."
+          : "Envie uma instrução para o Silva... (Ctrl+K)";
+      }
+      updateMobilePlaceholder();
+      window.addEventListener("resize", updateMobilePlaceholder);
+
       // 3. Gerenciamento de Sessões e Histórico
       let sessions = [];
       try {
@@ -2010,8 +2241,20 @@
         lines.forEach(function (line, lineIdx) {
           const trimmed = line.trim();
 
-          // Detecção de lista: linhas iniciadas por • ou -
-          if (trimmed.startsWith("• ") || trimmed.startsWith("- ")) {
+          // Títulos Markdown (### / ##)
+          const h3Match = trimmed.match(/^###\s+(.+)$/);
+          const h2Match = trimmed.match(/^##\s+(.+)$/);
+          if (h3Match) {
+            const h4 = document.createElement("h4");
+            h4.className = "bubble-md-h4 md-h3";
+            formatInlineMarkdown(h4, h3Match[1]);
+            container.appendChild(h4);
+          } else if (h2Match) {
+            const h3 = document.createElement("h3");
+            h3.className = "bubble-md-h3 md-h2";
+            formatInlineMarkdown(h3, h2Match[1]);
+            container.appendChild(h3);
+          } else if (trimmed.startsWith("• ") || trimmed.startsWith("- ")) {
             const listItem = document.createElement("div");
             listItem.className = "bubble-list-item";
 
@@ -2035,6 +2278,152 @@
             }
           }
         });
+      }
+
+      // Renderização de Card Visual Compacto para Relatório de Sono
+      function renderSleepCard(container, text) {
+        const raw = String(text || "");
+        const notaMatch = raw.match(/Nota:\s*(\d+\/100)/i);
+        const durMatch = raw.match(/Dura[çc][ãa]o:\s*([^\n|]+)/i);
+        const ciclosMatch = raw.match(/Ciclos:\s*([0-9.,]+)/i);
+        const trendMatch = raw.match(/Tend[êe]ncia:\s*([^\n]+)/i);
+        const archMatch = raw.match(/Arquitetura:\s*N1\s*~?(\d+)m[^\n]*N2\s*~?(\d+)m[^\n]*N3\s*~?(\d+)m[^\n]*REM\s*~?(\d+)m/i);
+        const metaMatch = raw.match(/Meta Ideal:\s*([^\n]+)/i);
+        const outlierMatch = raw.match(/⚠️[^\n]+/);
+
+        const card = document.createElement("div");
+        card.className = "sleep-card";
+
+        // Cabeçalho com título + badge de tendência
+        const header = document.createElement("div");
+        header.className = "sleep-card-header";
+        const title = document.createElement("div");
+        title.className = "sleep-card-title";
+        title.textContent = "🌙 Relatório de Sono";
+        header.appendChild(title);
+        if (trendMatch) {
+          const badge = document.createElement("span");
+          badge.className = "sleep-trend-badge";
+          badge.textContent = trendMatch[1].trim();
+          header.appendChild(badge);
+        }
+        card.appendChild(header);
+
+        // Grid de 3 KPIs
+        const grid = document.createElement("div");
+        grid.className = "sleep-kpi-grid";
+        const kpis = [
+          { label: "Nota", value: notaMatch ? notaMatch[1] : "--" },
+          { label: "Duração", value: durMatch ? durMatch[1].replace(/\s*\([^)]*\)\s*$/, "").trim() : "--", sub: (durMatch && durMatch[1].match(/\(([^)]+)\)/)) ? durMatch[1].match(/\(([^)]+)\)/)[1] : "" },
+          { label: "Ciclos", value: ciclosMatch ? ciclosMatch[1] : "--", sub: "90 min" },
+        ];
+        kpis.forEach(function (k) {
+          const box = document.createElement("div");
+          box.className = "sleep-kpi";
+          const lbl = document.createElement("div");
+          lbl.className = "sleep-kpi-label";
+          lbl.textContent = k.label;
+          const val = document.createElement("div");
+          val.className = "sleep-kpi-value";
+          val.textContent = k.value;
+          box.appendChild(lbl);
+          box.appendChild(val);
+          if (k.sub) {
+            const sub = document.createElement("div");
+            sub.className = "sleep-kpi-sub";
+            sub.textContent = k.sub;
+            box.appendChild(sub);
+          }
+          grid.appendChild(box);
+        });
+        card.appendChild(grid);
+
+        // Barra Horizontal Segmentada (N1, N2, N3, REM)
+        if (archMatch) {
+          const n1 = parseInt(archMatch[1], 10) || 0;
+          const n2 = parseInt(archMatch[2], 10) || 0;
+          const n3 = parseInt(archMatch[3], 10) || 0;
+          const rem = parseInt(archMatch[4], 10) || 0;
+          const total = Math.max(1, n1 + n2 + n3 + rem);
+
+          const stageWrap = document.createElement("div");
+          stageWrap.className = "sleep-stage-wrap";
+          const bar = document.createElement("div");
+          bar.className = "sleep-stage-bar";
+
+          const segments = [
+            { cls: "n1", label: `N1 ${n1}m`, pct: (n1 / total) * 100, color: "#ddd6fe" },
+            { cls: "n2", label: `N2 ${n2}m`, pct: (n2 / total) * 100, color: "#a78bfa" },
+            { cls: "n3", label: `N3 ${n3}m`, pct: (n3 / total) * 100, color: "#4f46e5" },
+            { cls: "rem", label: `REM ${rem}m`, pct: (rem / total) * 100, color: "#22d3ee" },
+          ];
+          const legend = document.createElement("div");
+          legend.className = "sleep-stage-legend";
+
+          segments.forEach(function (s) {
+            const seg = document.createElement("div");
+            seg.className = "sleep-stage-seg " + s.cls;
+            seg.style.width = s.pct.toFixed(1) + "%";
+            bar.appendChild(seg);
+
+            const item = document.createElement("span");
+            item.className = "sleep-legend-item";
+            const dot = document.createElement("span");
+            dot.className = "sleep-legend-dot";
+            dot.style.background = s.color;
+            item.appendChild(dot);
+            item.appendChild(document.createTextNode(s.label));
+            legend.appendChild(item);
+          });
+
+          stageWrap.appendChild(bar);
+          stageWrap.appendChild(legend);
+          card.appendChild(stageWrap);
+        }
+
+        if (outlierMatch) {
+          const alertBox = document.createElement("div");
+          alertBox.className = "sleep-outlier-alert";
+          formatInlineMarkdown(alertBox, outlierMatch[0]);
+          card.appendChild(alertBox);
+        }
+
+        // Box de Ação para Hoje
+        const actionLines = [];
+        if (metaMatch) actionLines.push("**Meta Ideal:** " + metaMatch[1].trim());
+        const splitIdx = raw.search(/###\s*Detalhes Cient[íi]ficos|###\s*Linha do Tempo/i);
+        const headSection = splitIdx >= 0 ? raw.slice(0, splitIdx) : raw;
+        headSection.split("\n").forEach(function (ln) {
+          const t = ln.trim();
+          if (t.startsWith("- **Desligamento") || t.startsWith("- **Higiene")) {
+            actionLines.push(t);
+          }
+        });
+        if (actionLines.length > 0) {
+          const actionBox = document.createElement("div");
+          actionBox.className = "sleep-action-box";
+          renderSafeMarkdown(actionBox, actionLines.join("\n"));
+          card.appendChild(actionBox);
+        }
+
+        // Acordeão nativo (<details>) com Detalhes Científicos + Histórico
+        if (splitIdx >= 0) {
+          const detailsText = raw.slice(splitIdx).trim();
+          if (detailsText) {
+            const detailsEl = document.createElement("details");
+            detailsEl.className = "sleep-details";
+            const summary = document.createElement("summary");
+            summary.textContent = "Ver detalhes científicos (NREM/REM) e histórico ▾";
+            const body = document.createElement("div");
+            body.className = "sleep-details-body";
+            renderSafeMarkdown(body, detailsText);
+            detailsEl.appendChild(summary);
+            detailsEl.appendChild(body);
+            card.appendChild(detailsEl);
+          }
+        }
+
+        container.appendChild(card);
       }
 
       // Formatação inline segura: links Markdown [texto](url), URLs cruas, **negrito** e `código`
@@ -2182,10 +2571,15 @@
         const bubble = document.createElement("div");
         bubble.className = "bubble silva";
 
+        const isSleepReport = (msg && /Nota:\s*\d+\/100/i.test(msg) && /Arquitetura:/i.test(msg)) ||
+          (rawCall && String(rawCall).includes("<call>get_sleep_report") && msg && /Nota:\s*\d+\/100/i.test(msg));
+
         if (searchData) {
           const qName = searchData.query ? searchData.query.trim() : "";
           const headerTxt = qName ? `Resultados para "${qName}"` : "Resultados da pesquisa";
           renderSafeMarkdown(bubble, headerTxt);
+        } else if (isSleepReport) {
+          renderSleepCard(bubble, msg);
         } else {
           renderSafeMarkdown(bubble, msg);
         }

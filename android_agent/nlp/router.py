@@ -1191,13 +1191,20 @@ def extract_send_sms(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     m_wpp_explicit = re.search(
         r"(?:envia|enviar|envie|manda|mandar|mande|escreve|escrever|fala|falar|fale)\s+"
         r"(?:um\s+|uma\s+)?(?:mensagem\s+)?(?:no|pelo|via)?\s*(?:whatsapp|zap|wpp)\s+"
-        r"(?:para|pro|pra|com)\s+(?:o\s+|a\s+)?(.+?)\s*(?::|dizendo|falando|que)\s*(.+)",
+        r"(?:para|pro|pra|com)\s+(?:o\s+|a\s+)?(.+?)\s*(?::|dizendo|falando|avisando|perguntando|que)\s*(.+)",
         raw,
         re.IGNORECASE,
     )
     if m_wpp_explicit:
         to_target = re.sub(r"^(?:o|a)\s+", "", m_wpp_explicit.group(1).strip(), flags=re.IGNORECASE).strip()
         msg_body = m_wpp_explicit.group(2).strip()
+        for _ in range(2):
+            msg_body = re.sub(
+                r"^(?:(?:que\s+)?(?:pra\s+ele|pra\s+ela|para\s+ele|para\s+ela|pro\s+mesmo|a\s+ele|a\s+ela))\s+",
+                "",
+                msg_body,
+                flags=re.IGNORECASE,
+            ).strip()
         if to_target and msg_body:
             return 0.97, _format_call("send_whatsapp", contact_name=to_target, message=msg_body)
 
@@ -1256,7 +1263,11 @@ def extract_location(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         if re.search(r"\b(?:liga|ligue|ligar|ativa|ative|ativar|habilita|habilite|habilitar|on)\b", norm):
             return 0.96, _format_call("set_location_state", state=True)
 
-    if any(w in norm for w in ["localizacao", "onde estou", "onde eu estou", "gps", "coordenadas", "minha posicao", "minha localizacao"]):
+    if any(w in norm for w in [
+        "localizacao", "localizacao atual", "minha localizacao atual",
+        "onde estou", "onde eu estou", "onde estou agora", "onde eu estou agora",
+        "gps", "coordenadas", "minha posicao", "minha localizacao",
+    ]):
         return 0.90, _format_call("get_location")
 
     return 0.0, None
@@ -1287,19 +1298,29 @@ def extract_clipboard(raw: str, norm: str) -> Tuple[float, Optional[str]]:
 
 def extract_alarm(raw: str, norm: str) -> Tuple[float, Optional[str]]:
     """Alarmes e despertador."""
+    cancel_stems = ("desativ", "deslig", "cancel", "apag", "remov", "exclu", "tir")
+    has_cancel = any(st in norm for st in cancel_stems)
     if any(w in norm for w in ["alarme", "despertador", "desperta", "despertar", "me acorda", "acordar"]):
-        if any(w in norm for w in ["cancela", "cancelar", "desativa", "desativar", "apaga", "apagar", "remover", "remove", "desliga", "desligar"]):
-            m_time = re.search(r"(\d{1,2}(?::\d{2})?)", norm)
+        m_time = re.search(r"(\d{1,2}:\d{2})", raw) or re.search(r"(\d{1,2}(?::\d{2})?)", norm)
+        if has_cancel:
             t_str = m_time.group(1) if m_time else ""
-            if t_str and ":" not in t_str:
-                t_str = f"{int(t_str):02d}:00"
-            return 0.93, _format_call("cancel_alarm", time=t_str, day="", label="")
+            if t_str:
+                if ":" not in t_str:
+                    t_str = f"{int(t_str):02d}:00"
+                else:
+                    hh, mm = t_str.split(":", 1)
+                    t_str = f"{int(hh):02d}:{mm}"
+            return 0.95, _format_call("cancel_alarm", time=t_str, day="", label="")
+        # Guarda negativa: nunca acionar set_alarm em frases com verbos de desativação/cancelamento
+        t_str = m_time.group(1) if m_time else "07:00"
+        if ":" not in t_str:
+            t_str = f"{int(t_str):02d}:00"
         else:
-            m_time = re.search(r"(\d{1,2}(?::\d{2})?)", norm)
-            t_str = m_time.group(1) if m_time else "07:00"
-            if ":" not in t_str:
-                t_str = f"{int(t_str):02d}:00"
-            return 0.93, _format_call("set_alarm", time=t_str, label="Alarme", days=[])
+            hh, mm = t_str.split(":", 1)
+            t_str = f"{int(hh):02d}:{mm}"
+        return 0.93, _format_call("set_alarm", time=t_str, label="Alarme", days=[])
+    if has_cancel:
+        return 0.0, None
     return 0.0, None
 
 
@@ -1834,13 +1855,13 @@ def extract_voice_notes(raw: str, norm: str) -> Tuple[float, Optional[str]]:
         if title_val:
             return 0.97, _format_call("save_voice_note", title=title_val, duration=15, text_only=True)
 
-    # 3. get_voice_notes ("quais notas de voz eu tenho?", "mostra meus lembretes", "lembra o que eu gravei sobre o aluguel", "abrir checklist de notas")
+    # 3. get_voice_notes ("quais notas de voz eu tenho?", "mostra meus lembretes", "o que tem na minha checklist", "abrir checklist de notas")
     if (
-        any(k in norm for k in ("quais notas de voz", "minhas notas de voz", "meus lembretes", "lista de lembretes", "checklist de notas", "abrir checklist", "abre o checklist", "ver checklist"))
-        or re.search(r"\b(?:mostra|mostre|lista|liste|ver|veja|abre|abra)\s+(?:os\s+|as\s+)?(?:meus\s+|minhas\s+)?(?:lembretes|notas\s+de\s+voz|checklist)\b", norm)
+        any(k in norm for k in ("quais notas de voz", "minhas notas de voz", "meus lembretes", "lista de lembretes", "checklist de notas", "abrir checklist", "abre o checklist", "ver checklist", "ler checklist", "leia checklist", "itens da checklist", "itens do checklist", "na minha checklist", "no meu checklist"))
+        or re.search(r"\b(?:mostra|mostre|lista|liste|ver|veja|abre|abra|ler|leia|tem)\s+(?:os\s+|as\s+|na\s+|no\s+)?(?:meus\s+|minhas\s+|meu\s+|minha\s+)?(?:lembretes|notas\s+de\s+voz|checklist)\b", norm)
         or re.search(r"\b(?:o\s+que\s+(?:eu\s+)?gravei)\b", norm)
     ):
-        m_q = re.search(r"(?:sobre|do|da|de)\s+(?!voz\b|notas\b|lembretes\b)(.+)$", clean_raw, re.IGNORECASE)
+        m_q = re.search(r"(?:sobre|do|da|de)\s+(?!voz\b|notas\b|lembretes\b|checklist\b)(.+)$", clean_raw, re.IGNORECASE)
         q_val = m_q.group(1).strip() if m_q else ""
         return 0.97, _format_call("get_voice_notes", query=q_val)
 
